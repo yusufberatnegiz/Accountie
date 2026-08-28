@@ -1,11 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  const code = request.nextUrl.searchParams.get("code");
-  if (code) {
-    const supabase = await createSupabaseServerClient();
-    await supabase.auth.exchangeCodeForSession(code);
-  }
-  return NextResponse.redirect(new URL("/", request.url));
+export function GET(request: Request) {
+  return NextResponse.redirect(new URL("/giris", request.url));
 }

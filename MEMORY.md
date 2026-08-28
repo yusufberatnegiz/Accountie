@@ -2,41 +2,33 @@
 
 ## Mevcut durum
 
-- Faz: Çalışan MVP temeli hazır; canlı GİB ve Resmî Gazete okumaları bağlı
-- Arayüz: Dashboard, filtrelenebilir takvim, kaynak yönetimi ve P0 sayfa iskeletleri hazır
-- Altyapı: Supabase şeması, RLS, giriş sınırı ve ortam değişkenleri hazır
-- Kaynak: GİB resmî JSON API ve Resmî Gazete günlük sayfası canlı okunuyor; izinli alan adı/timeout/boyut sınırı uygulanıyor
-- Doğrulama: Lint, TypeScript, test, production build ve masaüstü/mobil tarayıcı kontrolü geçiyor
+- Neon Postgres/Auth ve Drizzle bağlı; public signup kapalı.
+- GİB Vergi Takvimi, SGK resmî duyuruları ve günlük Resmî Gazete için canlı adaptör ile idempotent senkronizasyon mevcut.
+- Günlük Vercel cron ve tüm oturum açmış kullanıcılar için `Şimdi tara` hazır.
+- Dashboard, GİB/SGK kartları, gelişmiş takvim filtreleri, birleşik güncel akış, kaynak sağlığı, favoriler, okundu durumu ve kişisel tarihli/hatırlatıcılı/bağlantılı notlar mevcut.
+- Ayrı admin paneli ve ürün içi rol/onay akışı kaldırıldı.
+- Production Neon dalında 174 takvim olayı ve toplam 196 resmî kaynak kaydı var; bunun 10'u SGK duyurusu, 12'si Resmî Gazete içeriği ve 5 takvim satırı SGK/MPHB yükümlülüğüdür.
+- İkinci canlı tarama üç kaynakta da `changed: 0` döndürdü; cron 4–5 saniyede tamamlandı.
+- TypeScript, 21 test, lint ve production build başarılı; oturumsuz rota 307, session endpoint 200 ve anahtarsız cron 401 döndürüyor.
 
 ## Aktif iş
 
-Supabase projesini bağla; migration'ı uygula; canlı kaynak kayıtlarını idempotent senkronizasyon ve admin onay kuyruğuna yaz.
+Vercel production bağlantısı ve ilk ofis hesabının açılması.
 
 ## Sonraki adım
 
-Admin onay kuyruğu ile sync route/cron akışını tamamla; ardından SGK adaptörünü ekle.
+Vercel projesini bağla, production env değerlerini ekle, ilk kullanıcıyla sahiplikli özelliklerin browser E2E testini yap ve deploy et.
 
 ## Engeller
 
-- Supabase proje URL'si ve publishable/service-role anahtarları henüz yok.
-- Vercel proje bilgileri henüz yok.
+- Vercel proje bağlantısı ve production ortam değişkenleri henüz doğrulanmadı.
+- İlk ofis kullanıcısı Neon Auth üzerinden ofis tarafından oluşturulmalı.
 
 ## Kalıcı kararlar
 
-- Kritik tarih değişiklikleri admin onayı olmadan yayımlanmaz.
-- Eski yayımlanmış veri, kaynak hatası nedeniyle otomatik silinmez.
-- Resmî Gazete MVP'de metadata ve bağlantı düzeyinde işlenir; PDF/OCR yoktur.
-- P0 tamamlanmadan e-posta, takvim UI veya CSV gibi P1 işleri yapılmaz.
-- Kaynak çağrıları yalnızca sabit izin listesindeki resmî HTTPS alan adlarına yapılır.
-- Tüm takvim ve Resmî Gazete kayıtları canlı resmî kaynaktan gelir; demo/seed/üçüncü taraf kayıt gösterilmez.
-- Canlı kaynak hatasında sistem boş durum göstererek güvenli biçimde kapanır.
-
-## Güncelleme biçimi
-
-Her çalışma sonunda yalnızca şu alanları güncelle:
-
-- Mevcut durum
-- Aktif iş
-- Sonraki adım
-- Yeni engeller
-- Kullanıcı tarafından onaylanan kalıcı kararlar
+- Tüm ofis kullanıcıları eşittir; admin paneli yoktur.
+- Resmî kayıtlar onay kuyruğu olmadan otomatik yayımlanır.
+- Kaynak hatası eski yayımlanmış veriyi silmez.
+- Demo/seed/üçüncü taraf kayıt gösterilmez.
+- Notlar kişiseldir; tarih, isteğe bağlı hatırlatma, ilgili kayıt ve tamamlanma durumu içerir.
+- Veri ve kimlik servisleri Neon Postgres + Neon Auth'tır.

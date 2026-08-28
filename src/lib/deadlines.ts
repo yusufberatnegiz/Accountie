@@ -1,5 +1,9 @@
 export type Urgency = "past" | "today" | "urgent" | "near" | "safe";
 
+export function deadlineSource(kind: string, taxType: string, title: string): "GİB" | "SGK" {
+  return kind === "sgk" || /\bSGK\b|sosyal güvenlik|sigorta primi|prim hizmet beyannamesi|muhtasar ve prim/i.test(`${taxType} ${title}`) ? "SGK" : "GİB";
+}
+
 const DAY_MS = 86_400_000;
 
 function toUtcDay(date: string): number {
