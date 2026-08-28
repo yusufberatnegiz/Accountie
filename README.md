@@ -16,12 +16,11 @@ Accountie, tek bir muhasebe ofisi için resmî beyan/ödeme takvimi ve mevzuat t
 
 ```bash
 npm install
-cp .env.example .env.local
 npm run db:migrate
 npm run dev
 ```
 
-Gerekli değişkenler: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` ve `CRON_SECRET`. Secret değerlerini repoya eklemeyin.
+Başlatmadan önce yerelde `.env.local` oluşturun. Gerekli değişkenler: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_JWKS_URL`, `NEON_AUTH_COOKIE_SECRET` ve `CRON_SECRET`. Secret değerlerini repoya eklemeyin.
 
 ## Kontroller
 
