@@ -15,6 +15,10 @@
 
 Vercel production bağlantısı ve ilk ofis hesabının açılması.
 
+## UI yönü
+
+- 2026-08-28: Accountie arayüzü koyu varsayılan temaya geçirildi; derin lacivert canvas, yükseltilmiş mavi-siyah yüzeyler, mavi birincil aksiyonlar ve karanlık zemine ayarlanmış durum renkleri kullanılıyor. Sidebar, topbar, kartlar, tablolar, filtreler, notlar, favoriler ve giriş yüzeyi aynı görsel sistemle yenilendi; davranış ve veri akışı değiştirilmedi.
+
 ## Sonraki adım
 
 Vercel projesini bağla, production env değerlerini ekle, ilk kullanıcıyla sahiplikli özelliklerin browser E2E testini yap ve deploy et.
