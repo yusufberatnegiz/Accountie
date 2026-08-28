@@ -49,8 +49,16 @@ export function parseGibCalendarResponse(input: unknown): GibCalendarItem[] {
   }));
 }
 
+export function calendarWindow(date: string): { from: string; to: string } {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) throw new Error("GİB sorgu tarihi geçersiz.");
+  const base = new Date(`${date}T12:00:00Z`);
+  const shifted = (days: number) => new Date(base.getTime() + days * 86_400_000).toISOString().slice(0, 10);
+  return { from: shifted(-30), to: shifted(90) };
+}
+
 export async function fetchGibCalendar(date: string): Promise<GibCalendarItem[]> {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("GİB sorgu tarihi geçersiz.");
+  const window = calendarWindow(date);
   const input = await fetchOfficialJson(GIB_API_URL, {
     method: "POST",
     cache: "no-store",
@@ -58,8 +66,8 @@ export async function fetchGibCalendar(date: string): Promise<GibCalendarItem[]>
     body: JSON.stringify({
       globalOperator: "AND",
       searchRequestListDTOS: [
-        { column: "startdate", value: `${date}T23:59:59`, joinTable: "subject", operation: "LESS_THAN", formatDate: true, formatBoolean: false },
-        { column: "stopdate", value: `${date}T00:00:00`, joinTable: "subject", operation: "GREATER_THAN", formatDate: true, formatBoolean: false },
+        { column: "startdate", value: `${window.to}T23:59:59`, joinTable: "subject", operation: "LESS_THAN", formatDate: true, formatBoolean: false },
+        { column: "stopdate", value: `${window.from}T00:00:00`, joinTable: "subject", operation: "GREATER_THAN", formatDate: true, formatBoolean: false },
       ],
     }),
   });

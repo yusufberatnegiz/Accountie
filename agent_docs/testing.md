@@ -1,4 +1,4 @@
-# Testing
+# Test Stratejisi
 
 ## Zorunlu komutlar
 
@@ -9,35 +9,21 @@ npm test
 npm run build
 ```
 
-## Öncelikli otomatik testler
+## Otomatik test önceliği
 
-1. GİB, SGK ve Resmî Gazete parser fixture testleri
-2. İstanbul tarihine göre önem durumu sınırları
-3. Aynı sync'in kopya üretmemesi
-4. Değişen içeriğin pending review üretmesi
-5. Staff kullanıcının admin işlemi yapamaması
-6. Kullanıcının başka kullanıcının not/favorisine erişememesi
-7. RLS grant/policy allow-deny senaryoları
+1. GİB, SGK ve Resmî Gazete parser fixture'ları
+2. İstanbul tarih/aciliyet hesapları
+3. İzinli kaynak URL, yönlendirme ve boyut sınırı
+4. İçerik hash/idempotency yardımcıları
+5. Cron secret kontrolü ve kullanıcıya ait mutation'lar
 
-## Fixture kuralları
+## Browser smoke testi
 
-- Fixture küçük olmalı; yalnızca parser için gereken gerçek HTML/RSS parçalarını içermeli.
-- Fixture'ın kaynak URL'si ve alınma tarihi test dosyasında belirtilmeli.
-- Parser selector'ı değişirse fixture ve canlı kaynak birlikte doğrulanmalı.
-- Tam sayfa veya gereksiz telifli içerik repository'ye kopyalanmamalı.
+1. Login hata ve başarı akışı
+2. Dashboard masaüstü/mobil
+3. Takvim filtreleri, favori
+4. GİB/SGK/Resmî Gazete güncel akışı, okundu
+5. Not ekleme/düzenleme/hatırlatma/tamamlama/silme
+6. `Şimdi tara` sonrası kaynak sağlığı
 
-## Manuel browser smoke testi
-
-1. Admin login
-2. Şimdi tara
-3. Source health ve sync sonucu
-4. Pending diff onayı
-5. Staff dashboard/takvim görünürlüğü
-6. Filtre, arama ve resmî kaynak linki
-7. Not, hatırlatma, favori ve okundu durumu
-8. Mobil menü ve tablo
-9. Yetkisiz admin route ve hatalı cron secret
-
-Yerel Supabase CLI kurulmuşsa RLS SQL testlerini `npx supabase test db` ile çalıştır. CLI yoksa admin, staff ve ikinci staff test hesaplarıyla allow/deny senaryolarını production öncesi ayrı ayrı doğrula; bu kontrol atlanamaz.
-
-Bir özellik otomatik kontrolleri ve ilgili browser akışını geçmeden tamamlanmış sayılmaz.
+Canlı kaynak testi sabit fixture testinin yerine geçmez. Başarısız kaynak diğer kaynakları veya eski kayıtları silmemelidir.

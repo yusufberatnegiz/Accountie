@@ -1,16 +1,27 @@
 # Accountie
 
-Tek bir muhasebe ofisi için resmî kaynaklı beyan, ödeme ve mevzuat takip uygulaması.
+Accountie, tek bir muhasebe ofisi için resmî beyan/ödeme takvimi ve mevzuat takip uygulamasıdır. Luca'nın yerini almaz; evrak veya muhasebe kaydı işlemez.
 
-## Yerel geliştirme
+## Özellikler
+
+- GİB Vergi Takvimi, SGK duyuruları ve Resmî Gazete'den otomatik canlı veri
+- GİB kayıtlarından SGK yükümlülüklerini ayıran takvim ve aciliyet kartları
+- Arama, kaynak, işlem, vergi türü, durum ve tarih aralığı filtreleri
+- Birleşik güncel akış, okundu durumu ve favoriler
+- Kişisel tarihli, hatırlatıcılı ve resmî kayda bağlanabilen notlar
+- Kaynak sağlığı, tüm kullanıcılar için manuel tarama ve günlük Vercel Cron
+- Neon Auth ile kapalı ofis girişi; ürün içinde admin paneli yok
+
+## Kurulum
 
 ```bash
 npm install
 cp .env.example .env.local
+npm run db:migrate
 npm run dev
 ```
 
-Supabase değerleri girilmediğinde auth koruması yerel geliştirme için kapalıdır. Üretimde `NEXT_PUBLIC_SUPABASE_URL` ve `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` zorunludur. Uygulama hiçbir ortamda demo takvim veya mevzuat kaydı göstermez.
+Gerekli değişkenler: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` ve `CRON_SECRET`. Secret değerlerini repoya eklemeyin.
 
 ## Kontroller
 
@@ -21,16 +32,4 @@ npm test
 npm run build
 ```
 
-## Veritabanı
-
-İlk migration: `supabase/migrations/202608280001_initial_schema.sql`
-
-Şema; kullanıcı rolleri, resmî kaynaklar, senkronizasyon kayıtları, onay kuyruğu, takvim, mevzuat akışı, notlar, favoriler, okunma durumu ve denetim kayıtlarını içerir. RLS politikaları varsayılan olarak etkindir.
-
-## Kaynaklar
-
-- GİB Vergi Takvimi: resmî JSON API’den her istekte canlı alınır.
-- SGK Duyuruları: sonraki kaynak adaptörü.
-- Resmî Gazete: günlük resmî sayfa ve fihrist canlı alınır; bağlantılar resmî hostla sınırlandırılır.
-
-Ürün kapsamı için `docs/PRD-Accountie-MVP.md`, teknik kararlar için `docs/TechDesign-Accountie-MVP.md` dosyasına bakın.
+Ürün kapsamı için `docs/PRD-Accountie-MVP.md`, mimari için `docs/TechDesign-Accountie-MVP.md` dosyasını okuyun.

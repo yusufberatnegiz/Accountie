@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseGibCalendarResponse } from "./gib";
+import { calendarWindow, parseGibCalendarResponse } from "./gib";
 
 const fixture = {
   status: 200,
@@ -28,5 +28,9 @@ describe("GİB calendar parser", () => {
 
   it("fails closed when the source contract changes", () => {
     expect(() => parseGibCalendarResponse({ status: 200, resultContainer: [{ id: 1 }] })).toThrow();
+  });
+
+  it("geçmiş ve yaklaşan yükümlülükleri kapsayan tarih penceresi üretir", () => {
+    expect(calendarWindow("2026-01-10")).toEqual({ from: "2025-12-11", to: "2026-04-10" });
   });
 });
