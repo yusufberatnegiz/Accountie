@@ -56,7 +56,7 @@ Eski `review_status`, `reviewed_*`, `app_role` ve `audit_logs` alanları/tabelas
 ## 5. Kimlik ve sahiplik
 
 - Neon Managed Auth e-posta/parola akışı kullanılır.
-- Public signup Neon ayarında kapalıdır; kullanıcılar Console/CLI üzerinden oluşturulur.
+- Neon Managed Auth e-posta/parola kaydı giriş ekranından yapılır; Neon ayarında `allow_sign_up` açıktır.
 - Middleware sayfaları korur; her Server Action ayrıca session doğrular.
 - `currentUser()` profili idempotent oluşturur/günceller.
 - Not/favori/okundu mutation'ları `userId`/`ownerId` koşulunu sunucuda uygular.

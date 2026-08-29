@@ -6,7 +6,7 @@ Accountie, tek bir muhasebe ofisinin GİB/SGK sürelerini, SGK duyurularını ve
 
 - Next.js App Router, TypeScript, Neon Postgres/Auth, Drizzle ve Vercel kullan.
 - Tüm oturum açmış ofis kullanıcıları eşittir; admin paneli veya ürün içi rol ayrımı kurma.
-- Public signup kapalıdır. Hesaplar Neon Console/CLI üzerinden ofis tarafından oluşturulur.
+- E-posta/parola ile hesap oluşturma giriş ekranında açıktır; tüm kayıtlı kullanıcılar aynı ofis yetkilerine sahiptir.
 - GİB, SGK ve Resmî Gazete kayıtları yalnızca resmî HTTPS kaynaklardan otomatik alınır.
 - Yeni/değişen geçerli kayıtlar onay kuyruğu olmadan doğrudan yayımlanır. Kaynak hatasında eski kayıtları silme.
 - Dashboard, filtrelenebilir takvim, güncel akış, kaynak sağlığı, manuel tarama, favori, okundu durumu ve kişisel tarihli/hatırlatıcılı notlar MVP kapsamındadır.

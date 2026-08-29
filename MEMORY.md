@@ -2,7 +2,7 @@
 
 ## Mevcut durum
 
-- Neon Postgres/Auth ve Drizzle bağlı; public signup kapalı.
+- Neon Postgres/Auth ve Drizzle bağlı; giriş ekranında e-posta/parola ile hesap oluşturma akışı mevcut.
 - GİB Vergi Takvimi, SGK resmî duyuruları ve günlük Resmî Gazete için canlı adaptör ile idempotent senkronizasyon mevcut.
 - Günlük Vercel cron ve tüm oturum açmış kullanıcılar için `Şimdi tara` hazır.
 - Dashboard, GİB/SGK kartları, gelişmiş takvim filtreleri, birleşik güncel akış, kaynak sağlığı, favoriler, okundu durumu ve kişisel tarihli/hatırlatıcılı/bağlantılı notlar mevcut.
@@ -13,16 +13,16 @@
 
 ## Aktif iş
 
-Vercel production bağlantısı ve ilk ofis hesabının açılması.
+Vercel production bağlantısı ve Neon Auth public signup ayarının açılması.
 
 ## Sonraki adım
 
-Vercel projesini bağla, production env değerlerini ekle, ilk kullanıcıyla sahiplikli özelliklerin browser E2E testini yap ve deploy et.
+Neon Auth `allow_sign_up` ayarını aç, Vercel production env değerlerini doğrula ve yeni kullanıcıyla sahiplikli özelliklerin browser E2E testini yap.
 
 ## Engeller
 
 - Vercel proje bağlantısı ve production ortam değişkenleri henüz doğrulanmadı.
-- İlk ofis kullanıcısı Neon Auth üzerinden ofis tarafından oluşturulmalı.
+- Neon Auth production dalında `allow_sign_up` henüz kapalı; uygulamadaki kayıt formu bu ayar açılınca çalışır.
 
 ## Kalıcı kararlar
 
