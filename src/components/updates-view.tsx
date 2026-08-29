@@ -8,6 +8,7 @@ export function UpdatesView({ items }: { items: UpdateItem[] }) {
   const [query, setQuery] = useState("");
   const [source, setSource] = useState("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
+  const sources = useMemo(() => [...new Set(items.map((item) => item.source))], [items]);
   const filtered = useMemo(() => items.filter((item) => {
     const text = `${item.title} ${item.summary}`.toLocaleLowerCase("tr");
     return text.includes(query.toLocaleLowerCase("tr")) && (source === "all" || item.source === source) && (!unreadOnly || !item.read);
@@ -16,7 +17,7 @@ export function UpdatesView({ items }: { items: UpdateItem[] }) {
   return <section className="panel">
     <div className="filters updates-filters">
       <input className="field search" type="search" placeholder="Başlık veya içerik ara…" value={query} onChange={(event) => setQuery(event.target.value)} />
-      <select className="field" value={source} onChange={(event) => setSource(event.target.value)}><option value="all">Tüm kaynaklar</option><option>GİB</option><option>SGK</option><option>Resmî Gazete</option></select>
+      <select className="field" value={source} onChange={(event) => setSource(event.target.value)}><option value="all">Tüm kaynaklar</option>{sources.map((itemSource) => <option key={itemSource}>{itemSource}</option>)}</select>
       <label className="check-field"><input type="checkbox" checked={unreadOnly} onChange={(event) => setUnreadOnly(event.target.checked)} /> Yalnızca okunmamış</label>
     </div>
     {filtered.length ? <div className="updates-list">{filtered.map((item) => <article className={`update-item${item.read ? " read" : ""}`} key={item.id}>

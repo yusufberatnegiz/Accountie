@@ -19,7 +19,7 @@ function sourceName(kind: string): UpdateItem["source"] {
   return "GİB";
 }
 
-export async function loadUpdates(userId: string): Promise<UpdateItem[]> {
+export async function loadUpdates(userId: string, kind?: "gib" | "sgk" | "resmi_gazete"): Promise<UpdateItem[]> {
   const rows = await db.select({
     id: updates.id,
     kind: sources.kind,
@@ -30,7 +30,7 @@ export async function loadUpdates(userId: string): Promise<UpdateItem[]> {
   }).from(updates)
     .innerJoin(sourceItems, eq(updates.sourceItemId, sourceItems.id))
     .innerJoin(sources, eq(sourceItems.sourceId, sources.id))
-    .where(eq(updates.reviewStatus, "approved"))
+    .where(kind ? and(eq(updates.reviewStatus, "approved"), eq(sources.kind, kind)) : eq(updates.reviewStatus, "approved"))
     .orderBy(desc(updates.publishedAt))
     .limit(300);
   const [favoriteRows, readRows] = await Promise.all([

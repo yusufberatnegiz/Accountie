@@ -4,7 +4,7 @@ Accountie, tek bir muhasebe ofisi için resmî beyan/ödeme takvimi ve mevzuat t
 
 ## Özellikler
 
-- GİB Vergi Takvimi, SGK duyuruları ve Resmî Gazete'den otomatik canlı veri
+- GİB Vergi Takvimi, SGK duyuruları ve ayrı günlük Resmî Gazete akışından otomatik canlı veri
 - GİB kayıtlarından SGK yükümlülüklerini ayıran takvim ve aciliyet kartları
 - Arama, kaynak, işlem, vergi türü, durum ve tarih aralığı filtreleri
 - Birleşik güncel akış, okundu durumu ve favoriler
