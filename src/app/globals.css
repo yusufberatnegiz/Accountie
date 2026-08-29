@@ -30,7 +30,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .app { min-height: 100vh; display: grid; grid-template-columns: 292px minmax(0, 1fr); background: var(--canvas); }
 .sidebar { position: sticky; top: 0; z-index: 30; height: 100vh; background: var(--sidebar); border-right: 1px solid var(--line); padding: 28px 18px 22px; display: flex; flex-direction: column; overflow-y: auto; }
 .brand { display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 0 10px; color: white; font-size: 23px; font-weight: 760; letter-spacing: -.04em; }
-.brand-mark { display: block; width: 50px; height: 50px; flex: 0 0 50px; border-radius: 15px; object-fit: contain; }
+.brand-mark { display: block; width: 50px; height: 50px; flex: 0 0 50px; padding: 5px; border-radius: 15px; background: #f7fbff; object-fit: contain; }
 .app-navigation { margin-top: 38px; }
 .nav-group { margin-bottom: 30px; }
 .nav-label { padding: 0 10px 10px; color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }

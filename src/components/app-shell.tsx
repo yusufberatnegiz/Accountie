@@ -13,7 +13,7 @@ export async function AppShell({ title, children }: { title: string; children: R
     <div className="app">
       <aside className="sidebar">
         <Link className="brand" href="/">
-          <Image aria-hidden="true" className="brand-mark" src="/accountie-logo.svg" alt="" width={50} height={50} priority /><span className="brand-text">Accountie</span>
+          <Image aria-hidden="true" className="brand-mark" src="/accountie-logo.png" alt="" width={50} height={50} priority /><span className="brand-text">Accountie</span>
         </Link>
         <AppNavigation />
         <div className="sidebar-footer">
