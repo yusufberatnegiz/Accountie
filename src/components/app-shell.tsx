@@ -3,16 +3,7 @@ import type { ReactNode } from "react";
 import { syncSources } from "@/app/actions/sync";
 import { logout } from "@/app/giris/actions";
 import { loadSourceHealth } from "@/lib/office-data";
-
-const primaryNav = [
-  ["▦", "Ana sayfa", "/"],
-  ["▣", "Beyan & Ödeme", "/takvim"],
-  ["◫", "Güncel mevzuat", "/guncel-akis"],
-] as const;
-const officeNav = [
-  ["✎", "Notlar", "/notlar"],
-  ["★", "Favoriler", "/favoriler"],
-] as const;
+import { AppNavigation } from "./app-navigation";
 
 export async function AppShell({ title, children }: { title: string; children: ReactNode }) {
   const health = await loadSourceHealth();
@@ -21,29 +12,12 @@ export async function AppShell({ title, children }: { title: string; children: R
     <div className="app">
       <aside className="sidebar">
         <Link className="brand" href="/">
-          <span className="brand-mark">A</span><span>Accountie</span>
+          <span className="brand-mark">A</span><span className="brand-text">Accountie</span>
         </Link>
-        <nav aria-label="Ana menü">
-          <div className="nav-group">
-            <div className="nav-label">Günlük ofis takibi</div>
-            {primaryNav.map(([icon, label, href]) => (
-              <Link className="nav-link" href={href} key={href}>
-                <span className="nav-icon">{icon}</span><span>{label}</span>
-              </Link>
-            ))}
-          </div>
-          <div className="nav-group">
-            <div className="nav-label">Ofis araçları</div>
-            {officeNav.map(([icon, label, href]) => (
-              <Link className="nav-link" href={href} key={href}>
-                <span className="nav-icon">{icon}</span><span>{label}</span>
-              </Link>
-            ))}
-          </div>
-        </nav>
+        <AppNavigation />
         <div className="sidebar-footer">
-          <form action={logout}><button className="logout-button" type="submit">Çıkış yap</button></form>
-          Accountie MVP<br />Ofis içi kullanım
+          <form action={logout}><button className="logout-button" type="submit"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5M14 8l4 4-4 4M18 12H8" /></svg><span>Çıkış yap</span></button></form>
+          <div className="sidebar-meta">Accountie MVP<br />Ofis içi kullanım</div>
         </div>
       </aside>
       <main className="main">
@@ -53,7 +27,7 @@ export async function AppShell({ title, children }: { title: string; children: R
             <div className="source-health" title={health.rows.map((row) => `${row.name}: ${row.lastSuccessAt ? "kontrol edildi" : "bekliyor"}`).join("\n")}>
               <span className={`health-dot${health.healthy < health.total ? " health-warning" : ""}`} /><span>{healthLabel}</span>
             </div>
-            <form action={syncSources}><button className="button scan-button" type="submit">↻ Şimdi tara</button></form>
+            <form action={syncSources}><button className="button scan-button" type="submit"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 5v6h-6" /></svg><span>Şimdi tara</span></button></form>
           </div>
         </header>
         <div className="content">{children}</div>
