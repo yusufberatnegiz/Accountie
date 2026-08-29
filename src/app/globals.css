@@ -203,7 +203,7 @@ textarea.field { line-height: 1.55; }
   .app { grid-template-columns: 88px minmax(0, 1fr); }
   .sidebar { padding-inline: 13px; }
   .brand { justify-content: center; padding: 0; }
-  .brand-text, .nav-label, .nav-text, .sidebar-meta, .logout-button span { display: none; }
+  .brand-text, .nav-label, .nav-text, .logout-button span { display: none; }
   .app-navigation { margin-top: 34px; }
   .nav-link { justify-content: center; padding: 0; }
   .logout-button { justify-content: center; padding: 0; }

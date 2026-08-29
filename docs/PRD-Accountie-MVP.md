@@ -9,7 +9,7 @@ Hedef: üç gün içinde ofis kullanımına açılabilen, resmî kaynağa dayal�
 ## 2. Kullanıcı ve yetki
 
 - Yalnızca ofis çalışanları giriş yapar.
-- Public kayıt ekranı yoktur; hesaplar Neon Auth Console/CLI üzerinden oluşturulur.
+- Giriş ekranında e-posta/parola ile hesap oluşturma bulunur; kullanıcılar Neon Auth üzerinde açılır.
 - Tüm oturum açmış kullanıcılar aynı ürün yetkisine sahiptir.
 - Ayrı admin paneli, admin/staff ayrımı ve içerik onay kuyruğu yoktur.
 - Not, favori ve okundu bilgisi kullanıcıya özeldir.
