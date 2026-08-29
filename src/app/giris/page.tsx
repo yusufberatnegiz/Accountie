@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const isSignup = mod === "kayit";
   return <main className="login-page">
     <section className="login-card">
-      <div className="brand login-brand"><Image aria-hidden="true" className="brand-mark" src="/accountie-logo.svg" alt="" width={50} height={50} priority /><span>Accountie</span></div>
+      <div className="brand login-brand"><Image aria-hidden="true" className="brand-mark" src="/accountie-logo.png" alt="" width={50} height={50} priority /><span>Accountie</span></div>
       <p className="eyebrow">Ofis içi erişim</p><h1>{isSignup ? "Hesap oluşturun" : "Hesabınıza giriş yapın"}</h1><p>{isSignup ? "Adınız, e-posta adresiniz ve parolanızla Accountie hesabınızı açın." : "Ofis hesabınızla güvenli şekilde giriş yapın."}</p>
       {hata ? <div className="login-error" role="alert">{hata}</div> : null}
       {mesaj ? <div className="login-message" role="status">{mesaj}</div> : null}
