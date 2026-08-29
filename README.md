@@ -10,7 +10,7 @@ Accountie, tek bir muhasebe ofisi için resmî beyan/ödeme takvimi ve mevzuat t
 - Birleşik güncel akış, okundu durumu ve favoriler
 - Kişisel tarihli, hatırlatıcılı ve resmî kayda bağlanabilen notlar
 - Kaynak sağlığı, tüm kullanıcılar için manuel tarama ve günlük Vercel Cron
-- Neon Auth ile kapalı ofis girişi; ürün içinde admin paneli yok
+- Neon Auth ile hesap oluşturma ve ofis girişi; ürün içinde admin paneli yok
 
 ## Kurulum
 

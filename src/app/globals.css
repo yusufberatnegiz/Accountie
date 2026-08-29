@@ -192,6 +192,10 @@ textarea.field { line-height: 1.55; }
 .login-form { display: grid; gap: 16px; margin-top: 24px; }
 .login-form label { display: grid; gap: 8px; font-size: 13px; font-weight: 700; }
 .login-error { margin: 0 0 18px; padding: 11px 13px; border: 1px solid rgba(239,81,96,.25); border-radius: 9px; background: rgba(239,81,96,.12); color: #ff8d98; font-size: 13px; }
+.login-message { margin: 0 0 18px; padding: 11px 13px; border: 1px solid rgba(56,196,139,.25); border-radius: 9px; background: rgba(56,196,139,.12); color: #71d9ad; font-size: 13px; }
+.auth-switch { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 20px; color: var(--muted); font-size: 12px; }
+.auth-switch a { color: var(--blue); font-weight: 750; }
+.auth-switch a:hover { color: #74b6ff; }
 
 @media (max-width: 1180px) {
   .app { grid-template-columns: 88px minmax(0, 1fr); }
