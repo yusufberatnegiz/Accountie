@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: { default: "Accountie", template: "%s · Accountie" },
   description: "Muhasebe ofisi beyan, ödeme ve mevzuat takip sistemi",
+  icons: { icon: "/accountie-logo.svg" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

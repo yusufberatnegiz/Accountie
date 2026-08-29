@@ -33,4 +33,5 @@ Vercel production env değerlerini doğrula ve yeni kullanıcıyla sahiplikli ö
 - Demo/seed/üçüncü taraf kayıt gösterilmez.
 - Notlar kişiseldir; tarih, isteğe bağlı hatırlatma, ilgili kayıt ve tamamlanma durumu içerir.
 - Veri ve kimlik servisleri Neon Postgres + Neon Auth'tır.
+- Marka görseli mavi hesap makinesi biçimindeki `public/accountie-logo.svg` dosyasıdır; sidebar, giriş ekranı ve favicon aynı varlığı kullanır.
 - Tamamlanan ve doğrulanan değişiklikler `main` dalına otomatik push edilir; `.env` ve secret dosyaları hiçbir zaman commit edilmez.
