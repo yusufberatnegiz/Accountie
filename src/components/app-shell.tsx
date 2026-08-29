@@ -18,7 +18,6 @@ export async function AppShell({ title, children }: { title: string; children: R
         <AppNavigation />
         <div className="sidebar-footer">
           <form action={logout}><button className="logout-button" type="submit"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5M14 8l4 4-4 4M18 12H8" /></svg><span>Çıkış yap</span></button></form>
-          <div className="sidebar-meta">Accountie MVP<br />Ofis içi kullanım</div>
         </div>
       </aside>
       <main className="main">
