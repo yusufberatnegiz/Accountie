@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Accountie hesap makinesi logosu">
+  <defs>
+    <linearGradient id="blue" x1="8" y1="5" x2="56" y2="59" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#52A7FF"/>
+      <stop offset="1" stop-color="#287DE8"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#blue)"/>
+  <rect x="17" y="10" width="30" height="44" rx="8" fill="#0B1728" stroke="#D9ECFF" stroke-width="2"/>
+  <rect x="22" y="16" width="20" height="10" rx="3" fill="#D9ECFF"/>
+  <path d="M25 21h14" stroke="#287DE8" stroke-width="2" stroke-linecap="round"/>
+  <rect x="22" y="31" width="7" height="7" rx="2" fill="#D9ECFF"/>
+  <rect x="32" y="31" width="7" height="7" rx="2" fill="#D9ECFF"/>
+  <rect x="22" y="41" width="7" height="7" rx="2" fill="#D9ECFF"/>
+  <rect x="32" y="41" width="7" height="7" rx="2" fill="#D9ECFF"/>
+  <rect x="42" y="31" width="1" height="17" rx=".5" fill="#38C48B" stroke="#38C48B" stroke-width="3"/>
+</svg>

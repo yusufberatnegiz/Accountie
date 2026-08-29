@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { syncSources } from "@/app/actions/sync";
@@ -12,7 +13,7 @@ export async function AppShell({ title, children }: { title: string; children: R
     <div className="app">
       <aside className="sidebar">
         <Link className="brand" href="/">
-          <span className="brand-mark">A</span><span className="brand-text">Accountie</span>
+          <Image aria-hidden="true" className="brand-mark" src="/accountie-logo.svg" alt="" width={50} height={50} priority /><span className="brand-text">Accountie</span>
         </Link>
         <AppNavigation />
         <div className="sidebar-footer">
