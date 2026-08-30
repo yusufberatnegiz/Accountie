@@ -150,6 +150,12 @@ textarea.field { line-height: 1.55; }
 .note-form { display: grid; gap: 16px; padding: 22px; }
 .note-form label { display: grid; gap: 8px; color: #d6deea; font-size: 12px; font-weight: 680; }
 .note-form textarea { min-height: 120px; resize: vertical; }
+.note-reminder { min-width: 0; margin: 0; padding: 13px 14px 14px; border: 1px solid var(--line); border-radius: 11px; background: rgba(7,17,31,.24); }
+.note-reminder legend { padding: 0 6px; color: #d6deea; font-size: 12px; font-weight: 680; }
+.note-reminder p { margin: 0 0 12px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.note-reminder-grid { display: grid; grid-template-columns: minmax(0, 1fr) 120px; gap: 10px; }
+.note-date-field { color-scheme: dark; cursor: pointer; }
+.note-date-field::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .78; }
 .notes-list { display: grid; }
 .note-item { padding: 21px 22px; border-bottom: 1px solid var(--line-soft); }
 .note-item:last-child { border-bottom: 0; }
@@ -166,7 +172,7 @@ textarea.field { line-height: 1.55; }
 .note-edit { margin-top: 15px; padding-top: 13px; border-top: 1px dashed var(--line); }
 .note-edit summary { width: fit-content; color: var(--blue); cursor: pointer; font-size: 12px; font-weight: 700; }
 .compact-form { grid-template-columns: 1fr 1fr; padding-inline: 0; padding-bottom: 0; }
-.compact-form label:nth-of-type(2), .compact-form .button { grid-column: 1 / -1; }
+.compact-form > label:nth-of-type(2), .compact-form > .note-reminder, .compact-form > .button { grid-column: 1 / -1; }
 
 .dashboard-reminders { margin-top: 24px; }
 .reminder-list { display: grid; }
@@ -251,7 +257,7 @@ textarea.field { line-height: 1.55; }
   .update-item { grid-template-columns: 1fr; gap: 10px; padding: 17px; }
   .item-actions { grid-column: auto; justify-content: space-between; }
   .compact-form { grid-template-columns: 1fr; }
-  .compact-form label:nth-of-type(2), .compact-form .button { grid-column: auto; }
+  .compact-form > label:nth-of-type(2), .compact-form > .button { grid-column: auto; }
   .reminder-list article { align-items: flex-start; flex-direction: column; padding: 15px 17px; }
 }
 

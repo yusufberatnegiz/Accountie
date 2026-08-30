@@ -13,6 +13,7 @@
 - Production Neon dalında 29 Ağustos 2026 Resmî Gazete fihristinden 13 güncel içerik bulunuyor.
 - TypeScript, 22 test, lint ve production build başarılı; oturumsuz rota 307, session endpoint 200 ve anahtarsız cron 401 döndürüyor.
 - GitHub `main` dalının Vercel production dağıtımı başarılı ve `https://accountie.vercel.app` alan adı çalışıyor.
+- Not oluşturma ve düzenleme formlarında hatırlatma tarihi ile saati ayrı, mobil uyumlu yerel seçicilerle girilir; yalnızca tarih seçilirse saat 09:00 kabul edilir.
 
 ## Aktif iş
 

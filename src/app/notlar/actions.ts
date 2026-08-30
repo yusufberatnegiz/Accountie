@@ -7,19 +7,17 @@ import { z } from "zod";
 import { currentUser } from "@/lib/auth/current-user";
 import { db } from "@/lib/db";
 import { notes } from "@/lib/db/schema";
+import { reminderInIstanbul } from "@/lib/reminders";
 
 const noteSchema = z.object({
   title: z.string().trim().min(1).max(160),
   body: z.string().trim().max(5000),
   noteDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  reminderAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/).optional(),
+  reminderDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  reminderTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   relation: z.string().optional(),
-});
+}).refine(({ reminderDate, reminderTime }) => !reminderTime || Boolean(reminderDate));
 const idSchema = z.uuid();
-
-function reminderInIstanbul(value: string | undefined): Date | null {
-  return value ? new Date(`${value}:00+03:00`) : null;
-}
 
 function relation(value: string | undefined): { relatedType: string | null; relatedId: string | null } {
   if (!value) return { relatedType: null, relatedId: null };
@@ -33,7 +31,8 @@ function parse(formData: FormData) {
     title: formData.get("title"),
     body: formData.get("body") ?? "",
     noteDate: formData.get("noteDate"),
-    reminderAt: formData.get("reminderAt") || undefined,
+    reminderDate: formData.get("reminderDate") || undefined,
+    reminderTime: formData.get("reminderTime") || undefined,
     relation: formData.get("relation") || undefined,
   });
 }
@@ -47,7 +46,7 @@ export async function createNote(formData: FormData) {
     title: parsed.data.title,
     body: parsed.data.body,
     noteDate: parsed.data.noteDate,
-    reminderAt: reminderInIstanbul(parsed.data.reminderAt),
+    reminderAt: reminderInIstanbul(parsed.data.reminderDate, parsed.data.reminderTime),
     visibility: "private",
     ...relation(parsed.data.relation),
   });
@@ -64,7 +63,7 @@ export async function updateNote(formData: FormData) {
     title: parsed.data.title,
     body: parsed.data.body,
     noteDate: parsed.data.noteDate,
-    reminderAt: reminderInIstanbul(parsed.data.reminderAt),
+    reminderAt: reminderInIstanbul(parsed.data.reminderDate, parsed.data.reminderTime),
     ...relation(parsed.data.relation),
     updatedAt: new Date(),
   }).where(and(eq(notes.id, id.data), eq(notes.ownerId, user.id)));

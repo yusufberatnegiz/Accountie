@@ -6,15 +6,11 @@ import { db } from "@/lib/db";
 import { notes } from "@/lib/db/schema";
 import { todayInIstanbul } from "@/lib/deadlines";
 import { loadRelationChoices } from "@/lib/office-data";
+import { reminderInputParts } from "@/lib/reminders";
 import { createNote, deleteNote, toggleNote, updateNote } from "./actions";
 
 export const metadata: Metadata = { title: "Notlar" };
 export const dynamic = "force-dynamic";
-
-function localInput(date: Date | null): string {
-  if (!date) return "";
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(date).replace(" ", "T");
-}
 
 export default async function NotesPage({ searchParams }: { searchParams: Promise<{ hata?: string }> }) {
   const user = await currentUser();
@@ -35,7 +31,10 @@ export default async function NotesPage({ searchParams }: { searchParams: Promis
           <label>Başlık<input className="field" name="title" maxLength={160} required /></label>
           <label>Not<textarea className="field" name="body" rows={5} maxLength={5000} /></label>
           <label>Not tarihi<input className="field" name="noteDate" type="date" defaultValue={todayInIstanbul()} required /></label>
-          <label>Hatırlatma<input className="field" name="reminderAt" type="datetime-local" /></label>
+          <fieldset className="note-reminder"><legend>Hatırlatma</legend><p>İsteğe bağlı. Saat seçmezseniz 09:00 kullanılır.</p><div className="note-reminder-grid">
+            <label>Tarih<input className="field note-date-field" name="reminderDate" type="date" /></label>
+            <label>Saat<input className="field note-date-field" name="reminderTime" type="time" /></label>
+          </div></fieldset>
           <label>İlgili kayıt<select className="field" name="relation" defaultValue=""><option value="">Bağlantı yok</option>{relationChoices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select></label>
           <button className="button primary" type="submit">Notu kaydet</button>
         </form>
@@ -45,6 +44,7 @@ export default async function NotesPage({ searchParams }: { searchParams: Promis
         {rows.length === 0 ? <div className="empty"><strong>Henüz not yok</strong>İlk notunuzu soldaki formdan ekleyebilirsiniz.</div> : <div className="notes-list">
           {rows.map((note) => {
             const relationValue = note.relatedType && note.relatedId ? `${note.relatedType}:${note.relatedId}` : "";
+            const reminderInput = reminderInputParts(note.reminderAt);
             return <article className={`note-item${note.completedAt ? " completed" : ""}`} key={note.id}>
               <div className="note-meta"><span>{note.noteDate}</span>{note.reminderAt ? <span>Hatırlatma: {new Intl.DateTimeFormat("tr-TR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Istanbul" }).format(note.reminderAt)}</span> : null}<span>Kişisel</span>{relationValue && relationLabels.get(relationValue) ? <span>{relationLabels.get(relationValue)}</span> : null}</div>
               <h3>{note.title}</h3>{note.body ? <p>{note.body}</p> : null}
@@ -57,7 +57,10 @@ export default async function NotesPage({ searchParams }: { searchParams: Promis
                 <label>Başlık<input className="field" name="title" maxLength={160} defaultValue={note.title} required /></label>
                 <label>Not<textarea className="field" name="body" rows={3} maxLength={5000} defaultValue={note.body} /></label>
                 <label>Not tarihi<input className="field" name="noteDate" type="date" defaultValue={note.noteDate} required /></label>
-                <label>Hatırlatma<input className="field" name="reminderAt" type="datetime-local" defaultValue={localInput(note.reminderAt)} /></label>
+                <fieldset className="note-reminder"><legend>Hatırlatma</legend><p>Boş bırakırsanız mevcut hatırlatma kaldırılır.</p><div className="note-reminder-grid">
+                  <label>Tarih<input className="field note-date-field" name="reminderDate" type="date" defaultValue={reminderInput.date} /></label>
+                  <label>Saat<input className="field note-date-field" name="reminderTime" type="time" defaultValue={reminderInput.time} /></label>
+                </div></fieldset>
                 <label>İlgili kayıt<select className="field" name="relation" defaultValue={relationValue}><option value="">Bağlantı yok</option>{relationChoices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select></label>
                 <button className="button primary" type="submit">Değişiklikleri kaydet</button>
               </form></details>
