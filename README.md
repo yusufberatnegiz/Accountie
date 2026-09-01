@@ -9,9 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://accountie.vercel.app">Canlı uygulama</a> ·
-  <a href="docs/PRD-Accountie-MVP.md">Ürün gereksinimleri</a> ·
-  <a href="docs/TechDesign-Accountie-MVP.md">Teknik tasarım</a>
+  <a href="https://accountie.vercel.app">Canlı uygulama</a>
 </p>
 
 ## Hakkında
