@@ -28,13 +28,13 @@ Accountie, tek bir muhasebe ofisinin GİB/SGK sürelerini, SGK duyurularını ve
 
 ## Çalışma ve doğrulama
 
-1. `MEMORY.md` ve görevle ilgili dosyaları oku.
+1. Görevle ilgili dosyaları ve `node_modules/next/dist/docs/` altındaki güncel Next.js rehberini oku.
 2. En küçük tam dikey dilimi uygula; gereksiz soyutlama/dependency ekleme.
 3. Parser veya tarih mantığında küçük fixture/unit testi ekle.
 4. `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` çalıştır.
 5. UI değişikliğini gerçek masaüstü ve mobil görünümde kontrol et.
 6. DB değişikliğini ileri uyumlu migration olarak üret; alan/tabela silme.
-7. Son durumu `MEMORY.md` içine yaz.
+7. Ürün davranışı değiştiğinde ilgili PRD/TDD bölümünü güncelle.
 
 Kullanıcının güncel açık talebi; PRD, TDD ve bu dosyadan üstündür. Kullanıcı değişikliklerini, `.env.local` dosyasını ve ilgisiz çalışma ağacı değişikliklerini koru.
 
