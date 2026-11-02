@@ -6,6 +6,8 @@ const MIN = 60_000;
 // [limit, window] pairs. Login: ~10 tries / 15 min per IP and per e-mail, as OWASP suggests.
 export const LIMITS = {
   receipt: [[10, MIN], [300, 24 * 60 * MIN]],
+  // Ceiling on vision-model spend across all accounts, since signup is open. Also set a spend limit in the Anthropic console.
+  receiptGlobal: [[2000, 24 * 60 * MIN]],
   loginIp: [[10, 15 * MIN]],
   loginEmail: [[10, 15 * MIN]],
   signupIp: [[5, 60 * MIN]],

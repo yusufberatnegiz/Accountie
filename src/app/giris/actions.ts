@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuth } from "@/lib/auth/server";
 import { allow, clientIp } from "@/lib/rate-limit";
+import { verifyTurnstile } from "@/lib/turnstile";
+
+const BOT_FIELD = "cf-turnstile-response";
 
 const loginSchema = z.object({ email: z.email().max(200), password: z.string().min(8).max(128) });
 const signupSchema = loginSchema.extend({ name: z.string().trim().min(2).max(100), passwordAgain: z.string().min(8).max(128) })
@@ -18,6 +21,7 @@ export async function login(formData: FormData) {
   if (!input.success) back({ hata: "bicim" });
   const ip = clientIp(await headers());
   if (!(await allow("loginIp", ip)) || !(await allow("loginEmail", input.data!.email))) back({ hata: "cok-deneme" });
+  if (!(await verifyTurnstile(formData.get(BOT_FIELD), ip))) back({ hata: "bot" });
   const { error } = await getAuth().signIn.email(input.data!);
   if (error) back({ hata: "kimlik" });
   redirect("/");
@@ -29,7 +33,9 @@ export async function signup(formData: FormData) {
     password: formData.get("password"), passwordAgain: formData.get("passwordAgain"),
   });
   if (!input.success) back({ mod: "kayit", hata: "kayit-bicim" });
-  if (!(await allow("signupIp", clientIp(await headers())))) back({ mod: "kayit", hata: "kayit-cok" });
+  const ip = clientIp(await headers());
+  if (!(await allow("signupIp", ip))) back({ mod: "kayit", hata: "kayit-cok" });
+  if (!(await verifyTurnstile(formData.get(BOT_FIELD), ip))) back({ mod: "kayit", hata: "bot" });
   const { name, email, password } = input.data!;
   const { error } = await getAuth().signUp.email({ name, email, password });
   if (error) back({ mod: "kayit", hata: "kayit" });

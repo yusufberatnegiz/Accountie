@@ -26,7 +26,7 @@ Muhasebeci olarak telefonda tek dokunuşla fişin fotoğrafını çekip yükleme
 
 - [ ] "Fiş çek" düğmesi telefonun kendi kamera uygulamasını açar (`input capture="environment"`). Masaüstünde dosya seçici açılır.
 - [ ] Fotoğraf istemcide uzun kenar yaklaşık 1600 px JPEG'e küçültülüp yüklenir.
-- [ ] 10 MB üstü veya JPEG/PNG/HEIC/WebP dışı dosya Türkçe hata mesajıyla reddedilir.
+- [ ] 4 MB üstü veya JPEG/PNG/HEIC/WebP dışı dosya Türkçe hata mesajıyla reddedilir.
 - [ ] Art arda çekilen fişler listede ayrı kayıt olarak görünür; biri diğerinin yerine geçmez.
 - [ ] Giriş yapmamış kullanıcı yükleme yapamaz (sunucu 401 döner).
 

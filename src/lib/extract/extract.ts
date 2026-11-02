@@ -48,8 +48,10 @@ export async function extractReceipt(jpeg: Buffer, client: ExtractClient = (defa
       best = { extraction: response.parsed_output, problems, model };
       if (problems.length === 0) break;
     } catch (err) {
-      if (!(err instanceof Anthropic.APIError)) throw err;
-      console.error("receipt extraction failed", { model, error: err.constructor.name, status: err.status, requestId: err.requestID });
+      // AnthropicError also covers output that fails ReceiptExtractionSchema, so the stronger model still gets its try.
+      if (!(err instanceof Anthropic.AnthropicError)) throw err;
+      const api = err instanceof Anthropic.APIError ? { status: err.status, requestId: err.requestID } : {};
+      console.error("receipt extraction failed", { model, error: err.constructor.name, ...api });
     }
   }
 

@@ -30,7 +30,7 @@
 - [ ] Her route oturumu sunucuda doğruluyor; oturumsuz istek 401 aldı (testli).
 - [ ] Başka kullanıcının fişine erişim 404 (testli).
 - [ ] Girdi Zod ile doğrulanıyor; `status`, `user_id`, `model`, token alanları istemciden alınmıyor.
-- [ ] Yükleme: tür ve 10 MB sınırı, içerik `sharp` ile doğrulandı, dosya saklanmıyor.
+- [ ] Yükleme: tür ve 4 MB sınırı, içerik `sharp` ile doğrulandı, dosya saklanmıyor.
 - [ ] `POST /api/receipts` oran sınırı var.
 - [ ] `ANTHROPIC_API_KEY` ve DB bilgileri sadece sunucu env'inde; `NEXT_PUBLIC_` sır yok.
 - [ ] Güvenlik başlıkları (CSP, HSTS, nosniff, Referrer-Policy, frame-ancestors, Permissions-Policy) ayarlı.

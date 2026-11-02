@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getUserId } from "@/lib/auth/session";
+import { turnstileSiteKey } from "@/lib/turnstile";
 import { LoginView } from "./LoginView";
 
 export const metadata: Metadata = { title: "Giriş" };
@@ -10,6 +11,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (await getUserId()) redirect("/");
   const { hata, mesaj, mod } = await searchParams;
   return (
-    <LoginView hata={hata} mesaj={mesaj} isSignup={mod === "kayit"} />
+    <LoginView hata={hata} mesaj={mesaj} isSignup={mod === "kayit"} turnstileSiteKey={turnstileSiteKey()} />
   );
 }

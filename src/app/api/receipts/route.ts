@@ -21,11 +21,13 @@ export async function POST(request: Request) {
   if (!(await allow("receipt", userId))) {
     return fail("Çok fazla fiş yüklendi. Biraz bekleyip tekrar deneyin.", 429);
   }
+  // Rejected before the body is buffered; multipart overhead is allowed for.
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_UPLOAD_BYTES + 64 * 1024) return fail("Fotoğraf 4 MB'tan büyük olamaz.", 413);
 
   const form = await request.formData().catch(() => null);
   const file = form?.get("image");
   if (!(file instanceof File)) return fail("Fiş fotoğrafı eksik.", 400);
-  if (file.size > MAX_UPLOAD_BYTES) return fail("Fotoğraf 10 MB'tan büyük olamaz.", 413);
+  if (file.size > MAX_UPLOAD_BYTES) return fail("Fotoğraf 4 MB'tan büyük olamaz.", 413);
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) return fail("Sadece JPEG, PNG, WebP veya HEIC fotoğraf yüklenebilir.", 415);
 
   const bytes = Buffer.from(await file.arrayBuffer());
@@ -36,6 +38,9 @@ export async function POST(request: Request) {
   } catch {
     return fail("Fotoğraf açılamadı. Başka bir fotoğraf deneyin.", 415);
   }
+
+  // Counted only for valid photos that are about to reach the model.
+  if (!(await allow("receiptGlobal", "all"))) return fail("Fiş okuma bugün için geçici olarak durduruldu. Yarın tekrar deneyin.", 503);
 
   const { rules } = await getRules(userId);
   let result: ExtractResult;
@@ -65,7 +70,13 @@ export async function POST(request: Request) {
     inputTokens: result.inputTokens,
     outputTokens: result.outputTokens,
   };
-  const id = await createReceipt(userId, receipt, lines);
+  let id: string;
+  try {
+    id = await createReceipt(userId, receipt, lines);
+  } catch (err) {
+    console.error("receipt save failed", { error: err instanceof Error ? err.name : "unknown" });
+    return fail("Fiş kaydedilemedi. Tekrar deneyin.", 500);
+  }
   return NextResponse.json({ id, readable: result.ok }, { status: 201 });
 }
 
