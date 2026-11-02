@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import type { ReceiptDetail } from "@/db/queries";
-import { PAYMENT_ALTERNATIVES } from "@/lib/default-rules";
-import { isBalanced, type JournalLine } from "@/lib/journal";
+import { ACCOUNT_CODE_PATTERN, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type PaymentMethod } from "@/lib/default-rules";
+import { approvalProblem, type JournalLine } from "@/lib/journal";
 import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount, parseTrAmount } from "@/lib/money";
 import { getPhoto } from "@/lib/photo-store";
@@ -52,15 +52,21 @@ export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
   const debit = sum((l) => l.debitKurus);
   const credit = sum((l) => l.creditKurus);
   const vat = sum((l) => (l.accountCode.startsWith("191") ? l.debitKurus : 0));
-  const balanced = !invalid && isBalanced(parsed);
+  const problem = invalid ? "Tutar biçimi hatalı." : approvalProblem(parsed);
   const creditCode = parsed.find((l) => l.creditKurus > 0)?.accountCode ?? "";
   const head = lines[0];
 
   const codes = receipt.warnings.map((w) => w.code);
   const amountsUnsure = codes.some((c) => AMOUNT_WARNINGS.includes(c));
   // A flag stays until the user touches that field.
-  const flag = (name: string, unsure: boolean) =>
-    editable && unsure && !seen.has(name) ? { "data-check": "", "aria-describedby": "uyarilar" } : {};
+  const flagged = (name: string, unsure: boolean) => editable && unsure && !seen.has(name);
+  const flag = (on: boolean) => (on ? { "data-check": "", ...(receipt.warnings.length ? { "aria-describedby": "uyarilar" } : {}) } : {});
+  const checkNote = (on: boolean) => (on ? <span className="check-note">Kontrol edin</span> : null);
+  const headFlags = {
+    documentNo: flagged("documentNo", codes.includes("extraction_failed") || !head?.documentNo),
+    documentDate: flagged("documentDate", codes.includes("date_invalid") || !head?.documentDate),
+    description: flagged("description", codes.includes("extraction_failed") || !head?.description),
+  };
   const touch = (name: string) => !seen.has(name) && setSeen((s) => new Set(s).add(name));
 
   const update = (key: number, patch: Partial<EditLine>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
@@ -102,10 +108,26 @@ export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
 
   return (
     <div className="review">
-      <section className="review-photo panel" aria-label="Fiş fotoğrafı">
-        {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
-        {photo ? <img src={photo} alt="Fiş fotoğrafı" /> : <p className="photo-missing">Fotoğraf yalnızca çekildiği cihazda, aynı oturumda görünür.</p>}
-      </section>
+      {photo ? (
+        <section className="review-photo panel" aria-label="Fiş fotoğrafı">
+          {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
+          <img src={photo} alt="Fiş fotoğrafı" />
+        </section>
+      ) : (
+        // The server never stores the photo; on another device show what was read, to compare with the paper receipt.
+        <section className="review-photo review-read panel panel-pad" aria-labelledby="okunan-baslik">
+          <h2 id="okunan-baslik">Fişte okunan</h2>
+          <dl className="read-values">
+            <div><dt>Satıcı</dt><dd>{receipt.vendorName ?? "Okunamadı"}</dd></div>
+            <div><dt>VKN</dt><dd className="num-font">{receipt.taxNumber ?? "Okunamadı"}</dd></div>
+            <div><dt>Fiş No</dt><dd className="num-font">{receipt.receiptNo ?? "Okunamadı"}</dd></div>
+            <div><dt>Tarih</dt><dd className="num-font">{receipt.receiptDate ? receipt.receiptDate.split("-").reverse().join(".") : "Okunamadı"}</dd></div>
+            <div><dt>Toplam</dt><dd className="num-font">{receipt.totalKurus !== null ? `${formatTrAmount(receipt.totalKurus)} TL` : "Okunamadı"}</dd></div>
+            <div><dt>Ödeme</dt><dd>{PAYMENT_LABELS[receipt.paymentMethod as PaymentMethod] ?? "Okunamadı"}</dd></div>
+          </dl>
+          <p className="muted small">Fotoğraf yalnızca çekildiği cihazda, aynı oturumda görünür. Satırları kağıt fişle karşılaştırın.</p>
+        </section>
+      )}
 
       <div className="review-main">
         {receipt.warnings.length ? (
@@ -119,14 +141,16 @@ export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
           <h2 id="bilgi-baslik">Fiş bilgileri</h2>
           <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>
           <div className="form-grid">
-            <label>Evrak No
-              <input className="field" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40}
-                {...flag("documentNo", codes.includes("extraction_failed") || !head?.documentNo)}
+            <label>
+              <span>Evrak No {checkNote(headFlags.documentNo)}</span>
+              <input className="field" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40} required
+                {...flag(headFlags.documentNo)}
                 onChange={(e) => updateAll("documentNo", e.target.value)} />
             </label>
-            <label>Evrak Tarihi
-              <input className="field" type="date" value={head?.documentDate ?? ""} disabled={!editable}
-                {...flag("documentDate", codes.includes("date_invalid") || !head?.documentDate)}
+            <label>
+              <span>Evrak Tarihi {checkNote(headFlags.documentDate)}</span>
+              <input className="field" type="date" value={head?.documentDate ?? ""} disabled={!editable} required
+                {...flag(headFlags.documentDate)}
                 onChange={(e) => updateAll("documentDate", e.target.value || null)} />
             </label>
             <label>Belge türü (BT)
@@ -140,9 +164,10 @@ export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
                 </select>
               </label>
             ) : null}
-            <label className="span-all">Açıklama
+            <label className="span-all">
+              <span>Açıklama {checkNote(headFlags.description)}</span>
               <input className="field" value={head?.description ?? ""} disabled={!editable} maxLength={200}
-                {...flag("description", codes.includes("extraction_failed") || !head?.description)}
+                {...flag(headFlags.description)}
                 onChange={(e) => updateAll("description", e.target.value)} />
             </label>
           </div>
@@ -158,18 +183,26 @@ export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
               </tr>
             </thead>
             <tbody>
-              {lines.map((l, i) => (
+              {lines.map((l, i) => {
+                const codeFlag = flagged(`code-${l.key}`, !l.accountCode);
+                const debitFlag = flagged(`debit-${l.key}`, amountsUnsure && !!l.debit);
+                const creditFlag = flagged(`credit-${l.key}`, amountsUnsure && !!l.credit);
+                const unsure = (on: boolean) => (on ? ", kontrol edin" : "");
+                return (
                 <tr key={l.key}>
-                  <td data-label="Hesap Kodu"><input className="field num-font" aria-label={`Satır ${i + 1} hesap kodu`} value={l.accountCode} disabled={!editable} inputMode="decimal"
-                    {...flag(`code-${l.key}`, !l.accountCode)} onChange={(e) => { touch(`code-${l.key}`); update(l.key, { accountCode: e.target.value }); }} /></td>
+                  {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
+                  <td data-label="Hesap Kodu"><input className="field num-font" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
+                    autoCapitalize="off" autoCorrect="off" spellCheck={false} aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
+                    {...flag(codeFlag)} onChange={(e) => { touch(`code-${l.key}`); update(l.key, { accountCode: e.target.value }); }} /></td>
                   <td data-label="Hesap Adı"><input className="field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable} onChange={(e) => update(l.key, { accountName: e.target.value })} /></td>
-                  <td data-label="Borç (TL)"><input className="field num" aria-label={`Satır ${i + 1} borç`} value={l.debit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.debit))}
-                    {...flag(`debit-${l.key}`, amountsUnsure && !!l.debit)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} /></td>
-                  <td data-label="Alacak (TL)"><input className="field num" aria-label={`Satır ${i + 1} alacak`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
-                    {...flag(`credit-${l.key}`, amountsUnsure && !!l.credit)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} /></td>
+                  <td data-label="Borç (TL)"><input className="field num" aria-label={`Satır ${i + 1} borç${unsure(debitFlag)}`} value={l.debit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.debit))}
+                    {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} /></td>
+                  <td data-label="Alacak (TL)"><input className="field num" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
+                    {...flag(creditFlag)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} /></td>
                   {editable ? <td className="col-del"><button className="btn btn-quiet" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>Sil</button></td> : null}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           <dl className="totals">
@@ -203,11 +236,11 @@ export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
         </div>
 
         <div className="action-bar">
-          <p className={balanced ? "balance balance-ok" : "balance balance-off"} aria-live="polite">
-            {invalid ? "Tutar biçimi hatalı" : balanced ? "Borç ve alacak eşit" : debit !== credit ? `Fark ${formatTrAmount(Math.abs(debit - credit))} TL` : "Hesap kodu eksik"}
+          <p className={problem ? "balance balance-off" : "balance balance-ok"} aria-live="polite">
+            {problem ?? "Borç ve alacak eşit, onaya hazır."}
           </p>
           {editable ? (
-            <button className="btn btn-primary btn-lg" type="button" disabled={busy || !balanced}
+            <button className="btn btn-primary btn-lg" type="button" disabled={busy || !!problem}
               onClick={() => run(async () => { if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) router.refresh(); })}>
               {busy ? "Kaydediliyor" : "Onayla"}
             </button>

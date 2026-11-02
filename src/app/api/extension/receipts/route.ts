@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { listForExport } from "@/db/queries";
 import { extensionUserId } from "@/lib/auth/extension-token";
 import { fail } from "@/lib/http";
-import { isBalanced } from "@/lib/journal";
+import { approvalProblem } from "@/lib/journal";
 import { lucaGridRows } from "@/lib/luca/clipboard";
 import { formatTrAmount } from "@/lib/money";
 
@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const userId = await extensionUserId(request);
   if (!userId) return fail("Eklenti anahtarı geçersiz veya süresi dolmuş.", 401);
-  const receipts = (await listForExport(userId)).filter((r) => isBalanced(r.lines)).slice(0, 50).map((r) => {
+  const receipts = (await listForExport(userId)).filter((r) => !approvalProblem(r.lines)).slice(0, 50).map((r) => {
     const rows = lucaGridRows(r.lines);
     return {
       id: r.id,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RULES } from "./default-rules";
-import { buildJournalLines, isBalanced, type ReceiptData } from "./journal";
+import { approvalProblem, buildJournalLines, isBalanced, type ReceiptData } from "./journal";
 
 const sample: ReceiptData = {
   vendorName: "ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ",
@@ -117,5 +117,22 @@ describe("isBalanced", () => {
   it("hem borç hem alacak dolu satır veya hesapsız satır dengesiz sayılır", () => {
     expect(isBalanced([{ ...line, creditKurus: 100 }])).toBe(false);
     expect(isBalanced([{ ...line, accountCode: "" }, { ...line, accountCode: "100.01", debitKurus: 0, creditKurus: 100 }])).toBe(false);
+  });
+});
+
+describe("approvalProblem", () => {
+  const head = { documentNo: "0047", documentDate: "2026-09-05" };
+  const debit = { ...head, accountCode: "770.08", debitKurus: 100, creditKurus: 0 };
+  const credit = { ...head, accountCode: "331.01", debitKurus: 0, creditKurus: 100 };
+  it("tam kayıtta sorun yok", () => expect(approvalProblem([debit, credit])).toBeNull());
+  it("sebebi satır numarasıyla söyler", () => {
+    expect(approvalProblem([debit, { ...credit, accountCode: "" }])).toBe("2. satırda hesap kodu yok.");
+    expect(approvalProblem([debit, credit, { ...credit, creditKurus: 0 }])).toBe("3. satırda tutar yok.");
+    expect(approvalProblem([{ ...debit, creditKurus: 100 }, credit])).toBe("1. satırda hem borç hem alacak var.");
+    expect(approvalProblem([debit, { ...credit, creditKurus: 50 }])).toBe("Borç ile alacak farkı 0,50 TL.");
+  });
+  it("evrak tarihi ve evrak no olmadan onaylanmaz", () => {
+    expect(approvalProblem([{ ...debit, documentDate: null }, { ...credit, documentDate: null }])).toBe("Evrak tarihi eksik.");
+    expect(approvalProblem([{ ...debit, documentNo: " " }, credit])).toBe("Evrak no eksik.");
   });
 });

@@ -10,17 +10,16 @@ const loginSchema = z.object({ email: z.email().max(200), password: z.string().m
 const signupSchema = loginSchema.extend({ name: z.string().trim().min(2).max(100), passwordAgain: z.string().min(8).max(128) })
   .refine((d) => d.password === d.passwordAgain, { path: ["passwordAgain"] });
 
-const TOO_MANY = "Çok fazla deneme yapıldı. 15 dakika sonra tekrar deneyin.";
-
+// Only codes go in the URL; LoginView maps them to fixed text, so a crafted link cannot show arbitrary messages.
 const back = (params: Record<string, string>) => redirect(`/giris?${new URLSearchParams(params)}`);
 
 export async function login(formData: FormData) {
   const input = loginSchema.safeParse({ email: formData.get("email"), password: formData.get("password") });
-  if (!input.success) back({ hata: "E-posta ve şifreyi kontrol edin." });
+  if (!input.success) back({ hata: "bicim" });
   const ip = clientIp(await headers());
-  if (!(await allow("loginIp", ip)) || !(await allow("loginEmail", input.data!.email))) back({ hata: TOO_MANY });
+  if (!(await allow("loginIp", ip)) || !(await allow("loginEmail", input.data!.email))) back({ hata: "cok-deneme" });
   const { error } = await getAuth().signIn.email(input.data!);
-  if (error) back({ hata: "E-posta veya şifre hatalı." });
+  if (error) back({ hata: "kimlik" });
   redirect("/");
 }
 
@@ -29,12 +28,12 @@ export async function signup(formData: FormData) {
     name: formData.get("name"), email: formData.get("email"),
     password: formData.get("password"), passwordAgain: formData.get("passwordAgain"),
   });
-  if (!input.success) back({ mod: "kayit", hata: "Bilgileri ve şifre tekrarını kontrol edin." });
-  if (!(await allow("signupIp", clientIp(await headers())))) back({ mod: "kayit", hata: "Çok fazla hesap oluşturma denemesi. Bir saat sonra tekrar deneyin." });
+  if (!input.success) back({ mod: "kayit", hata: "kayit-bicim" });
+  if (!(await allow("signupIp", clientIp(await headers())))) back({ mod: "kayit", hata: "kayit-cok" });
   const { name, email, password } = input.data!;
   const { error } = await getAuth().signUp.email({ name, email, password });
-  if (error) back({ mod: "kayit", hata: "Hesap oluşturulamadı. E-posta kullanımda olabilir." });
-  back({ mesaj: "Hesabınız oluşturuldu. Giriş yapabilirsiniz." });
+  if (error) back({ mod: "kayit", hata: "kayit" });
+  back({ mesaj: "kayit-tamam" });
 }
 
 export async function logout() {

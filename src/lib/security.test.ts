@@ -54,14 +54,14 @@ describe("oran sınırı", () => {
 
   it("sınır aşılınca giriş denenmez", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(false);
-    expect(await redirectOf(actions.login(form({ email: "a@ornek.com", password: "12345678" })))).toContain("Çok fazla deneme");
+    expect(await redirectOf(actions.login(form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=cok-deneme");
     expect(getAuth().signIn.email).not.toHaveBeenCalled();
   });
 
   it("sınır aşılınca kayıt denenmez", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(false);
     const res = await redirectOf(actions.signup(form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", passwordAgain: "12345678" })));
-    expect(res).toContain("Çok fazla");
+    expect(res).toContain("hata=kayit-cok");
     expect(getAuth().signUp.email).not.toHaveBeenCalled();
   });
 

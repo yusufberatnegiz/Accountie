@@ -1,6 +1,6 @@
 import { descriptionFromVendor } from "./description";
 import { CATEGORIES, LEGACY_VAT_RATES, type Account, type PaymentMethod, type Rules } from "./default-rules";
-import { vatFromGross } from "./money";
+import { formatTrAmount, vatFromGross } from "./money";
 
 export type VatLine = { rate: number; grossKurus: number; vatKurus: number | null };
 
@@ -121,4 +121,22 @@ export function isBalanced(lines: readonly Pick<JournalLine, "accountCode" | "de
     credit += l.creditKurus;
   }
   return debit > 0 && debit === credit;
+}
+
+type ApprovalLine = Pick<JournalLine, "accountCode" | "debitKurus" | "creditKurus" | "documentNo" | "documentDate">;
+
+/** First reason the lines cannot be approved or exported, in Turkish; null when they can. */
+export function approvalProblem(lines: readonly ApprovalLine[]): string | null {
+  if (lines.length === 0) return "Satır yok.";
+  for (const [i, l] of lines.entries()) {
+    if (!l.accountCode) return `${i + 1}. satırda hesap kodu yok.`;
+    if (l.debitKurus < 0 || l.creditKurus < 0) return `${i + 1}. satırda eksi tutar var.`;
+    if (l.debitKurus > 0 && l.creditKurus > 0) return `${i + 1}. satırda hem borç hem alacak var.`;
+    if (l.debitKurus === 0 && l.creditKurus === 0) return `${i + 1}. satırda tutar yok.`;
+  }
+  const diff = lines.reduce((s, l) => s + l.debitKurus - l.creditKurus, 0);
+  if (diff !== 0) return `Borç ile alacak farkı ${formatTrAmount(Math.abs(diff))} TL.`;
+  if (lines.some((l) => !l.documentDate || !/^\d{4}-\d{2}-\d{2}$/.test(l.documentDate))) return "Evrak tarihi eksik.";
+  if (lines.some((l) => !l.documentNo.trim())) return "Evrak no eksik.";
+  return null;
 }

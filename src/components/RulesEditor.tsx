@@ -44,7 +44,7 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
                 {rows.filter((r) => r.kind === g.kind).map((r) => (
                   <tr key={r.key}>
                     <td className="rule-label">{r.label}</td>
-                    <td data-label={g.kind === "setting" ? "Değer" : "Hesap Kodu"}><input className="field num-font" aria-label={`${r.label} hesap kodu`} aria-invalid={invalid(r)} value={r.accountCode} onChange={(e) => update(r, { accountCode: e.target.value.trim() })} /></td>
+                    <td data-label={g.kind === "setting" ? "Değer" : "Hesap Kodu"}><input className="field num-font" aria-label={`${r.label} ${g.kind === "setting" ? "değeri" : "hesap kodu"}`} aria-invalid={invalid(r)} value={r.accountCode} onChange={(e) => update(r, { accountCode: e.target.value.trim() })} /></td>
                     {g.kind === "setting" ? null : <td data-label="Hesap Adı"><input className="field" aria-label={`${r.label} hesap adı`} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
                   </tr>
                 ))}

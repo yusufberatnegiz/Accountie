@@ -57,7 +57,8 @@ export function HomeView({ receipts, tab, base = "/" }: { receipts: Awaited<Retu
       </section>
 
       <div className="side-sections">
-        <section className="panel panel-pad stack" aria-labelledby="luca-title">
+        <p className="phone-only muted small">Luca&apos;ya aktarım ve eklenti anahtarı bilgisayarda, bu sayfanın altında yapılır.</p>
+        <section className="panel panel-pad stack desktop-only" aria-labelledby="luca-title">
           <h2 id="luca-title">Luca&apos;ya aktarım</h2>
           <p>Onaylanmış ve henüz aktarılmamış fişler tek bir Excel dosyasına yazılır.</p>
           <ExportButton label="Onaylı fişleri Excel olarak indir" />
@@ -69,7 +70,7 @@ export function HomeView({ receipts, tab, base = "/" }: { receipts: Awaited<Retu
           <p className="muted small">Dosya düzeni Luca&apos;nın resmi şablonuyla henüz doğrulanmadı. İlk yüklemede önizlemedeki hesap kodlarını ve tutarları fişle karşılaştırın.</p>
         </section>
 
-        <section className="panel panel-pad stack" aria-labelledby="ext-title">
+        <section className="panel panel-pad stack desktop-only" aria-labelledby="ext-title">
           <h2 id="ext-title">Chrome eklentisi ile doldurma</h2>
           <p>Eklenti onaylı fişin satırlarını Luca&apos;da açık olan Fiş Detayı ekranına yazar. Kaydet&apos;e siz basarsınız.</p>
           <p className="muted small">Anahtar 12 saat geçerlidir ve yalnızca sizin onaylı fişlerinizi okur.</p>
