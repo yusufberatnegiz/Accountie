@@ -75,6 +75,8 @@ button, input, select { font: inherit; color: inherit; }
 .page-head p { color: var(--muted); margin-top: var(--s1); }
 .page-head h1 { overflow-wrap: anywhere; }
 .crumb { font-size: 14px; }
+/* 44px touch target without moving the layout. */
+.crumb a { display: inline-block; padding: 13px 8px 13px 0; margin: -13px 0; }
 .meta { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); align-items: baseline; }
 .flagged { background: var(--warn-soft); color: var(--warn); padding: 0 var(--s1); border-radius: 4px; }
 
@@ -158,7 +160,9 @@ tbody tr:last-child td { border-bottom: 0; }
 .totals dd { margin: 0; font-size: 18px; font-weight: 600; text-align: left; }
 .actions { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
 .action-bar { position: sticky; bottom: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s3) var(--s4); padding-bottom: max(var(--s3), env(safe-area-inset-bottom)); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-.action-bar .actions { flex-wrap: nowrap; }
+.action-bar .actions { justify-content: flex-end; }
+.action-bar .actions > p { flex-basis: 100%; text-align: right; }
+.lines .check-note { display: block; margin: 2px 0 0; }
 .balance { font-weight: 600; }
 .balance-ok { color: var(--ok); }
 .balance-off { color: var(--danger); }

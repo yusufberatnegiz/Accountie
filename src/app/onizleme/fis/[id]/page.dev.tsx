@@ -2,6 +2,7 @@
 import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
 import { ReceiptView } from "@/components/ReceiptView";
+import { DEFAULT_RULES } from "@/lib/default-rules";
 import { PREVIEW_RECEIPTS } from "@/lib/preview-fixtures";
 
 export default async function PreviewReceipt({ params }: { params: Promise<{ id: string }> }) {
@@ -11,7 +12,7 @@ export default async function PreviewReceipt({ params }: { params: Promise<{ id:
   return (
     <>
       <AppHeader current="fisler" />
-      <ReceiptView receipt={receipt} />
+      <ReceiptView receipt={receipt} rules={DEFAULT_RULES} />
     </>
   );
 }

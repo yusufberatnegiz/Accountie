@@ -30,7 +30,7 @@ export function ExportButton({ receiptIds, label = "Luca için indir", primary =
 
   return (
     <div className="actions">
-      <button className={primary ? "btn btn-primary btn-lg" : "btn"} type="button" onClick={download} disabled={busy}>{busy ? "Hazırlanıyor" : label}</button>
+      <button className={primary ? "btn btn-primary btn-lg" : "btn"} type="button" onClick={download} disabled={busy}>{busy ? "Hazırlanıyor…" : label}</button>
       {message ? <p role="status" className="muted">{message}</p> : null}
     </div>
   );

@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ReceiptDetail } from "@/db/queries";
-import { ACCOUNT_CODE_PATTERN, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type PaymentMethod } from "@/lib/default-rules";
+import { ACCOUNT_CODE_PATTERN, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type Account, type PaymentMethod, type Rules } from "@/lib/default-rules";
 import { approvalProblem, type JournalLine } from "@/lib/journal";
 import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount, parseTrAmount } from "@/lib/money";
@@ -30,21 +30,44 @@ function kurus(text: string): number {
   }
 }
 
+const signature = (ls: EditLine[]) => JSON.stringify(ls.map(({ key, ...rest }) => rest));
+const LEAVE_MESSAGE = "Kaydedilmemiş değişiklikler kaybolacak. Sayfadan çıkılsın mı?";
+
 const toLine = ({ key, debit, credit, ...rest }: EditLine): JournalLine => ({ ...rest, debitKurus: kurus(debit), creditKurus: kurus(credit) });
 
 // Warning codes that mean "the reader was unsure about this field".
 const AMOUNT_WARNINGS = ["amount_unreadable", "total_mismatch", "vat_mismatch", "vat_computed", "vat_missing", "rounding_adjusted", "extraction_failed"];
 
-export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
+export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules: Rules }) {
   const router = useRouter();
   const editable = receipt.status === "draft";
   const [lines, setLines] = useState(() => receipt.lines.map(toEdit));
+  const [savedSignature, setSavedSignature] = useState(() => signature(lines));
+  const dirty = editable && signature(lines) !== savedSignature;
   const [seen, setSeen] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
   // Photo exists only in this tab; server render has none.
   const photo = useSyncExternalStore(noSubscribe, () => getPhoto(receipt.id), () => undefined);
+
+  // Warn before unsaved edits are lost: tab close or reload, and in-app links (captured before Next's Link handler).
+  useEffect(() => {
+    if (!dirty) return;
+    const onUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    const onClick = (e: MouseEvent) => {
+      if (e.target instanceof Element && e.target.closest("a[href]") && !confirm(LEAVE_MESSAGE)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener("beforeunload", onUnload);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", onUnload);
+      document.removeEventListener("click", onClick, true);
+    };
+  }, [dirty]);
 
   const parsed = lines.map(toLine);
   const invalid = parsed.some((l) => Number.isNaN(l.debitKurus) || Number.isNaN(l.creditKurus));
@@ -78,6 +101,11 @@ export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
     const account = PAYMENT_ALTERNATIVES.find((a) => a.code === code);
     if (account) setLines((ls) => ls.map((l) => (kurus(l.credit) > 0 ? { ...l, accountCode: account.code, accountName: account.name } : l)));
   };
+  const knownAccounts: Account[] = [...Object.values(rules.expense), ...Object.values(rules.vat), ...Object.values(rules.payment), ...PAYMENT_ALTERNATIVES];
+  const setCode = (key: number, code: string) => {
+    const name = knownAccounts.find((a) => a.code === code.trim())?.name;
+    update(key, name ? { accountCode: code, accountName: name } : { accountCode: code });
+  };
   const addLine = () => setLines((ls) => [...ls, { ...ls[0], key: nextKey++, accountCode: "", accountName: "", debit: "", credit: "" }]);
 
   async function call(url: string, init?: RequestInit): Promise<boolean> {
@@ -101,7 +129,12 @@ export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
       setError("Tutarları 7.931,82 biçiminde yazın.");
       return Promise.resolve(false);
     }
-    return call(`/api/receipts/${receipt.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ lines: parsed }) });
+    const sent = signature(lines);
+    return call(`/api/receipts/${receipt.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ lines: parsed }) })
+      .then((ok) => {
+        if (ok) setSavedSignature(sent);
+        return ok;
+      });
   };
 
   const copy = () => navigator.clipboard.writeText(clipboardText(parsed)).then(() => setInfo("Satırlar panoya kopyalandı."), () => setError("Panoya kopyalanamadı."));
@@ -193,12 +226,12 @@ export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
                   {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
                   <td data-label="Hesap Kodu"><input className="field num-font" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
                     autoCapitalize="off" autoCorrect="off" spellCheck={false} aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
-                    {...flag(codeFlag)} onChange={(e) => { touch(`code-${l.key}`); update(l.key, { accountCode: e.target.value }); }} /></td>
+                    {...flag(codeFlag)} onChange={(e) => { touch(`code-${l.key}`); setCode(l.key, e.target.value); }} />{checkNote(codeFlag)}</td>
                   <td data-label="Hesap Adı"><input className="field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable} onChange={(e) => update(l.key, { accountName: e.target.value })} /></td>
                   <td data-label="Borç (TL)"><input className="field num" aria-label={`Satır ${i + 1} borç${unsure(debitFlag)}`} value={l.debit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.debit))}
-                    {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} /></td>
+                    {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} />{checkNote(debitFlag)}</td>
                   <td data-label="Alacak (TL)"><input className="field num" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
-                    {...flag(creditFlag)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} /></td>
+                    {...flag(creditFlag)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} />{checkNote(creditFlag)}</td>
                   {editable ? <td className="col-del"><button className="btn btn-quiet" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>Sil</button></td> : null}
                 </tr>
                 );
@@ -236,16 +269,19 @@ export function ReviewEditor({ receipt }: { receipt: ReceiptDetail }) {
         </div>
 
         <div className="action-bar">
-          <p className={problem ? "balance balance-off" : "balance balance-ok"} aria-live="polite">
-            {problem ?? "Borç ve alacak eşit, onaya hazır."}
+          <p className={editable && problem ? "balance balance-off" : "balance balance-ok"} aria-live="polite">
+            {receipt.status === "approved" ? "Onaylandı. Luca'ya aktarmak için Excel'i bilgisayarda indirin."
+              : receipt.status === "exported" ? "Luca'ya aktarıldı."
+              : problem ?? (dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır.")}
           </p>
           {editable ? (
             <button className="btn btn-primary btn-lg" type="button" disabled={busy || !!problem}
               onClick={() => run(async () => { if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) router.refresh(); })}>
-              {busy ? "Kaydediliyor" : "Onayla"}
+              {busy ? "Kaydediliyor…" : "Onayla"}
             </button>
           ) : (
-            <ExportButton receiptIds={[receipt.id]} label="Luca için Excel indir" primary />
+            // Luca runs on the computer; downloading on the phone would mark the receipt exported for nothing.
+            <div className="desktop-only"><ExportButton receiptIds={[receipt.id]} label="Luca için Excel indir" primary /></div>
           )}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getReceipt } from "@/db/queries";
+import { getReceipt, getRules } from "@/db/queries";
 import { AppHeader } from "@/components/AppHeader";
 import { ReceiptView } from "@/components/ReceiptView";
 import { idSchema } from "@/lib/api-schemas";
@@ -13,13 +13,13 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const userId = await getUserId();
   if (!userId) redirect("/giris");
   const id = idSchema.safeParse((await params).id);
-  const receipt = id.success ? await getReceipt(userId, id.data) : null;
+  const [receipt, { rules }] = await Promise.all([id.success ? getReceipt(userId, id.data) : null, getRules(userId)]);
   if (!receipt) notFound();
 
   return (
     <>
       <AppHeader current="fisler" />
-      <ReceiptView receipt={receipt} />
+      <ReceiptView receipt={receipt} rules={rules} />
     </>
   );
 }
