@@ -23,7 +23,7 @@ export function HomeView({ receipts, tab, base = "/" }: { receipts: Awaited<Retu
       <div className="page-head">
         <div>
           <h1>Fişler</h1>
-          <p>Fotoğrafını çekin, satırları kontrol edip onaylayın, onaylıları Luca&apos;ya aktarın.</p>
+          <p>Fişin fotoğrafını çekin, satırları kontrol edip onaylayın, onaylıları Luca&apos;ya aktarın.</p>
         </div>
         <CaptureButton />
       </div>
@@ -57,7 +57,7 @@ export function HomeView({ receipts, tab, base = "/" }: { receipts: Awaited<Retu
       </section>
 
       <div className="side-sections">
-        <p className="phone-only muted small">Luca&apos;ya aktarım ve eklenti anahtarı bilgisayarda, bu sayfanın altında yapılır.</p>
+        <p className="phone-only muted small">Luca&apos;ya aktarım ve eklenti anahtarı bilgisayarda yapılır. Uygulamayı bilgisayardan açınca bu sayfanın altında görünür.</p>
         <section className="panel panel-pad stack desktop-only" aria-labelledby="luca-title">
           <h2 id="luca-title">Luca&apos;ya aktarım</h2>
           <p>Onaylanmış ve henüz aktarılmamış fişler tek bir Excel dosyasına yazılır.</p>

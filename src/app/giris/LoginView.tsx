@@ -30,7 +30,7 @@ export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey }: { hata?: 
         {message ? <p className="alert" role="status">{message}</p> : null}
         <form action={isSignup ? signup : login}>
           {isSignup ? <label>Ad soyad<input className="field" name="name" autoComplete="name" minLength={2} maxLength={100} required /></label> : null}
-          <label>E-posta<input className="field" name="email" type="email" autoComplete="email" required /></label>
+          <label>E-posta<input className="field" name="email" type="email" autoComplete="email" spellCheck={false} required /></label>
           <label>Şifre<input className="field" name="password" type="password" autoComplete={isSignup ? "new-password" : "current-password"} minLength={8} maxLength={128} required /></label>
           {isSignup ? <label>Şifre tekrar<input className="field" name="passwordAgain" type="password" autoComplete="new-password" minLength={8} maxLength={128} required /></label> : null}
           {turnstileSiteKey ? (

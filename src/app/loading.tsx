@@ -2,7 +2,7 @@
 export default function Loading() {
   return (
     <main className="page" aria-busy="true">
-      <p className="reading" role="status">Yükleniyor</p>
+      <p className="reading" role="status">Yükleniyor…</p>
       <div className="panel skeleton" />
     </main>
   );

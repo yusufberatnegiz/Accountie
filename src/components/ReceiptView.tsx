@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { ReceiptDetail } from "@/db/queries";
+import type { Rules } from "@/lib/default-rules";
 import { ReviewEditor } from "@/components/ReviewEditor";
 import { formatTrAmount } from "@/lib/money";
 import { STATUS_LABELS } from "@/lib/status";
 
 /** Review screen body; the page and the dev preview both render it. */
-export function ReceiptView({ receipt }: { receipt: ReceiptDetail }) {
+export function ReceiptView({ receipt, rules }: { receipt: ReceiptDetail; rules: Rules }) {
   const vknUnsure = receipt.warnings.some((w) => w.code === "tax_number_invalid");
   return (
     <main className="page">
@@ -20,7 +21,7 @@ export function ReceiptView({ receipt }: { receipt: ReceiptDetail }) {
           </p>
         </div>
       </div>
-      <ReviewEditor receipt={receipt} />
+      <ReviewEditor receipt={receipt} rules={rules} />
     </main>
   );
 }
