@@ -17,10 +17,9 @@
 
 ## Komutlar
 
-Henüz `package.json` yok; ilk iskelet kurulduğunda bu bölüm güncellenir. Planlanan:
-
-- `npx drizzle-kit generate`: sadece migration dosyası üretir. `drizzle-kit push` ve `migrate` canlı veritabanına dokunur, onaysız çalıştırma.
-- `npx vitest run`: testler. Veritabanı ve Anthropic her zaman mock.
+- `npm test`: vitest. Veritabanı, oturum ve Anthropic her zaman mock.
+- `npm run typecheck`, `npm run lint`, `npm run build`: build env olmadan da geçer (auth ve DB istemcisi tembel oluşturulur).
+- `npm run db:generate`: sadece `drizzle/` altına migration dosyası üretir, veritabanına bağlanmaz. `drizzle-kit push` ve `migrate` canlı veritabanına dokunur, onaysız çalıştırma.
 
 ## Dikkat (gotcha)
 
