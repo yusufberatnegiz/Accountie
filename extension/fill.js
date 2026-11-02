@@ -33,10 +33,10 @@
       const row = grid[i];
       if (!row) return missing.push({ row: i + 1, field: "row" });
       for (const field of FIELDS) {
-        if (!values[field]) continue;
         const el = sel.cells[field] ? row.querySelector(sel.cells[field]) : null;
-        if (!el) missing.push({ row: i + 1, field });
-        else { setValue(el, values[field]); filled++; }
+        // Empty values still clear the cell so an old Borç/Alacak left in a reused row cannot survive.
+        if (el) { setValue(el, values[field] || ""); if (values[field]) filled++; }
+        else if (values[field]) missing.push({ row: i + 1, field });
       }
     });
     return { gridFound: true, filled, missing };
