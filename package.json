@@ -36,5 +36,10 @@
     "eslint-config-next": "16.4.4",
     "typescript": "^5",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "@neondatabase/auth": {
+      "zod": "$zod"
+    }
   }
 }

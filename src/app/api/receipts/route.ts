@@ -1,27 +1,24 @@
 import { NextResponse } from "next/server";
-import { countReceiptsSince, createReceipt, getRules, listReceipts, type NewReceipt } from "@/db/queries";
+import { createReceipt, getRules, listReceipts, type NewReceipt } from "@/db/queries";
 import { getUserId } from "@/lib/auth/session";
 import { extractReceipt, type ExtractResult } from "@/lib/extract/extract";
 import { toReceiptData } from "@/lib/extract/schema";
 import { fail, unauthorized } from "@/lib/http";
-import { ALLOWED_IMAGE_TYPES, MAX_UPLOAD_BYTES, normalizeImage } from "@/lib/image";
+import { ALLOWED_IMAGE_TYPES, MAX_UPLOAD_BYTES, normalizeImage, sniffImageType } from "@/lib/image";
+import { allow } from "@/lib/rate-limit";
 import { buildJournalLines, warn, type ReceiptData, type Warning } from "@/lib/journal";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const PER_MINUTE = 10;
-const PER_DAY = 300;
 const EMPTY: ReceiptData = { vendorName: null, receiptNo: null, date: null, vatLines: [], totalKurus: null, paymentMethod: "other", category: "other" };
 
 export async function POST(request: Request) {
   const userId = await getUserId();
   if (!userId) return unauthorized();
 
-  // shortcut: counts stored receipts as the rate window; upgrade to a shared limiter if abuse appears.
-  const now = Date.now();
-  if (await countReceiptsSince(userId, new Date(now - 60_000)) >= PER_MINUTE
-    || await countReceiptsSince(userId, new Date(now - 86_400_000)) >= PER_DAY) {
+  // Before any parsing: every attempt counts, so a flood of bad uploads is throttled too.
+  if (!(await allow("receipt", userId))) {
     return fail("Çok fazla fiş yüklendi. Biraz bekleyip tekrar deneyin.", 429);
   }
 
@@ -31,9 +28,11 @@ export async function POST(request: Request) {
   if (file.size > MAX_UPLOAD_BYTES) return fail("Fotoğraf 10 MB'tan büyük olamaz.", 413);
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) return fail("Sadece JPEG, PNG, WebP veya HEIC fotoğraf yüklenebilir.", 415);
 
+  const bytes = Buffer.from(await file.arrayBuffer());
+  if (!sniffImageType(bytes)) return fail("Dosya bir fotoğraf değil. JPEG, PNG, WebP veya HEIC yükleyin.", 415);
   let jpeg: Buffer;
   try {
-    jpeg = await normalizeImage(Buffer.from(await file.arrayBuffer()));
+    jpeg = await normalizeImage(bytes);
   } catch {
     return fail("Fotoğraf açılamadı. Başka bir fotoğraf deneyin.", 415);
   }
