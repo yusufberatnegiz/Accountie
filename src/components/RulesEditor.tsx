@@ -34,29 +34,27 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
   }
 
   return (
-    <div style={{ display: "grid", gap: "var(--s5)" }}>
+    <div className="stack-lg">
       {GROUPS.map((g) => (
         <section key={g.kind} className="panel" aria-labelledby={`grp-${g.kind}`}>
           <h2 id={`grp-${g.kind}`} className="panel-pad">{g.title}</h2>
-          <div className="table-wrap">
-            <table>
+          <table className="rules-table">
               <thead><tr><th>Kural</th><th className="col-code">{g.kind === "setting" ? "Değer" : "Hesap Kodu"}</th>{g.kind === "setting" ? null : <th>Hesap Adı</th>}</tr></thead>
               <tbody>
                 {rows.filter((r) => r.kind === g.kind).map((r) => (
                   <tr key={r.key}>
-                    <td>{r.label}</td>
-                    <td><input className="field mono" aria-label={`${r.label} hesap kodu`} aria-invalid={invalid(r)} value={r.accountCode} onChange={(e) => update(r, { accountCode: e.target.value.trim() })} /></td>
-                    {g.kind === "setting" ? null : <td><input className="field" aria-label={`${r.label} hesap adı`} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
+                    <td className="rule-label">{r.label}</td>
+                    <td data-label={g.kind === "setting" ? "Değer" : "Hesap Kodu"}><input className="field num-font" aria-label={`${r.label} hesap kodu`} aria-invalid={invalid(r)} value={r.accountCode} onChange={(e) => update(r, { accountCode: e.target.value.trim() })} /></td>
+                    {g.kind === "setting" ? null : <td data-label="Hesap Adı"><input className="field" aria-label={`${r.label} hesap adı`} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
         </section>
       ))}
       {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
       {message ? <p role="status" className="muted">{message}</p> : null}
-      <div className="actions"><button className="btn btn-primary" type="button" onClick={save} disabled={busy}>{busy ? "Kaydediliyor" : "Kuralları kaydet"}</button></div>
+      <div className="action-bar"><p className="muted small">Değişiklik yalnızca yeni fişlere uygulanır.</p><button className="btn btn-primary btn-lg" type="button" onClick={save} disabled={busy}>{busy ? "Kaydediliyor" : "Kuralları kaydet"}</button></div>
     </div>
   );
 }

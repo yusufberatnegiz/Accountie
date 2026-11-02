@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function ExportButton({ receiptIds, label = "Luca için indir" }: { receiptIds?: string[]; label?: string }) {
+export function ExportButton({ receiptIds, label = "Luca için indir", primary = false }: { receiptIds?: string[]; label?: string; primary?: boolean }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -30,7 +30,7 @@ export function ExportButton({ receiptIds, label = "Luca için indir" }: { recei
 
   return (
     <div className="actions">
-      <button className="btn" type="button" onClick={download} disabled={busy}>{busy ? "Hazırlanıyor" : label}</button>
+      <button className={primary ? "btn btn-primary btn-lg" : "btn"} type="button" onClick={download} disabled={busy}>{busy ? "Hazırlanıyor" : label}</button>
       {message ? <p role="status" className="muted">{message}</p> : null}
     </div>
   );
