@@ -45,7 +45,8 @@ export async function extractReceipt(jpeg: Buffer, client: ExtractClient = (defa
       outputTokens += response.usage.output_tokens;
       if (response.stop_reason === "refusal" || !response.parsed_output) continue;
       const problems = checkExtraction(response.parsed_output);
-      best = { extraction: response.parsed_output, problems, model };
+      // Keep the earlier read when the retry is worse.
+      if (!best || problems.length < best.problems.length) best = { extraction: response.parsed_output, problems, model };
       if (problems.length === 0) break;
     } catch (err) {
       // AnthropicError also covers output that fails ReceiptExtractionSchema, so the stronger model still gets its try.

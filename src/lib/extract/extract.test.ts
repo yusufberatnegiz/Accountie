@@ -63,6 +63,12 @@ describe("checkExtraction", () => {
     expect(checkExtraction({ ...goodOutput, date: "31.02.2026" })).toContain("date_invalid");
     expect(checkExtraction({ ...goodOutput, vatLines: [{ rate: 10, gross: "8.725,00", vat: "893,18" }] })).toContain("vat_mismatch");
   });
+  it("KDV kırılımı boşsa sorun bildirir, böylece Sonnet denenir", () => {
+    expect(checkExtraction({ ...goodOutput, vatLines: [] })).toEqual(["total_mismatch"]);
+  });
+  it("modelin emin olmadığı alanları sorun sayar", () => {
+    expect(checkExtraction({ ...goodOutput, unreadableFields: ["total", "date"] })).toEqual(["amount_unreadable", "date_invalid"]);
+  });
 });
 
 describe("ReceiptExtractionSchema sınırları", () => {
@@ -103,6 +109,12 @@ describe("extractReceipt", () => {
     const result = await extractReceipt(image, client);
     expect(parse).toHaveBeenCalledTimes(2);
     expect(result).toMatchObject({ ok: true, problems: ["total_mismatch"] });
+  });
+
+  it("Sonnet daha kötü okursa ilk okumayı tutar", async () => {
+    const { client } = mockClient(response({ ...goodOutput, total: "8.752,00" }), response({ ...goodOutput, total: "8.752,00", date: "31.02.2026" }));
+    const result = await extractReceipt(image, client);
+    expect(result).toMatchObject({ ok: true, model: "claude-haiku-5-5", problems: ["total_mismatch"] });
   });
 
   it("refusal durumunda Sonnet ile tekrar dener", async () => {

@@ -60,5 +60,10 @@ export function checkExtraction(x: ReceiptExtraction): string[] {
   if (data.vatLines.some((v) => v.vatKurus !== null && Math.abs(v.vatKurus - vatFromGross(v.grossKurus, v.rate)) > 1)) problems.push("vat_mismatch");
   if (x.taxNumber !== null && !isValidTaxNumber(x.taxNumber)) problems.push("tax_number_invalid");
   if (data.date === null) problems.push("date_invalid");
+  // The model may flag a field as unsure yet still fill it; treat that as a problem so it is retried and highlighted.
+  const unsure = new Set(x.unreadableFields);
+  if (unsure.has("total") && !problems.includes("amount_unreadable")) problems.push("amount_unreadable");
+  if (unsure.has("vatLines") && x.vatLines.length > 0) problems.push("vat_mismatch");
+  if (unsure.has("date") && !problems.includes("date_invalid")) problems.push("date_invalid");
   return problems;
 }
