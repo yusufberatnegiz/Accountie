@@ -6,6 +6,7 @@
   --surface: #ffffff;
   --surface-2: #eef1f4;
   --line: #d5dbe2;
+  --field-border: #7f8c9b; /* 3.4:1 on surface, WCAG 1.4.11 */
   --text: #17202b;
   --muted: #55616f;
   --accent: #2c4a72;
@@ -27,6 +28,7 @@
     --surface: #182029;
     --surface-2: #1f2934;
     --line: #2f3b48;
+    --field-border: #6b7a8c;
     --text: #e6ebf0;
     --muted: #a3afbc;
     --accent: #9cb8de;
@@ -89,9 +91,9 @@ button, input, select { font: inherit; color: inherit; }
 .btn-danger:hover { background: var(--danger-soft); border-color: var(--danger); }
 .btn-quiet { border-color: transparent; background: none; color: var(--muted); }
 .btn-lg { min-height: 52px; padding: var(--s3) var(--s5); }
-.field { width: 100%; min-height: 44px; padding: var(--s2); border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
-.field:hover:not(:disabled) { border-color: var(--muted); }
-.field:disabled { background: var(--surface-2); color: var(--text); opacity: 1; }
+.field { width: 100%; min-height: 44px; padding: var(--s2); border: 1px solid var(--field-border); border-radius: 4px; background: var(--surface); }
+.field:hover:not(:disabled) { border-color: var(--text); }
+.field:disabled { background: var(--surface-2); color: var(--text); opacity: 1; border-color: var(--line); }
 .field[aria-invalid="true"] { border-color: var(--danger); background: var(--danger-soft); }
 .field[data-check] { border-color: var(--warn); background: var(--warn-soft); }
 label { display: grid; gap: var(--s1); font-weight: 500; font-size: 14px; }
@@ -118,6 +120,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .status-draft { color: var(--warn); }
 .status-approved { color: var(--accent); }
 .status-exported { color: var(--ok); }
+.skeleton { min-height: 240px; background: var(--surface-2); }
 .empty { padding: var(--s6) var(--s4); text-align: center; color: var(--muted); }
 .side-sections { display: grid; gap: var(--s5); }
 @media (min-width: 900px) { .side-sections { grid-template-columns: 1fr 1fr; align-items: start; } }
@@ -139,7 +142,10 @@ tbody tr:last-child td { border-bottom: 0; }
 .review-main { display: grid; gap: var(--s4); min-width: 0; }
 @media (min-width: 960px) { .review { grid-template-columns: minmax(280px, 380px) 1fr; align-items: start; } .review-photo { position: sticky; top: var(--s4); } }
 .review-photo img { display: block; width: 100%; border-radius: var(--radius); }
-.photo-missing { padding: var(--s6) var(--s4); text-align: center; color: var(--muted); }
+.check-note { margin-left: var(--s1); font-size: 13px; font-weight: 600; color: var(--warn); }
+.read-values { display: grid; gap: var(--s3); margin: var(--s3) 0 var(--s4); }
+.read-values dt { font-size: 13px; color: var(--muted); }
+.read-values dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
 .lines td { padding: var(--s2) var(--s1); }
 .lines td:first-child, .lines th:first-child { padding-left: var(--s4); }
 .lines td:last-child, .lines th:last-child { padding-right: var(--s4); }
@@ -158,6 +164,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .balance-off { color: var(--danger); }
 
 .rule-label { font-weight: 500; }
+.phone-only { display: none; }
 
 /* Phone */
 @media (max-width: 720px) {
@@ -197,14 +204,18 @@ tbody tr:last-child td { border-bottom: 0; }
 
   .rules-table thead { display: none; }
   .rules-table, .rules-table tbody { display: block; }
-  .rules-table tr { display: grid; grid-template-columns: 2fr 3fr; gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); }
+  .rules-table tr { display: grid; grid-template-columns: 7rem 1fr; gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); }
   .rules-table td { border: 0; padding: 0; }
   .rules-table .rule-label { grid-column: 1 / -1; }
 
   .action-bar { margin: 0 calc(-1 * var(--s4)); border-radius: 0; border-width: 1px 0 0; }
   .action-bar .btn-lg { padding: var(--s3) var(--s4); }
   .page:has(.action-bar) { padding-bottom: 0; }
-  .review-photo:has(.photo-missing) { display: none; }
+  /* The header already shows vendor, total and VKN on the phone. */
+  .review-read { display: none; }
+  /* Excel import and the extension key are desktop tasks. */
+  .desktop-only { display: none; }
+  .phone-only { display: block; }
 }
 
 /* Login */

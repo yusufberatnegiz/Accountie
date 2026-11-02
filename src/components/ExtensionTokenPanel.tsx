@@ -23,8 +23,8 @@ export function ExtensionTokenPanel() {
   }
 
   async function copy() {
-    await navigator.clipboard.writeText(token).catch(() => null);
-    setMessage("Anahtar panoya kopyalandı. Eklentiye yapıştırın.");
+    const copied = await navigator.clipboard.writeText(token).then(() => true, () => false);
+    setMessage(copied ? "Anahtar panoya kopyalandı. Eklentiye yapıştırın." : "Panoya kopyalanamadı. Anahtarı seçip elle kopyalayın.");
   }
 
   return (

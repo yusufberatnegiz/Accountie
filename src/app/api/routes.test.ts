@@ -151,6 +151,14 @@ describe("tek fiş", () => {
     expect(q.transitionReceipt).not.toHaveBeenCalled();
   });
 
+  it("evrak tarihi boş fiş onaylanamaz (422)", async () => {
+    vi.mocked(q.getReceipt).mockResolvedValue({ ...draft!, lines: lines.map((l) => ({ ...l, documentDate: null })) });
+    const res = await approveRoute.POST(new Request("http://test"), params());
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toContain("Evrak tarihi eksik");
+    expect(q.transitionReceipt).not.toHaveBeenCalled();
+  });
+
   it("dengeli fiş onaylanır", async () => {
     vi.mocked(q.transitionReceipt).mockResolvedValue(true);
     expect((await approveRoute.POST(new Request("http://test"), params())).status).toBe(200);
