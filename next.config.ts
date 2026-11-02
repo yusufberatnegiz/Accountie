@@ -17,6 +17,8 @@ const csp = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // page.dev.tsx files (the fixture preview under /onizleme) are routes only in `next dev`; production builds never see them.
+  pageExtensions: dev ? ["dev.tsx", "tsx", "ts"] : ["tsx", "ts"],
   serverExternalPackages: ["sharp"],
   async headers() {
     return [{

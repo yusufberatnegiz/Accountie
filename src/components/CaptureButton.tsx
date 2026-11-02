@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { setPhoto } from "@/lib/photo-store";
 
 const MAX_EDGE = 1600;
@@ -24,17 +24,15 @@ async function shrink(file: File): Promise<Blob> {
 
 export function CaptureButton() {
   const router = useRouter();
-  const input = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function upload(files: FileList) {
+  async function upload(list: File[]) {
     setBusy(true);
     setError("");
     let lastId = "";
-    // Each photo becomes its own receipt; iOS replaces the input's file on the next capture, so we copy them first.
-    const list = [...files];
+    // Each photo becomes its own receipt; files are copied out of the input first because iOS replaces them on the next capture.
     for (const [i, file] of list.entries()) {
       setStatus(list.length > 1 ? `Fiş okunuyor (${i + 1}/${list.length})` : "Fiş okunuyor");
       const blob = await shrink(file);
@@ -52,26 +50,39 @@ export function CaptureButton() {
     }
     setBusy(false);
     setStatus("");
-    if (input.current) input.current.value = "";
     if (lastId && list.length === 1) router.push(`/fis/${lastId}`);
     else router.refresh();
   }
 
+  const picker = (text: string, capture: boolean, primary: boolean) => (
+    <label className={primary ? "btn btn-primary btn-lg" : "btn btn-lg"} aria-disabled={busy}>
+      {text}
+      <input
+        className="visually-hidden"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+        capture={capture ? "environment" : undefined}
+        multiple={!capture}
+        disabled={busy}
+        onChange={(e) => {
+          const files = e.target.files?.length ? [...e.target.files] : [];
+          e.target.value = "";
+          if (files.length) upload(files);
+        }}
+      />
+    </label>
+  );
+
   return (
-    <div className="actions">
-      <label className="btn btn-primary btn-lg" aria-disabled={busy}>
-        {busy ? status : "Fiş çek"}
-        <input
-          ref={input}
-          className="visually-hidden"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-          capture="environment"
-          disabled={busy}
-          onChange={(e) => e.target.files?.length && upload(e.target.files)}
-        />
-      </label>
-      <p aria-live="polite" className="visually-hidden">{status}</p>
+    <div className="capture">
+      {busy ? (
+        <p className="reading" role="status">{status}. Sayfadan ayrılmayın.</p>
+      ) : (
+        <div className="capture-buttons">
+          {picker("Fiş çek", true, true)}
+          {picker("Galeriden seç", false, false)}
+        </div>
+      )}
       {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
     </div>
   );

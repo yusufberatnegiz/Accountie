@@ -28,14 +28,14 @@ export function ExtensionTokenPanel() {
   }
 
   return (
-    <div style={{ display: "grid", gap: "var(--s3)" }}>
+    <div className="stack">
       <div className="actions">
         <button className="btn" type="button" onClick={() => call("POST")} disabled={busy}>Eklenti anahtarı oluştur</button>
         <button className="btn btn-danger" type="button" onClick={() => call("DELETE")} disabled={busy}>Anahtarı iptal et</button>
       </div>
       {token ? (
         <div className="actions">
-          <input className="field mono" readOnly value={token} aria-label="Eklenti anahtarı" onFocus={(e) => e.currentTarget.select()} />
+          <input className="field num-font" readOnly value={token} aria-label="Eklenti anahtarı" onFocus={(e) => e.currentTarget.select()} />
           <button className="btn" type="button" onClick={copy}>Kopyala</button>
         </div>
       ) : null}
