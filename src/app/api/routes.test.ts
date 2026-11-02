@@ -4,15 +4,17 @@ import { buildJournalLines } from "@/lib/journal";
 
 vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
 vi.mock("@/db/queries", () => ({
-  countReceiptsSince: vi.fn(), createReceipt: vi.fn(), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
+  createReceipt: vi.fn(), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
   replaceLines: vi.fn(), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
 }));
+vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn() }));
 vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn() }));
 vi.mock("@/lib/image", async (original) => ({ ...(await original<typeof import("@/lib/image")>()), normalizeImage: vi.fn(async () => Buffer.from("jpeg")) }));
 
 const session = await import("@/lib/auth/session");
 const q = await import("@/db/queries");
 const { extractReceipt } = await import("@/lib/extract/extract");
+const { allow } = await import("@/lib/rate-limit");
 const receiptsRoute = await import("./receipts/route");
 const receiptRoute = await import("./receipts/[id]/route");
 const approveRoute = await import("./receipts/[id]/approve/route");
@@ -28,9 +30,12 @@ const { lines } = buildJournalLines({
 }, DEFAULT_RULES);
 const draft = { id: ID, status: "draft", lines } as unknown as Awaited<ReturnType<typeof q.getReceipt>>;
 
-function upload(type = "image/jpeg", size = 100) {
+const JPEG_MAGIC = [0xff, 0xd8, 0xff, 0xe0];
+function upload(type = "image/jpeg", size = 100, head: number[] = JPEG_MAGIC) {
+  const bytes = new Uint8Array(size);
+  bytes.set(head);
   const form = new FormData();
-  form.set("image", new File([new Uint8Array(size)], "fis.jpg", { type }));
+  form.set("image", new File([bytes], "fis.jpg", { type }));
   return new Request("http://test/api/receipts", { method: "POST", body: form });
 }
 const json = (body: unknown, method = "PATCH") => new Request("http://test", { method, body: JSON.stringify(body), headers: { "content-type": "application/json" } });
@@ -38,7 +43,7 @@ const json = (body: unknown, method = "PATCH") => new Request("http://test", { m
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(session.getUserId).mockResolvedValue(USER);
-  vi.mocked(q.countReceiptsSince).mockResolvedValue(0);
+  vi.mocked(allow).mockResolvedValue(true);
   vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [] });
   vi.mocked(q.createReceipt).mockResolvedValue(ID);
   vi.mocked(q.getReceipt).mockResolvedValue(draft);
@@ -90,9 +95,18 @@ describe("POST /api/receipts", () => {
     expect(extractReceipt).not.toHaveBeenCalled();
   });
 
+  it("image/jpeg diye gönderilen SVG'yi imzadan tanıyıp 415 ile reddeder", async () => {
+    const svg = [..."<svg xmlns"].map((c) => c.charCodeAt(0));
+    expect((await receiptsRoute.POST(upload("image/jpeg", 100, svg))).status).toBe(415);
+    const { normalizeImage } = await import("@/lib/image");
+    expect(normalizeImage).not.toHaveBeenCalled();
+    expect(extractReceipt).not.toHaveBeenCalled();
+  });
+
   it("oran sınırını aşınca 429 döner", async () => {
-    vi.mocked(q.countReceiptsSince).mockResolvedValue(10);
+    vi.mocked(allow).mockResolvedValue(false);
     expect((await receiptsRoute.POST(upload())).status).toBe(429);
+    expect(allow).toHaveBeenCalledWith("receipt", USER);
     expect(extractReceipt).not.toHaveBeenCalled();
   });
 });

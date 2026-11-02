@@ -1,9 +1,9 @@
 // The only module that talks to the database. Every function takes the session user's id and filters by it.
-import { and, asc, count, desc, eq, gt, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, lt } from "drizzle-orm";
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import type { JournalLine, Warning } from "@/lib/journal";
 import { getDb } from "./index";
-import { accountRules, extensionTokens, journalLines, receipts } from "./schema";
+import { accountRules, extensionTokens, journalLines, rateLimitHits, receipts } from "./schema";
 
 export type ReceiptStatus = "draft" | "approved" | "exported";
 
@@ -67,9 +67,22 @@ export async function saveRules(userId: string, rows: readonly RuleRow[]): Promi
   if (first) await db.batch([first, ...rest]);
 }
 
-export async function countReceiptsSince(userId: string, since: Date): Promise<number> {
-  const [row] = await getDb().select({ n: count() }).from(receipts).where(and(eq(receipts.userId, userId), gt(receipts.createdAt, since)));
-  return row?.n ?? 0;
+/**
+ * Records one attempt for `key` and says whether every `[limit, windowMs]` still holds.
+ * The attempt is stored before the work starts, so parallel requests count against each other.
+ */
+export async function hitRateLimit(key: string, windows: readonly (readonly [limit: number, windowMs: number])[]): Promise<boolean> {
+  const db = getDb();
+  const now = Date.now();
+  const longest = Math.max(...windows.map(([, ms]) => ms));
+  const counts = windows.map(([, ms]) =>
+    db.select({ n: count() }).from(rateLimitHits).where(and(eq(rateLimitHits.key, key), gt(rateLimitHits.createdAt, new Date(now - ms)))));
+  const [, , ...results] = await db.batch([
+    db.delete(rateLimitHits).where(and(eq(rateLimitHits.key, key), lt(rateLimitHits.createdAt, new Date(now - longest)))),
+    db.insert(rateLimitHits).values({ key }),
+    ...counts,
+  ]);
+  return windows.every(([limit], i) => ((results[i] as { n: number }[])[0]?.n ?? 0) <= limit);
 }
 
 export async function createReceipt(userId: string, receipt: NewReceipt, lines: readonly JournalLine[]): Promise<string> {

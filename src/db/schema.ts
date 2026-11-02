@@ -79,3 +79,14 @@ export const extensionTokens = pgTable("extension_tokens", {
   index("extension_tokens_user_idx").on(t.userId),
   ownerPolicy("extension_tokens_owner"),
 ]);
+
+// Shared rate-limit counter (serverless instances share no memory). Keys hold only hashes, never e-mail or IP in clear.
+// Server-only: the policy denies every non-owner role, so the Data API can never read it.
+export const rateLimitHits = pgTable("rate_limit_hits", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("rate_limit_hits_key_created_idx").on(t.key, t.createdAt),
+  pgPolicy("rate_limit_hits_server_only", { for: "all", using: sql`false`, withCheck: sql`false` }),
+]);
