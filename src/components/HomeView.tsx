@@ -68,6 +68,7 @@ export function HomeView({ receipts, tab, base = "/" }: { receipts: Awaited<Retu
             <li>Önizlemeyi kontrol edip Fiş Kes ile fişleri oluşturun.</li>
           </ol>
           <p className="muted small">Dosya düzeni Luca&apos;nın resmi şablonuyla henüz doğrulanmadı. İlk yüklemede önizlemedeki hesap kodlarını ve tutarları fişle karşılaştırın.</p>
+          <p className="muted small">İndirilen fişler &quot;Aktarıldı&quot; olur ve bu listeden düşer. Luca dosyayı reddederse fişi açıp &quot;Luca için Excel indir&quot; ile tekrar indirin.</p>
         </section>
 
         <section className="panel panel-pad stack desktop-only" aria-labelledby="ext-title">

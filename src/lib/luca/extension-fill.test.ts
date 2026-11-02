@@ -60,6 +60,13 @@ describe("eklenti satır doldurma", () => {
     expect(doc.grid[0].cells[".documentNo"].events).toEqual(["input", "change", "blur"]);
   });
 
+  it("önceden dolu satırda boş kalan tutarı temizler", () => {
+    const doc = fakeDoc(3);
+    doc.grid[0].cells[".credit"].value = "999,00";
+    fill.fillReceipt(doc, rows, SEL);
+    expect(doc.grid[0].cells[".credit"].value).toBe("");
+  });
+
   it("satır yetmezse Satır Ekle ile yeni satır açar", () => {
     const doc = fakeDoc(1);
     expect(fill.fillReceipt(doc, rows, SEL).missing).toEqual([]);

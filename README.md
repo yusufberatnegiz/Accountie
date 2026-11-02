@@ -7,6 +7,38 @@ Yazar kasa fişinin fotoğrafından Luca için yevmiye kaydı hazırlar. Muhaseb
 
 Ayrıntılar: `docs/PRD.md`, `docs/TECH_DESIGN.md`, `docs/research/luca-aktarim.md`.
 
+## Canlıya alma (accountie.vercel.app)
+
+Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
+
+1. **Ortam değişkenleri.** Vercel'de projeyi açın, Settings, Environment Variables. `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` zaten olmalı; yoksa Neon panelinden kopyalayın. `ANTHROPIC_API_KEY` ekleyin (console.anthropic.com, API Keys). İsteğe bağlı: `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`. Hiçbirine `NEXT_PUBLIC_` öneki vermeyin.
+2. **Tablolar.** Neon panelinde SQL Editor'ü açın, `drizzle/` klasöründeki dosyaların içeriğini **bu sırayla** yapıştırıp çalıştırın:
+   1. `20261102225754_receipts.sql`
+   2. `20261102230939_extension_tokens.sql`
+   3. `20261102232316_rate_limit_hits.sql`
+
+   Dosyalar yalnızca yeni tablo ekler, eski tablolara dokunmaz. Bu adım atlanırsa uygulamanın her ekranı hata (500) verir. `npx drizzle-kit migrate` kullanmayın: yapılandırmada veritabanı adresi yok ve eski uygulamanın migration kayıtlarıyla karışabilir.
+3. **Veritabanı rolü.** `DATABASE_URL` tabloları oluşturan rolle (Neon'da varsayılan `neondb_owner`) bağlanmalı. Tablolarda RLS açık; sahip olmayan bir rol tüm sorgularda boş sonuç alır. Kullanıcı ayrımı uygulama kodundaki `user_id` filtreleriyle yapılır.
+4. **Yayın.** `git push` ile main dalını gönderin; Vercel otomatik yayınlar. Ortam değişkeni sonradan eklendiyse Vercel'de Deployments, son yayın, Redeploy.
+5. **Neon Auth.** Neon panelinde Auth ayarlarında `https://accountie.vercel.app` alan adının izinli (trusted) listede olduğunu kontrol edin. Değilse giriş sonrası geri dönüş başarısız olur.
+6. **Fiş okuma denemesi.** Bilgisayarda, gerçek anahtarla tek fiş okuyun:
+
+   ```bash
+   SMOKE_RECEIPT=C:/yol/fis.jpg ANTHROPIC_API_KEY=sk-ant-... npx vitest run src/lib/extract/smoke.test.ts
+   ```
+
+   PowerShell'de: `$env:SMOKE_RECEIPT="C:\yolis.jpg"; $env:ANTHROPIC_API_KEY="sk-ant-..."; npx vitest run src/lib/extract/smoke.test.ts`
+
+   `"ok": true` ve fişteki tutarlar görünmeli. Hata alırsanız model adı veya parametre API tarafından reddedilmiştir; ayrıntı Vercel'de Logs ekranında `receipt extraction failed` satırındadır.
+7. **Uçtan uca deneme.** Telefondan giriş yapıp bir fiş çekin. Fiş sayfası (`/fis/...`) açılmalı ve satırlar dolmalı. Onaylayın.
+8. **İlk Luca yüklemesi (tek fiş).** Excel dosyasının kolon düzeni Luca'nın resmi şablonuyla doğrulanmadı. İlk seferde tek fişlik dosya indirip Luca'da Excel veri aktarımı ekranından yükleyin, önizlemeyi kağıt fişle karşılaştırın. Luca reddederse hata mesajını ve Luca'nın "Şablon indir" dosyasını saklayın; kolonlar `src/lib/luca/export.ts` içindeki `LUCA_EXPORT_COLUMNS` ile düzeltilir. Sonucu `docs/research/luca-aktarim.md` dosyasına yazın.
+
+Bilinen sınırlar:
+
+- Luca'ya birincil yol Excel'dir. Chrome eklentisinin Luca seçicileri tahmindir; gerçek Fiş Detayı ekranında denenip `extension/selectors.js` güncellenmeden çalışması beklenmemeli.
+- Fiş fotoğrafı yalnızca çekildiği cihazın tarayıcı sekmesinde durur, sunucuya kaydedilmez. Bilgisayarda kontrol ederken fotoğraf görünmez; tutarları kağıt fişle karşılaştırın.
+- Excel indirilen fiş "Aktarıldı" olur. Luca yüklemeyi reddederse fişi açıp "Luca için Excel indir" ile tekrar indirin.
+
 ## Geliştirme
 
 ```bash
