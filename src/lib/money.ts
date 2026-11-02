@@ -12,8 +12,9 @@ export function parseTrAmount(text: string): number {
 }
 
 export function formatTrAmount(kurus: number): string {
-  const lira = Math.trunc(kurus / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  return `${lira},${String(kurus % 100).padStart(2, "0")}`;
+  const abs = Math.abs(kurus);
+  const lira = Math.trunc(abs / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${kurus < 0 ? "-" : ""}${lira},${String(abs % 100).padStart(2, "0")}`;
 }
 
 /** VAT inside a VAT-inclusive gross, rounded half up to the kuruş. */

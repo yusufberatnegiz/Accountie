@@ -53,6 +53,11 @@ describe("buildJournalLines", () => {
     expect(result.balanced).toBe(false);
   });
 
+  it("aynı uyarıyı bir kez verir (%8 ve %18 birlikte)", () => {
+    const result = buildJournalLines({ ...sample, vatLines: [{ rate: 8, grossKurus: 10800, vatKurus: 800 }, { rate: 18, grossKurus: 11800, vatKurus: 1800 }], totalKurus: 22600 }, DEFAULT_RULES);
+    expect(warningCodes(result).filter((c) => c === "legacy_rate")).toHaveLength(1);
+  });
+
   it("KDV okunamadıysa orandan hesaplar", () => {
     const result = buildJournalLines({ ...sample, vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: null }] }, DEFAULT_RULES);
     expect(codes(result)).toEqual([["770.08", 793182, 0], ["191.03.10", 79318, 0], ["331.01", 0, 872500]]);
@@ -134,5 +139,6 @@ describe("approvalProblem", () => {
   it("evrak tarihi ve evrak no olmadan onaylanmaz", () => {
     expect(approvalProblem([{ ...debit, documentDate: null }, { ...credit, documentDate: null }])).toBe("Evrak tarihi eksik.");
     expect(approvalProblem([{ ...debit, documentNo: " " }, credit])).toBe("Evrak no eksik.");
+    expect(approvalProblem([debit, { ...credit, documentDate: "2026-09-06" }])).toBe("Satırlarda evrak tarihi farklı.");
   });
 });

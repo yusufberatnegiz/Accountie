@@ -108,7 +108,8 @@ export function buildJournalLines(receipt: ReceiptData, rules: Rules): { lines: 
   // Meal is only questionable when a partner paid; company money is fine.
   if (categoryWarning && (categoryWarning !== "meal" || credit.code.startsWith("331"))) warnings.push(warn(categoryWarning));
 
-  return { lines, warnings, balanced: isBalanced(lines) };
+  const unique = warnings.filter((w, i) => warnings.findIndex((x) => x.code === w.code) === i);
+  return { lines, warnings: unique, balanced: isBalanced(lines) };
 }
 
 /** Debit total equals credit total, both non-zero, every line has an account and exactly one side. */
@@ -137,6 +138,7 @@ export function approvalProblem(lines: readonly ApprovalLine[]): string | null {
   const diff = lines.reduce((s, l) => s + l.debitKurus - l.creditKurus, 0);
   if (diff !== 0) return `Borç ile alacak farkı ${formatTrAmount(Math.abs(diff))} TL.`;
   if (lines.some((l) => !l.documentDate || !/^\d{4}-\d{2}-\d{2}$/.test(l.documentDate))) return "Evrak tarihi eksik.";
+  if (new Set(lines.map((l) => l.documentDate)).size > 1) return "Satırlarda evrak tarihi farklı.";
   if (lines.some((l) => !l.documentNo.trim())) return "Evrak no eksik.";
   return null;
 }

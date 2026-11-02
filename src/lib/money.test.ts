@@ -27,6 +27,7 @@ describe("formatTrAmount", () => {
     [7, "0,07"],
     [0, "0,00"],
     [123456789, "1.234.567,89"],
+    [-150, "-1,50"],
   ])("%i -> %s", (input, expected) => {
     expect(formatTrAmount(input)).toBe(expected);
   });
