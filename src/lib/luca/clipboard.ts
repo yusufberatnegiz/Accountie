@@ -3,8 +3,22 @@ import { formatTrAmount } from "../money";
 
 const lucaDate = (iso: string | null) => (iso ? iso.split("-").reverse().join("/") : "");
 
+/** One Luca "Fiş Detayı" grid row as the user would type it. Shared by the clipboard view and the Chrome extension. */
+export type LucaGridRow = {
+  accountCode: string; documentNo: string; documentDate: string; documentType: string; description: string; debit: string; credit: string;
+};
+
+export const lucaGridRows = (lines: readonly JournalLine[]): LucaGridRow[] => lines.map((l) => ({
+  accountCode: l.accountCode,
+  documentNo: l.documentNo,
+  documentDate: lucaDate(l.documentDate),
+  documentType: l.documentType,
+  description: l.description,
+  debit: l.debitKurus ? formatTrAmount(l.debitKurus) : "",
+  credit: l.creditKurus ? formatTrAmount(l.creditKurus) : "",
+}));
+
 /** Tab-separated rows in Luca "Fiş Detayı" order: Hesap Kodu, Evrak No, Evrak Tarihi, BT, Açıklama, Borç, Alacak. */
 export function clipboardText(lines: readonly JournalLine[]): string {
-  return lines.map((l) => [l.accountCode, l.documentNo, lucaDate(l.documentDate), l.documentType, l.description,
-    l.debitKurus ? formatTrAmount(l.debitKurus) : "", l.creditKurus ? formatTrAmount(l.creditKurus) : ""].join("\t")).join("\n");
+  return lucaGridRows(lines).map((r) => [r.accountCode, r.documentNo, r.documentDate, r.documentType, r.description, r.debit, r.credit].join("\t")).join("\n");
 }

@@ -94,7 +94,7 @@ Kendi Luca hesap planıma göre kuralları düzenlemek istiyorum.
 
 ## Kapsam dışı (MVP)
 
-- Luca'ya doğrudan yazma: resmi API yok, Chrome eklentisi sonraya bırakıldı.
+- Luca'ya kullanıcısız yazma: resmi API yok. Chrome eklentisi satırları doldurur ama kaydı kullanıcı Kaydet ile oluşturur; seçicileri Luca'da doğrulanmadı.
 - Mobil mağaza uygulaması, Capacitor, otomatik kenar algılama.
 - Fatura, e-Arşiv, gider pusulası gibi ÖKC fişi dışındaki belgeler.
 - Çok firma (mükellef) yönetimi, ekip ve rol yetkileri.

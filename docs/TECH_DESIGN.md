@@ -129,6 +129,10 @@ Tümü oturum ister (yoksa 401), girdiyi Zod ile doğrular, başka kullanıcın�
 | `DELETE /api/receipts/[id]` | | Sadece `draft` |
 | `POST /api/exports` | `{ receiptIds?: uuid[] }` (boşsa tüm onaylılar) | `.xlsx` veya birden çok dosya için `.zip`; fişler `exported` |
 | `GET /api/account-rules`, `PUT /api/account-rules` | Kural listesi | |
+| `POST /api/extension-tokens` | Oturum | Yeni eklenti anahtarı (`acx_...`, 12 saat). Önceki anahtar silinir. Anahtar bir kez gösterilir, veritabanında SHA-256 özeti tutulur. |
+| `DELETE /api/extension-tokens` | Oturum | Kullanıcının anahtarını iptal eder (204) |
+| `GET /api/extension/receipts` | `Authorization: Bearer acx_...` (çerez kabul edilmez) | Anahtar sahibinin onaylı, dengeli fişleri (en fazla 50), satırlar Luca Fiş Detayı biçiminde metin |
+| `POST /api/extension/receipts/[id]/transferred` | Bearer anahtar | Kullanıcı Luca'da kaydettiğini bildirir, fiş `exported` olur (204) |
 
 - `status`, `user_id`, `model`, token sayıları ve `*_at` alanları istemciden asla kabul edilmez.
 - Oran sınırı: `POST /api/receipts` kullanıcı başına dakikada 10, günde 300 (son kayıtlar sayılarak, ek servis yok). Aşılırsa 429.
@@ -161,7 +165,10 @@ Kaynak: `docs/research/hesap-kurallari.md`. Özet:
 
 ## 8. Luca aktarımı
 
-Kaynak: `docs/research/luca-aktarim.md`. Luca'ya doğrudan yazma yok.
+Kaynak: `docs/research/luca-aktarim.md`. İki yol: Excel dosyası (birincil) ve Chrome eklentisi (yedek, Kaydet'e kullanıcı basar).
+
+- Eklenti (`extension/`, MV3): izinler `activeTab`, `scripting`, `storage`; ağ izni yalnızca uygulama kökenine. Fiş verisini popup çeker (CORS başlığı gerekmez, uygulama CORS açmaz), satırları `chrome.scripting.executeScript` ile açık Luca sekmesinin tüm aynı kökenli çerçevelerine yazar. Luca seçicileri tek dosyada: `extension/selectors.js` (doğrulanmadı). Bulunamayan hücre "Alan bulunamadı: N. satır Alan" diye gösterilir. Doldurma mantığı `extension/fill.js`, testi `src/lib/luca/extension-fill.test.ts`.
+- Anahtar: `extension_tokens` tablosu (user_id, token_hash, expires_at). Kullanıcı başına tek canlı anahtar; anahtar `chrome.storage.session` içinde tutulur (tarayıcı kapanınca silinir).
 
 - `LUCA_EXPORT_COLUMNS` tek sabit. Varsayılan sıra: Fiş No, Fiş Tarihi, Fiş Açıklama, Hesap Kodu, Evrak No, Evrak Tarihi, Detay Açıklama, Borç, Alacak, Miktar, Belge Türü, Para Birimi, Kur, Döviz Tutar. Resmi şablon gelince sadece bu sabit ve testi değişir.
 - Hücre tipleri: Fiş No ve Evrak No metin (`numFmt: "@"`), tarihler Excel tarihi, tutarlar `kuruş / 100` sayı (`#,##0.00`). Kuruştan sayıya çevirme yalnızca bu yazım anında yapılır.
