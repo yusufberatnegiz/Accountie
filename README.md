@@ -27,7 +27,7 @@ Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
    SMOKE_RECEIPT=C:/yol/fis.jpg ANTHROPIC_API_KEY=sk-ant-... npx vitest run src/lib/extract/smoke.test.ts
    ```
 
-   PowerShell'de: `$env:SMOKE_RECEIPT="C:\yolis.jpg"; $env:ANTHROPIC_API_KEY="sk-ant-..."; npx vitest run src/lib/extract/smoke.test.ts`
+   PowerShell'de: `$env:SMOKE_RECEIPT="C:/yol/fis.jpg"; $env:ANTHROPIC_API_KEY="sk-ant-..."; npx vitest run src/lib/extract/smoke.test.ts`
 
    `"ok": true` ve fişteki tutarlar görünmeli. Hata alırsanız model adı veya parametre API tarafından reddedilmiştir; ayrıntı Vercel'de Logs ekranında `receipt extraction failed` satırındadır.
 7. **Uçtan uca deneme.** Telefondan giriş yapıp bir fiş çekin. Fiş sayfası (`/fis/...`) açılmalı ve satırlar dolmalı. Onaylayın.
