@@ -66,3 +66,16 @@ export const accountRules = pgTable("account_rules", {
   uniqueIndex("account_rules_user_kind_key_idx").on(t.userId, t.kind, t.key),
   ownerPolicy("account_rules_owner"),
 ]);
+
+// Chrome extension access. Only the SHA-256 of the token is stored; one live token per user, short expiry.
+export const extensionTokens = pgTable("extension_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (t) => [
+  uniqueIndex("extension_tokens_hash_idx").on(t.tokenHash),
+  index("extension_tokens_user_idx").on(t.userId),
+  ownerPolicy("extension_tokens_owner"),
+]);

@@ -1,0 +1,18 @@
+:root { --text: #1b2430; --muted: #55616f; --line: #cfd6de; --accent: #2b4c6f; --on-accent: #fff; --danger: #a12d2d; color-scheme: light; }
+body { width: 340px; margin: 0; padding: 16px; font: 14px/1.45 system-ui, sans-serif; color: var(--text); background: #fff; display: grid; gap: 12px; }
+h1 { font-size: 16px; margin: 0; }
+form, section { display: grid; gap: 8px; }
+label { font-weight: 600; }
+.muted { color: var(--muted); margin: 0; font-size: 13px; }
+input, select { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; }
+button { font: inherit; font-weight: 600; min-height: 36px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--text); cursor: pointer; }
+button:hover { background: #eef2f6; border-color: var(--muted); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+button.primary:hover { background: #1f3a57; }
+button.link { border: 0; background: none; color: var(--muted); text-decoration: underline; min-height: 0; justify-self: start; padding: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 4px; border-bottom: 1px solid var(--line); }
+td:nth-child(n+2), th:nth-child(n+2) { text-align: right; font-variant-numeric: tabular-nums; }
+#status { margin: 0; }
+#status.error { color: var(--danger); }

@@ -3,7 +3,7 @@ import { and, asc, count, desc, eq, gt, inArray } from "drizzle-orm";
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import type { JournalLine, Warning } from "@/lib/journal";
 import { getDb } from "./index";
-import { accountRules, journalLines, receipts } from "./schema";
+import { accountRules, extensionTokens, journalLines, receipts } from "./schema";
 
 export type ReceiptStatus = "draft" | "approved" | "exported";
 
@@ -144,4 +144,24 @@ export async function markExported(userId: string, ids: readonly string[]): Prom
   if (ids.length === 0) return;
   await getDb().update(receipts).set({ status: "exported", exportedAt: new Date() })
     .where(and(eq(receipts.userId, userId), inArray(receipts.id, [...ids]), inArray(receipts.status, ["approved", "exported"])));
+}
+
+/** Replaces the user's extension token: creating a new one revokes the old. */
+export async function createExtensionToken(userId: string, tokenHash: string, expiresAt: Date): Promise<void> {
+  const db = getDb();
+  await db.batch([
+    db.delete(extensionTokens).where(eq(extensionTokens.userId, userId)),
+    db.insert(extensionTokens).values({ userId, tokenHash, expiresAt }),
+  ]);
+}
+
+export async function revokeExtensionTokens(userId: string): Promise<void> {
+  await getDb().delete(extensionTokens).where(eq(extensionTokens.userId, userId));
+}
+
+/** Owner of a live (unexpired) token, or null. */
+export async function userIdForTokenHash(tokenHash: string): Promise<string | null> {
+  const [row] = await getDb().select({ userId: extensionTokens.userId }).from(extensionTokens)
+    .where(and(eq(extensionTokens.tokenHash, tokenHash), gt(extensionTokens.expiresAt, new Date())));
+  return row?.userId ?? null;
 }

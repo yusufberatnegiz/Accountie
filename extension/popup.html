@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>Accountie</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <h1>Luca'ya doldur</h1>
+
+  <form id="token-form">
+    <label for="token">Eklenti anahtarı</label>
+    <p class="muted">Accountie'de Fişler sayfasındaki Chrome eklentisi bölümünden alın. 12 saat geçerlidir.</p>
+    <input id="token" type="password" autocomplete="off" spellcheck="false" required pattern="acx_[A-Za-z0-9_\-]{43}">
+    <button type="submit">Fişleri getir</button>
+  </form>
+
+  <section id="list-view" hidden>
+    <label for="receipt">Onaylı fiş</label>
+    <select id="receipt"></select>
+    <table>
+      <thead><tr><th>Hesap</th><th>Borç</th><th>Alacak</th></tr></thead>
+      <tbody id="preview"></tbody>
+    </table>
+    <button id="fill" type="button" class="primary">Fiş Detayına yaz</button>
+    <button id="done" type="button" hidden>Luca'da kaydettim</button>
+    <button id="forget" type="button" class="link">Anahtarı unut</button>
+  </section>
+
+  <p id="status" role="status"></p>
+  <script src="fill.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

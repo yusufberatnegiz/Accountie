@@ -9,7 +9,7 @@ Kural: Birincil kaynakta (Luca destek sitesi lucayazilim.freshdesk.com) okunan b
 |---|---|---|
 | Resmi fiş kaydı API'si | Herkese açık doküman yok, doğrulanamadı | Kullanılmaz |
 | Excel Veri Aktarımı (Muhasebe > Fiş İşlemleri) | Var, Luca destek sitesinde belgeli | **Birincil yol** |
-| Tarayıcı eklentisi ile Fiş Detayı formunu doldurma | Teknik olarak mümkün, kırılgan, şartlar belirsiz | **Sonraya bırakılan yedek** (MVP'de yok) |
+| Tarayıcı eklentisi ile Fiş Detayı formunu doldurma | Teknik olarak mümkün, kırılgan, şartlar belirsiz | **Yedek**, uygulandı (`extension/`), seçiciler doğrulanmadı |
 
 ## 1. Resmi API var mı?
 
@@ -93,7 +93,8 @@ Riskler:
 
 1. **Birincil: Excel (.xlsx) üretimi.** Uygulama onaylanan fişlerden Luca Excel Veri Aktarımı biçiminde dosya üretir. Kurallar: tutarlar kuruştan üretilir, her fiş dengeli olmalı (borç = alacak), en fazla 50 fiş / 400 satır, fazlası ayrı dosyaya bölünür (fiş ortadan bölünmez). Evrak No metin, BT kodu ayarlanabilir (varsayılan ÖK), Fiş No kullanıcıya/sıraya göre. Kolon adları tek sabitte; resmi şablon alınınca güncellenir.
 2. **Yardımcı: Kopyala-yapıştır görünümü.** Tek fiş için Fiş Detayı grid'iyle aynı kolon sırasında (Hesap Kodu, Evrak No, Evrak Tarihi, BT, Açıklama, Borç, Alacak) satırları gösteren ve panoya sekmeyle ayrılmış metin kopyalayan ekran. Ucuz, Luca güncellemesine dayanıklı. Luca grid'inin çok satırlı yapıştırmayı kabul edip etmediği doğrulanamadı; kabul etmezse elle girişte rehber olur.
-3. **Yedek (sonra): Chrome eklentisi.** Ancak Excel akışı çalışır hale geldikten, kullanıcı Luca'da çalışan bir oturumla DOM'u birlikte inceleyebildikten ve kullanım şartları netleştikten sonra. Kaydet butonuna eklenti basmaz.
+3. **Yedek: Chrome eklentisi.** Kaydet butonuna eklenti basmaz.
+   - Durum (2026-11-03): `extension/` altında uygulandı. Seçiciler (`extension/selectors.js`) Luca'ya erişim olmadan tahminle yazıldı, **doğrulanmadı**; ilk kullanımda büyük olasılıkla "Fiş Detayı tablosu bulunamadı" veya "Alan bulunamadı" çıkar ve seçiciler gerçek ekrana göre güncellenmelidir. Kullanım şartları sorusu hâlâ açık.
 4. **Takip:** Luca'ya resmi API sorusu; cevap olumluysa 1. madde API ile değiştirilir.
 
 ## Kaynaklar
