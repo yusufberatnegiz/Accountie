@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn() }));
 vi.mock("@/lib/auth/server", () => {
@@ -65,12 +65,26 @@ describe("oran sınırı", () => {
     expect(getAuth().signUp.email).not.toHaveBeenCalled();
   });
 
-  it("/api/auth giriş ve kayıt uçları da sınırlıdır, diğerleri değil", async () => {
-    vi.mocked(hitRateLimit).mockResolvedValue(false);
+  it("/api/auth giriş ve kayıt uçları kapalı, şifre uçları sınırlı, diğerleri açık", async () => {
     const post = (path: string) => authRoute.POST(new Request(`http://test/api/auth/${path}`, { method: "POST" }) as never, { params: Promise.resolve({ path: path.split("/") }) } as never);
-    expect((await post("sign-in/email")).status).toBe(429);
-    expect((await post("sign-up/email")).status).toBe(429);
+    expect((await post("sign-in/email")).status).toBe(404);
+    expect((await post("sign-up/email")).status).toBe(404);
+    vi.mocked(hitRateLimit).mockResolvedValue(false);
+    expect((await post("request-password-reset")).status).toBe(429);
     expect((await post("sign-out")).status).toBe(200);
+  });
+});
+
+describe("bot koruması", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("Turnstile açıkken token olmadan giriş ve kayıt denenmez", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "test-secret");
+    expect(await redirectOf(actions.login(form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=bot");
+    expect(getAuth().signIn.email).not.toHaveBeenCalled();
+    const res = await redirectOf(actions.signup(form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", passwordAgain: "12345678" })));
+    expect(res).toContain("hata=bot");
+    expect(getAuth().signUp.email).not.toHaveBeenCalled();
   });
 });
 

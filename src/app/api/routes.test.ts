@@ -89,9 +89,9 @@ describe("POST /api/receipts", () => {
     expect(vi.mocked(q.createReceipt).mock.calls[0][1].warnings.map((w) => w.code)).toContain("extraction_failed");
   });
 
-  it("izin verilmeyen türü 415, 10 MB üstünü 413 ile reddeder", async () => {
+  it("izin verilmeyen türü 415, 4 MB üstünü 413 ile reddeder", async () => {
     expect((await receiptsRoute.POST(upload("application/pdf"))).status).toBe(415);
-    expect((await receiptsRoute.POST(upload("image/jpeg", 10 * 1024 * 1024 + 1))).status).toBe(413);
+    expect((await receiptsRoute.POST(upload("image/jpeg", 4 * 1024 * 1024 + 1))).status).toBe(413);
     expect(extractReceipt).not.toHaveBeenCalled();
   });
 

@@ -120,7 +120,7 @@ Tümü oturum ister (yoksa 401), girdiyi Zod ile doğrular, başka kullanıcın�
 
 | Yöntem ve yol | Girdi | Çıktı |
 |---|---|---|
-| `POST /api/receipts` | multipart `image` (en fazla 10 MB; JPEG, PNG, WebP, HEIC; içerik `sharp` ile doğrulanır) | Taslak fiş ve satırları |
+| `POST /api/receipts` | multipart `image` (en fazla 4 MB (Vercel gövde sınırının altında); JPEG, PNG, WebP, HEIC; içerik `sharp` ile doğrulanır) | Taslak fiş ve satırları |
 | `GET /api/receipts?status=` | | Liste (özet alanlar) |
 | `GET /api/receipts/[id]` | | Fiş, satırlar, uyarılar |
 | `PATCH /api/receipts/[id]` | Beyaz listedeki alanlar: `lines[]` (hesap, açıklama, tutar, evrak no, tarih, BT, miktar, babs), `paymentAccount` | Güncel fiş. Sadece `draft` durumunda. |
@@ -199,6 +199,6 @@ Veritabanı ve yapay zeka testlerde her zaman mock'lanır. Gerçek model doğrul
 |---|---|---|
 | Luca şablon kolonları | 14 kolon | Resmi şablonla `LUCA_EXPORT_COLUMNS` kilitlenecek |
 | RLS'nin etkin olması | Sorgu filtresi asıl koruma, RLS açık | Neon'da sahip olmayan uygulama rolü ve `set_config('app.user_id')` |
-| Kayıt formunda bot koruması | Neon Auth'un kendi akışı | Turnstile eklenebiliyor mu kontrol |
+| Kayıt formunda bot koruması | Giriş ve kayıtta Turnstile sunucuda doğrulanır; `/api/auth` giriş/kayıt uçları kapalı | Vercel'e `TURNSTILE_SITE_KEY` ve `TURNSTILE_SECRET_KEY` eklenecek (yoksa doğrulama kapalı) |
 | Thinking ayarı | `disabled` | 10 ila 20 fişte `adaptive` + `low` ile karşılaştırma |
 | KVKK aydınlatma metni | Yurt dışı hizmet sağlayıcı (Anthropic) belirtilecek | Yayına çıkmadan önce metin |

@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
 import { extractReceipt, type ExtractClient } from "./extract";
-import { checkExtraction, toReceiptData, type ReceiptExtraction } from "./schema";
+import { checkExtraction, ReceiptExtractionSchema, toReceiptData, type ReceiptExtraction } from "./schema";
 
 const goodOutput: ReceiptExtraction = {
   vendorName: "ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ",
@@ -65,6 +65,16 @@ describe("checkExtraction", () => {
   });
 });
 
+describe("ReceiptExtractionSchema sınırları", () => {
+  it("anlamsız KDV oranını, uzun fiş no'yu ve aşırı satırı reddeder", () => {
+    expect(ReceiptExtractionSchema.safeParse(goodOutput).success).toBe(true);
+    expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: [{ rate: -100, gross: "1,00", vat: null }] }).success).toBe(false);
+    expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: [{ rate: 150, gross: "1,00", vat: null }] }).success).toBe(false);
+    expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, receiptNo: "1".repeat(41) }).success).toBe(false);
+    expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: Array(11).fill(goodOutput.vatLines[0]) }).success).toBe(false);
+  });
+});
+
 describe("extractReceipt", () => {
   it("doğru fişte tek Haiku çağrısı yapar", async () => {
     const { client, parse } = mockClient(response(goodOutput));
@@ -100,6 +110,15 @@ describe("extractReceipt", () => {
     const result = await extractReceipt(image, client);
     expect(parse).toHaveBeenCalledTimes(2);
     expect(result).toMatchObject({ ok: true, model: "claude-sonnet-5-5" });
+  });
+
+  it("şemaya uymayan çıktıda (ör. oran -100) Sonnet ile tekrar dener", async () => {
+    const { client, parse } = mockClient(new Anthropic.AnthropicError("Failed to parse structured output"), response(goodOutput));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = await extractReceipt(image, client);
+    expect(parse).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({ ok: true, model: "claude-sonnet-5-5" });
+    log.mockRestore();
   });
 
   it("Haiku API hatasında Sonnet'e geçer, ikisi de hata verirse ok:false döner", async () => {

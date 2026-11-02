@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Script from "next/script";
 import { login, signup } from "./actions";
 import { SubmitButton } from "./SubmitButton";
 
@@ -9,11 +10,12 @@ const ERRORS: Record<string, string> = {
   "kayit-bicim": "Bilgileri ve şifre tekrarını kontrol edin.",
   "kayit-cok": "Çok fazla hesap oluşturma denemesi. Bir saat sonra tekrar deneyin.",
   kayit: "Hesap oluşturulamadı. E-posta kullanımda olabilir.",
+  bot: "Güvenlik doğrulaması tamamlanamadı. Sayfayı yenileyip tekrar deneyin.",
 };
 const MESSAGES: Record<string, string> = { "kayit-tamam": "Hesabınız oluşturuldu. Giriş yapabilirsiniz." };
 
 /** Login and signup form; the page and the dev preview both render it. */
-export function LoginView({ hata, mesaj, isSignup }: { hata?: string; mesaj?: string; isSignup: boolean }) {
+export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey }: { hata?: string; mesaj?: string; isSignup: boolean; turnstileSiteKey?: string }) {
   const error = hata ? ERRORS[hata] : undefined;
   const message = mesaj ? MESSAGES[mesaj] : undefined;
   return (
@@ -31,6 +33,12 @@ export function LoginView({ hata, mesaj, isSignup }: { hata?: string; mesaj?: st
           <label>E-posta<input className="field" name="email" type="email" autoComplete="email" required /></label>
           <label>Şifre<input className="field" name="password" type="password" autoComplete={isSignup ? "new-password" : "current-password"} minLength={8} maxLength={128} required /></label>
           {isSignup ? <label>Şifre tekrar<input className="field" name="passwordAgain" type="password" autoComplete="new-password" minLength={8} maxLength={128} required /></label> : null}
+          {turnstileSiteKey ? (
+            <>
+              <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
+              <div className="cf-turnstile" data-sitekey={turnstileSiteKey} data-language="tr" />
+            </>
+          ) : null}
           <SubmitButton label={isSignup ? "Hesap oluştur" : "Giriş yap"} pendingLabel={isSignup ? "Hesap oluşturuluyor" : "Giriş yapılıyor"} />
         </form>
         <p className="muted">
