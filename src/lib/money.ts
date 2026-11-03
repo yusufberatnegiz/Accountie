@@ -2,7 +2,7 @@
 
 /** Turkish receipt amount ("8.725,00", "*793,18") -> kuruş. Throws on anything ambiguous. */
 export function parseTrAmount(text: string): number {
-  const s = text.trim().replace(/^\*/, "").replace(/\s/g, "");
+  const s = text.trim().replace(/^\*/, "").replace(/TL|TRY|₺/gi, "").replace(/\s/g, "");
   const m = /^(\d{1,3}(?:\.\d{3})*|\d+)(?:,(\d{1,2}))?$/.exec(s);
   if (!m) throw new Error(`Tutar okunamadı: ${text}`);
   const lira = Number(m[1].replace(/\./g, ""));

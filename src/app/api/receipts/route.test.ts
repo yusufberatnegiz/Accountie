@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), createReceipt: vi.fn(), getRules: vi.fn(), listReceipts: vi.fn() }));
+vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(), getRules: vi.fn(), listReceipts: vi.fn() }));
 vi.mock("@/lib/auth/session", () => ({ getUserId: async () => "user-1" }));
 vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn() }));
 vi.mock("@/lib/image", async (orig) => ({ ...(await orig<typeof import("@/lib/image")>()), normalizeImage: async (b: Buffer) => b }));
 
-const { hitRateLimit, createReceipt, getRules } = await import("@/db/queries");
+const { hitRateLimit, createReceipt, getRules, hasDuplicateReceipt } = await import("@/db/queries");
 const { DEFAULT_RULES } = await import("@/lib/default-rules");
 const { extractReceipt } = await import("@/lib/extract/extract");
 const { POST } = await import("./route");
@@ -35,6 +35,24 @@ describe("POST /api/receipts", () => {
     const res = await POST(jpeg());
     expect(res.status).toBe(503);
     expect(extractReceipt).not.toHaveBeenCalled();
+  });
+
+  it("aynı VKN, fiş no ve tarihle kayıtlı fiş varsa uyarıyla yine kaydeder", async () => {
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(createReceipt).mockResolvedValue("r-2");
+    vi.mocked(hasDuplicateReceipt).mockResolvedValue(true);
+    vi.mocked(extractReceipt).mockResolvedValue({
+      ok: true, model: "m", inputTokens: 1, outputTokens: 1, problems: [],
+      extraction: {
+        vendorName: "ÖRNEK ALABALIK", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null, receiptNo: "0047",
+        zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
+        paymentMethod: "card", category: "meal", unreadableFields: [],
+      },
+    });
+    const res = await POST(jpeg());
+    expect(res.status).toBe(201);
+    expect(hasDuplicateReceipt).toHaveBeenCalledWith("user-1", "1111111114", "0047", "2026-09-05");
+    expect(vi.mocked(createReceipt).mock.calls[0][1].warnings.map((w) => w.code)).toContain("duplicate");
   });
 
   it("kayıt hatasında Türkçe 500 döner", async () => {

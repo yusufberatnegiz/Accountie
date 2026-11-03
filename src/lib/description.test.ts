@@ -17,6 +17,12 @@ describe("descriptionFromVendor", () => {
   it("unvan ekle başlıyorsa baştaki eki kesmez", () => {
     expect(descriptionFromVendor("LTD ŞTİ ÖRNEK")).toBe("ltd");
   });
+  it("eki kelime içinde aramaz", () => {
+    expect(descriptionFromVendor("ALTDAĞ GIDA")).toBe("altdağ gıda");
+    expect(descriptionFromVendor("KARDEŞLER AŞÇI EVİ")).toBe("kardeşler aşçı evi");
+    expect(descriptionFromVendor("YILDIZ SAN.TİC. LTD")).toBe("yıldız");
+    expect(descriptionFromVendor("SANCAK RESTORAN VEZİR TİC.A.Ş.")).toBe("sancak restoran vezir");
+  });
   it("boş unvan boş açıklama", () => {
     expect(descriptionFromVendor(null)).toBe("");
   });

@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { extractReceipt, type ExtractClient } from "./extract";
 import { checkExtraction, ReceiptExtractionSchema, toReceiptData, type ReceiptExtraction } from "./schema";
 
@@ -18,6 +18,13 @@ const goodOutput: ReceiptExtraction = {
   category: "meal",
   unreadableFields: ["zNo"],
 };
+
+// checkExtraction flags dates far from "today"; pin it so the sample receipt stays current.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-03T12:00:00Z"));
+});
+afterAll(() => vi.useRealTimers());
 
 function response(parsed: ReceiptExtraction | null, stop_reason = "end_turn") {
   return { parsed_output: parsed, stop_reason, usage: { input_tokens: 3000, output_tokens: 300 } };
@@ -68,6 +75,15 @@ describe("checkExtraction", () => {
   });
   it("modelin emin olmadığı alanları sorun sayar", () => {
     expect(checkExtraction({ ...goodOutput, unreadableFields: ["total", "date"] })).toEqual(["amount_unreadable", "date_invalid"]);
+    expect(checkExtraction({ ...goodOutput, unreadableFields: ["paymentMethod", "receiptNo"] })).toEqual(["payment_unsure", "receipt_no_unsure"]);
+    expect(checkExtraction({ ...goodOutput, unreadableFields: ["vatLines[0].vat", "Total"] })).toEqual(["amount_unreadable", "vat_mismatch"]);
+  });
+  it("bugünden ileri veya bir yıldan eski tarihi işaretler", () => {
+    const today = new Date("2026-11-03T12:00:00Z");
+    expect(checkExtraction({ ...goodOutput, date: "05.09.2062" }, today)).toEqual(["date_unusual"]);
+    expect(checkExtraction({ ...goodOutput, date: "05.09.2025" }, today)).toEqual(["date_unusual"]);
+    expect(checkExtraction({ ...goodOutput, date: "04.11.2026" }, today)).toEqual([]);
+    expect(checkExtraction({ ...goodOutput, date: "05.11.2025" }, today)).toEqual([]);
   });
 });
 

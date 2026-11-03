@@ -96,6 +96,14 @@ export async function createReceipt(userId: string, receipt: NewReceipt, lines: 
   return id;
 }
 
+/** Same seller, receipt number and date already saved by this user: the same paper receipt photographed twice. */
+export async function hasDuplicateReceipt(userId: string, taxNumber: string, receiptNo: string, receiptDate: string): Promise<boolean> {
+  const rows = await getDb().select({ id: receipts.id }).from(receipts)
+    .where(and(eq(receipts.userId, userId), eq(receipts.taxNumber, taxNumber), eq(receipts.receiptNo, receiptNo), eq(receipts.receiptDate, receiptDate)))
+    .limit(1);
+  return rows.length > 0;
+}
+
 export async function listReceipts(userId: string, status?: ReceiptStatus) {
   return getDb().select(summaryColumns).from(receipts)
     .where(status ? and(eq(receipts.userId, userId), eq(receipts.status, status)) : eq(receipts.userId, userId))
