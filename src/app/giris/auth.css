@@ -3,12 +3,13 @@
   Desktop: the form column left, the product's own piece (fiş strip and its three Luca lines) on the stage tone right.
   Below 900px the form is centred and the piece becomes a band under it, so no half of the screen is left empty.
 */
-/* Form and piece share one top line (--auth-top), so the two halves read as one composition; on a tall screen that line
-   drops so the pair sits in the middle of the screen instead of leaving its lower third empty. */
-.auth { --auth-top: max(calc(72px + var(--s8)), calc((100dvh - 580px) / 2)); min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+/* Form and piece share one top line (--auth-top), so the two halves read as one composition. The line is set so the taller of
+   the pair (--auth-h: the piece and its note on login, the form on signup) sits in the middle of the screen under the bar. */
+.auth { --auth-h: 460px; --auth-top: max(calc(72px + var(--s7)), calc(72px + (100dvh - 72px - var(--auth-h)) / 2)); min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+.auth:has(#auth-name) { --auth-h: 600px; }
 .auth > .site-dock { grid-column: 1 / -1; grid-row: 1; }
 .auth-main { grid-column: 1; grid-row: 1 / span 2; display: grid; padding: var(--auth-top) var(--page-margin) var(--s8); }
-.auth-form { align-self: start; justify-self: center; width: 100%; max-width: 420px; display: grid; gap: var(--s5); }
+.auth-form { align-self: start; justify-self: start; width: 100%; max-width: 420px; display: grid; gap: var(--s5); }
 .auth-head { display: grid; gap: var(--s2); }
 .auth-head p { margin: 0; font-size: var(--fs-section); color: var(--muted); max-width: 36ch; }
 .auth-head h1 { font-family: var(--font-head); font-weight: 300; font-size: clamp(1.5rem, 1rem + 1vw, 2rem); letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
@@ -83,7 +84,7 @@
 @media (max-width: 900px) {
   .auth { grid-template-columns: minmax(0, 1fr); }
   .auth-main { padding: calc(72px + var(--s8)) var(--page-margin) var(--s8); }
-  .auth-form { align-self: start; max-width: 440px; }
+  .auth-form { align-self: start; justify-self: center; max-width: 440px; }
   /* The file row only fills the desktop stage; here it would make the sheet taller than the strip beside it. */
   .auth-file { display: none; }
   .auth-stage { grid-column: 1; grid-row: auto; position: static; height: auto; justify-items: center; padding: var(--s8) var(--page-margin) max(var(--s8), env(safe-area-inset-bottom)); }

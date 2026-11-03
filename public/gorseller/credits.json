@@ -97,7 +97,8 @@
   "bytes": 1713831,
   "credit": "\"Ledger of the fur trader Dedo from Leipzig, 1876-1885 003\" by Dedo, public domain, via Wikimedia Commons",
   "notes": [
-   "Altered: converted to monochrome, contrast adjusted, resized to at most 1600px."
+   "Altered: converted to monochrome, contrast adjusted, resized to at most 1600px.",
+   "Contrast raised once more (round 7) so the Debet and Credit columns read in the dark theme."
   ],
   "saved": "2026-11-03T17:12:07.518Z"
  },
@@ -126,27 +127,27 @@
   "saved": "2026-11-03T19:15:38.976Z"
  },
  {
-  "file": "public/gorseller/national-yazar-kasa-1918.jpg",
+  "file": "public/gorseller/yazar-kasa-krupanj.jpg",
   "media": "image",
-  "ref": "commons:81413785",
-  "title": "National Cash Register 1918",
-  "creator": "Anonymous Unknown author",
+  "ref": "commons:157183906",
+  "title": "Old cash register in Serbia",
+  "creator": "Pink Flojd",
   "creatorUrl": null,
-  "date": "1918",
-  "license": "public domain",
-  "licenseCode": "pd",
-  "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+  "date": "2018-04-29",
+  "license": "CC0",
+  "licenseCode": "cc0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
   "creditRequired": false,
-  "page": "https://commons.wikimedia.org/wiki/File:National_Cash_Register_1918.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Old_cash_register_in_Serbia.jpg",
   "via": "Wikimedia Commons",
-  "image": "https://upload.wikimedia.org/wikipedia/commons/0/0a/National_Cash_Register_1918.jpg",
-  "width": 1600,
-  "height": 1200,
-  "bytes": 566684,
-  "credit": "\"National Cash Register 1918\", public domain, via Wikimedia Commons",
+  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Old_cash_register_in_Serbia.jpg/1280px-Old_cash_register_in_Serbia.jpg",
+  "width": 1280,
+  "height": 1920,
+  "bytes": 615596,
+  "credit": "\"Old cash register in Serbia\" by Pink Flojd, CC0, via Wikimedia Commons",
   "notes": [
-   "Altered: paper tone lowered, padded to 4:3 with the paper tone, resized to 1600px."
+   "Altered: cropped to 4:3 around the keys and the Cassa sign, converted to monochrome, contrast adjusted."
   ],
-  "saved": "2026-11-03T19:15:40.829Z"
+  "saved": "2026-11-03T20:50:46.541Z"
  }
 ]

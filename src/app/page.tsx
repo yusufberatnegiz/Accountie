@@ -17,7 +17,7 @@ import { PAYMENT_ALTERNATIVES } from "@/lib/default-rules";
 import register from "../../public/gorseller/yazar-kasa-eski.jpg";
 import defterdar from "../../public/gorseller/defterdar-dairesi.jpg";
 import bankVault from "../../public/gorseller/osmanli-bankasi-kasa-dairesi.jpg";
-import ncr from "../../public/gorseller/national-yazar-kasa-1918.jpg";
+import krupanj from "../../public/gorseller/yazar-kasa-krupanj.jpg";
 import ledger from "../../public/gorseller/dedo-defteri-1876.jpg";
 import "@/components/home/home.css";
 
@@ -119,8 +119,8 @@ const PIECES: Piece[] = [
         <div className="ui-meter"><span>Fiş</span><span className="ui-track"><span style={{ width: "76%" }} /></span><span className="num">38 / 50</span></div>
         <div className="ui-meter"><span>Satır</span><span className="ui-track"><span style={{ width: "74%" }} /></span><span className="num">296 / 400</span></div>
         <ul className="ui-files">
-          <li><span className="ui-file-name">luca-fisler-2026-09-1.xlsx</span><span className="ui-meta">50 fiş, 388 satır</span></li>
-          <li><span className="ui-file-name">luca-fisler-2026-09-2.xlsx</span><span className="ui-meta">38 fiş, 296 satır</span></li>
+          <li><span className="ui-file-name">luca-fisler-20260916.xlsx</span><span className="ui-meta">50 fiş, 388 satır</span></li>
+          <li><span className="ui-file-name">luca-fisler-20261002.xlsx</span><span className="ui-meta">38 fiş, 296 satır</span></li>
         </ul>
         <span className="btn">Luca için indir</span>
       </div>
@@ -213,7 +213,7 @@ const FLICKR_COMMONS = "https://www.flickr.com/commons/usage/";
 const CREDITS: { title: string; lang: string; by: string; license: string; licenseUrl: string; page: string; note?: string }[] = [
   { title: "Ledger of the fur trader Dedo from Leipzig, 1876-1885", lang: "en", by: "Dedo", license: "kamu malı", licenseUrl: PD, page: "https://commons.wikimedia.org/wiki/File:Ledger_of_the_fur_trader_Dedo_from_Leipzig,_1876-1885_003.jpg" },
   { title: "Antique cash register", lang: "en", by: "Thomas Quine", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0/", page: "https://commons.wikimedia.org/wiki/File:Antique_cash_register_(43766820702).jpg" },
-  { title: "National Cash Register 1918", lang: "en", by: "", license: "kamu malı", licenseUrl: PD, page: "https://commons.wikimedia.org/wiki/File:National_Cash_Register_1918.jpg", note: "kâğıt tonu koyulaştırıldı" },
+  { title: "Old cash register in Serbia", lang: "en", by: "Pink Flojd", license: "CC0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/deed.en", page: "https://commons.wikimedia.org/wiki/File:Old_cash_register_in_Serbia.jpg", note: "kırpıldı ve siyah beyaza çevrildi" },
   { title: "Keystrokes in a vintage mechanical calculator", lang: "en", by: "Subhashish Panigrahi", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", page: "https://commons.wikimedia.org/wiki/File:Keystrokes_in_a_vintage_mechanical_calculator.webm" },
   { title: "Ottoman Bank, Safe Rooms", lang: "en", by: "SALT Araştırma", license: "bilinen telif kısıtlaması yok", licenseUrl: FLICKR_COMMONS, page: "https://commons.wikimedia.org/wiki/File:Ottoman_Bank,_Safe_Rooms_(12965331153).jpg" },
   { title: "Louis-Nicolas de Lespinasse, Deferdar’s office", lang: "en", by: "Gmihail, Sırpça Vikipedi", license: "CC BY-SA 3.0 RS", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/rs/deed.en", page: "https://commons.wikimedia.org/wiki/File:Louis-Nicolas_de_Lespinasse,_Deferdar%27s_office.jpg" },
@@ -221,8 +221,8 @@ const CREDITS: { title: string; lang: string; by: string; license: string; licen
 
 // The rule's world, under its proof: one ratio (4:3), one caption line, one grade.
 const GALLERY = [
-  { src: ncr, at: "50% 50%", alt: "1918 tarihli bir baskıda National yazar kasası: sıra sıra tutar tuşları, üstte kâğıt rulosu, solda açık para çekmecesi", caption: "National yazar kasası, 1918. Accountie’nin okuduğu fişi bugün bu makinenin torunu basar." },
-  { src: bankVault, at: "30% 50%", alt: "Osmanlı Bankası’nın kasa dairesi: ahşap kasa kapakları ve raflarda ciltli hesap defterleri", caption: "Osmanlı Bankası’nın kasa dairesinde ciltli defterler. Accountie’de de onaylı fiş kilitlenir." },
+  { src: krupanj, at: "50% 50%", alt: "Bir müze vitrininde eski bir yazar kasa: kavisli sıralarda tutar tuşları, üstte Cassa yazılı levha", caption: "Sırbistan’da bir müzede eski bir yazar kasa; tutar tuşlarının üstünde Cassa levhası." },
+  { src: bankVault, at: "30% 50%", alt: "Osmanlı Bankası’nın kasa dairesi: ahşap kasa kapakları ve raflarda ciltli hesap defterleri", caption: "Osmanlı Bankası’nın kasa dairesi; raflarda ciltli hesap defterleri." },
 ];
 
 const PATH = [
@@ -253,7 +253,7 @@ const PATH = [
   { clause: "En son Excel ile Luca’ya yüklenir.", card: (
     <>
       <p className="ui-card-head"><span>Fiş 0047</span><span className="status status-exported" data-step>Aktarıldı</span></p>
-      <p className="ui-file-name" data-step>luca-fisler-2026-09-05.xlsx</p>
+      <p className="ui-file-name" data-step>luca-fisler-20260905.xlsx</p>
       <table className="ui-sheet" data-step>
         <thead><tr><th scope="col">Hesap</th><th scope="col">Evrak</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
         <tbody>
@@ -339,7 +339,7 @@ export default function LandingPage() {
           ))}
           <figure className="rule-figure rule-figure-third" data-reveal="shutter" style={cssVars({ "--r": 2 })}>
             <div className="frame frame-43"><LoopVideo src={{ mp4: "/gorseller/hesap-makinesi.mp4", webm: "/gorseller/hesap-makinesi.webm" }} poster="/gorseller/hesap-makinesi-poster.jpg" width={854} height={480} /></div>
-            <figcaption>Eski bir toplama makinesinde tuşlama. Accountie’de borç ve alacak toplamını siz tuşlamazsınız.</figcaption>
+            <figcaption>Eski bir mekanik toplama makinesinde tutar tuşlanıyor.</figcaption>
           </figure>
         </section>
 
@@ -394,14 +394,14 @@ export default function LandingPage() {
             </figure>
             {/* The file Luca reads: the export's own columns (src/lib/luca/export.ts) for fiş 0047. */}
             <div className="ui-card routes-file" data-ui data-reveal style={cssVars({ "--r": 2 })}>
-              <p className="ui-card-head"><span className="ui-file-name">luca-fisler-2026-09-1.xlsx</span><span className="ui-meta">Fişler sayfası</span></p>
-              {/* Scrolls sideways on a phone, so it is reachable by keyboard there (WCAG 2.1.1). */}
+              <p className="ui-card-head"><span className="ui-file-name">luca-fisler-20260905.xlsx</span><span className="ui-meta">Fişler sayfası</span></p>
+              {/* On a phone the identifier columns step aside so the amounts stay whole; a narrower screen still scrolls, so the region is a keyboard stop (WCAG 2.1.1). */}
               <div className="routes-file-scroll" tabIndex={0} role="region" aria-label="Luca Excel dosyasının ilk satırları">
                 <table className="ui-sheet">
-                  <thead><tr>{["Fiş No", "Fiş Tarihi", "Hesap Kodu", "Evrak No", "Borç", "Alacak", "Belge Türü"].map((c) => <th scope="col" key={c} className={c === "Borç" || c === "Alacak" ? "num" : undefined}>{c}</th>)}</tr></thead>
+                  <thead><tr>{["Fiş No", "Fiş Tarihi", "Hesap Kodu", "Evrak No", "Borç", "Alacak", "Belge Türü"].map((c) => <th scope="col" key={c} className={c === "Borç" || c === "Alacak" ? "num" : c === "Hesap Kodu" || c === "Belge Türü" ? undefined : "sheet-id"}>{c}</th>)}</tr></thead>
                   <tbody>
                     {LINES_0047.map((l) => (
-                      <tr key={l.code}><td>1</td><td>05.09.2026</td><td translate="no">{l.code}</td><td>0047</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td><td>ÖK</td></tr>
+                      <tr key={l.code}><td className="sheet-id">1</td><td className="sheet-id">05.09.2026</td><td translate="no">{l.code}</td><td className="sheet-id">0047</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td><td>ÖK</td></tr>
                     ))}
                   </tbody>
                 </table>
