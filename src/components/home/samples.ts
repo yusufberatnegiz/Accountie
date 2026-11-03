@@ -86,7 +86,7 @@ export function sourcesFor(sample: Sample): Source[] {
 }
 
 /**
- * The default chart keeps Luca's own account names ("% 10 Lı İndirilecek Kdv"); the public page shows them in written Turkish.
+ * Older rule tables may still hold Luca's own spelling ("% 10 Lı İndirilecek Kdv"); the public page shows them in written Turkish, as the defaults now are.
  */
 export const shownAccountName = (name: string) =>
   name.replace(/^% ?(\d+) L[ıiu] İndirilecek Kdv$/, "%$1 İndirilecek KDV").replace(/ Ve /g, " ve ");

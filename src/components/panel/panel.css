@@ -71,6 +71,8 @@
 /* ---------- List screen ---------- */
 .canvas-list { grid-template-columns: minmax(0, 1fr) 384px; align-items: start; }
 .list-panel { min-width: 0; }
+/* A full list card reaches the foot of the Luca column beside it; an empty one keeps its own height. */
+.canvas-list > .list-panel:not(:has(.empty-row)) { align-self: stretch; }
 .tabs { display: flex; gap: var(--s1); padding: 0 var(--s4); border-bottom: 1px solid var(--border); overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
 .tabs a { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--touch); padding: 0 var(--s2); margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--muted); font-size: var(--fs-body); font-weight: 500; text-decoration: none; white-space: nowrap; transition: color var(--t-hover) ease, border-color var(--t-hover) ease; }
 @media (hover: hover) and (pointer: fine) { .tabs a:hover { color: var(--ink); border-color: var(--border); } }
@@ -101,10 +103,6 @@
 .first-run { display: grid; gap: var(--s3); margin: var(--s5) 0 0; padding: var(--s5) 0 0 var(--s5); border-top: 1px solid var(--rule); max-width: 72ch; font-size: var(--fs-body); color: var(--muted); align-self: stretch; }
 .first-run strong { color: var(--ink); font-weight: 500; }
 .first-run a { color: var(--ink); }
-/* An empty list and the Luca block beside it end on one line. */
-.canvas-list:has(.empty-row) > .list-panel, .canvas-list:has(.empty-row) > .side { align-self: stretch; }
-.canvas-list:has(.empty-row) > .side { align-content: stretch; }
-.canvas-list:has(.empty-row) > .side > .side-block { align-content: start; }
 
 .side { display: grid; gap: var(--s4); align-content: start; min-width: 0; }
 .side-block { padding: var(--s5); display: grid; gap: var(--s4); }
@@ -119,7 +117,8 @@ details.side-block:not([open]) { gap: 0; }
 .meter-track { display: block; height: 8px; border-radius: 999px; background: var(--active); overflow: hidden; }
 .meter-fill { display: block; height: 100%; background: var(--accent); transform-origin: left center; transition: transform var(--t-ui) var(--ease-out); }
 .guide { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); font-size: var(--fs-body); }
-.phone-summary { font-size: var(--fs-body); }
+.phone-only-inline { display: none; }
+@media (max-width: 720px) { .phone-only-inline { display: inline; } }
 
 /* ---------- Review screen ---------- */
 .review { display: grid; gap: var(--s4); align-items: start; }
@@ -170,7 +169,8 @@ details.side-block:not([open]) { gap: 0; }
 .action-bar {
   position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
   padding: var(--s3) var(--s4); padding-bottom: max(var(--s3), env(safe-area-inset-bottom));
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card);
+  /* One ground step darker than the white panels it slides over, with a control-weight edge: the cut reads as a tray, not a clipped form. */
+  background: var(--stage); border: 1px solid var(--control); border-radius: var(--radius-card);
 }
 .action-bar .actions { justify-content: flex-end; }
 .action-bar .balance { flex: 1; min-width: 0; }
@@ -179,7 +179,7 @@ details.side-block:not([open]) { gap: 0; }
 html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .action-bar .actions > p { flex-basis: 100%; text-align: right; }
 .danger-zone { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s4); padding-top: var(--s5); margin-top: var(--s4); border-top: 1px solid var(--border); }
-.danger-zone h2 { font-size: var(--fs-body); }
+.danger-zone:not(.setting-row) h2 { font-size: var(--fs-body); }
 
 /* ---------- Settings screen: two columns, one row per section ---------- */
 .settings { display: grid; }
@@ -187,7 +187,15 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .setting-row:first-child { border-top: 0; padding-top: var(--s2); }
 .setting-label { display: grid; gap: var(--s1); align-content: start; align-self: start; padding-top: var(--s2); position: sticky; top: var(--s4); }
 .setting-label h2 { font-weight: 500; }
-.setting-preview { display: grid; gap: 2px; margin-top: var(--s3); padding: var(--s3) var(--s4); border-radius: var(--radius-card); background: var(--stage); font-size: var(--fs-body); }
+/* What the group produces: the sample receipt's Luca lines, this group's line lit (the same row tone as the fiş izi). */
+.setting-preview { display: grid; gap: var(--s2); margin: var(--s3) 0 0; padding: var(--s3) var(--s2); border-radius: var(--radius-card); background: var(--stage); font-size: var(--fs-body); }
+.setting-preview figcaption { display: flex; justify-content: space-between; gap: var(--s3); padding: 0 var(--s2); font-weight: 500; }
+.preview-lines td { padding: 6px var(--s2); border: 0; vertical-align: baseline; }
+.preview-lines td:first-child { overflow-wrap: anywhere; }
+.preview-lines td.num { white-space: nowrap; }
+.preview-lines tr { transition: background-color var(--t-hover) ease; }
+.preview-lines tr[data-traced] { background: var(--accent-soft); }
+.preview-lines tr[data-traced] td:first-child .muted { color: var(--ink); }
 .setting-panel { align-self: start; padding: var(--s4); border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); min-width: 0; }
 .danger-zone.setting-row { margin-top: 0; }
 .danger-zone .setting-panel { background: none; padding-left: 0; }
@@ -196,8 +204,13 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .rules-table th:first-child, .rules-table td:first-child { padding-left: 0; }
 .rules-table th:last-child, .rules-table td:last-child { padding-right: 0; }
 .rules-table .rule-label { width: 32%; font-weight: 500; }
-.rules-table .col-code { width: 160px; }
+.rules-table .col-code { width: 128px; }
 .rules-table .field { min-height: 36px; }
+/* The account name is for people only (Luca matches the code): text until pointed at or focused, so 13 rules are not 26 boxes. */
+.field-quiet { font-weight: 400; }
+.field-quiet:not(:focus-visible):not([aria-invalid="true"]) { border-color: transparent; background: transparent; }
+@media (hover: hover) and (pointer: fine) { .field-quiet:hover:not(:focus-visible) { border-color: var(--border); } }
+.rules-table tbody tr { transition: background-color var(--t-hover) ease; }
 .setting-save { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s4); margin-top: var(--s4); }
 /* An unsaved group keeps its Save in reach while the user scrolls through its rows. */
 .setting-save:has(.btn-primary) {
@@ -212,10 +225,12 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .sk { display: block; height: 14px; background: var(--secondary-hover); border-radius: var(--radius-chip); }
 .sk-finding { display: inline-block; width: 320px; max-width: 100%; height: 16px; vertical-align: middle; }
 .sk-tab { width: 64px; margin: 15px var(--s2); }
-.sk-head { display: flex; justify-content: space-between; align-items: center; height: 40px; padding: 0 var(--s5); font-size: var(--fs-small); font-weight: 500; color: var(--muted); border-top: 1px solid var(--border); }
-.sk-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s5); height: 56px; padding: 0 var(--s5); border-top: 1px solid var(--rule); }
-.sk-row .sk:first-child { max-width: 50%; }
+.receipts .sk { max-width: 100%; }
+.num > .sk { margin-left: auto; }
+.sk-cell { width: 64px; }
 .sk-num { width: 88px; flex: none; }
+.sk-status { width: 64px; height: 20px; }
+.sk-capture { width: 120px; }
 .sk-label { font-size: var(--fs-section); font-weight: 600; }
 .sk-line { width: 100%; }
 .sk-bar { width: 100%; height: 8px; border-radius: 999px; }
@@ -232,13 +247,15 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   /* Rows become two lines: vendor and total, then number, date, account and status. Fields move, none is dropped. */
   .receipts thead { display: none; }
   .receipts, .receipts tbody { display: block; }
-  .receipts tr { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 2px var(--s3); align-items: baseline; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
+  .receipts tr { display: grid; grid-template-columns: minmax(0, 3.5rem) 5.75rem minmax(0, 1fr) auto; gap: 2px var(--s3); align-items: baseline; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
   .receipts tbody tr:last-child { border-bottom: 0; }
   .receipts td, .receipts td:first-child, .receipts td:last-child { height: auto; padding: 0; border: 0; }
   .receipts .r-vendor { grid-column: 1 / 4; }
   .receipts .r-total { grid-column: 4; grid-row: 1; font-weight: 600; }
   .receipts .r-no, .receipts .r-date, .receipts .r-code { grid-row: 2; font-size: var(--fs-small); color: var(--muted); }
-  .receipts .r-code { color: var(--ink); }
+  .receipts .r-no { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Codes start at one x on every row, whatever the width of the status pill. */
+  .receipts .r-code { color: var(--ink); text-align: left; }
   .receipts .r-status { grid-column: 4; grid-row: 2; text-align: right; }
   .r-notes { display: block; margin: 0; }
   .side { grid-template-columns: minmax(0, 1fr); }
@@ -277,7 +294,6 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .app[data-screen="fis"] .rail { display: none; }
 
   .canvas { padding: var(--s4) var(--s4) calc(var(--s9) + env(safe-area-inset-bottom)); gap: var(--s4); }
-  .app[data-screen="fis"] .canvas { padding-bottom: 0; }
   .title-row { margin-bottom: 0; }
   .title-text { flex-basis: 100%; }
   .finding { font-size: var(--fs-body); }
@@ -285,6 +301,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .capture-head .capture-camera { display: none; }
   .capture-head, .capture-head .capture-buttons, .capture-head .btn { width: 100%; }
   .capture-head .btn { min-height: var(--touch); }
+  .empty-row .capture-head .capture-camera { display: inline-flex; }
+  .empty-row .capture-head .capture-buttons { flex-direction: column; align-items: stretch; }
+  .empty-row .capture-head .capture-gallery { background: none; border-color: transparent; text-decoration: underline; text-underline-offset: 3px; }
 
   /* Four tabs fit in 343px: tighter padding, the count close to its label. */
   .tabs { padding: 0 var(--s1); gap: 0; }
@@ -306,22 +325,25 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .balance-strip > div:nth-child(3) { border-left: 0; }
   .balance-strip > div:nth-child(n + 3) { border-top: 1px solid var(--rule); }
   .balance-answer dd { font-size: 24px; }
-  .action-bar { flex-wrap: wrap; margin: 0 calc(-1 * var(--s4)); border-radius: 0; border-width: 1px 0 0; }
+  /* Fixed, not sticky: a sticky bar cannot rise above the top of its column, so on a short phone Onayla sat below the fold on load. */
+  .action-bar { position: fixed; inset: auto 0 0 0; flex-wrap: wrap; margin: 0; border-radius: 0; border-width: 1px 0 0; }
+  .app[data-screen="fis"] .canvas { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
+  html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 148px; }
   .action-bar .balance { flex-basis: 100%; font-size: var(--fs-body); }
   .action-bar .btn-lg { padding: 0 var(--s4); }
   .action-bar .bar-back { display: inline-flex; }
   .action-bar > .btn-primary { flex: 1; }
 
   .setting-row { padding: var(--s5) 0; }
-  /* One rule per row: its name, then code and account name side by side; the column names once at the top. */
-  .rules-table, .rules-table tbody, .rules-table thead { display: block; }
-  .rules-table tr { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: var(--s1) var(--s2); padding: var(--s2) 0; border-bottom: 1px solid var(--rule); }
-  .rules-table thead tr { padding-top: 0; }
-  .rules-table thead th:first-child { display: none; }
+  /* One rule per block: its name and code on one line, the account name at full width under them, never clipped. */
+  .rules-table, .rules-table tbody { display: block; }
+  .rules-table thead { display: none; }
+  .rules-table tr { display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem; align-items: center; gap: 0 var(--s2); padding: var(--s2) 0; border-bottom: 1px solid var(--rule); }
   .rules-table tbody tr:last-child { border-bottom: 0; }
   .rules-table td, .rules-table th { padding: 0; }
-  .rules-table .rule-label { grid-column: 1 / -1; width: auto; font-size: var(--fs-body); }
-  .rules-table .col-code { width: auto; }
+  .rules-table .rule-label { width: auto; font-size: var(--fs-body); }
+  .rules-table .rule-name { grid-column: 1 / -1; }
+  .rules-table .field-quiet { padding-left: 0; }
   .rules-table .field { min-height: var(--touch); font-size: 16px; }
   .setting-save:has(.btn-primary) { bottom: calc(68px + env(safe-area-inset-bottom)); }
   .setting-save .btn { width: 100%; }

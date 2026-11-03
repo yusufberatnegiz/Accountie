@@ -1,4 +1,5 @@
 // Defaults from docs/research/hesap-kurallari.md section 8. Copied to account_rules on first login.
+// Account names are for people only: the Luca file and the clipboard carry the code, so names are written in plain Turkish.
 
 export type Account = { code: string; name: string };
 export type PaymentMethod = "cash" | "card" | "other";
@@ -12,7 +13,7 @@ export const CATEGORIES: readonly { key: string; label: string; account: Account
   { key: "transport", label: "Ulaşım", account: { code: "770.05", name: "Seyahat ve Ulaşım Giderleri" } },
   { key: "cleaning", label: "Temizlik", account: { code: "770.06", name: "Temizlik Giderleri" } },
   { key: "maintenance", label: "Bakım ve onarım", account: { code: "770.07", name: "Bakım ve Onarım Giderleri" }, warning: "vehicle" },
-  { key: "meal", label: "Yemek ve ağırlama", account: { code: "770.08", name: "Yeme-İçme Ve Ağırlama Giderleri" }, warning: "meal" },
+  { key: "meal", label: "Yemek ve ağırlama", account: { code: "770.08", name: "Yeme-İçme ve Ağırlama Giderleri" }, warning: "meal" },
   { key: "telecom", label: "Telefon ve internet", account: { code: "770.09", name: "Haberleşme Giderleri" } },
   { key: "lodging", label: "Konaklama", account: { code: "770.10", name: "Konaklama Giderleri" }, warning: "lodging_tax" },
   { key: "office_supplies", label: "Büro malzemesi", account: { code: "770.11", name: "Büro Malzemesi Giderleri" } },
@@ -49,9 +50,9 @@ export type Rules = {
 export const DEFAULT_RULES: Rules = {
   expense: Object.fromEntries(CATEGORIES.map((c) => [c.key, c.account])),
   vat: {
-    1: { code: "191.03.01", name: "% 1 Li İndirilecek Kdv" },
-    10: { code: "191.03.10", name: "% 10 Lı İndirilecek Kdv" },
-    20: { code: "191.03.20", name: "% 20 Li İndirilecek Kdv" },
+    1: { code: "191.03.01", name: "%1 İndirilecek KDV" },
+    10: { code: "191.03.10", name: "%10 İndirilecek KDV" },
+    20: { code: "191.03.20", name: "%20 İndirilecek KDV" },
   },
   payment: {
     cash: { code: "100.01", name: "Kasa" },

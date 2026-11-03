@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import type { ReceiptDetail } from "@/db/queries";
 import { ACCOUNT_CODE_PATTERN, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type Account, type PaymentMethod, type Rules } from "@/lib/default-rules";
 import { approvalProblem, type JournalLine } from "@/lib/journal";
@@ -11,6 +11,7 @@ import { formatTrAmount, parseTrAmount } from "@/lib/money";
 import { STATUS_LABELS } from "@/lib/status";
 import { getPhoto } from "@/lib/photo-store";
 import { ExportButton } from "./ExportButton";
+import { useLeaveGuard } from "./useLeaveGuard";
 
 type EditLine = Omit<JournalLine, "debitKurus" | "creditKurus"> & { key: number; debit: string; credit: string };
 type SharedField = "documentNo" | "documentDate" | "documentType" | "description";
@@ -33,7 +34,6 @@ function kurus(text: string): number {
 }
 
 const signature = (ls: EditLine[]) => JSON.stringify(ls.map(({ key, ...rest }) => rest));
-const LEAVE_MESSAGE = "Kaydedilmemiş değişiklikler kaybolacak. Sayfadan çıkılsın mı?";
 
 const toLine = ({ key, debit, credit, ...rest }: EditLine): JournalLine => ({ ...rest, debitKurus: kurus(debit), creditKurus: kurus(credit) });
 
@@ -78,23 +78,7 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
   // Photo exists only in this tab; server render has none.
   const photo = useSyncExternalStore(noSubscribe, () => getPhoto(receipt.id), () => undefined);
 
-  // Warn before unsaved edits are lost: tab close or reload, and in-app links (captured before Next's Link handler).
-  useEffect(() => {
-    if (!dirty) return;
-    const onUnload = (e: BeforeUnloadEvent) => e.preventDefault();
-    const onClick = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest("a[href]") && !confirm(LEAVE_MESSAGE)) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-    window.addEventListener("beforeunload", onUnload);
-    document.addEventListener("click", onClick, true);
-    return () => {
-      window.removeEventListener("beforeunload", onUnload);
-      document.removeEventListener("click", onClick, true);
-    };
-  }, [dirty]);
+  useLeaveGuard(dirty);
 
   const parsed = lines.map(toLine);
   const invalid = parsed.some((l) => Number.isNaN(l.debitKurus) || Number.isNaN(l.creditKurus));
