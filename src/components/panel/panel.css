@@ -81,13 +81,8 @@
 /* ---------- List screen ---------- */
 .canvas-list { grid-template-columns: minmax(0, 1fr) 384px; align-items: start; }
 .list-panel { min-width: 0; }
-/* The list card and the Luca column share one foot. A list reaches down to the column; an empty or loading list is short,
-   so there the column's last block grows to meet it instead (a long list never stretches the column). */
+/* A short list reaches down to the Luca column; the column's cards keep their own height, so none holds an empty band. */
 .canvas-list > .list-panel { align-self: stretch; }
-@media (min-width: 1181px) {
-  .canvas-list:is(:has(.empty-row), [aria-busy]) > .side { align-self: stretch; display: flex; flex-direction: column; }
-  .canvas-list:is(:has(.empty-row), [aria-busy]) > .side > section.panel:last-of-type { flex: 1 0 auto; align-content: start; }
-}
 .tabs { display: flex; gap: var(--s1); padding: 0 var(--s4); border-bottom: 1px solid var(--border); overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
 .tabs a { position: relative; display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--touch); padding: 0 var(--s2); margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--muted); font-size: var(--fs-body); font-weight: 500; text-decoration: none; white-space: nowrap; transition: color var(--t-hover) ease, border-color var(--t-hover) ease; }
 @media (hover: hover) and (pointer: fine) { .tabs a:hover { color: var(--ink); border-color: var(--border); } }
@@ -136,26 +131,30 @@ details.side-block:not([open]) { gap: 0; }
 .meter { display: grid; gap: var(--s2); }
 .meter-head { display: flex; justify-content: space-between; font-size: var(--fs-body); color: var(--muted); }
 .meter-head .meter-value { color: var(--ink); font-weight: 600; }
-.meter-track { display: block; height: 8px; border-radius: 999px; background: var(--active); overflow: hidden; }
+/* The empty track must be seen on its own (an empty file is a state): a step toward the control edge, in both themes. */
+.meter-track { display: block; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--control-edge) 28%, var(--surface)); overflow: hidden; }
 .meter-fill { display: block; height: 100%; background: var(--accent); transform-origin: left center; }
 .guide { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); font-size: var(--fs-body); }
 .phone-only-inline { display: none; }
 @media (max-width: 720px) { .phone-only-inline { display: inline; } }
 
 /* ---------- Review screen ---------- */
+/* The DOM is the one-column order (warnings, lines, receipt, actions, delete), so Tab follows the eye at every width.
+   From 1100px the receipt column takes the left track across every row; the last row is 1fr, so a taller receipt column
+   never spreads gaps between the items on the right. */
 .review { display: grid; gap: var(--s4); align-items: start; }
-@media (min-width: 1100px) { .review { grid-template-columns: 360px minmax(0, 1fr); } .source .form-grid { grid-template-columns: 1fr 1fr; align-items: end; } }
+@media (min-width: 1100px) {
+  .review { grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: repeat(5, auto) 1fr; row-gap: 0; }
+  .review > .source { grid-column: 1; grid-row: 1 / -1; }
+  .review > :not(.source) { grid-column: 2; min-width: 0; }
+  .review > :not(.source):not(:first-child) { margin-top: var(--s4); }
+  .source .form-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+}
 /* The receipt column travels beside the lines, but only where all of it fits the screen; with the photo it would hide its own foot. */
 @media (min-width: 1100px) and (min-height: 820px) { .source:not(:has(.photo)) { position: sticky; top: var(--s4); } }
-/* One column: the journal lines and the balance answer the screen's question, so they come straight after the title;
-   what the receipt said follows, then the header fields, the actions and the delete. Both wrappers are plain divs. */
 @media (max-width: 1099px) {
   .review { display: flex; flex-direction: column; align-items: stretch; }
-  .review > :is(.source, .review-main) { display: contents; }
-  .review .source > * { order: 1; }
-  .review .source > .info { order: 2; }
-  .review-main > :is(.actions, .action-bar) { order: 3; }
-  .review-main > .danger-zone { order: 4; }
+  .review > .source { display: contents; }
 }
 .source { display: grid; gap: var(--s4); min-width: 0; }
 .photo { margin: 0; background: var(--stage); aspect-ratio: 3 / 4; max-height: 70vh; }
@@ -172,7 +171,6 @@ details.side-block:not([open]) { gap: 0; }
 /* Fiş izi: the receipt figure behind the journal line in focus. A full row tone, never a coloured edge. */
 .read-values > [data-traced] { background: var(--accent-soft); }
 .read-values > [data-traced] dd { color: var(--ink); }
-.review-main { display: grid; gap: var(--s4); min-width: 0; }
 .inline-field { display: grid; gap: var(--s1); font-size: var(--fs-small); color: var(--muted); }
 .inline-field .field { width: 260px; min-height: var(--control-sm); color: var(--ink); }
 .journal td, .journal th { padding: var(--s2) var(--s1); vertical-align: top; }
@@ -206,7 +204,9 @@ details.side-block:not([open]) { gap: 0; }
 [data-balanced] .balance-check { opacity: 1; transform: none; }
 .form-grid { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: var(--s4); }
 .span-all { grid-column: 1 / -1; }
-.review-main > .actions > p { flex: 1; }
+.review > .actions > p { flex: 1; }
+.form-grid .check-note { display: block; margin: 2px 0 0; }
+.alert .warn-more { display: none; }
 .action-bar {
   position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
   padding: var(--s3) var(--s4); padding-bottom: max(var(--s3), env(safe-area-inset-bottom));
@@ -216,6 +216,8 @@ details.side-block:not([open]) { gap: 0; }
 .action-bar .actions { justify-content: flex-end; }
 .action-bar .balance { flex: 1; min-width: 0; }
 .action-bar .bar-back { display: none; }
+/* Saving or approved-and-refreshing: the primary keeps its fill and its label reads at full contrast; only the cursor says wait. */
+.action-bar .btn-primary[data-busy]:disabled { background: var(--primary); color: var(--on-primary); cursor: progress; }
 /* A focused field is never under the sticky bar. */
 html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .action-bar .actions > p { flex-basis: 100%; text-align: right; }
@@ -246,7 +248,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .setting-row { scroll-margin-top: var(--s4); }
 .setting-panel { align-self: start; padding: var(--s4); border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); min-width: 0; }
 .danger-zone.setting-row { margin-top: 0; }
-.danger-zone .setting-panel { background: none; padding-left: 0; }
+.danger-zone .setting-panel { background: none; }
 .rules-table td, .rules-table th { padding: var(--s1) var(--s2); border-bottom: 0; }
 .rules-table th { padding-bottom: var(--s2); }
 .rules-table th:first-child, .rules-table td:first-child { padding-left: 0; }
@@ -258,10 +260,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .rules-table .field { min-height: 36px; }
 /* The account name is for people only (Luca matches the code): text until pointed at or focused, so 13 rules are not 26 boxes. */
 .field-quiet { font-weight: 400; }
-.field-quiet:not(:focus-visible):not([aria-invalid="true"]) { border-color: transparent; background: transparent; }
-@media (hover: hover) and (pointer: fine) { .field-quiet:hover:not(:focus-visible) { border-color: var(--border); } }
-/* No hover on a touch screen: a thin underline says the name can be edited. */
-@media (pointer: coarse) { .field-quiet:not(:focus-visible):not([aria-invalid="true"]) { border-bottom-color: var(--border); border-radius: 0; } }
+/* At rest an underline at control weight (WCAG 1.4.11) says the name can be edited, with or without hover; the full box comes on hover and focus. */
+.field-quiet:not(:focus-visible):not([aria-invalid="true"]) { border-color: transparent; border-bottom-color: var(--control-edge); border-radius: 0; background: transparent; }
+@media (hover: hover) and (pointer: fine) { .field-quiet:hover:not(:focus-visible) { border-color: var(--control-edge); border-radius: var(--radius-control); } }
 .rules-table tbody tr { transition: background-color var(--t-hover) ease; }
 .setting-save { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s4); margin-top: var(--s4); }
 /* An unsaved group keeps its Save in reach while the user scrolls through its rows. */
@@ -338,6 +339,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   /* Filled only where taking a receipt is the screen's job; on Kurallar it would outshine the active tab. */
   .app[data-screen="fisler"] .rail-capture { background: var(--primary); color: var(--on-primary); }
   .app[data-screen="fisler"] .rail-capture:hover { background: var(--primary-hover) !important; color: var(--on-primary) !important; }
+  /* While its receipt is read a second tap does nothing; the muted fill says so. */
+  .app .rail-capture[aria-disabled="true"] { background: var(--active) !important; color: var(--muted) !important; cursor: progress; }
   /* Reading status and errors float just above the bar, under the thumb. */
   .capture-rail .reading, .capture-rail .alert, .capture-head .reading, .empty-row .capture-head .reading { position: fixed; top: auto; width: auto; left: var(--s4); right: var(--s4); bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 4; }
   /* The receipt screen has its own bottom bar (balance, Onayla); the crumb leads back. */
@@ -351,9 +354,6 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .capture-head .capture-camera { display: none; }
   .capture-head, .capture-head .capture-buttons, .capture-head .btn { width: 100%; }
   .capture-head .btn { min-height: var(--touch); }
-  .empty-row .capture-head .capture-camera { display: inline-flex; }
-  .empty-row .capture-head .capture-buttons { flex-direction: column; align-items: stretch; }
-  .empty-row .capture-head .capture-gallery { background: none; border-color: transparent; text-decoration: underline; text-underline-offset: 3px; }
 
   /* Four tabs fit in 343px: tighter padding, the count close to its label. */
   .tabs { padding: 0 var(--s1); gap: 0; }
@@ -380,6 +380,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .app[data-screen="fis"] .canvas { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
   html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 148px; }
   .action-bar .balance { flex-basis: 100%; font-size: var(--fs-body); }
+  .notes[data-folded] > li:nth-child(n + 3) { display: none; }
+  .alert .warn-more { display: inline-block; margin-top: var(--s2); }
   .action-bar .btn-lg { padding: 0 var(--s4); }
   .action-bar .bar-back { display: inline-flex; }
   .action-bar > .btn-primary { flex: 1; }
@@ -392,19 +394,19 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .action-bar:not(:has(.bar-next-draft)) .bar-next .btn { width: 100%; }
   .capture-bar .reading, .capture-bar .alert { position: fixed; left: var(--s4); right: var(--s4); bottom: calc(128px + env(safe-area-inset-bottom)); z-index: 4; }
   /* While the keyboard is up the bar drops its sentence and keeps one row of buttons. */
-  .app[data-screen="fis"]:has(.review-main :is(input, select):focus) .action-bar .balance { display: none; }
+  .app[data-screen="fis"]:has(.review :is(input, select):focus) .action-bar .balance { display: none; }
   .journal td.col-del { justify-self: end; margin-left: var(--s3); }
 
   .setting-row { padding: var(--s5) 0; }
   /* One rule per block: its name and code on one line, the account name at full width under them, never clipped. */
   .rules-table, .rules-table tbody { display: block; }
   .rules-table thead { display: none; }
-  .rules-table tr { display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem; align-items: center; gap: 0 var(--s2); padding: var(--s2) 0; border-bottom: 1px solid var(--rule); }
-  .rules-table tbody tr:last-child { border-bottom: 0; }
+  /* The name field's underline is the only line between rules; a row divider under it would draw two. */
+  .rules-table tr { display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem; align-items: center; gap: 0 var(--s2); padding: var(--s2) 0 var(--s3); }
   .rules-table td, .rules-table th { padding: 0; }
   .rules-table .rule-label { width: auto; font-size: 16px; }
   .rules-table .rule-name { grid-column: 1 / -1; }
-  .rules-table .field-quiet { padding-left: 0; color: var(--muted); }
+  .rules-table .field-quiet { padding-left: 0; color: var(--ink); }
   /* One example per screen: after the first group each card keeps only the line its group writes. */
   .setting-row + .setting-row .preview-lines tr:not([data-traced]) { display: none; }
   .rules-table .field { min-height: var(--touch); font-size: 16px; }
@@ -420,7 +422,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .by-account { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
 .by-account li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s1) var(--s3); font-size: var(--fs-body); }
 .by-account .acc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.by-account .acc-track { grid-column: 1 / -1; display: block; height: 8px; border-radius: 999px; background: var(--active); overflow: hidden; }
+.by-account .acc-track { grid-column: 1 / -1; display: block; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--control-edge) 28%, var(--surface)); overflow: hidden; }
 .by-account .acc-bar { display: block; height: 100%; background: var(--accent); transform-origin: left center; }
 .by-account-foot { display: flex; justify-content: space-between; gap: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--rule); font-size: var(--fs-body); }
 
@@ -432,6 +434,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 @media (prefers-reduced-motion: no-preference) {
   .balance-answer::before { transition: transform 200ms var(--ease-out); }
   .balance-check { transition: opacity 160ms ease, transform 200ms var(--ease-out); }
+  /* A downloaded receipt that stays in view (Tümü) changes its pill by a short tone step, not a jump. */
+  .receipts .status { transition: background-color 180ms ease, color 180ms ease; }
   /* Onaylandı lands like a rubber stamp: from slightly above and turned, into place. */
   .status[data-stamp] { animation: stamp 320ms var(--ease-exit) both; }
   @keyframes stamp { from { opacity: 0; transform: scale(1.6) rotate(-8deg); } 70% { opacity: 1; } to { transform: none; } }
@@ -449,12 +453,13 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 /* Row opening: a thin ledger-blue bar along the row's foot while the review loads. */
 .row-pending { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--accent); transform-origin: left center; }
 .reading:has(.feed) { gap: var(--s3); padding: var(--s3) var(--s4); }
-.feed { flex: none; display: block; width: 40px; height: 56px; overflow: hidden; border-top: 2px solid var(--ink); border-radius: 2px; }
-.feed-paper { display: grid; align-content: start; gap: 6px; height: 100%; padding: 8px 6px; background: var(--paper); }
+/* Big enough to catch the eye during a 1.5-3 s read; the stages at section size beside it. */
+.feed { flex: none; display: block; width: 56px; height: 80px; overflow: hidden; border-top: 2px solid var(--ink); border-radius: 2px; }
+.feed-paper { display: grid; align-content: start; gap: 8px; height: 100%; padding: 10px 8px; background: var(--paper); }
 .feed-paper i { display: block; height: 3px; background: var(--paper-ink); }
 .feed-paper i:nth-child(1) { --i: 0; width: 70%; } .feed-paper i:nth-child(2) { --i: 1; } .feed-paper i:nth-child(3) { --i: 2; width: 55%; } .feed-paper i:nth-child(4) { --i: 3; width: 80%; }
 .reading-text { display: grid; gap: 2px; min-width: 0; }
-.stages { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.stages { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: var(--fs-section); }
 .stages li[data-done] { color: var(--muted); font-weight: 400; }
 .stages li[data-done]::before { content: "\2713\00a0"; color: var(--positive); }
 .reading-text .small { font-weight: 400; color: var(--muted); }
