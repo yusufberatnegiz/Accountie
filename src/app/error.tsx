@@ -11,7 +11,7 @@ export default function ErrorPage({ retry }: { error: unknown; retry: () => void
         <p className="muted">Bağlantı veya sunucu kaynaklı bir sorun oldu. Tekrar deneyin, sorun sürerse birkaç dakika sonra açın.</p>
         <div className="actions">
           <button className="btn btn-primary" type="button" onClick={() => retry()}>Tekrar dene</button>
-          <Link className="btn" href="/">Fişlere dön</Link>
+          <Link className="btn" href="/panel">Fişlere dön</Link>
         </div>
       </section>
     </main>

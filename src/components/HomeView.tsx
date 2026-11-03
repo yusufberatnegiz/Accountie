@@ -17,7 +17,8 @@ export const TABS: { slug: string; label: string; status?: ReceiptStatus }[] = [
 const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : "Tarih yok");
 
 /** Receipt list screen body; the page and the dev preview both render it. */
-export function HomeView({ receipts, tab, base = "/" }: { receipts: Awaited<ReturnType<typeof listReceipts>>; tab: (typeof TABS)[number]; base?: string }) {
+// shortcut: receipts still live at /fis/[id], so the /panel base links rows without it; drop the case when /panel/fis/[id] lands.
+export function HomeView({ receipts, tab, base = "/panel" }: { receipts: Awaited<ReturnType<typeof listReceipts>>; tab: (typeof TABS)[number]; base?: string }) {
   return (
     <main id="icerik" tabIndex={-1} className="page page-home">
       <div className="page-head">
@@ -44,7 +45,7 @@ export function HomeView({ receipts, tab, base = "/" }: { receipts: Awaited<Retu
             <tbody>
               {receipts.map((r) => (
                 <tr key={r.id}>
-                  <td className="r-vendor"><Link className="row-link" href={`${base === "/" ? "" : base}/fis/${r.id}`}>{r.vendorName ?? "Okunamayan fiş"}</Link></td>
+                  <td className="r-vendor"><Link className="row-link" href={`${base === "/panel" ? "" : base}/fis/${r.id}`}>{r.vendorName ?? "Okunamayan fiş"}</Link></td>
                   <td className="r-no num-font">{r.receiptNo ?? ""}</td>
                   <td className="r-date">{trDate(r.receiptDate)}</td>
                   <td className="r-total num">{r.totalKurus === null ? "" : formatTrAmount(r.totalKurus)}</td>

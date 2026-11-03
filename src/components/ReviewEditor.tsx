@@ -275,7 +275,7 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
           <button className="btn" type="button" disabled={invalid} onClick={copy}>Satırları kopyala</button>
           {editable ? (
             <button className="btn btn-danger" type="button" disabled={busy}
-              onClick={() => confirm("Bu taslak fiş silinsin mi?") && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) router.push("/"); })}>
+              onClick={() => confirm("Bu taslak fiş silinsin mi?") && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) router.push("/panel"); })}>
               Fişi sil
             </button>
           ) : null}

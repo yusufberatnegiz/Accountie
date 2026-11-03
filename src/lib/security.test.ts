@@ -55,7 +55,7 @@ describe("oran sınırı", () => {
   });
 
   it("anahtar e-posta veya IP'yi açık metin içermez", async () => {
-    await expect(redirectOf(actions.login(form({ email: "muhasebe@ornek.com", password: "12345678" })))).resolves.toBe("REDIRECT /");
+    await expect(redirectOf(actions.login(form({ email: "muhasebe@ornek.com", password: "12345678" })))).resolves.toBe("REDIRECT /panel");
     const keys = vi.mocked(hitRateLimit).mock.calls.map(([k]) => k);
     expect(keys).toHaveLength(2); // Turnstile yokken de IP ve e-posta sınırı
     for (const k of keys) expect(k).not.toMatch(/muhasebe|ornek|203\.0/);
