@@ -15,11 +15,11 @@
 .auth-head h1 { font-family: var(--font-head); font-weight: 300; font-size: clamp(1.5rem, 1rem + 1vw, 2rem); letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
 .auth-fields { display: grid; gap: var(--s4); }
 .auth-field { display: grid; gap: var(--s2); }
-.auth-field > label { font-size: var(--fs-body); font-weight: 500; }
+.auth-field > label { font-size: var(--fs-body); font-weight: var(--w-medium); }
 /* The reset link follows the password field in the DOM (tab order) and is drawn at the end of its label row. */
 .auth-field:has(.auth-aside) { position: relative; }
 .auth-aside { position: absolute; top: 0; right: 0; line-height: 1.5; }
-.auth-aside a { font-size: var(--fs-body); font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; min-height: var(--touch); margin-block: calc((var(--touch) - 1.5em) / -2); }
+.auth-aside a { font-size: var(--fs-body); font-weight: var(--w-medium); color: var(--accent); display: inline-flex; align-items: center; min-height: var(--touch); margin-block: calc((var(--touch) - 1.5em) / -2); }
 .auth-password { position: relative; }
 .auth-password .field { padding-right: var(--s8); }
 .auth-reveal {
@@ -34,7 +34,7 @@
 .auth-switch, .auth-consent { margin: 0; font-size: var(--fs-body); color: var(--muted); }
 .auth-consent a, .auth-switch a { color: var(--accent); }
 /* After the form the thumb goes here: a 44px target, not an 18px line. */
-.auth-switch a { display: inline-flex; align-items: center; min-height: var(--touch); padding-inline: var(--s1); margin-inline: calc(var(--s1) * -1); font-weight: 500; }
+.auth-switch a { display: inline-flex; align-items: center; min-height: var(--touch); padding-inline: var(--s1); margin-inline: calc(var(--s1) * -1); font-weight: var(--w-medium); }
 
 /* ---------- The stage: the product piece, sticky beside the form ---------- */
 .auth-stage { grid-column: 2; grid-row: 1 / span 2; background: var(--split); display: grid; align-content: start; justify-content: center; justify-items: start; gap: var(--s5); padding: var(--auth-top) var(--page-margin) var(--s8); position: sticky; top: 0; height: 100dvh; box-sizing: border-box; }
@@ -42,7 +42,7 @@
 .auth-strip { overflow: clip; padding-bottom: var(--s2); }
 .auth-sheet { background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s5); display: grid; gap: var(--s4); }
 .auth-sheet p { margin: 0; }
-.auth-sheet-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--s1) var(--s3); font-weight: 600; font-size: var(--fs-section); }
+.auth-sheet-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--s1) var(--s3); font-weight: var(--w-strong); font-size: var(--fs-section); }
 .auth-sheet-head .auth-sheet-meta { grid-column: 1; }
 .auth-sheet-head .status { grid-column: 2; grid-row: 1; }
 .auth-sheet-meta { font-size: var(--fs-small); font-weight: 400; color: var(--muted); }
@@ -50,14 +50,14 @@
 .auth-sheet th { text-align: left; padding: 0 var(--s2) var(--s2); }
 .auth-sheet th.num, .auth-sheet td.num { text-align: right; }
 .auth-sheet td { padding: var(--s2); vertical-align: top; }
-.auth-sheet td.num { white-space: nowrap; font-weight: 500; }
+.auth-sheet td.num { white-space: nowrap; font-weight: var(--w-medium); }
 .auth-sheet .num { width: 1%; }
-.auth-code { display: block; font-weight: 500; font-variant-numeric: tabular-nums; }
+.auth-code { display: block; font-weight: var(--w-medium); font-variant-numeric: tabular-nums; }
 .auth-code-name { display: block; font-size: var(--fs-small); color: var(--muted); }
-.auth-balance { font-size: var(--fs-body); font-weight: 500; font-variant-numeric: tabular-nums; }
+.auth-balance { font-size: var(--fs-body); font-weight: var(--w-medium); font-variant-numeric: tabular-nums; }
 .auth-balance .balance-ok { color: var(--positive); }
 /* The approved lines' next stop: the Excel file Luca reads. */
-.auth-file { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) var(--s3); background: var(--raised); border-radius: var(--radius-control); font-size: var(--fs-body); font-weight: 500; overflow-wrap: anywhere; }
+.auth-file { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) var(--s3); background: var(--raised); border-radius: var(--radius-control); font-size: var(--fs-body); font-weight: var(--w-medium); overflow-wrap: anywhere; }
 .auth-stage-note { margin: 0; font-size: var(--fs-body); color: var(--muted); }
 
 @media (prefers-reduced-motion: no-preference) {

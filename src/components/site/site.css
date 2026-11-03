@@ -21,7 +21,7 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
 .site-links { display: flex; gap: var(--s1); min-width: 0; }
 .site-links a {
   display: inline-flex; align-items: center; min-height: var(--control); padding: 0 var(--s3); border-radius: var(--radius-control);
-  color: var(--ink); text-decoration: none; font-size: var(--fs-body); font-weight: 500; white-space: nowrap;
+  color: var(--ink); text-decoration: none; font-size: var(--fs-body); font-weight: var(--w-medium); white-space: nowrap;
   transition: background-color var(--t-hover) ease;
 }
 @media (hover: hover) and (pointer: fine) { .site-links a:hover { background: var(--active); color: var(--ink); } }
@@ -46,7 +46,7 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
   background: var(--surface); border-radius: var(--radius-card);
 }
 .site-menu[open] .site-menu-list { box-shadow: var(--shadow-float); } /* taste-skill-ignore: the open menu floats */
-.site-menu-list a { display: flex; align-items: center; min-height: var(--touch); padding: 0 var(--s3); border-radius: var(--radius-chip); color: var(--ink); text-decoration: none; font-weight: 500; font-size: var(--step-body); }
+.site-menu-list a { display: flex; align-items: center; min-height: var(--touch); padding: 0 var(--s3); border-radius: var(--radius-chip); color: var(--ink); text-decoration: none; font-weight: var(--w-medium); font-size: var(--step-body); }
 @media (hover: hover) and (pointer: fine) { .site-menu-list a:hover { background: var(--active); color: var(--ink); } }
 @media (prefers-reduced-motion: no-preference) {
   .site-menu[open] .site-menu-list { animation: site-drop 160ms var(--ease-out) both; }
@@ -81,7 +81,7 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
   padding: var(--s3) var(--s3) var(--s3) var(--s4); background: var(--surface); color: var(--ink); border-radius: var(--radius-card);
   border: 1px solid var(--border); /* taste-skill-ignore: floating strip edge */
 }
-.cookie-dialog h2 { margin: 0; font-size: var(--fs-section); font-weight: 600; }
+.cookie-dialog h2 { margin: 0; font-size: var(--fs-section); font-weight: var(--w-strong); }
 .cookie-note p { margin: 0; font-size: var(--fs-body); line-height: 1.45; }
 .cookie-note a { color: var(--accent); }
 .cookie-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
@@ -91,7 +91,7 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
 .cookie-dialog[open] { display: grid; gap: var(--s3); }
 .cookie-dialog::backdrop { background: var(--scrim); }
 .cookie-dialog p { margin: 0; }
-.cookie-row { display: flex; align-items: center; gap: var(--s3); min-height: var(--touch); font-weight: 500; }
+.cookie-row { display: flex; align-items: center; gap: var(--s3); min-height: var(--touch); font-weight: var(--w-medium); }
 .cookie-row input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
 /* Past the first screen the notice steps aside (it is back at the top until Tamam); it never sits over the page's headings. */
 .cookie-note { transition: transform 240ms var(--ease-out), opacity 240ms var(--ease-out), visibility 0s linear 0s; }

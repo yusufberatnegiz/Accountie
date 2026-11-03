@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 /**
  * Accountie mark: a thermal receipt strip with a torn edge. Two grey printed lines stay on the paper;
  * the third, in ledger blue, runs off the strip: the figure that goes to Luca.
@@ -15,12 +13,3 @@ export function BrandMark({ className = "mark" }: { className?: string }) {
   );
 }
 
-/** Mark plus wordmark; used in the app shell, auth screens and the homepage. */
-export function Brand({ href = "/" }: { href?: string }) {
-  return (
-    <Link className="brand" href={href} translate="no">
-      <BrandMark />
-      Accountie
-    </Link>
-  );
-}

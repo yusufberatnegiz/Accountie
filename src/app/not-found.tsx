@@ -8,7 +8,7 @@ export default function NotFound() {
   return (
     <StatusPage
       title="Fiş veya sayfa bulunamadı"
-      actions={<><Link className="btn btn-primary" href="/panel">Fişlere dön</Link><Link className="btn" href="/">Ana sayfa</Link></>}
+      actions={<><Link className="btn btn-primary" href="/">Ana sayfa</Link><Link className="btn" href="/panel">Fişlere dön</Link></>}
     >
       <p>Fiş silinmiş olabilir ya da bağlantı hatalı.</p>
     </StatusPage>

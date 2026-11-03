@@ -5,8 +5,8 @@ import { HEAD_SCRIPT, SW_REGISTER } from "@/lib/csp";
 import "./globals.css";
 
 // Two families (docs/design/YON.md 6.3): Text for everything, Headline only for the homepage's large headings.
-// next/font has no metrics for Stack Sans, so the metric-matched Arial fallbacks are declared in globals.css.
-const text = Stack_Sans_Text({ variable: "--font-stack-text", subsets: ["latin", "latin-ext"], weight: ["400", "500", "600"], display: "swap", adjustFontFallback: false, fallback: ["Stack Sans Text Fallback"] });
+// next/font has no metrics for Stack Sans, so the metric-matched Arial fallbacks are declared in globals.css. Text is the variable file (200-700): the dark theme sets 450/500 (--w-medium, --w-strong).
+const text = Stack_Sans_Text({ variable: "--font-stack-text", subsets: ["latin", "latin-ext"], weight: "variable", display: "swap", adjustFontFallback: false, fallback: ["Stack Sans Text Fallback"] });
 const head = Stack_Sans_Headline({ variable: "--font-stack-head", subsets: ["latin", "latin-ext"], weight: ["300"], display: "swap", adjustFontFallback: false, fallback: ["Stack Sans Headline Fallback"] });
 
 export const metadata: Metadata = {
