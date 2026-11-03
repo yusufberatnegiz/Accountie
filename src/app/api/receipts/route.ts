@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   try {
     jpeg = await normalizeImage(bytes);
   } catch {
-    return fail("Fotoğraf açılamadı. Başka bir fotoğraf deneyin.", 415);
+    return fail("Fotoğraf açılamadı. Başka bir fotoğraf deneyin; iPhone fotoğrafını (HEIC) JPEG olarak paylaşın.", 415);
   }
 
   // Counted only for valid photos that are about to reach the model.

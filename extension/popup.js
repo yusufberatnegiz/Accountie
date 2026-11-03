@@ -63,7 +63,8 @@ async function fill() {
   });
   const summary = AccountieFill.summarize(results.map((r) => r.result), receipt.rows.length);
   status(summary.message, !summary.ok);
-  $("done").hidden = !summary.ok;
+  // Shown after partial fills too: the user completes the missing cells by hand and still has to mark the receipt.
+  $("done").hidden = !summary.gridFound;
 }
 
 async function done() {

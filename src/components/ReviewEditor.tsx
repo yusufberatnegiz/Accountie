@@ -257,9 +257,17 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
               <button className="btn" type="button" disabled={busy} onClick={() => run(async () => { if (await save()) { setInfo("Kaydedildi."); router.refresh(); } })}>Taslağı kaydet</button>
             </>
           ) : receipt.status === "approved" ? (
-            <button className="btn" type="button" disabled={busy} onClick={() => run(async () => { if (await call(`/api/receipts/${receipt.id}/reopen`, { method: "POST" })) router.refresh(); })}>
-              Taslağa al
-            </button>
+            <>
+              <button className="btn" type="button" disabled={busy} onClick={() => run(async () => { if (await call(`/api/receipts/${receipt.id}/reopen`, { method: "POST" })) router.refresh(); })}>
+                Taslağa al
+              </button>
+              {/* Without this, a receipt typed into Luca by hand stays approved and the next Excel file repeats it. */}
+              <button className="btn" type="button" disabled={busy}
+                onClick={() => confirm("Bu fişi Luca'ya kendiniz kaydettiniz mi? Fiş \"Aktarıldı\" olur ve sonraki Excel dosyasına girmez.")
+                  && run(async () => { if (await call(`/api/receipts/${receipt.id}/exported`, { method: "POST" })) router.refresh(); })}>
+                Luca&apos;ya elle girdim
+              </button>
+            </>
           ) : null}
           <button className="btn" type="button" disabled={invalid} onClick={copy}>Satırları kopyala</button>
           {editable ? (

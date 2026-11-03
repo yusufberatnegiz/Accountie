@@ -54,6 +54,13 @@ export function HomeView({ receipts, tab, base = "/" }: { receipts: Awaited<Retu
             </tbody>
           </table>
         )}
+        {tab.status === "exported" && receipts.length > 0 ? (
+          <div className="panel-pad desktop-only">
+            {/* shortcut: re-downloads only the newest 50 (one Luca file); older ones are re-downloaded one by one from the receipt page. */}
+            <ExportButton receiptIds={receipts.slice(0, 50).map((r) => r.id)}
+              label={receipts.length > 50 ? "Son 50 fişi tekrar indir" : "Bu listeyi tekrar indir"} />
+          </div>
+        ) : null}
       </section>
 
       <div className="side-sections">
@@ -68,15 +75,16 @@ export function HomeView({ receipts, tab, base = "/" }: { receipts: Awaited<Retu
             <li>Önizlemeyi kontrol edip Fiş Kes ile fişleri oluşturun.</li>
           </ol>
           <p className="muted small">Dosya düzeni Luca&apos;nın resmi şablonuyla henüz doğrulanmadı. İlk yüklemede önizlemedeki hesap kodlarını ve tutarları fişle karşılaştırın.</p>
-          <p className="muted small">İndirilen fişler &quot;Aktarıldı&quot; olur ve bu listeden düşer. Luca dosyayı reddederse fişi açıp &quot;Luca için Excel indir&quot; ile tekrar indirin.</p>
+          <p className="muted small">İndirilen fişler &quot;Aktarıldı&quot; olur ve bu listeden düşer. Luca dosyayı reddederse Aktarıldı sekmesinden &quot;Bu listeyi tekrar indir&quot; ile yeniden indirin.</p>
         </section>
 
-        <section className="panel panel-pad stack desktop-only" aria-labelledby="ext-title">
-          <h2 id="ext-title">Chrome eklentisi ile doldurma</h2>
+        <details className="panel panel-pad stack desktop-only">
+          <summary><h2 id="ext-title">Chrome eklentisi ile doldurma (deneysel)</h2></summary>
+          <p className="muted small">Eklenti Luca&apos;da henüz denenmedi; Luca ekranındaki alanları bulamayabilir. Excel ile aktarım birincil yoldur.</p>
           <p>Eklenti onaylı fişin satırlarını Luca&apos;da açık olan Fiş Detayı ekranına yazar. Kaydet&apos;e siz basarsınız.</p>
           <p className="muted small">Anahtar 12 saat geçerlidir ve yalnızca sizin onaylı fişlerinizi okur.</p>
           <ExtensionTokenPanel />
-        </section>
+        </details>
 
         <InstallHint />
       </div>

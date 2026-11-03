@@ -45,12 +45,15 @@
   /** Picks the frame that found the grid and turns its result into one Turkish message. */
   function summarize(results, rowCount) {
     const best = results.filter((r) => r && r.gridFound).sort((a, b) => b.filled - a.filled)[0];
-    if (!best) return { ok: false, message: "Fiş Detayı tablosu bulunamadı. Luca'da Fiş Detayı ekranını açın; açıksa extension/selectors.js içindeki seçicileri güncelleyin." };
+    if (!best) return { ok: false, gridFound: false, message: "Fiş Detayı tablosu bulunamadı. Luca'da Fiş Detayı ekranını açın; açıksa extension/selectors.js içindeki seçicileri güncelleyin." };
     if (best.missing.length) {
       const list = best.missing.map((m) => `${m.row}. satır ${FIELD_LABELS[m.field] || m.field}`).join(", ");
-      return { ok: false, message: `Alan bulunamadı: ${list}. Bu alanları elle doldurun, sonra Kaydet'e siz basın.` };
+      const rowHint = best.missing.some((m) => m.field === "row")
+        ? " Satır eksikse Luca'da + ile boş satır ekleyip Fiş Detayına yaz'a tekrar basabilirsiniz."
+        : "";
+      return { ok: false, gridFound: true, message: `Alan bulunamadı: ${list}. Bu alanları elle doldurun, sonra Kaydet'e siz basın.${rowHint} Kaydettikten sonra Luca'da kaydettim'e basın.` };
     }
-    return { ok: true, message: `${rowCount} satır dolduruldu. Luca'da kontrol edip Kaydet'e siz basın.` };
+    return { ok: true, gridFound: true, message: `${rowCount} satır dolduruldu. Luca'da kontrol edip Kaydet'e siz basın, sonra Luca'da kaydettim'e basın.` };
   }
 
   root.AccountieFill = { FIELDS, FIELD_LABELS, fillReceipt, summarize };
