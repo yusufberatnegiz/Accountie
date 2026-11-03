@@ -89,17 +89,17 @@
   color-scheme: light;
 }
 
-/* ---------- Tokens: dark. Same block twice: system preference (unless the user chose light) and manual choice. ---------- */
+/* ---------- Tokens: dark. Same block twice: system preference without JS, and data-look (set by the theme script, src/lib/theme.ts). ---------- */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme="light"]):not([data-look]) {
     --ground: #0e1114; --surface: #161a1f; --raised: #1d2228; --stage: #1b2027; --active: #232931;
     --border: #262c34; --rule: #1f242b; --control-edge: #66717e;
     --ink: #eef1f4; --muted: #a9b2bd; --faint: #949eaa; --thermal-ink: #a9b2bd;
     --accent: #8db0e0; --accent-strong: #a9c4e9; --on-accent: #0e1114; --accent-soft: #1d2a3a;
-    --accent-field: #2b5a9a; --on-accent-field: #ffffff;
+    --accent-field: #23406a; --on-accent-field: #eef1f4;
     --primary: #eef1f4; --primary-hover: #d5dbe2; --on-primary: #0e1114;
     --secondary: #232931; --secondary-hover: #2d343e;
-    --deep: #0a0d10;
+    --deep: #15253a;
     --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
     --warn-ink: #e8c477; --warn-bg: #2a2412;
     --scrim: rgb(0 0 0 / 0.6);
@@ -109,15 +109,15 @@
     color-scheme: dark;
   }
 }
-:root[data-theme="dark"] {
+:root[data-theme="dark"], :root[data-look="dark"]:not([data-theme="light"]) {
   --ground: #0e1114; --surface: #161a1f; --raised: #1d2228; --stage: #1b2027; --active: #232931;
   --border: #262c34; --rule: #1f242b; --control-edge: #66717e;
   --ink: #eef1f4; --muted: #a9b2bd; --faint: #949eaa; --thermal-ink: #a9b2bd;
   --accent: #8db0e0; --accent-strong: #a9c4e9; --on-accent: #0e1114; --accent-soft: #1d2a3a;
-  --accent-field: #2b5a9a; --on-accent-field: #ffffff;
+  --accent-field: #23406a; --on-accent-field: #eef1f4;
   --primary: #eef1f4; --primary-hover: #d5dbe2; --on-primary: #0e1114;
   --secondary: #232931; --secondary-hover: #2d343e;
-  --deep: #0a0d10;
+  --deep: #15253a;
   --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
   --warn-ink: #e8c477; --warn-bg: #2a2412;
   --scrim: rgb(0 0 0 / 0.6);
