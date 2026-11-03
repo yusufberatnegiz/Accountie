@@ -15,8 +15,15 @@ describe("proxy matcher", () => {
     }
   });
 
-  it("leaves the public pages and assets open", () => {
-    for (const url of ["/", "/giris", "/giris/sifre", "/giris/sifre/yeni", "/kayit", "/gizlilik", "/gorseller/antalya-liman.jpg", "/manifest.webmanifest", "/robots.txt", "/sw.js", "/cevrimdisi.html", "/icon.svg", "/icon-192.png", "/icon-maskable-512.png", "/apple-touch-icon.png", "/favicon.ico", "/_next/static/x.js", "/onizleme/panel", "/auth/callback"]) {
+  // Matched for the nonce CSP only; the session check skips them ("proxy auth pages" below).
+  it("sends the dynamic auth pages through for their nonce CSP", () => {
+    for (const url of ["/giris", "/giris/sifre", "/giris/sifre/yeni", "/kayit"]) {
+      expect(guarded(url), url).toBe(true);
+    }
+  });
+
+  it("leaves the static public pages and assets open", () => {
+    for (const url of ["/", "/gizlilik", "/gorseller/antalya-liman.jpg", "/manifest.webmanifest", "/robots.txt", "/sw.js", "/cevrimdisi.html", "/icon.svg", "/icon-192.png", "/icon-maskable-512.png", "/apple-touch-icon.png", "/favicon.ico", "/_next/static/x.js", "/onizleme/panel", "/auth/callback"]) {
       expect(guarded(url), url).toBe(false);
     }
   });
@@ -48,8 +55,23 @@ describe("proxy login redirect", () => {
 
   it("adds nothing for the panel root, for other paths or for a login on another origin", async () => {
     expect((await run("/panel")).searchParams.has("sonra")).toBe(false);
-    expect((await run("/fis/abc")).searchParams.has("sonra")).toBe(false);
+    expect((await proxy(new NextRequest("http://localhost/fis/abc"))).headers.get("location")).toBeNull();
     expect((await run("/panel/fis/abc", "https://auth.example/giris")).searchParams.has("sonra")).toBe(false);
+  });
+});
+
+describe("proxy auth pages", () => {
+  it("give a nonce CSP without the session check", async () => {
+    const middleware = vi.fn();
+    vi.mocked(getAuth).mockReturnValue({ middleware } as unknown as ReturnType<typeof getAuth>);
+    for (const path of ["/giris", "/giris/sifre/yeni?token=x", "/kayit"]) {
+      const res = await proxy(new NextRequest(`http://localhost${path}`));
+      expect(res.headers.get("location"), path).toBeNull();
+      expect(res.headers.get("content-security-policy"), path).toMatch(/script-src 'self' 'nonce-[^']+' 'strict-dynamic'/);
+      // NextResponse.next({ request }) marks the forwarded CSP header, which is where Next reads the nonce from.
+      expect(res.headers.get("x-middleware-request-content-security-policy"), path).toBe(res.headers.get("content-security-policy"));
+    }
+    expect(middleware).not.toHaveBeenCalled();
   });
 });
 

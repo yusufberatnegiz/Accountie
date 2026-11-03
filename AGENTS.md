@@ -35,7 +35,7 @@
 - **iOS PWA'da `getUserMedia` kullanma.** Kamera `input capture="environment"` ile açılır.
 - **Fiş fotoğrafı kart bilgisi içerebilir.** Sunucuda kalıcı saklama, loglama, service worker önbelleği yok. Örnek fiş görselleri repoya kopyalanmaz.
 - **Arka planda açılan `next dev` çıktısını dosyaya yönlendir** (`npx next dev -p 3100 > .taste-skill/dev-3100.log 2>&1`). Çıktı onu başlatan kabuğa bağlıysa ve o kabuk kapanırsa, dinamik rotalar (`/onizleme/panel/fis/[id]`) "Jest worker encountered 2 child process exceptions" ile 500 verir: Next her istekte açtığı static paths worker'ı kopmuş boruya bağlar. Sunucuyu bu komutla yeniden başlatmak düzeltir.
-- **Panelin CSP'si `src/proxy.ts`'te istek başına nonce ile kurulur** (`src/lib/csp.ts`); diğer sayfalarınki `next.config.ts`'te. Kök layout'a yeni bir satır içi `<script>` eklenirse metni `src/lib/csp.ts`'te durmalı ve hash listesine girmeli, yoksa panelde çalışmaz.
+- **Panelin ve giriş/kayıt sayfalarının CSP'si `src/proxy.ts`'te istek başına nonce ile kurulur** (`src/lib/csp.ts`); statik sayfalarınki (ana sayfa, gizlilik, 404) `next.config.ts`'te. Kök layout'a yeni bir satır içi `<script>` eklenirse metni `src/lib/csp.ts`'te durmalı ve hash listesine girmeli, yoksa bu sayfalarda çalışmaz. `src/csp.build.test.ts` production build'i (`.next/BUILD_ID` varsa) ayağa kaldırıp /giris'teki her betiğin nonce taşıdığını doğrular; CSP'ye dokunduysan önce `npm run build`.
 - **`CLAUDE.md` ve `INSTRUCTIONS.md`'yi değiştirme veya silme.**
 
 ## Korunan alanlar

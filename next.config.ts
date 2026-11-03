@@ -17,8 +17,8 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [{
-      // The panel's CSP (per-request nonce) comes from proxy.ts; two policies on one response would both be enforced.
-      source: "/((?!panel(?:/|$)).*)",
+      // The panel's and auth pages' CSP (per-request nonce) comes from proxy.ts; two policies on one response would both be enforced.
+      source: "/((?!(?:panel|giris|kayit)(?:/|$)).*)",
       headers: [{ key: "Content-Security-Policy", value: PUBLIC_CSP }],
     }, {
       source: "/:path*",
