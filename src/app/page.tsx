@@ -271,8 +271,8 @@ export default function LandingPage() {
   return (
     <>
       <HomeMotion />
-      <CookieNote />
       <SiteBar />
+      <CookieNote />
       <main id="icerik" tabIndex={-1} className="home">
         {/* Hero: two tones, the counter is the picture */}
         <section className="hero" aria-labelledby="hero-title">
