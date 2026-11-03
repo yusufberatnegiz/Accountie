@@ -5,6 +5,10 @@
   Everything references tokens; no raw colours below the token blocks.
 */
 
+/* Metric-matched fallbacks (next/font cannot compute them for Stack Sans): Arial scaled to the variable fonts' a-z width and ascent/descent, so a late font does not reflow the hero or body. Values from fontkit on the shipped woff2 files. */
+@font-face { font-family: "Stack Sans Text Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"); size-adjust: 109.72%; ascent-override: 91.14%; descent-override: 27.34%; line-gap-override: 0%; }
+@font-face { font-family: "Stack Sans Headline Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"); size-adjust: 104.3%; ascent-override: 95.88%; descent-override: 28.76%; line-gap-override: 0%; }
+
 /* ---------- Tokens: light (default) ---------- */
 :root {
   /* Spacing, 4px base. No other values. */
@@ -290,9 +294,41 @@ tbody tr:last-child td { border-bottom: 0; }
 @media (max-width: 720px) {
   h1 { font-size: 22px; }
   .page { padding: var(--s4) var(--s4) var(--s7); gap: var(--s4); }
-  .desktop-only { display: none; }
+  .desktop-only { display: none !important; } /* utility: must beat component display rules such as .panel */
   .phone-only { display: block; }
 }
+
+/* Error and not found (components/StatusPage.tsx): the auth layout. Message on the wordmark's edge, centred in the height; the stage on the right carries the mark large. */
+.status-page { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.status-side { display: grid; grid-template-rows: auto 1fr; padding: var(--s6) var(--page-margin); padding-top: max(var(--s6), env(safe-area-inset-top)); padding-bottom: max(var(--s6), env(safe-area-inset-bottom)); }
+.status-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); }
+.status-body { align-self: center; display: grid; padding-block: var(--s8); }
+.status-message { display: grid; gap: var(--s4); max-width: 440px; }
+.status-message h1 { margin: 0; font-size: 32px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.15; }
+.status-message p { margin: 0; font-size: var(--fs-section); color: var(--muted); max-width: 46ch; }
+.status-message .actions { margin-top: var(--s2); }
+.status-message .btn { min-height: var(--touch); }
+.status-stage { background: var(--stage); display: grid; place-items: center; position: sticky; top: 0; height: 100dvh; overflow: hidden; }
+.status-mark { width: min(56%, 360px); height: auto; }
+.status-mark .mark-strip { stroke-width: 0.6; }
+.status-mark .mark-thermal { stroke-width: 0.9; }
+.status-mark .mark-luca { stroke-width: 1.2; }
+.status-theme-narrow { display: none; }
+@media (max-width: 900px) {
+  .status-page { grid-template-columns: 1fr; }
+  .status-stage { display: none; }
+  .status-side { padding: var(--s4) var(--page-margin); padding-top: max(var(--s4), env(safe-area-inset-top)); }
+  .status-body { align-self: start; padding-block: var(--s9) var(--s7); }
+  .status-message h1 { font-size: 24px; }
+}
+@media (max-width: 480px) { .status-theme { display: none; } .status-theme-narrow { display: inline; } }
+@media (prefers-reduced-motion: no-preference) {
+  .status-message { animation: status-rise 500ms var(--ease-out) both; }
+  /* The blue Luca line draws across the strip once: the product's one idea, even on a failed page. */
+  .status-mark .mark-luca { stroke-dasharray: 18; animation: status-draw 900ms 200ms var(--ease-expo) both; }
+}
+@keyframes status-rise { from { transform: translateY(12px); } to { transform: none; } }
+@keyframes status-draw { from { stroke-dashoffset: 18; } to { stroke-dashoffset: 0; } }
 
 /* ---------- Auth: src/app/giris/auth.css ---------- */
 .alert-ok { background: var(--positive-soft); color: var(--positive); }

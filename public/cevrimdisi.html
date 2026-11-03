@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Bağlantı yok · Accountie</title>
+<!-- Served by public/sw.js when a page cannot load offline. Self-contained: no fonts or scripts from the build, tokens copied from globals.css. -->
+<script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>
+:root { --ground: #f2f4f7; --stage: #e4e9f0; --ink: #141a22; --muted: #4f5a67; --faint: #5f6a77; --accent: #2b5a9a; --primary: #161c24; --primary-hover: #2a323d; --on-primary: #ffffff; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ground: #0e1114; --stage: #1b2027; --ink: #eef1f4; --muted: #a9b2bd; --faint: #949eaa; --accent: #8db0e0; --primary: #eef1f4; --primary-hover: #d5dbe2; --on-primary: #0e1114; color-scheme: dark; } }
+:root[data-theme="dark"] { --ground: #0e1114; --stage: #1b2027; --ink: #eef1f4; --muted: #a9b2bd; --faint: #949eaa; --accent: #8db0e0; --primary: #eef1f4; --primary-hover: #d5dbe2; --on-primary: #0e1114; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--ground); color: var(--ink); }
+body { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); font: 16px/1.5 Arial, Helvetica, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.side { display: grid; grid-template-rows: auto 1fr; padding: max(24px, env(safe-area-inset-top)) 48px max(24px, env(safe-area-inset-bottom)); }
+.stage { background: var(--stage); display: grid; place-items: center; height: 100dvh; position: sticky; top: 0; }
+.stage svg { width: min(56%, 360px); height: auto; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 1100px) { .side { padding-inline: 32px; } }
+@media (max-width: 900px) { body { grid-template-columns: 1fr; } .stage { display: none; } main { align-self: start; padding-block: 96px 48px; } h1 { font-size: 24px; } }
+@media (max-width: 640px) { .side { padding-inline: 16px; } }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: -0.01em; }
+.brand svg { width: 24px; height: 24px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+main { align-self: center; display: grid; gap: 16px; max-width: 440px; padding-block: 64px; }
+h1 { margin: 0; font-size: 32px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.15; }
+p { margin: 0; font-size: 16px; color: var(--muted); max-width: 46ch; }
+button { justify-self: start; margin-top: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 6px; background: var(--primary); color: var(--on-primary); font: 500 14px/1.2 inherit; font-family: inherit; cursor: pointer; transition: background-color 180ms ease, transform 140ms cubic-bezier(0.22, 1, 0.36, 1); }
+button:hover { background: var(--primary-hover); }
+button:active { transform: scale(0.98); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { button:active { transform: none; } }
+</style>
+</head>
+<body>
+<div class="side">
+<span class="brand" translate="no"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 3h15v24l-2.5-2-2.5 2-2.5-2-2.5 2-2.5-2L6 27z" stroke="currentColor"/><path d="M10 9h7M10 14h5" stroke="var(--faint)"/><path d="M10 19.5h18" stroke="var(--accent)" stroke-width="2.5"/></svg>Accountie</span>
+<main>
+<h1>İnternet bağlantısı yok</h1>
+<p>Fiş listesi, fiş kontrolü ve Luca aktarımı sunucuya bağlanarak çalışır. Bağlantı gelince yeniden deneyin.</p>
+<button type="button" id="yenile">Yeniden dene</button>
+</main>
+</div>
+<div class="stage" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6 3h15v24l-2.5-2-2.5 2-2.5-2-2.5 2-2.5-2L6 27z" stroke="var(--ink)" stroke-width="0.6"/><path d="M10 9h7M10 14h5" stroke="var(--faint)" stroke-width="0.9"/><path d="M10 19.5h18" stroke="var(--accent)" stroke-width="1.2"/></svg></div>
+<script>document.getElementById("yenile").addEventListener("click",function(){location.reload()});addEventListener("online",function(){location.reload()});</script>
+</body>
+</html>
