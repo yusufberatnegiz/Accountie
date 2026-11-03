@@ -195,7 +195,7 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
               <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} onChange={(e) => updateAll("documentType", e.target.value)} />
             </label>
             {editable ? (
-              <label>Alacak hesabı {checkNote(headFlags.credit)}
+              <label className="span-all">Alacak hesabı {checkNote(headFlags.credit)}
                 <select className="field" value={PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? creditCode : ""} {...flag(headFlags.credit)}
                   onChange={(e) => { touch("credit"); setCreditAccount(e.target.value); }}>
                   {PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? null : <option value="">{creditCode || "Seçin"}</option>}
@@ -285,7 +285,7 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
           {/* Errors show here, next to the button that caused them; a box higher up is off screen on the phone. */}
           <p className={error || (editable && problem) ? "balance balance-off" : "balance balance-ok"} aria-live="polite">
             {error ? error
-              : receipt.status === "approved" ? "Onaylandı. Luca'ya aktarmak için Excel'i bilgisayarda indirin."
+              : receipt.status === "approved" ? <><span className="phone-only">{"Onaylandı. Luca'ya aktarmak için Excel'i bilgisayarda indirin."}</span><span className="desktop-only">{"Onaylandı. Excel'i indirip Luca'nın Excel veri aktarımı ekranına yükleyin."}</span></>
               : receipt.status === "exported" ? "Luca'ya aktarıldı."
               : problem ?? (dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır.")}
           </p>

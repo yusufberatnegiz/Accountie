@@ -15,7 +15,7 @@ export function ExtensionTokenPanel() {
     if (!res?.ok) return setMessage("İşlem yapılamadı. Tekrar deneyin.");
     if (method === "DELETE") {
       setToken("");
-      return setMessage("Eklenti anahtarı iptal edildi. Eklenti artık fiş çekemez.");
+      return setMessage("Eklenti anahtarı iptal edildi. Eklenti artık onaylı fişleri okuyamaz.");
     }
     const body = await res.json();
     setToken(body.token);
