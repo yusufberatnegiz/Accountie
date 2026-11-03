@@ -4,7 +4,7 @@ import { SiteBar } from "@/components/site/SiteBar";
 import "./gizlilik.css";
 
 export const metadata: Metadata = {
-  title: "Gizlilik ve aydınlatma",
+  title: "Gizlilik",
   description: "Accountie hangi veriyi hangi amaçla işler, fiş fotoğrafı nereye gider, ne saklanır ve ne saklanmaz.",
 };
 export const dynamic = "force-static";
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
     <>
       <SiteBar />
       <main id="icerik" tabIndex={-1} className="legal">
-        <h1 className="legal-title">Gizlilik ve aydınlatma</h1>
+        <h1 className="legal-title">Gizlilik</h1>
         <p className="legal-lead">
           <span translate="no">Accountie</span> yazar kasa fişinden Luca yevmiye kaydı hazırlar. Bu sayfa hangi verinin nereye gittiğini ve neyin saklandığını anlatır.
           Hukuki inceleme tamamlanana kadar KVKK aydınlatma metninin yerine geçmez.

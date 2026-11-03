@@ -59,7 +59,7 @@ function MiniLines({ credit, mark, lit }: { credit?: string; mark?: { code: stri
 const PIECES: Piece[] = [
   {
     name: "Fiş ve satırlar",
-    text: "Fişten okunan alanlar ve Luca satırları aynı ekranda. Hesap kodu, tutar, evrak no ve BT orada düzeltilir.",
+    text: "Fişten okunan alanlar ve Luca satırları aynı ekranda. Hesap kodu, tutar, Evrak No ve BT orada düzeltilir.",
     body: (
       <div className="ui-card ui-review">
         <dl className="ui-read">
@@ -87,7 +87,7 @@ const PIECES: Piece[] = [
           <ul className="ui-menu">
             {PAYMENT_ALTERNATIVES.map((a) => (
               <li key={a.code} data-selected={a.code === "331.01" || undefined}>
-                <span className="code" translate="no">{a.code}</span> {a.label}
+                <span className="code" translate="no">{a.code}</span> {a.name}{a.code === "309.01" ? <span className="ui-meta">şirket kartı</span> : null}
               </li>
             ))}
           </ul>
@@ -115,14 +115,17 @@ const PIECES: Piece[] = [
     text: "Accountie onaylı fişleri 50 fiş ya da 400 satırda yeni dosyaya geçerek yazar; bir fiş iki dosyaya bölünmez.",
     body: (
       <div className="ui-card ui-file">
-        <p className="ui-file-head"><span>Eylül 2026</span><span className="ui-meta">88 onaylı fiş, 684 satır</span></p>
-        <div className="ui-meter"><span>Fiş</span><span className="ui-track"><span style={{ width: "76%" }} /></span><span className="num">38 / 50</span></div>
-        <div className="ui-meter"><span>Satır</span><span className="ui-track"><span style={{ width: "74%" }} /></span><span className="num">296 / 400</span></div>
-        <ul className="ui-files">
-          <li><span className="ui-file-name">luca-fisler-20260916.xlsx</span><span className="ui-meta">50 fiş, 388 satır</span></li>
-          <li><span className="ui-file-name">luca-fisler-20261002.xlsx</span><span className="ui-meta">38 fiş, 296 satır</span></li>
-        </ul>
+        {/* The panel's own Luca card (ReceiptListView) after the first of two downloads: 88 approved, the first file took 50. */}
+        <p className="ui-file-head"><span>Luca dosyası</span><span className="ui-meta">88 onaylı fiş, 2 dosya</span></p>
+        <div className="ui-meter"><span>Fiş</span><span className="ui-track"><span style={{ width: "100%" }} /></span><span className="num">88 / 50</span></div>
+        <div className="ui-meter"><span>Satır</span><span className="ui-track"><span style={{ width: "100%" }} /></span><span className="num">684 / 400</span></div>
         <span className="btn">Luca için indir</span>
+        <p className="ui-meta">Luca bir dosyada en fazla 50 fiş alır. 38 fiş kaldı, bir sonraki dosya için tekrar indirin.</p>
+        <ol className="ui-steps">
+          <li>Luca’da Muhasebe, Fiş İşlemleri, Excel veri aktarımı ekranını açın.</li>
+          <li>Dosyayı seçin, doğrulama kodunu yazıp Yükle’ye basın.</li>
+          <li>Önizlemeyi kontrol edip Fiş Kes ile fişleri oluşturun.</li>
+        </ol>
       </div>
     ),
   },
@@ -203,7 +206,7 @@ const FAQ: Qa[] = [
   { q: "Okuma yanlış çıkarsa?", a: "Okunamayan alan boş kalır ve işaretlenir. Toplam ile KDV tutmazsa fiş bir kez daha okunur, yine tutmazsa uyarıyla size gelir." },
   { q: "Hesap kodlarını kim seçiyor?", a: "Siz. Yapay zeka yalnız kategori önerir; hesap kodu kendi kural tablonuzdan gelir." },
   { q: "Ücretli mi?", a: "Fiyat henüz belirlenmedi. Ücretlendirme başlamadan önce hesabınızdaki e-postaya haber verilir." },
-  { q: "Kişisel verilerim nasıl işleniyor?", a: "Hangi verinin hangi hizmete gittiği ve ne kadar tutulduğu gizlilik ve aydınlatma metninde yazılı. Bağlantısı sayfanın altında." },
+  { q: "Kişisel verilerim nasıl işleniyor?", a: "Hangi verinin hangi hizmete gittiği ve neyin saklandığı gizlilik sayfasında yazılı. Bağlantısı sayfanın altında." },
   { q: "Telefonda uygulama gibi açılır mı?", a: "Evet. Ana ekrana eklediğinizde ayrı bir uygulama gibi açılır, Fiş çek tek dokunuştur." },
 ];
 
@@ -211,18 +214,18 @@ const PD = "https://creativecommons.org/publicdomain/mark/1.0/";
 const FLICKR_COMMONS = "https://www.flickr.com/commons/usage/";
 // lang: titles kept in their own language are read with that language's rules (WCAG 3.1.2). Every picture is shown in one monochrome grade, so each credit says so.
 const CREDITS: { title: string; lang: string; by: string; license: string; licenseUrl: string; page: string; note?: string }[] = [
-  { title: "Ledger of the fur trader Dedo from Leipzig, 1876-1885", lang: "en", by: "Dedo", license: "kamu malı", licenseUrl: PD, page: "https://commons.wikimedia.org/wiki/File:Ledger_of_the_fur_trader_Dedo_from_Leipzig,_1876-1885_003.jpg" },
+  { title: "Ledger of the fur trader Dedo from Leipzig, 1876-1885", lang: "en", by: "Dedo", license: "kamu malı", licenseUrl: PD, page: "https://commons.wikimedia.org/wiki/File:Ledger_of_the_fur_trader_Dedo_from_Leipzig,_1876-1885_003.jpg", note: "kırpıldı ve siyah beyaza çevrildi" },
   { title: "Antique cash register", lang: "en", by: "Thomas Quine", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0/", page: "https://commons.wikimedia.org/wiki/File:Antique_cash_register_(43766820702).jpg" },
   { title: "Old cash register in Serbia", lang: "en", by: "Pink Flojd", license: "CC0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/deed.en", page: "https://commons.wikimedia.org/wiki/File:Old_cash_register_in_Serbia.jpg", note: "kırpıldı ve siyah beyaza çevrildi" },
-  { title: "Keystrokes in a vintage mechanical calculator", lang: "en", by: "Subhashish Panigrahi", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", page: "https://commons.wikimedia.org/wiki/File:Keystrokes_in_a_vintage_mechanical_calculator.webm" },
+  { title: "Keystrokes in a vintage mechanical calculator", lang: "en", by: "Subhashish Panigrahi", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", page: "https://commons.wikimedia.org/wiki/File:Keystrokes_in_a_vintage_mechanical_calculator.webm", note: "kısaltıldı ve siyah beyaza çevrildi; değiştirilmiş hali CC BY-SA 4.0 ile paylaşılır" },
   { title: "Ottoman Bank, Safe Rooms", lang: "en", by: "SALT Araştırma", license: "bilinen telif kısıtlaması yok", licenseUrl: FLICKR_COMMONS, page: "https://commons.wikimedia.org/wiki/File:Ottoman_Bank,_Safe_Rooms_(12965331153).jpg" },
-  { title: "Louis-Nicolas de Lespinasse, Deferdar’s office", lang: "en", by: "Gmihail, Sırpça Vikipedi", license: "CC BY-SA 3.0 RS", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/rs/deed.en", page: "https://commons.wikimedia.org/wiki/File:Louis-Nicolas_de_Lespinasse,_Deferdar%27s_office.jpg" },
+  { title: "Louis-Nicolas de Lespinasse, Deferdar’s office", lang: "en", by: "Gmihail, Sırpça Vikipedi", license: "CC BY-SA 3.0 RS", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/rs/deed.en", page: "https://commons.wikimedia.org/wiki/File:Louis-Nicolas_de_Lespinasse,_Deferdar%27s_office.jpg", note: "siyah beyaza çevrildi; değiştirilmiş hali CC BY-SA 3.0 RS ile paylaşılır" },
 ];
 
 // The rule's world, under its proof: one ratio (4:3), one caption line, one grade.
 const GALLERY = [
-  { src: krupanj, at: "50% 50%", alt: "Bir müze vitrininde eski bir yazar kasa: kavisli sıralarda tutar tuşları, üstte Cassa yazılı levha", caption: "Sırbistan’da bir müzede eski bir yazar kasa; tutar tuşlarının üstünde Cassa levhası." },
-  { src: bankVault, at: "30% 50%", alt: "Osmanlı Bankası’nın kasa dairesi: ahşap kasa kapakları ve raflarda ciltli hesap defterleri", caption: "Osmanlı Bankası’nın kasa dairesi; raflarda ciltli hesap defterleri." },
+  { src: krupanj, at: "50% 50%", alt: "Bir müze vitrininde eski bir yazar kasa: kavisli sıralarda tutar tuşları, üstte Cassa yazılı levha", caption: "Sırbistan’da bir müzede eski bir yazar kasa. Bugünkü ÖKC de tutarı böyle toplar ve fişin TOPLAM satırına basar." },
+  { src: bankVault, at: "30% 50%", alt: "Osmanlı Bankası’nın kasa dairesi: ahşap kasa kapakları ve raflarda ciltli hesap defterleri", caption: "Osmanlı Bankası’nın kasa dairesi, raflarda ciltli hesap defterleri. Onaylanan fişin satırları da Accountie’de durur, Aktarıldı sekmesinden yeniden indirilir." },
 ];
 
 const PATH = [
@@ -230,13 +233,13 @@ const PATH = [
     <>
       <p className="ui-card-head"><span>Fiş</span><span className="status" data-step>Çekildi</span></p>
       <div className="path-strip"><Thermal sample={SAMPLES[0]} printedPayment="KREDİ KARTI" compact /></div>
-      <p className="ui-meta" data-step>Fotoğraf okunduktan sonra saklanmaz.</p>
+      <p className="ui-meta" data-step>Accountie fotoğrafı saklamaz.</p>
     </>
   ) },
   { clause: "Sonra fiş okunur.", card: (
     <>
       <p className="ui-card-head"><span>Fiş 0047</span><span className="status" data-step>Taslak</span></p>
-      {[["Satıcı", "ÖRNEK BALIK LOKANTASI"], ["Evrak No", "0047"], ["Tarih", "05.09.2026"], ["KDV %10", "793,18"], ["Toplam", "8.725,00"], ["Kategori", "Yemek ve ağırlama"]].map(([k, v]) => (
+      {[["Satıcı", "ÖRNEK BALIK LOKANTASI"], ["Evrak No", "0047"], ["Tarih", "05.09.2026"], ["KDV %10", "793,18"], ["Toplam", "8.725,00"], ["Ödeme", "KREDİ KARTI"], ["Kategori", "Yemek ve ağırlama"]].map(([k, v]) => (
         <p className="ui-kv" key={k}><span>{k}</span><span className="from-receipt" data-step>{v}</span></p>
       ))}
     </>
@@ -247,13 +250,14 @@ const PATH = [
       {LINES_0047.map((l) => (
         <p className="ui-kv ui-kv-line" key={l.code} data-step><span><span className="code" translate="no">{l.code}</span><span className="code-name">{l.name}</span></span><span className="to-luca">{l.debit || l.credit}</span></p>
       ))}
+      <p className="ui-meta" data-step>Evrak No 0047, 05.09.2026, BT ÖK</p>
       <p className="ui-meta balance-ok" data-step>Borç 8.725,00 = Alacak 8.725,00</p>
     </>
   ) },
   { clause: "En son Excel ile Luca’ya yüklenir.", card: (
     <>
       <p className="ui-card-head"><span>Fiş 0047</span><span className="status status-exported" data-step>Aktarıldı</span></p>
-      <p className="ui-file-name" data-step>luca-fisler-20260905.xlsx</p>
+      <p className="path-file" data-step><span className="ui-file-name">luca-fisler-20260905.xlsx</span><span>1 fiş, 3 satır</span></p>
       <table className="ui-sheet" data-step>
         <thead><tr><th scope="col">Hesap</th><th scope="col">Evrak</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
         <tbody>
@@ -262,7 +266,7 @@ const PATH = [
           ))}
         </tbody>
       </table>
-      <p className="ui-meta" data-step>1 fiş, 3 satır, BT ÖK</p>
+      <p className="ui-meta" data-step>Luca’da Excel veri aktarımı ile yüklenir, Fiş Kes ile kaydedilir.</p>
     </>
   ) },
 ];
@@ -309,7 +313,7 @@ export default function LandingPage() {
           <div className="rule-copy">
             <h2 className="t-head" id="rule-title" data-reveal>Borç alacağa eşit olmadan onay yok</h2>
             <p className="rule-sub" data-reveal style={cssVars({ "--r": 1 })}>
-              Accountie’de borç alacağa eşit olmadan Onayla açılmaz; fark kuruşuyla görünür. Tutarı fişe göre düzeltince onay açılır.
+              Accountie’de borç alacağa eşit olmadan Onayla açılmaz; fark kuruşu kuruşuna görünür. Tutarı fişe göre düzeltince onay açılır.
             </p>
           </div>
           <div className="rule-proof" data-ui data-reveal style={cssVars({ "--r": 1 })}>
@@ -338,8 +342,8 @@ export default function LandingPage() {
             </figure>
           ))}
           <figure className="rule-figure rule-figure-third" data-reveal="shutter" style={cssVars({ "--r": 2 })}>
-            <div className="frame frame-43"><LoopVideo src={{ mp4: "/gorseller/hesap-makinesi.mp4", webm: "/gorseller/hesap-makinesi.webm" }} poster="/gorseller/hesap-makinesi-poster.jpg" width={854} height={480} /></div>
-            <figcaption>Eski bir mekanik toplama makinesinde tutar tuşlanıyor.</figcaption>
+            <div className="frame frame-43"><LoopVideo src={{ mp4: "/gorseller/hesap-makinesi.mp4", webm: "/gorseller/hesap-makinesi.webm" }} poster="/gorseller/hesap-makinesi-poster.jpg" width={640} height={360} /></div>
+            <figcaption>Eski bir mekanik toplama makinesinde tutar tuşlanıyor. Accountie de onaydan önce Borç ve Alacak toplamlarını karşılaştırır.</figcaption>
           </figure>
         </section>
 
@@ -427,7 +431,7 @@ export default function LandingPage() {
               </div>
             </div>
             <figure className="cta-figure" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
-              <div className="frame frame-43"><Image src={register} alt="Ahşap bir tezgâhta eski bir yazar kasa: tutar tuşları, yanında kol, önünde açık para çekmecesi" sizes="(max-width: 900px) 100vw, 45vw" /></div>
+              <div className="frame frame-43"><Image src={register} alt="Ahşap bir tezgâhta eski bir yazar kasa: tutar tuşları, yanında kol, önünde açık para çekmecesi" sizes="(max-width: 900px) 100vw, 47vw" /></div>
               <figcaption>Eski bir yazar kasa, Heritage Acres müzesi, Kanada. Fişi tezgâhtaki kasa basar, siz telefonla çekersiniz.</figcaption>
             </figure>
           </div>
@@ -441,7 +445,7 @@ export default function LandingPage() {
             <Link href="/giris">Giriş yap</Link>
             <Link href="/kayit">Hesap oluştur</Link>
             <a href="#sss">Sık sorulanlar</a>
-            <Link href="/gizlilik">Gizlilik ve aydınlatma</Link>
+            <Link href="/gizlilik">Gizlilik</Link>
           </nav>
           <div className="foot-credits">
             <p className="foot-credits-title">Görsel kaynakları</p>

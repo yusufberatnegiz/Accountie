@@ -631,3 +631,39 @@ Kullanıcı açıkça istedi: animasyonlar ve resimler unutulmasın, **panele de
 - **Geçişler:** eski ekran 120ms'de söner, yeni ekran 60ms sonra 140ms'de gelir; başlık morfu 240ms. Aktarılan satır Aktarıldı sekmesine doğru sol üste çıkar.
 - **Kurallar:** Gider hesapları etiket kolonunda örnek fişin altında sayfanın diğer bölümlerine atlama listesi (sayılarıyla); yapışkan kolonla birlikte iner, 900px altında yok.
 - **Önizleme:** `/onizleme/panel*` sayfaları `PreviewApi` ile `/api` çağrılarını tarayıcıda yanıtlar: yükleme gerçek aşamaları oynatıp ilk taslağı açar, onay, taslağa alma, elle girdim ve Luca indirmesi durumu oturum çerezinde değiştirir (`?sifirla=1` sıfırlar). Yalnız `next dev`te var.
+
+## 16. Tur 5 sonrası kararlar (tur 6'dan itibaren; önceki bölümlerin üstündedir)
+
+Bu kararlar 3-5. turlarda birden çok jürinin tekrar tekrar bulduğu sorunları kapatır. Geliştirici ve jüri bunları tartışmaya açmaz, uygular ve uygulanıp uygulanmadığına bakar.
+
+**Ana sayfa**
+1. **Hero tezgâhı:**
+   - 1440x900'de Luca kartı en az 560px geniştir. Hesap adları en çok iki satır kaplar.
+   - "Satırları kopyala" ilk ekranda görünür ve çerez şeridinin üstünde kalır. Şerit hero'yu örtmez: masaüstünde ilk kaydırmaya kadar sol alt köşede kompakt durur ya da hero dışında görünür.
+2. **Hero geçişi:** seçim değişince tablo boşalmaz. Eski satırlar ile yeni satırlar 160-200 ms çapraz geçiş yapar, tutarlar doğrudan yeni değere geçer. Ara rakam ve sayma yoktur.
+3. **Boş kutu yasağı:** hiçbir içerik (kart, resim, metin) görünmez başlayıp sonra belirmez. Açılış hareketleri yalnız görünür bir başlangıçtan yapılır: hafif `transform` ya da `clip-path` ile en az %85'i baştan açık. Resimlerin arkasında zemin tonunda placeholder vardır. Görsel yüklenemezse kutu çökmez, altyazı tek başına anlamlı kalır.
+4. **"Bir fişin yolu":** dört kart içerikleri baştan görünür halde eşit yükseklikte durur (grid `align-items: stretch`). Alanlarda büyük boş tepe kalmaz. Sıralı hareket (basılma, okunma, damga, iniş) içerik görünürken üstüne oynar. Tetik eşiği yaklaşık %35'tir.
+5. **Showcase ve galeri:**
+   - 1440'ta ölü alan yoktur: parça alanın genişliğini doldurur ya da iki parça yan yana durur.
+   - Koyu temada ürün kartı alandan bir ton açıktır.
+   - Galeride en parlak leke sorunu: siyah beyaz resimler koyu temada `filter` yerine kaynakta hafif karartılmış olarak ya da `opacity` 0.9 ile verilir.
+6. **Yazı ölçeği:** her genişlikte en çok 6 farklı yazı boyu. SSS'de soru, cevaptan büyüktür.
+7. **Resimler:** en az 6 resim. Her resmin altyazısı resmin ürünle bağını tek cümleyle söyler. Para çekmecesi gibi modern ve markalı resimler çıkarılır.
+
+**Sistem ve panel**
+8. **Tema düğmesi:** üç ikon da HTML'de bulunur, hangisinin görüneceğini `<html data-theme>` üstünden CSS seçer. Böylece ilk boyamada doğru ikon görünür ve hidrasyon farkı oluşmaz. Önizlemedeki `?tema=` `data-look` ve `theme-color`'ı da ayarlar.
+9. **Odak:** "İçeriğe atla" odaklanınca üst çubuğun üstünde görünür. Onayla'dan sonra odak durum pill'ine ya da bir sonraki fişe bağlantıya gider, sayfa gövdesine düşmez. Kaydedilmiş fişte Onayla yenilenene kadar "Onaylandı" olarak devre dışı kalır. 1100px altında Tab sırası görsel sırayla aynıdır.
+10. **Giriş ve kayıt:** boş ya da geçersiz alanlar istemcide de (aynı Zod şeması) gönderimden önce yakalanır. Sunucu doğrulaması kalır.
+
+**Kapsam:** bu listede ve önceki bölümlerde olmayan yeni bir bölüm ya da özellik eklenmez. Jüri yeni kapsam isteyemez; mevcut kapsamın kalitesini puanlar.
+
+## 21. Tur 8 kararları: ana sayfa, giriş ve kayıt (bölüm 16, 18 ve 19'un üstündedir)
+
+- **Hero tezgâhı:** sahne dikeyde ortalanmaz; tezgâh sabit bir üst çizgide (`--stage-top`, çubuk + 96px) durur, seçim değişince seçiciler kıpırdamaz, yalnız altlarındaki fiş ve satırlar uzayıp kısalır. 1181px ve üstünde kolonlar 4.5fr/7.5fr, satırlar 16px, kâğıt 14px, şerit 256px; Luca kartı 1440'ta 568px, tezgâh yaklaşık 556px yüksek (ekranın %60'ı). View transition'da seçiciler (`home-pickers`) ve showcase sekmeleri (`show-tabs`) kendi anlık görüntüsündedir ve çapraz geçmez; yalnız fiş, satırlar ve parça geçer.
+- **Koyu temada yükselti:** alan üstündeki ürün kartları alanın bir ton üstünde: hero ve giriş/kayıt kartı `--lift` #252b33 ve `--lift-edge` #2f363f; "Bir fişin yolu" kartları `--path-card-1..4` (her alanın bir üstü). Açık temada hepsi `--surface`. Footer adı koyu temada `--foot-name` #b9c1ca.
+- **Bir fişin yolu:** kısa kartlar aşamanın kendi içeriğiyle doldu (Okundu: Ödeme satırı; Onaylandı: Evrak No, tarih, BT; Aktarıldı: dosya satırı ve Luca'da yükleme cümlesi); içerik ile dipnot arası 40px altında. Bekleyen damga yerinde ve 0.6 opaklıkta durur, kendi perdesinde 1.2 ölçek ve -4° ile kalkıp iner (420ms).
+- **Showcase:** Luca dosyası parçası paneldeki gerçek kart (88 onaylı fiş, 2 dosya, çubuklar, ilk indirmeden sonraki "38 fiş kaldı" notu, yükleme adımları). Alacak hesabı listesinde hesap adı, 309.01'in yanında "şirket kartı". 640px altında sekmeler parçanın üstünde, sarılan tek blok.
+- **Telefon:** Excel/pano listesi iki kolonlu tanım ızgarası; hesap planı parçasındaki kodlar alan çerçevesi olmadan metin.
+- **Görseller:** klip 8 sn, 640x360 (mp4 236 KB, webm 199 KB); Dedo defteri kenarları kırpıldı. Kural bölümü altyazıları resmin ürünle bağını söyler. BY-SA işlerde "değiştirilmiş hali aynı lisansla paylaşılır" notu.
+- **Metin:** "Accountie fotoğrafı saklamaz."; kayıtta "Anthropic'e (ABD) gönderilir; Accountie fotoğrafı sunucuda ve veritabanında saklamaz."; sayfa ve bağlantı adı "Gizlilik"; çerez penceresinde "Kapat".
+- **Giriş ve kayıt:** başlık 36px (uygulama ekranı kuralı 32px üstünü uyarır; iki tonlu alanın yanında ölçek için bilinçli). Odak alan uyarı kutusu halka çizmez. Çerez şeridi açıkken 900px altında forma alt boşluk ve `scroll-padding-bottom`. E-posta doğrulamalı kayıttan sonra `?sonra=` girişe taşınır.

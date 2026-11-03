@@ -45,7 +45,7 @@
 .home { --display: clamp(2.375rem, 0.5rem + 6.9vw, 4.75rem); }
 .home, .foot { --step-small: 0.875rem; }
 .home .btn-lg { font-size: var(--step-body); }
-@media (min-width: 1181px) { .home { --display: clamp(3.5rem, 0.25rem + 5.2vw, 6rem); } }
+@media (min-width: 1181px) { .home { --display: clamp(3.5rem, 0.25rem + 5vw, 6rem); } }
 /* Small laptops and a landscape tablet keep the split, so the live counter stays on the first screen beside the title. */
 @media (min-width: 961px) and (max-width: 1180px) { .home { --display: clamp(3.25rem, 5.4vw, 4rem); } }
 .hero { display: grid; grid-template-columns: minmax(0, 4.75fr) minmax(0, 7.25fr); min-height: 100svh; }
@@ -53,7 +53,9 @@
 .hero-title { font-family: var(--font-head); font-weight: 300; font-size: var(--display); letter-spacing: -0.035em; line-height: 0.98; }
 .hero-sub { font-size: var(--step-body); max-width: 40ch; color: var(--ink); margin: 0; }
 .hero-copy > p { margin: 0; }
-.hero-stage { background: var(--split); display: grid; place-items: center; padding: calc(56px + var(--s6)) var(--page-margin) var(--s6) var(--s5); }
+.hero { --stage-top: calc(72px + var(--s9)); }
+/* The counter sits on a fixed top line, never re-centred: a choice changes only what is under the pickers, the pickers stay put. */
+.hero-stage { background: var(--split); display: grid; align-items: start; justify-items: center; padding: var(--stage-top) var(--page-margin) var(--s7) var(--s5); }
 .hero-counter { width: min(860px, 100%); }
 
 /* Masked headline: each line rises from behind its own baseline (motion.md "Masked line reveal"). */
@@ -77,11 +79,16 @@
 @media (pointer: coarse) { .segmented label { min-height: var(--touch); } }
 
 .counter-body { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: var(--s3); align-items: start; }
-.counter-sheet { background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s4) var(--s5); display: grid; gap: var(--s3); min-width: 0; }
+.counter-sheet { background: var(--lift); border: 1px solid var(--lift-edge); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s4) var(--s5); display: grid; gap: var(--s3); min-width: 0; }
 .counter-slot .thermal { font-size: 12px; }
 .counter-slot .thermal-paper { padding-inline: var(--s3); }
 /* A choice in the counter or the showcase cross-fades the old state into the new one (crossFade.ts). */
 html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), html.vt-home::view-transition-new(*) { animation-duration: 180ms; }
+/* The pickers and the showcase tabs are their own snapshot that never fades: only the receipt, the lines and the piece cross-fade. */
+html.vt-home .counter-controls { view-transition-name: home-pickers; }
+html.vt-home .show-index { view-transition-name: show-tabs; }
+html.vt-home::view-transition-old(home-pickers), html.vt-home::view-transition-old(show-tabs) { display: none; }
+html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-new(show-tabs), html.vt-home::view-transition-group(home-pickers), html.vt-home::view-transition-group(show-tabs) { animation: none; }
 
 /* The strip itself is in thermal.css. It is fed out of this slot from the top. */
 .counter-slot { overflow: clip; padding-bottom: var(--s2); min-width: 0; }
@@ -104,6 +111,15 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
 .counter-copy { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); }
 .counter-status { font-size: var(--fs-small); color: var(--muted); min-height: 1.5em; }
 
+@media (min-width: 1181px) {
+  /* The counter is the hero's picture: receipt and lines at reading size (16px lines, 14px paper), about 60% of a 900px screen. */
+  .hero { grid-template-columns: minmax(0, 4.5fr) minmax(0, 7.5fr); }
+  .counter { --fs-body: 16px; --fs-small: 14px; }
+  .counter-body { grid-template-columns: 256px minmax(0, 1fr); }
+  .counter-slot .thermal { font-size: 14px; }
+  .counter-lines td { padding-block: var(--s3); }
+}
+
 /* ---------- how-it-works: one card, four fields. Rows are shared, so the four cards sit on one line under the title. ---------- */
 /* The heading runs across the four fields; each field holds its sentence and its card, and the four cards share one base. */
 .path { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto auto auto; }
@@ -115,6 +131,8 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
 .path-field-4 { background: var(--field-4); color: var(--on-field-4); }
 /* The sentence sits on one line across the four fields, each card right under its own sentence. */
 .path-clause { grid-row: 1; align-self: end; margin: 0; font-size: var(--step-lead); font-weight: var(--w-medium); letter-spacing: -0.01em; line-height: 1.2; max-width: 14ch; }
+.path-field-1 { --card: var(--path-card-1); } .path-field-2 { --card: var(--path-card-2); } .path-field-3 { --card: var(--path-card-3); } .path-field-4 { --card: var(--path-card-4); }
+.path .ui-card { background: var(--card); border-color: var(--lift-edge); }
 .path-card { grid-row: 2; align-self: stretch; width: min(320px, 100%); display: flex; flex-direction: column; transition: transform var(--t-hover) var(--ease-out); }
 /* The card's last line sits on the shared base, so the four cards end level. */
 .path-card > :last-child { margin-top: auto; }
@@ -124,6 +142,7 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
 .path-strip { margin-inline: calc(var(--s2) * -1); overflow: clip; }
 .path-strip .thermal-items { display: none; }
 .path-card .ui-sheet { margin-top: var(--s1); }
+.path-file { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) var(--s3); background: color-mix(in srgb, var(--card), var(--ink) 6%); border-radius: var(--radius-control); font-size: var(--fs-small); }
 
 /* ---------- the rule, proven: the product's unbalanced fiş large, a ledger kept by the same rule beside it, its world under them ---------- */
 .rule { margin-top: var(--section-gap); display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s7); align-items: start; }
@@ -203,6 +222,8 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
 .ui-files { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
 .ui-files li { display: flex; justify-content: space-between; gap: var(--s3); align-items: baseline; padding: var(--s2) var(--s3); background: var(--raised); border-radius: var(--radius-control); font-size: var(--fs-ui, 13px); }
 .ui-file .btn { justify-self: start; }
+.ui-steps { margin: 0; padding-left: 1.25em; display: grid; gap: var(--s1); font-size: var(--fs-ui, 13px); }
+.ui-menu li .ui-meta { margin-left: auto; }
 .ui-ext-head { display: flex; align-items: center; gap: var(--s2); font-weight: var(--w-strong); }
 .ui-warn { font-size: var(--fs-ui, 13px); background: var(--warn-bg); color: var(--warn-ink); padding: var(--s2) var(--s3); border-radius: var(--radius-control); }
 
@@ -271,7 +292,9 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
 @media (min-width: 901px) {
   /* The question is the larger line (YON.md 16.6); the shown one takes the pane's tone and an ink arrow pointing at its answer. */
   .faq-q { position: relative; isolation: isolate; font-size: var(--step-lead); letter-spacing: -0.01em; line-height: 1.25; padding: var(--s3) var(--s4) var(--s3) 0; }
-  .faq-q::before { content: ""; position: absolute; z-index: -1; inset: 0 0 0 calc(var(--s4) * -1); border-radius: var(--radius-card) 0 0 var(--radius-card); background: transparent; transition: background-color var(--t-hover) ease; }
+  /* The band starts on the page margin; the question text is inset inside it. */
+  .faq-q { padding-left: var(--s4); }
+  .faq-q::before { content: ""; position: absolute; z-index: -1; inset: 0; border-radius: var(--radius-card) 0 0 var(--radius-card); background: transparent; transition: background-color var(--t-hover) ease; }
   .faq-list li[data-open] .faq-q { font-weight: inherit; }
   /* The shown question runs into the pane: one surface from question to answer. */
   .faq-list li[data-shown] .faq-q { font-weight: var(--w-strong); }
@@ -312,7 +335,7 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
 .foot-credits ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); font-size: var(--step-small); color: var(--muted); }
 .foot-credits a { color: var(--ink); }
 /* Decorative wordmark: never over the credit links, and its glyph sidebearings are pulled back to the margins. */
-.foot-name { margin: 0 -0.035em; font-family: var(--font-head); font-weight: 300; font-size: 21.2vw; line-height: 0.8; letter-spacing: -0.045em; white-space: nowrap; color: var(--ink); pointer-events: none; user-select: none; }
+.foot-name { margin: 0 -0.035em; font-family: var(--font-head); font-weight: 300; font-size: 21.2vw; line-height: 0.8; letter-spacing: -0.045em; white-space: nowrap; color: var(--foot-name); pointer-events: none; user-select: none; }
 
 
 @media (min-width: 961px) and (max-width: 1180px) {
@@ -402,10 +425,12 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
   .show-ui { --fs-ui: 13px; --fs-body: 14px; --fs-small: 12px; --fs-title: 20px; }
   .show-cap { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; display: grid; gap: var(--s1); }
   .show-cap-name { font-weight: var(--w-strong); font-size: var(--step-body); }
-  .show-cap-text { color: var(--muted); font-size: var(--fs-body); }
-  .show-side { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .show-cap-text { color: var(--muted); font-size: var(--step-body); }
+  /* The tabs come first, wrapped chips with no cut edge: what a tap changes is right under them, and they never move. */
+  .show-side { grid-template-columns: minmax(0, 1fr); gap: 0; order: -1; min-width: 0; }
   .show-now { display: none; }
-  .show-index { grid-template-columns: 1fr 1fr; }
+  .show-index { display: flex; flex-wrap: wrap; gap: var(--s1); }
+  .show-pick { white-space: nowrap; width: auto; }
   .ui-review, .ui-split { grid-template-columns: minmax(0, 1fr); }
   .ui-totals dd { font-size: var(--fs-section); }
 
@@ -418,7 +443,11 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
   .feat-part, .feat-note { grid-column: 1 !important; grid-row: auto !important; }
   .feat-note { order: 2; padding: var(--s2) 0 0; }
 
-  .routes-group li { grid-template-columns: minmax(0, 1fr); }
+  /* A two-column definition grid, as on desktop: name and value on one row. */
+  .routes-group li { column-gap: var(--s4); padding: var(--s1) 0; line-height: 1.4; }
+  .routes-list { gap: var(--s5); }
+  /* The sample rules are a reading, not a form: on a touch screen the codes are text, not field-shaped boxes. */
+  .feat-part .ui-code:not(.ui-code-bad) { border-color: transparent; background: none; padding-inline: 0; min-height: 0; }
 
   .cta-inner { grid-template-columns: minmax(0, 1fr); padding-block: var(--s9); }
   .cta-btn { width: 100%; }
@@ -436,7 +465,8 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
 @keyframes home-print { from { transform: translateY(-12%); } to { transform: none; } }
 @keyframes home-settle { from { transform: scale(1.08); } to { transform: none; } }
 @keyframes home-light { from { transform: scale(0.85); opacity: 0.6; } to { transform: none; opacity: 1; } }
-@keyframes home-stamp { from { opacity: 0.6; transform: scale(1.6) rotate(-8deg); } to { opacity: 1; transform: none; } }
+/* A waiting stamp rests in place at 0.6; in its own act it lifts and lands, inside the card's padding. */
+@keyframes home-stamp { 0% { opacity: 0.6; transform: none; } 45% { opacity: 0.8; transform: scale(1.2) rotate(-4deg); } 100% { opacity: 1; transform: none; } }
 @keyframes home-shutter { from { clip-path: inset(0 0 14% 0); } to { clip-path: inset(0); } }
 @keyframes home-drop { from { opacity: 0.6; transform: translateY(-16px); } to { opacity: 1; transform: none; } }
 
@@ -478,7 +508,7 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
   .js.motion .path-field.is-in .path-strip .thermal-paper { animation: home-print 800ms var(--ease-out) both; animation-delay: var(--act); }
   .js.motion .path-field.is-in [data-step] { animation: home-row 300ms var(--ease-out) both; animation-delay: calc(var(--act) + 150ms + var(--k, 0) * 70ms); }
   .js.motion .path-field-4.is-in :is(.ui-file-name, .ui-sheet)[data-step] { animation-name: home-drop; animation-duration: 360ms; }
-  .js.motion .path-field.is-in .status[data-step] { animation-name: home-stamp; animation-duration: 320ms; animation-delay: calc(var(--act) + var(--stamp-at, 600ms)); }
+  .js.motion .path-field.is-in .status[data-step] { animation-name: home-stamp; animation-duration: 420ms; animation-delay: calc(var(--act) + var(--stamp-at, 600ms)); }
   .path-field-1 { --stamp-at: 700ms; }
   .path-field-2 { --stamp-at: 640ms; }
   .path-field-3 { --stamp-at: 520ms; }
