@@ -12,6 +12,7 @@ Design: don't look "vibecoded"
 Avoid these generic AI-generated UI patterns:
 
 No purple-to-blue gradients. Pick a deliberate, restrained palette (one accent color, neutrals).
+Palette: blue tones (user's choice). One deliberate, slightly desaturated blue as the accent (think ink/ledger blue, not the default Tailwind blue-500/600 or a neon blue), cool neutrals, no gradients; check AA contrast in both themes.
 No gradient hero text. Headlines are solid color; hierarchy comes from size, weight, and spacing.
 No emojis in headings or as decorative bullets.
 Not Inter everywhere. Choose a typeface with character for the brand; pair at most two families.
