@@ -135,8 +135,8 @@
   padding: var(--s5) calc(50% - 240px); scroll-padding-inline: calc(50% - 240px); min-height: 460px; align-items: center;
 }
 .show-row::-webkit-scrollbar { display: none; }
-.show-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
-.show-piece { flex: 0 0 480px; scroll-snap-align: center; display: grid; gap: var(--s4); }
+.show-row:focus-visible { outline: 2px solid var(--ink-on-deep); outline-offset: 4px; }
+.show-piece { position: relative; flex: 0 0 480px; scroll-snap-align: center; display: grid; gap: var(--s4); }
 .show-ui { opacity: 0.28; transform: scale(0.92); transition: opacity 500ms var(--ease-out), transform 500ms var(--ease-out); }
 .show-piece[data-lit] .show-ui { opacity: 1; transform: none; }
 .show-piece .ui-card { padding: var(--s5); min-height: 280px; }
@@ -151,7 +151,7 @@
 .show-pick[aria-pressed="true"] { color: var(--ink-on-deep); }
 .show-pick[aria-pressed="true"]::before { background: var(--accent); opacity: 1; }
 @media (hover: hover) and (pointer: fine) { .show-pick:hover { color: var(--ink-on-deep); } }
-.show-pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.show-pick:focus-visible { outline: 2px solid var(--ink-on-deep); outline-offset: 2px; }
 .ui-review { grid-template-columns: 150px 1fr; align-items: start; gap: var(--s4); }
 .ui-read { margin: 0; display: grid; gap: var(--s2); background: var(--raised); padding: var(--s3); border-radius: var(--radius-control); }
 .ui-read dt { font-size: var(--fs-small); color: var(--muted); }

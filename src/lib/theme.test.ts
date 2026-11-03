@@ -37,15 +37,30 @@ describe("theme init script", () => {
       addEventListener: () => {},
       querySelectorAll: () => [],
     };
-    const matchMedia = () => ({ addEventListener: (_: string, fn: () => void) => { onChange = fn; } });
+    const mq = { matches: false, addEventListener: (_: string, fn: () => void) => { onChange = fn; } };
+    const matchMedia = () => mq;
     new Function("localStorage", "document", "matchMedia", "getComputedStyle", "requestAnimationFrame", THEME_INIT_SCRIPT)(
       { getItem: () => null }, document, matchMedia, () => ({}), (fn: () => void) => frames.push(fn));
+    expect(document.documentElement.dataset).toMatchObject({ look: "light" });
+    mq.matches = true;
     onChange?.();
+    // Colours and the freeze change in the same task, so no colour transition can start.
+    expect(document.documentElement.dataset).toMatchObject({ look: "dark" });
     expect(classes.has("tema-degisiyor")).toBe(true);
     while (frames.length) frames.shift()!();
     expect(classes.size).toBe(0);
   });
   it("survives blocked storage", () => {
     expect(run(null, true).theme).toBeUndefined();
+  });
+});
+
+describe("theme button", () => {
+  it("always flips what is shown, and falls back to system when the target is the system look", async () => {
+    const { nextChoice } = await import("@/components/ThemeSwitch");
+    expect(nextChoice("light", false)).toBe("dark");
+    expect(nextChoice("dark", false)).toBe("system");
+    expect(nextChoice("dark", true)).toBe("light");
+    expect(nextChoice("light", true)).toBe("system");
   });
 });
