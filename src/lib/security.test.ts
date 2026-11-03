@@ -20,7 +20,11 @@ const authRoute = await import("@/app/api/auth/[...path]/route");
 
 const bytes = (...b: (number | string)[]) => Uint8Array.from(b.flatMap((x) => typeof x === "string" ? [...x].map((c) => c.charCodeAt(0)) : [x]));
 const form = (fields: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(fields)) f.set(k, v); return f; };
-const redirectOf = (p: Promise<unknown>) => p.then(() => "none", (e: Error) => decodeURIComponent(e.message.replaceAll("+", " ")));
+// A failed attempt returns { error } to the form; success and the signup notice redirect (thrown by the mock).
+const redirectOf = (p: Promise<unknown>) => p.then(
+  (r) => (r && typeof r === "object" && "error" in r ? `hata=${(r as { error: string }).error}` : "none"),
+  (e: Error) => decodeURIComponent(e.message.replaceAll("+", " ")),
+);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -55,7 +59,7 @@ describe("oran sınırı", () => {
   });
 
   it("anahtar e-posta veya IP'yi açık metin içermez", async () => {
-    await expect(redirectOf(actions.login(form({ email: "muhasebe@ornek.com", password: "12345678" })))).resolves.toBe("REDIRECT /panel");
+    await expect(redirectOf(actions.login(undefined, form({ email: "muhasebe@ornek.com", password: "12345678" })))).resolves.toBe("REDIRECT /panel");
     const keys = vi.mocked(hitRateLimit).mock.calls.map(([k]) => k);
     expect(keys).toHaveLength(2); // Turnstile yokken de IP ve e-posta sınırı
     for (const k of keys) expect(k).not.toMatch(/muhasebe|ornek|203\.0/);
@@ -70,13 +74,13 @@ describe("oran sınırı", () => {
 
   it("sınır aşılınca giriş denenmez", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(false);
-    expect(await redirectOf(actions.login(form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=cok-deneme");
+    expect(await redirectOf(actions.login(undefined, form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=cok-deneme");
     expect(getAuth().signIn.email).not.toHaveBeenCalled();
   });
 
   it("sınır aşılınca kayıt denenmez", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(false);
-    const res = await redirectOf(actions.signup(form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", passwordAgain: "12345678" })));
+    const res = await redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678" })));
     expect(res).toContain("hata=kayit-cok");
     expect(getAuth().signUp.email).not.toHaveBeenCalled();
   });
@@ -95,15 +99,31 @@ describe("oran sınırı", () => {
   });
 });
 
+describe("giriş ve kayıt formu", () => {
+  it("hatalı giriş e-postayı geri verir, şifreyi hiç döndürmez", async () => {
+    vi.mocked(getAuth().signIn.email).mockResolvedValueOnce({ error: { message: "x" } } as never);
+    const state = await actions.login(undefined, form({ email: "a@ornek.com", password: "gizli-sifre-123" }));
+    expect(state).toEqual({ error: "kimlik", field: "password", email: "a@ornek.com", name: undefined });
+    expect(JSON.stringify(state)).not.toContain("gizli-sifre-123");
+  });
+
+  it("biçim hatası ilgili alanı adlandırır", async () => {
+    expect(await actions.login(undefined, form({ email: "yok", password: "12345678" }))).toMatchObject({ error: "bicim-eposta", field: "email" });
+    expect(await actions.signup(undefined, form({ name: "A", email: "a@ornek.com", password: "12345678" }))).toMatchObject({ error: "bicim-ad", field: "name" });
+    expect(await actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "kisa" }))).toMatchObject({ error: "bicim-sifre", field: "password" });
+    expect(getAuth().signUp.email).not.toHaveBeenCalled();
+  });
+});
+
 describe("bot koruması", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("Turnstile açıkken token olmadan giriş ve kayıt denenmez", async () => {
     vi.stubEnv("TURNSTILE_SECRET_KEY", "test-secret");
-    expect(await redirectOf(actions.login(form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=bot");
+    expect(await redirectOf(actions.login(undefined, form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=bot");
     expect(getAuth().signIn.email).not.toHaveBeenCalled();
     expect(hitRateLimit).not.toHaveBeenCalled(); // Turnstile'sız deneme kurbanın e-posta limitini dolduramaz
-    const res = await redirectOf(actions.signup(form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", passwordAgain: "12345678" })));
+    const res = await redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678" })));
     expect(res).toContain("hata=bot");
     expect(getAuth().signUp.email).not.toHaveBeenCalled();
   });
@@ -113,7 +133,7 @@ describe("bot koruması", () => {
     vi.stubEnv("TURNSTILE_SECRET_KEY", "");
     vi.stubEnv("VERCEL_ENV", "production");
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    await redirectOf(actions.login(form({ email: "kurban@ornek.com", password: "yanlis-sifre" })));
+    await redirectOf(actions.login(undefined, form({ email: "kurban@ornek.com", password: "yanlis-sifre" })));
     expect(kinds()).toEqual(["loginIp", "loginEmail"]);
     warn.mockRestore();
 
@@ -121,7 +141,7 @@ describe("bot koruması", () => {
     vi.mocked(hitRateLimit).mockResolvedValue(true);
     vi.stubEnv("TURNSTILE_SECRET_KEY", "test-secret");
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ success: true })));
-    await redirectOf(actions.login(form({ email: "kurban@ornek.com", password: "yanlis-sifre", "cf-turnstile-response": "tok" })));
+    await redirectOf(actions.login(undefined, form({ email: "kurban@ornek.com", password: "yanlis-sifre", "cf-turnstile-response": "tok" })));
     expect(kinds()).toEqual(["loginIp", "loginEmail"]);
     vi.unstubAllGlobals();
   });

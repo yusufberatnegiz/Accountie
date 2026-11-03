@@ -1,18 +1,28 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PREFILL_KEY, PREFILL_NAME_KEY } from "@/components/home/SignupDialog";
 
+type Err = { error?: string };
+
+/** The field's own error under it, tied by aria-describedby together with any rule hint. */
+function described(id: string, hint?: string, error?: string) {
+  return [hint ? `${id}-hint` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ") || undefined;
+}
+function FieldError({ id, error }: { id: string; error?: string }) {
+  return error ? <p className="field-error" id={`${id}-error`}>{error}</p> : null;
+}
+
 /** Password with a show/hide toggle and its rule tied by aria-describedby. */
-export function PasswordField({ label, name, autoComplete, hint }: { label: string; name: string; autoComplete: string; hint?: string }) {
-  const id = useId();
+export function PasswordField({ label, name, autoComplete, hint, error }: { label: string; name: string; autoComplete: string; hint?: string } & Err) {
+  const id = "auth-password";
   const [shown, setShown] = useState(false);
   return (
     <div className="auth-field">
       <label htmlFor={id}>{label}</label>
       <div className="auth-password">
         <input className="field" id={id} name={name} type={shown ? "text" : "password"} autoComplete={autoComplete}
-          minLength={8} maxLength={128} required spellCheck={false} aria-describedby={hint ? `${id}-hint` : undefined} />
+          minLength={8} maxLength={128} required spellCheck={false} aria-invalid={error ? true : undefined} aria-describedby={described(id, hint, error)} />
         <button type="button" className="auth-reveal" onClick={() => setShown((s) => !s)}
           aria-label={shown ? `${label} gizle` : `${label} göster`}>
           <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
@@ -23,6 +33,7 @@ export function PasswordField({ label, name, autoComplete, hint }: { label: stri
         </button>
       </div>
       {hint ? <p className="hint" id={`${id}-hint`}>{hint}</p> : null}
+      <FieldError id={id} error={error} />
     </div>
   );
 }
@@ -41,24 +52,30 @@ function usePrefill(key: string, on?: boolean) {
   return ref;
 }
 
-export function NameField() {
+export function NameField({ error, defaultValue }: Err & { defaultValue?: string }) {
   const ref = usePrefill(PREFILL_NAME_KEY, true);
+  const id = "auth-name";
   return (
     <div className="auth-field">
-      <label htmlFor="auth-name">Ad soyad</label>
-      <input ref={ref} className="field" id="auth-name" name="name" autoComplete="name" minLength={2} maxLength={100} required />
+      <label htmlFor={id}>Ad soyad</label>
+      <input ref={ref} className="field" id={id} name="name" autoComplete="name" minLength={2} maxLength={100} required
+        defaultValue={defaultValue} aria-invalid={error ? true : undefined} aria-describedby={described(id, undefined, error)} />
+      <FieldError id={id} error={error} />
     </div>
   );
 }
 
 /** E-mail field; on the signup page it takes the address typed into the homepage window. */
-export function EmailField({ prefill }: { prefill?: boolean }) {
+export function EmailField({ prefill, error, defaultValue }: { prefill?: boolean; defaultValue?: string } & Err) {
   const ref = usePrefill(PREFILL_KEY, prefill);
+  const id = "auth-email";
   return (
     <div className="auth-field">
-      <label htmlFor="auth-email">E-posta</label>
-      <input ref={ref} className="field" id="auth-email" name="email" type="email" autoComplete="email" spellCheck={false}
-        placeholder="muhasebe@buro.com.tr…" maxLength={200} required />
+      <label htmlFor={id}>E-posta</label>
+      <input ref={ref} className="field" id={id} name="email" type="email" autoComplete="email" spellCheck={false}
+        placeholder="ornek@buro.com.tr" maxLength={200} required defaultValue={defaultValue}
+        aria-invalid={error ? true : undefined} aria-describedby={described(id, undefined, error)} />
+      <FieldError id={id} error={error} />
     </div>
   );
 }

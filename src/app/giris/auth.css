@@ -2,9 +2,10 @@
 .auth { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .auth-side { display: grid; grid-template-rows: auto 1fr; padding: var(--s6) var(--page-margin); padding-top: max(var(--s6), env(safe-area-inset-top)); }
 .auth-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); }
-.auth-form { align-self: center; justify-self: center; width: 100%; max-width: 400px; display: grid; gap: var(--s5); padding-block: var(--s8); }
+.auth-form { align-self: center; justify-self: start; width: 100%; max-width: 400px; display: grid; gap: var(--s5); padding-block: var(--s8); }
 .auth-head { display: grid; gap: var(--s2); }
-.auth-head p { font-size: var(--fs-body); }
+.auth-head p { font-size: var(--fs-section); color: var(--muted); max-width: 36ch; }
+.auth-head h1 { font-family: var(--font-head); font-weight: 300; font-size: clamp(1.5rem, 1rem + 1.4vw, 2rem); letter-spacing: -0.02em; line-height: 1.1; }
 .auth-fields { display: grid; gap: var(--s4); }
 .auth-field { display: grid; gap: var(--s2); }
 .auth-field > label { font-size: var(--fs-body); font-weight: 500; }
@@ -40,3 +41,7 @@
   .auth-side { padding: var(--s4) var(--page-margin); padding-top: max(var(--s4), env(safe-area-inset-top)); }
   .auth-form { align-self: start; padding-block: var(--s8) var(--s7); }
 }
+
+/* Phones: one theme button instead of three, so the bar stays light (same control as the homepage). */
+.auth-theme-narrow { display: none; }
+@media (max-width: 480px) { .auth-theme { display: none; } .auth-theme-narrow { display: inline; } }

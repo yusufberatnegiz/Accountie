@@ -4,7 +4,7 @@ import { useState, type CSSProperties } from "react";
 import { PAYMENT_LABELS, type PaymentMethod } from "@/lib/default-rules";
 import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount } from "@/lib/money";
-import { journalFor, SAMPLES } from "./samples";
+import { journalFor, SAMPLES, shownAccountName } from "./samples";
 
 const lucaDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : "");
 const PAYMENTS: PaymentMethod[] = ["card", "cash"];
@@ -79,7 +79,7 @@ export function Counter() {
           <tbody>
             {lines.map((l, i) => (
               <tr key={`${key}-${i}`} className="counter-row" style={{ "--i": i } as CSSProperties}>
-                <td><span className="code" translate="no">{l.accountCode}</span><span className="code-name">{l.accountName}</span></td>
+                <td><span className="code" translate="no">{l.accountCode}</span><span className="code-name">{shownAccountName(l.accountName)}</span></td>
                 <td className="num to-luca">{l.debitKurus ? formatTrAmount(l.debitKurus) : ""}</td>
                 <td className="num to-luca">{l.creditKurus ? formatTrAmount(l.creditKurus) : ""}</td>
               </tr>
