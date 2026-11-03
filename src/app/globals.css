@@ -54,6 +54,7 @@ h1 { font-size: 26px; font-weight: 600; }
 h2 { font-size: 18px; font-weight: 600; }
 p { margin: 0; }
 button, input, select { font: inherit; color: inherit; }
+button, input, select, textarea, a, label { touch-action: manipulation; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .num, .num-font { font-variant-numeric: tabular-nums; }
 .num { text-align: right; }
@@ -69,7 +70,7 @@ details.stack > summary h2 { display: inline; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding: var(--s3) var(--s4); padding-top: max(var(--s3), env(safe-area-inset-top)); background: var(--surface); border-bottom: 1px solid var(--line); }
 .brand { font-weight: 700; font-size: 18px; color: var(--text); text-decoration: none; letter-spacing: -0.02em; }
 .nav { display: flex; align-items: center; gap: var(--s1); }
-.nav a, .nav button { display: inline-flex; align-items: center; min-height: 40px; padding: var(--s2) var(--s3); border-radius: var(--radius); color: var(--muted); text-decoration: none; background: none; border: 0; cursor: pointer; }
+.nav a, .nav button { display: inline-flex; align-items: center; min-height: 44px; padding: var(--s2) var(--s3); border-radius: var(--radius); color: var(--muted); text-decoration: none; background: none; border: 0; cursor: pointer; }
 .nav a:hover, .nav button:hover { background: var(--surface-2); color: var(--text); }
 .nav a[aria-current="page"] { color: var(--text); font-weight: 600; background: var(--surface-2); }
 .page { max-width: 1200px; margin: 0 auto; padding: var(--s5) var(--s4) var(--s8); display: grid; gap: var(--s5); }
@@ -97,7 +98,8 @@ details.stack > summary h2 { display: inline; }
 .btn-lg { min-height: 52px; padding: var(--s3) var(--s5); }
 .field { width: 100%; min-height: 44px; padding: var(--s2); border: 1px solid var(--field-border); border-radius: 4px; background: var(--surface); }
 .field:hover:not(:disabled) { border-color: var(--text); }
-.field:disabled { background: var(--surface-2); color: var(--text); opacity: 1; border-color: var(--line); }
+/* Locked (approved) fields read as plain text, not as inputs. */
+.field:disabled { background: transparent; color: var(--text); opacity: 1; border-color: transparent; cursor: default; }
 .field[aria-invalid="true"] { border-color: var(--danger); background: var(--danger-soft); }
 .field[data-check] { border-color: var(--warn); background: var(--warn-soft); }
 label { display: grid; gap: var(--s1); font-weight: 500; font-size: 14px; }
@@ -144,7 +146,8 @@ tbody tr:last-child td { border-bottom: 0; }
 /* Review screen: photo left, editor right on desktop; stacked on phone */
 .review { display: grid; gap: var(--s5); }
 .review-main { display: grid; gap: var(--s4); min-width: 0; }
-@media (min-width: 960px) { .review { grid-template-columns: minmax(280px, 380px) 1fr; align-items: start; } .review-photo { position: sticky; top: var(--s4); } }
+/* 1100px: below this the photo column squeezes the account name column to ~76px. */
+@media (min-width: 1100px) { .review { grid-template-columns: minmax(280px, 380px) 1fr; align-items: start; } .review-photo { position: sticky; top: var(--s4); } }
 .review-photo img { display: block; width: 100%; border-radius: var(--radius); }
 .check-note { margin-left: var(--s1); font-size: 13px; font-weight: 600; color: var(--warn); }
 .read-values { display: grid; gap: var(--s3); margin: var(--s3) 0 var(--s4); }
@@ -198,27 +201,29 @@ tbody tr:last-child td { border-bottom: 0; }
   .receipts .r-no { display: none; }
   .receipts .row-link::after { content: ""; position: absolute; inset: 0; }
 
-  /* Journal lines become small cards: code and name, then debit, credit and delete. */
+  /* Journal lines become small cards: code, name, then debit, credit and delete. */
   .lines thead { display: none; }
   .lines, .lines tbody { display: block; }
   .lines tr { display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); }
   .lines td, .lines td:first-child, .lines td:last-child { border: 0; padding: 0; }
   .lines td[data-label]::before, .rules-table td[data-label]::before { content: attr(data-label); display: block; font-size: 13px; color: var(--muted); margin-bottom: 2px; }
   .lines td:nth-child(1) { grid-column: 1; }
-  .lines td:nth-child(2) { grid-column: 2 / 4; }
-  .lines td.col-del { grid-column: 3; grid-row: 2; align-self: end; width: auto; }
+  .lines td:nth-child(2) { grid-column: 1 / -1; }
+  .lines td.col-del { grid-column: 3; grid-row: 3; align-self: end; width: auto; }
 
   .rules-table thead { display: none; }
   .rules-table, .rules-table tbody { display: block; }
   .rules-table tr { display: grid; grid-template-columns: 7rem 1fr; gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); }
   .rules-table td { border: 0; padding: 0; }
-  .rules-table .rule-label { grid-column: 1 / -1; }
+  .rules-table .rule-label, .rules-table td[data-label="Hesap Adı"] { grid-column: 1 / -1; }
 
   .action-bar { margin: 0 calc(-1 * var(--s4)); border-radius: 0; border-width: 1px 0 0; }
   .action-bar .btn-lg { padding: var(--s3) var(--s4); }
   .page:has(.action-bar) { padding-bottom: 0; }
   /* The header already shows vendor, total and VKN on the phone. */
   .review-read { display: none; }
+  /* Keep the form in view: a tall receipt photo would push it a full screen down. */
+  .review-photo img { max-height: 40vh; object-fit: contain; margin: 0 auto; width: auto; max-width: 100%; }
   /* Excel import and the extension key are desktop tasks. */
   .desktop-only { display: none; }
   .phone-only { display: block; }
