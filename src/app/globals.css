@@ -47,6 +47,8 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); }
+/* Keeps focused fields clear of the sticky bottom bars. */
+html { scroll-padding-bottom: 104px; }
 body { font-family: var(--font-sans), system-ui, sans-serif; font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
 a { color: var(--accent); text-underline-offset: 2px; }
 h1, h2, h3 { margin: 0; line-height: 1.2; letter-spacing: -0.01em; }
@@ -79,7 +81,7 @@ details.stack > summary h2 { display: inline; }
 .page-head h1 { overflow-wrap: anywhere; }
 .crumb { font-size: 14px; }
 /* 44px touch target without moving the layout. */
-.crumb a { display: inline-block; padding: 13px 8px 13px 0; margin: -13px 0; }
+.crumb a { display: inline-block; padding: 13px 8px 13px 0; margin: -13px 0; outline-offset: -2px; }
 .meta { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); align-items: baseline; }
 .flagged { background: var(--warn-soft); color: var(--warn); padding: 0 var(--s1); border-radius: 4px; }
 
@@ -176,6 +178,9 @@ tbody tr:last-child td { border-bottom: 0; }
 .phone-only { display: none; }
 
 /* Phone */
+/* Until the two-column layout, keep the form in view: a tall receipt photo would push it a full screen down. */
+@media (max-width: 1099px) { .review-photo img { max-height: 40vh; object-fit: contain; margin: 0 auto; width: auto; max-width: 100%; } }
+
 @media (max-width: 720px) {
   h1 { font-size: 22px; }
   .page { padding: var(--s4) var(--s4) var(--s7); gap: var(--s4); }
@@ -209,7 +214,7 @@ tbody tr:last-child td { border-bottom: 0; }
   .lines td[data-label]::before, .rules-table td[data-label]::before { content: attr(data-label); display: block; font-size: 13px; color: var(--muted); margin-bottom: 2px; }
   .lines td:nth-child(1) { grid-column: 1; }
   .lines td:nth-child(2) { grid-column: 1 / -1; }
-  .lines td.col-del { grid-column: 3; grid-row: 3; align-self: end; width: auto; }
+  .lines td.col-del { grid-column: 3; grid-row: 3; align-self: start; padding-top: 22px; /* label height */ width: auto; }
 
   .rules-table thead { display: none; }
   .rules-table, .rules-table tbody { display: block; }
@@ -222,8 +227,6 @@ tbody tr:last-child td { border-bottom: 0; }
   .page:has(.action-bar) { padding-bottom: 0; }
   /* The header already shows vendor, total and VKN on the phone. */
   .review-read { display: none; }
-  /* Keep the form in view: a tall receipt photo would push it a full screen down. */
-  .review-photo img { max-height: 40vh; object-fit: contain; margin: 0 auto; width: auto; max-width: 100%; }
   /* Excel import and the extension key are desktop tasks. */
   .desktop-only { display: none; }
   .phone-only { display: block; }
