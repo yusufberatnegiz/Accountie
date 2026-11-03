@@ -21,10 +21,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f2f4f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1114" },
-  ],
+  // No themeColor and no JSX meta: the head script owns the one theme-color meta (src/lib/theme.ts).
 };
 
 // Production only: public/sw.js serves public/cevrimdisi.html when a navigation fails offline (caches nothing else).

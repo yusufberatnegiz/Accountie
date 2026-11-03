@@ -2,31 +2,36 @@ import { describe, expect, it } from "vitest";
 import { THEME_INIT_SCRIPT } from "./theme";
 
 // Runs the inline <head> script against a minimal fake document.
-function run(saved: string | null, throws = false) {
+function run(saved: string | null, throws = false, systemDark = false) {
   const dataset: Record<string, string> = {};
-  const meta = { media: "(prefers-color-scheme: light)", content: "#f2f4f7", dataset: {} as Record<string, string> };
-  let onReady: (() => void) | undefined;
+  const head: { name?: string; content?: string }[] = [];
   const localStorage = { getItem: () => { if (throws) throw new Error("blocked"); return saved; } };
   const document = {
     documentElement: { dataset },
-    addEventListener: (_: string, fn: () => void) => { onReady = fn; },
-    querySelectorAll: () => [meta],
+    head: { appendChild: (m: (typeof head)[number]) => head.push(m) },
+    createElement: () => ({}),
+    querySelector: () => head[0] ?? null,
   };
-  new Function("localStorage", "document", THEME_INIT_SCRIPT)(localStorage, document);
-  onReady?.();
-  return { theme: dataset.theme, meta };
+  const matchMedia = () => ({ matches: systemDark, addEventListener: () => {} });
+  new Function("localStorage", "document", "matchMedia", THEME_INIT_SCRIPT)(localStorage, document, matchMedia);
+  return { theme: dataset.theme, look: dataset.look, head };
 }
 
 describe("theme init script", () => {
   it("applies a saved manual choice and the matching browser bar colour", () => {
     const r = run("dark");
     expect(r.theme).toBe("dark");
-    expect(r.meta).toMatchObject({ media: "", content: "#0e1114" });
+    expect(r.look).toBe("dark");
+    expect(r.head).toEqual([{ name: "theme-color", content: "#0e1114" }]);
+  });
+  it("a saved choice wins over the system look, in one meta", () => {
+    const r = run("light", false, true);
+    expect(r.head).toEqual([{ name: "theme-color", content: "#f2f4f7" }]);
   });
   it("leaves system preference alone when nothing or junk is saved", () => {
     expect(run(null).theme).toBeUndefined();
     expect(run("purple").theme).toBeUndefined();
-    expect(run(null).meta.media).toBe("(prefers-color-scheme: light)");
+    expect(run(null, false, true).head).toEqual([{ name: "theme-color", content: "#0e1114" }]);
   });
   it("switches transitions off for the frame an OS theme change lands in", () => {
     const classes = new Set<string>();
@@ -35,7 +40,7 @@ describe("theme init script", () => {
     const document = {
       documentElement: { dataset: {}, classList: { add: (c: string) => classes.add(c), remove: (c: string) => classes.delete(c) } },
       addEventListener: () => {},
-      querySelectorAll: () => [],
+      querySelector: () => ({}),
     };
     const mq = { matches: false, addEventListener: (_: string, fn: () => void) => { onChange = fn; } };
     const matchMedia = () => mq;

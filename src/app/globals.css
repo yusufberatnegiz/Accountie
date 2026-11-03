@@ -317,7 +317,6 @@ tbody tr:last-child td { border-bottom: 0; }
 .status-mark .mark-strip { stroke-width: 0.6; }
 .status-mark .mark-thermal { stroke-width: 0.9; }
 .status-mark .mark-luca { stroke-width: 1.2; }
-.status-theme-narrow { display: none; }
 @media (max-width: 900px) {
   .status-page { grid-template-columns: 1fr; }
   .status-stage { display: none; }
@@ -325,7 +324,6 @@ tbody tr:last-child td { border-bottom: 0; }
   .status-body { align-self: start; padding-block: var(--s9) var(--s7); }
   .status-message h1 { font-size: 24px; }
 }
-@media (max-width: 480px) { .status-theme { display: none; } .status-theme-narrow { display: inline; } }
 @media (prefers-reduced-motion: no-preference) {
   .status-message { animation: status-rise 500ms var(--ease-out) both; }
   /* The blue Luca line draws across the strip once: the product's one idea, even on a failed page. */
