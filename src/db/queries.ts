@@ -1,5 +1,5 @@
 // The only module that talks to the database. Every function takes the session user's id and filters by it.
-import { and, asc, count, desc, eq, gt, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, lt, ne, sql } from "drizzle-orm";
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import type { JournalLine, Warning } from "@/lib/journal";
 import { getDb } from "./index";
@@ -132,6 +132,14 @@ export async function getReceipt(userId: string, id: string) {
 }
 
 export type ReceiptDetail = NonNullable<Awaited<ReturnType<typeof getReceipt>>>;
+
+/** The draft to open after this one (the newest other draft, as the list orders them) and how many other drafts wait. */
+export async function nextDraft(userId: string, exceptId: string): Promise<{ id: string; left: number } | null> {
+  const [row] = await getDb().select({ id: receipts.id, left: sql<number>`count(*) over ()::int` }).from(receipts)
+    .where(and(eq(receipts.userId, userId), eq(receipts.status, "draft"), ne(receipts.id, exceptId)))
+    .orderBy(desc(receipts.createdAt)).limit(1);
+  return row ?? null;
+}
 
 /** Replaces all lines of a draft. Caller must have checked the receipt is the user's draft. */
 export async function replaceLines(userId: string, id: string, lines: readonly JournalLine[]): Promise<void> {

@@ -10,6 +10,7 @@ import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount, parseTrAmount } from "@/lib/money";
 import { STATUS_LABELS } from "@/lib/status";
 import { getPhoto } from "@/lib/photo-store";
+import { CaptureButton } from "./CaptureButton";
 import { ExportButton } from "./ExportButton";
 import { useLeaveGuard } from "./useLeaveGuard";
 
@@ -65,7 +66,10 @@ function goTo(el: HTMLElement | null) {
   if (!still) el?.animate([{ transform: "none" }, { transform: "scale(1.04)" }, { transform: "none" }], { duration: 280, delay: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
 }
 
-export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: ReceiptDetail; rules: Rules; base?: string }) {
+/** The other draft to open once this one is done, and how many drafts wait besides this one. */
+export type NextDraft = { id: string; left: number } | null;
+
+export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: { receipt: ReceiptDetail; rules: Rules; next?: NextDraft; base?: string }) {
   const router = useRouter();
   const editable = receipt.status === "draft";
   const [lines, setLines] = useState(() => receipt.lines.map(toEdit));
@@ -348,6 +352,11 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
             </p>
             {/* The way back sits under the thumb on the phone, where this screen hides the bottom bar. */}
             <Link className="btn btn-lg bar-back" href={base}>Fişler</Link>
+            {/* After approval the phone user goes on with the bag of receipts: the next draft, or the camera when none is left. */}
+            {!editable ? <div className="bar-next phone-only"><CaptureButton pickers={["camera"]} variant="bar" primary={!next} /></div> : null}
+            {!editable && next ? (
+              <Link className="btn btn-lg bar-next-draft" href={`${base}/fis/${next.id}`}>Sıradaki taslak ({next.left})</Link>
+            ) : null}
             {editable ? (
               // aria-disabled keeps the button in the Tab order; pressing it while blocked goes to the field that fixes it.
               <button className="btn btn-primary btn-lg" type="button" disabled={busy} aria-disabled={target ? true : undefined}

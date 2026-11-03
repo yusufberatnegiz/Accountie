@@ -15,7 +15,7 @@ import { listFinding, STATUS_LABELS } from "@/lib/status";
 export const TABS: { slug: string; label: string; status?: ReceiptStatus }[] = [
   { slug: "", label: "Tümü" },
   { slug: "taslak", label: "Taslak", status: "draft" },
-  { slug: "onayli", label: "Onaylı", status: "approved" },
+  { slug: "onayli", label: "Onaylandı", status: "approved" },
   { slug: "aktarildi", label: "Aktarıldı", status: "exported" },
 ];
 
@@ -48,7 +48,6 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
     <main id="icerik" tabIndex={-1} className="canvas canvas-list">
       <div className="title-row">
         <div className="title-text">
-          <p className="crumb" translate="no">Accountie</p>
           <h1>Fişler</h1>
           {/* Excel and the extension are desktop tasks; on the phone the finding says where the file is downloaded. */}
           <p className="finding">{listFinding(drafts, ready.length)}{ready.length ? <span className="phone-only-inline"> Dosyayı bilgisayardan indirin.</span> : null}</p>
@@ -79,7 +78,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
         ) : (
           <table className="receipts">
             <thead>
-              <tr><th className="col-vendor">Satıcı</th><th className="num">Evrak No</th><th className="num">Tarih</th><th className="num">Gider hesabı</th><th className="num">Toplam</th><th className="col-status">Durum</th></tr>
+              <tr><th className="col-vendor">Satıcı</th><th className="num col-no">Evrak No</th><th className="num col-date">Tarih</th><th className="num col-code">Gider hesabı</th><th className="num col-total">Toplam</th><th className="col-status">Durum</th></tr>
             </thead>
             <tbody>
               {receipts.map((r) => {

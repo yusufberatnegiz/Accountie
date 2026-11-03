@@ -57,7 +57,7 @@ export const PREVIEW_RECEIPTS: ReceiptDetail[] = [
 ];
 
 export const PREVIEW_RULE_ROWS = rulesToRows(DEFAULT_RULES);
-export const PREVIEW_EMAIL = "muhasebe@buro.com.tr";
+export const PREVIEW_EMAIL = "muhasebe@buro.example";
 
 /** The list screen's row shape, computed from the fixtures the way listReceipts computes it in SQL. */
 export const PREVIEW_LIST = PREVIEW_RECEIPTS.map(({ lines, taxNumber, paymentMethod, category, ...r }) => ({
@@ -68,6 +68,3 @@ export const PREVIEW_LIST = PREVIEW_RECEIPTS.map(({ lines, taxNumber, paymentMet
   vatKurus: lines.reduce((n, l) => n + (l.accountCode.startsWith("191") ? l.debitKurus : 0), 0),
 }));
 
-/** `?tema=acik|koyu` for the previews: forces a theme so a headless browser can measure both. */
-export const previewThemeScript = (tema?: string) =>
-  tema === "acik" || tema === "koyu" ? `document.documentElement.dataset.theme=${JSON.stringify(tema === "koyu" ? "dark" : "light")}` : "";
