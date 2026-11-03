@@ -19,6 +19,7 @@ const receiptsRoute = await import("./receipts/route");
 const receiptRoute = await import("./receipts/[id]/route");
 const approveRoute = await import("./receipts/[id]/approve/route");
 const exportsRoute = await import("./exports/route");
+const exportedRoute = await import("./receipts/[id]/exported/route");
 const rulesRoute = await import("./account-rules/route");
 
 const USER = "user-a";
@@ -57,8 +58,9 @@ describe("oturum", () => {
       receiptRoute.GET(new Request("http://test"), params()), receiptRoute.PATCH(json({ lines }), params()),
       receiptRoute.DELETE(new Request("http://test"), params()), approveRoute.POST(new Request("http://test"), params()),
       exportsRoute.POST(json({}, "POST")), rulesRoute.GET(), rulesRoute.PUT(json({ rows: [] }, "PUT")),
+      exportedRoute.POST(new Request("http://test"), params()),
     ]);
-    expect(responses.map((r) => r.status)).toEqual(Array(9).fill(401));
+    expect(responses.map((r) => r.status)).toEqual(Array(10).fill(401));
     expect(q.createReceipt).not.toHaveBeenCalled();
   });
 });
@@ -178,6 +180,14 @@ describe("POST /api/exports", () => {
   it("onaylı fiş yoksa 404", async () => {
     vi.mocked(q.listForExport).mockResolvedValue([]);
     expect((await exportsRoute.POST(json({}, "POST"))).status).toBe(404);
+  });
+});
+
+describe("POST /api/receipts/[id]/exported", () => {
+  it("elle girilen fişi aktarıldı yapar, geçersiz id 404", async () => {
+    expect((await exportedRoute.POST(new Request("http://test"), params())).status).toBe(204);
+    expect(q.markExported).toHaveBeenCalledWith(USER, [ID]);
+    expect((await exportedRoute.POST(new Request("http://test"), params("x"))).status).toBe(404);
   });
 });
 

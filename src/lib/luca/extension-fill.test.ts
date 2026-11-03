@@ -9,7 +9,7 @@ type FakeEl = { value: string; events: string[]; dispatchEvent(e: Event): boolea
 type Fill = {
   FIELDS: string[];
   fillReceipt(doc: unknown, rows: unknown[], sel: Selectors): { gridFound: boolean; filled: number; missing: { row: number; field: string }[] };
-  summarize(results: unknown[], rowCount: number): { ok: boolean; message: string };
+  summarize(results: unknown[], rowCount: number): { ok: boolean; gridFound: boolean; message: string };
 };
 type Selectors = { row: string; addRow: string | null; cells: Record<string, string> };
 
@@ -94,16 +94,20 @@ describe("çerçeve sonuçlarının özeti", () => {
   it("hiçbir çerçevede tablo yoksa açıkça söyler", () => {
     const s = fill.summarize([{ gridFound: false, filled: 0, missing: [] }, null], 3);
     expect(s.ok).toBe(false);
+    expect(s.gridFound).toBe(false);
     expect(s.message).toContain("Fiş Detayı tablosu bulunamadı");
   });
   it("eksik alanları Türkçe adıyla listeler", () => {
     const s = fill.summarize([{ gridFound: true, filled: 15, missing: [{ row: 1, field: "documentType" }, { row: 3, field: "row" }] }], 3);
     expect(s.ok).toBe(false);
     expect(s.message).toContain("Alan bulunamadı: 1. satır BT, 3. satır (satır yok)");
+    // Partial fill: the "Luca'da kaydettim" button must stay reachable so the receipt is not exported twice.
+    expect(s.gridFound).toBe(true);
+    expect(s.message).toContain("+ ile boş satır");
   });
   it("hepsi dolunca kullanıcıya Kaydet'i kendisinin basacağını söyler", () => {
     const s = fill.summarize([{ gridFound: false, filled: 0, missing: [] }, { gridFound: true, filled: 18, missing: [] }], 3);
-    expect(s).toEqual({ ok: true, message: "3 satır dolduruldu. Luca'da kontrol edip Kaydet'e siz basın." });
+    expect(s).toEqual({ ok: true, gridFound: true, message: "3 satır dolduruldu. Luca'da kontrol edip Kaydet'e siz basın, sonra Luca'da kaydettim'e basın." });
   });
 });
 

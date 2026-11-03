@@ -61,6 +61,8 @@ button, input, select { font: inherit; color: inherit; }
 .small { font-size: 14px; }
 .stack { display: grid; gap: var(--s3); align-content: start; }
 .stack-lg { display: grid; gap: var(--s5); }
+details.stack > summary { cursor: pointer; list-style-position: outside; margin-left: var(--s4); }
+details.stack > summary h2 { display: inline; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Shell */
