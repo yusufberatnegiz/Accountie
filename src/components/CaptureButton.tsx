@@ -24,7 +24,10 @@ async function shrink(file: File): Promise<Blob> {
   }
 }
 
-export function CaptureButton() {
+type Picker = "camera" | "gallery";
+
+/** `head`: the screen's title-row buttons. `rail`: the camera button in the phone's bottom bar (hidden on desktop). */
+export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head" }: { pickers?: Picker[]; variant?: "head" | "rail" }) {
   const router = useRouter();
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -71,43 +74,44 @@ export function CaptureButton() {
     setBusy(false);
     setStatus("");
     if (list.length > 1 && added === list.length) setNotice(`${added} fiş eklendi.`);
-    if (lastId && list.length === 1) router.push(`/fis/${lastId}`);
+    if (lastId && list.length === 1) router.push(`/panel/fis/${lastId}`);
     else router.refresh();
   }
 
-  const picker = (text: string, capture: boolean, primary: boolean) => (
-    <label className={primary ? "btn btn-primary btn-lg" : "btn btn-lg"} aria-disabled={busy}>
-      {text}
-      <input
-        className="visually-hidden"
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-        capture={capture ? "environment" : undefined}
-        multiple={!capture}
-        disabled={busy}
-        onChange={(e) => {
-          const files = e.target.files?.length ? [...e.target.files] : [];
-          e.target.value = "";
-          if (files.length) upload(files);
-        }}
-      />
-    </label>
+  const input = (capture: boolean) => (
+    <input
+      className="visually-hidden"
+      type="file"
+      accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+      capture={capture ? "environment" : undefined}
+      multiple={!capture}
+      disabled={busy}
+      onChange={(e) => {
+        const files = e.target.files?.length ? [...e.target.files] : [];
+        e.target.value = "";
+        if (files.length) upload(files);
+      }}
+    />
   );
+  const picker = (kind: Picker) => kind === "camera"
+    ? <label key={kind} className="btn btn-primary capture-camera" aria-disabled={busy}>Fiş çek{input(true)}</label>
+    : <label key={kind} className="btn capture-gallery" aria-disabled={busy}>Galeriden seç{input(false)}</label>;
 
   return (
-    <div className="capture">
+    <div className={`capture capture-${variant}`}>
       {/* The status region stays mounted so screen readers announce its text changes. */}
       <div role="status" className={busy ? "reading" : notice ? "" : "visually-hidden"}>
         {busy ? (
           <p>{status}… Sayfadan ayrılmayın.{slow ? <><br /><span className="small">Hâlâ okunuyor, fiş uzunsa biraz sürebilir.</span></> : null}</p>
         ) : notice ? <p className="alert">{notice}</p> : null}
       </div>
-      {busy ? null : (
-        <div className="capture-buttons">
-          {picker("Fiş çek", true, true)}
-          {picker("Galeriden seç", false, false)}
-        </div>
-      )}
+      {variant === "rail" ? (
+        <label className="rail-item rail-capture" aria-disabled={busy}>
+          <svg className="rail-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2 5.25h2.5l1.25-1.75h4.5l1.25 1.75H14v7.5H2z" /><circle cx="8" cy="8.75" r="2.25" /></svg>
+          <span className="rail-label">Fiş çek</span>
+          {input(true)}
+        </label>
+      ) : busy ? null : <div className="capture-buttons">{pickers.map(picker)}</div>}
       {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
     </div>
   );

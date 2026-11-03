@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getRules } from "@/db/queries";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { RulesView } from "@/components/RulesView";
 import { getUserId } from "@/lib/auth/session";
 
@@ -13,9 +13,8 @@ export default async function RulesPage() {
   if (!userId) redirect("/giris");
   const { rows } = await getRules(userId);
   return (
-    <>
-      <AppHeader current="kurallar" />
+    <AppShell current="kurallar">
       <RulesView rows={rows} />
-    </>
+    </AppShell>
   );
 }

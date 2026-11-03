@@ -1,5 +1,5 @@
 // The only module that talks to the database. Every function takes the session user's id and filters by it.
-import { and, asc, count, desc, eq, gt, inArray, lt } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, lt, sql } from "drizzle-orm";
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import type { JournalLine, Warning } from "@/lib/journal";
 import { getDb } from "./index";
@@ -104,8 +104,16 @@ export async function hasDuplicateReceipt(userId: string, taxNumber: string, rec
   return rows.length > 0;
 }
 
+// The list shows each receipt's expense account (first debit line that is not VAT) and its line count (for Luca's 400-line file limit).
+const listColumns = {
+  ...summaryColumns,
+  warnings: receipts.warnings,
+  expenseCode: sql<string | null>`(select jl.account_code from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
+  lineCount: sql<number>`(select count(*)::int from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId})`,
+};
+
 export async function listReceipts(userId: string, status?: ReceiptStatus) {
-  return getDb().select(summaryColumns).from(receipts)
+  return getDb().select(listColumns).from(receipts)
     .where(status ? and(eq(receipts.userId, userId), eq(receipts.status, status)) : eq(receipts.userId, userId))
     .orderBy(desc(receipts.createdAt)).limit(200);
 }

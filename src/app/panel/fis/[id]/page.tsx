@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getReceipt, getRules } from "@/db/queries";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { ReceiptView } from "@/components/ReceiptView";
 import { idSchema } from "@/lib/api-schemas";
 import { getUserId } from "@/lib/auth/session";
@@ -17,9 +17,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   if (!receipt) notFound();
 
   return (
-    <>
-      <AppHeader current="fisler" />
+    <AppShell current="fis">
       <ReceiptView receipt={receipt} rules={rules} />
-    </>
+    </AppShell>
   );
 }

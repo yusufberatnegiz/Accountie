@@ -3,7 +3,6 @@ export default function Loading() {
   return (
     <main id="icerik" tabIndex={-1} className="page" aria-busy="true">
       <p className="reading" role="status">Yükleniyor…</p>
-      <div className="panel skeleton" />
     </main>
   );
 }
