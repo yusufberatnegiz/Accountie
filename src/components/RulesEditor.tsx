@@ -1,31 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ExtensionTokenPanel } from "@/components/ExtensionTokenPanel";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { useLeaveGuard } from "@/components/useLeaveGuard";
 import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, rulesToRows, type RuleKind, type RuleRow } from "@/lib/default-rules";
 import { formatTrAmount } from "@/lib/money";
 
-// The example receipt 0047 (8.725,00 TL, KDV %10 793,18, paid by card) shows what each setting produces.
+// The example receipt 0047 (8.725,00 TL, KDV %10 793,18, paid by card) shows what the rule in focus produces.
 const SAMPLE = { total: 872500, vat: 79318 };
+const vatAt = (rate: number) => Math.round((SAMPLE.total * rate) / (100 + rate));
+const PAID: Record<string, string> = { cash: "Nakit ödenen fiş", card: "Kartla ödenen fiş", other: "Başka yolla ödenen fiş" };
 
-const GROUPS: { kind: RuleKind; title: string; text: string; preview: (rows: RuleRow[]) => [string, string, string] }[] = [
-  {
-    kind: "expense", title: "Gider hesapları", text: "Fiş türüne göre borç satırına yazılan hesap.",
-    preview: (rs) => { const r = rs.find((x) => x.key === "meal"); return ["Yemek ve ağırlama fişi", `${r?.accountCode ?? ""} ${r?.accountName ?? ""}`, `Borç ${formatTrAmount(SAMPLE.total - SAMPLE.vat)}`]; },
-  },
-  {
-    kind: "vat", title: "İndirilecek KDV", text: "Fişteki KDV oranına göre 191 hesabı. KDV yeniden hesaplanmaz, fişteki tutar yazılır.",
-    preview: (rs) => { const r = rs.find((x) => x.key === "10"); return ["%10 KDV", `${r?.accountCode ?? ""} ${r?.accountName ?? ""}`, `Borç ${formatTrAmount(SAMPLE.vat)}`]; },
-  },
-  {
-    kind: "payment", title: "Ödeme ve alacak", text: "Ödeme şekline göre alacak satırına yazılan hesap. Fiş ekranında fiş başına değiştirilebilir.",
-    preview: (rs) => { const r = rs.find((x) => x.key === "card"); return ["Kartla ödenen fiş", `${r?.accountCode ?? ""} ${r?.accountName ?? ""}`, `Alacak ${formatTrAmount(SAMPLE.total)}`]; },
-  },
-  {
-    kind: "setting", title: "Belge türü", text: "Luca'daki BT sütununa yazılır. Yazar kasa fişi için ÖK.",
-    preview: (rs) => ["Her satırın BT sütunu", rs[0]?.accountCode ?? "", ""],
-  },
+const GROUPS: { kind: RuleKind; title: string; text: string; first: string; caption: (r: RuleRow) => string }[] = [
+  { kind: "expense", title: "Gider hesapları", text: "Fiş türüne göre borç satırına yazılan hesap.", first: "meal", caption: (r) => `${r.label} fişi` },
+  { kind: "vat", title: "İndirilecek KDV", text: "Fişteki KDV oranına göre 191 hesabı. KDV yeniden hesaplanmaz, fişteki tutar yazılır.", first: "10", caption: (r) => `${r.label} içeren fiş` },
+  { kind: "payment", title: "Ödeme ve alacak", text: "Ödeme şekline göre alacak satırına yazılan hesap. Fiş ekranında fiş başına değiştirilebilir.", first: "card", caption: (r) => PAID[r.key] ?? r.label },
+  { kind: "setting", title: "Belge türü", text: "Luca'daki BT sütununa yazılır. Yazar kasa fişi için ÖK.", first: "documentType", caption: (r) => `Her satırın BT sütunu ${r.accountCode}` },
 ];
 
 const invalid = (r: RuleRow) => (r.kind === "setting" ? !r.accountCode.trim() || r.accountCode.length > 10 : !ACCOUNT_CODE_PATTERN.test(r.accountCode));
@@ -37,18 +28,13 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
   const [saved, setSaved] = useState(initial);
   const [note, setNote] = useState<{ kind: RuleKind; text: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState<RuleKind | null>(null);
+  // The rule under the pointer or in focus; the preview beside its group follows it.
+  const [active, setActive] = useState<RuleRow | null>(null);
 
   const update = (r: RuleRow, patch: Partial<RuleRow>) => setRows((rs) => rs.map((x) => (same(x, r) ? { ...x, ...patch } : x)));
   const dirty = (kind: RuleKind) => rows.some((r) => r.kind === kind && JSON.stringify(r) !== JSON.stringify(saved.find((s) => same(s, r))));
 
-  // Warn before unsaved rules are lost on tab close or reload.
-  const anyDirty = GROUPS.some((g) => dirty(g.kind));
-  useEffect(() => {
-    if (!anyDirty) return;
-    const onUnload = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener("beforeunload", onUnload);
-    return () => window.removeEventListener("beforeunload", onUnload);
-  }, [anyDirty]);
+  useLeaveGuard(GROUPS.some((g) => dirty(g.kind)));
 
   async function save(kind: RuleKind) {
     setNote(null);
@@ -72,28 +58,48 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
     <div className="settings">
       {GROUPS.map((g) => {
         const groupRows = rows.filter((r) => r.kind === g.kind);
-        const [from, account, amount] = g.preview(groupRows);
+        const shown = groupRows.find((r) => active && same(r, active)) ?? groupRows.find((r) => r.key === g.first) ?? groupRows[0];
+        // The sample receipt's three Luca lines under the current rules; this group's line is lit, and it follows the rule in focus.
+        const pick = (kind: RuleKind, key: string) => (kind === g.kind ? shown : undefined) ?? rows.find((r) => r.kind === kind && r.key === key);
+        const vatRow = pick("vat", "10");
+        const rate = Number(vatRow?.key ?? 10);
+        const vat = rate === 10 ? SAMPLE.vat : vatAt(rate);
+        const lines = [
+          { kind: "expense", row: pick("expense", "meal"), side: "Borç", amount: SAMPLE.total - vat },
+          { kind: "vat", row: vatRow, side: "Borç", amount: vat },
+          { kind: "payment", row: pick("payment", "card"), side: "Alacak", amount: SAMPLE.total },
+        ];
         const setting = g.kind === "setting";
         return (
           <section key={g.kind} id={`kural-${g.kind}`} className="setting-row" aria-labelledby={`grp-${g.kind}`}>
             <div className="setting-label">
               <h2 id={`grp-${g.kind}`}>{g.title}</h2>
               <p className="muted small">{g.text}</p>
-              <p className="setting-preview" aria-label="Örnek fiş 0047 ile sonuç">
-                <span className="muted">{from}</span>
-                <span className="tnum" translate="no">{account}</span>
-                {amount ? <span className="to-luca">{amount}</span> : null}
-              </p>
+              <figure className="setting-preview">
+                <figcaption><span>{shown ? g.caption(shown) : ""}</span><span className="muted">Toplam {formatTrAmount(SAMPLE.total)}</span></figcaption>
+                <table className="preview-lines">
+                  <caption className="visually-hidden">Örnek fişin Luca satırları</caption>
+                  <tbody>
+                    {lines.map((l) => (
+                      <tr key={l.kind} data-traced={l.kind === g.kind ? "" : undefined}>
+                        <td><span className="tnum" translate="no">{l.row?.accountCode}</span> <span className="muted">{l.row?.accountName}</span></td>
+                        <td className="num to-luca">{l.side} {formatTrAmount(l.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </figure>
             </div>
             <div className="setting-panel">
               <table className="rules-table">
-                <thead><tr><th>Kural</th><th className="col-code">{setting ? "Değer" : "Hesap Kodu"}</th>{setting ? null : <th>Hesap Adı</th>}</tr></thead>
+                <thead><tr><th>Kural</th><th className="col-code">{setting ? "Değer" : "Hesap kodu"}</th>{setting ? null : <th>Hesap adı</th>}</tr></thead>
                 <tbody>
                   {groupRows.map((r) => (
-                    <tr key={r.key}>
+                    <tr key={r.key} onMouseEnter={() => setActive(r)} onFocus={() => setActive(r)}>
                       <td className="rule-label">{r.label}</td>
-                      <td data-label={setting ? "Değer" : "Hesap Kodu"}><input autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={invalid(r)} value={r.accountCode} onChange={(e) => update(r, { accountCode: e.target.value.trim() })} /></td>
-                      {setting ? null : <td data-label="Hesap Adı"><input autoComplete="off" className="field" aria-label={`${r.label} hesap adı`} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
+                      <td className="rule-code"><input autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={invalid(r)} value={r.accountCode} onChange={(e) => update(r, { accountCode: e.target.value.trim() })} /></td>
+                      {/* The name is for people only (Luca matches the code), so it reads as text until pointed at or focused. */}
+                      {setting ? null : <td className="rule-name"><input autoComplete="off" className="field field-quiet" aria-label={`${r.label} hesap adı`} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
                     </tr>
                   ))}
                 </tbody>

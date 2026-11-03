@@ -18,6 +18,9 @@ export const TABS: { slug: string; label: string; status?: ReceiptStatus }[] = [
 // Default names only: a renamed account still shows its code, which is what Luca matches on.
 const accountNames: Record<string, string> = Object.fromEntries(CATEGORIES.map((c) => [c.account.code, c.label]));
 
+// What the per-account totals add up: the receipts in the open tab.
+const SCOPES: Record<string, string> = { taslak: "Taslak fişler", onayli: "Onaylı fişler", aktarildi: "Aktarılan fişler" };
+
 type Row = Awaited<ReturnType<typeof listReceipts>>[number];
 
 const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : null);
@@ -53,15 +56,11 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
         <div className="title-text">
           <p className="crumb" translate="no">Accountie</p>
           <h1>Fişler</h1>
-          <p className="finding">{listFinding(drafts, ready.length)}</p>
+          {/* Excel and the extension are desktop tasks; on the phone the finding says where the file is downloaded. */}
+          <p className="finding">{listFinding(drafts, ready.length)}{ready.length ? <span className="phone-only-inline"> Dosyayı bilgisayardan indirin.</span> : null}</p>
         </div>
         {all.length ? <CaptureButton /> : null}
       </div>
-
-      {/* Phone: the Luca block moves up as one line; Excel and the extension are desktop tasks. */}
-      <p className="phone-summary phone-only">
-        {ready.length ? <>{ready.length} onaylı fiş hazır. Luca dosyasını bilgisayardan indirin.</> : "Luca dosyasına hazır fiş yok."}
-      </p>
 
       <section className="panel list-panel" aria-labelledby="liste-baslik">
         <h2 id="liste-baslik" className="visually-hidden">Fiş listesi</h2>
@@ -147,7 +146,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
           <section className="panel side-block desktop-only" aria-labelledby="hesap-title">
             <div className="side-head">
               <h2 id="hesap-title">Gider hesaplarına göre</h2>
-              <p className="muted small">Matrah, KDV hariç</p>
+              <p className="muted small">{SCOPES[tab.slug] ?? "Tüm fişler"}, matrah</p>
             </div>
             <ol className="by-account">
               {byAccount.slice(0, 5).map(([code, kurus]) => (
