@@ -9,5 +9,5 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!(?:giris|kayit|onizleme|auth/callback)(?:/|$)|gorseller/|api/|_next/static|_next/image|favicon.ico$|manifest.webmanifest$|robots.txt$|icon|apple-touch-icon).+)"],
+  matcher: ["/((?!(?:giris|kayit|onizleme|auth/callback)(?:/|$)|gorseller/|api/|_next/static|_next/image|favicon\\.ico$|manifest\\.webmanifest$|robots\\.txt$|icon[\\w-]*\\.(?:svg|png)$|apple-touch-icon\\.png$).+)"],
 };

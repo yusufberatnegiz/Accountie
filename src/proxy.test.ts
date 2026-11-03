@@ -8,13 +8,13 @@ const guarded = (url: string) => unstable_doesMiddlewareMatch({ config, url });
 
 describe("proxy matcher", () => {
   it("sends the panel through the session check", () => {
-    for (const url of ["/panel", "/panel/fis/abc", "/panel/kurallar", "/fis/abc", "/kurallar", "/girisx", "/kayitlar"]) {
+    for (const url of ["/panel", "/panel/fis/abc", "/panel/kurallar", "/fis/abc", "/kurallar", "/girisx", "/kayit-x", "/kayitlar", "/onizlemex", "/iconlar", "/icon-ayar", "/apple-touch-iconx", "/robots.txtx"]) {
       expect(guarded(url), url).toBe(true);
     }
   });
 
   it("leaves the public pages and assets open", () => {
-    for (const url of ["/", "/giris", "/kayit", "/gorseller/antalya-liman.jpg", "/manifest.webmanifest", "/robots.txt", "/icon.svg", "/_next/static/x.js"]) {
+    for (const url of ["/", "/giris", "/kayit", "/gorseller/antalya-liman.jpg", "/manifest.webmanifest", "/robots.txt", "/icon.svg", "/icon-192.png", "/icon-maskable-512.png", "/apple-touch-icon.png", "/favicon.ico", "/_next/static/x.js"]) {
       expect(guarded(url), url).toBe(false);
     }
   });
