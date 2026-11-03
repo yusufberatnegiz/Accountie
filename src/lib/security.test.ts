@@ -6,9 +6,13 @@ vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn() }));
 vi.mock("@/lib/auth/server", () => {
   const signIn = { email: vi.fn(async () => ({ error: null })) };
   const POST = vi.fn(async () => new Response("ok"));
-  return { getAuth: () => ({ signIn, signUp: { email: vi.fn(async () => ({ error: null })) }, handler: () => ({ GET: vi.fn(), POST }) }) };
+  const signUp = { email: vi.fn(async () => ({ error: null })) };
+  type Reply = (body: unknown) => Promise<{ error: null | { status: number } }>;
+  const requestPasswordReset = vi.fn<Reply>(async () => ({ error: null }));
+  const resetPassword = vi.fn<Reply>(async () => ({ error: null }));
+  return { getAuth: () => ({ signIn, signUp, requestPasswordReset, resetPassword, handler: () => ({ GET: vi.fn(), POST }) }) };
 });
-vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": "203.0.113.9, 10.0.0.1" }) }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": "203.0.113.9, 10.0.0.1", origin: "https://accountie.test" }) }));
 vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error(`REDIRECT ${url}`); } }));
 
 const { hitRateLimit } = await import("@/db/queries");
@@ -112,6 +116,41 @@ describe("giriş ve kayıt formu", () => {
     expect(await actions.signup(undefined, form({ name: "A", email: "a@ornek.com", password: "12345678" }))).toMatchObject({ error: "bicim-ad", field: "name" });
     expect(await actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "kisa" }))).toMatchObject({ error: "bicim-sifre", field: "password" });
     expect(getAuth().signUp.email).not.toHaveBeenCalled();
+  });
+});
+
+describe("giriş sonrası dönüş", () => {
+  it("geçerli panel yoluna döner, başka her şeyde /panel'e gider", async () => {
+    const go = (sonra: string) => redirectOf(actions.login(undefined, form({ email: "a@ornek.com", password: "12345678", sonra })));
+    expect(await go("/panel/fis/abc-1")).toBe("REDIRECT /panel/fis/abc-1");
+    for (const bad of ["//evil.example", "https://evil.example/panel", "/panel/../giris", "/"]) expect(await go(bad), bad).toBe("REDIRECT /panel");
+  });
+});
+
+describe("şifre yenileme", () => {
+  it("hesap olsun olmasın aynı yanıtı verir ve bağlantıyı bu siteye döndürür", async () => {
+    expect(await actions.requestReset(undefined, form({ email: "a@ornek.com" }))).toEqual({ sent: true, email: "a@ornek.com" });
+    expect(getAuth().requestPasswordReset).toHaveBeenCalledWith({ email: "a@ornek.com", redirectTo: "https://accountie.test/giris/sifre/yeni" });
+    vi.mocked(getAuth().requestPasswordReset).mockResolvedValueOnce({ error: { status: 400 } });
+    expect(await actions.requestReset(undefined, form({ email: "yok@ornek.com" }))).toEqual({ sent: true, email: "yok@ornek.com" });
+  });
+
+  it("biçim, bot ve sınır kontrolleri istekten önce", async () => {
+    expect(await actions.requestReset(undefined, form({ email: "yok" }))).toMatchObject({ error: "bicim-eposta", field: "email" });
+    vi.mocked(hitRateLimit).mockResolvedValue(false);
+    expect(await actions.requestReset(undefined, form({ email: "a@ornek.com" }))).toMatchObject({ error: "sifre-cok" });
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "test-secret");
+    expect(await actions.requestReset(undefined, form({ email: "a@ornek.com" }))).toMatchObject({ error: "bot" });
+    vi.unstubAllEnvs();
+    expect(getAuth().requestPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it("geçersiz bağlantı ve kısa şifre yeni şifreyi kaydetmez", async () => {
+    expect(await actions.resetPassword(undefined, form({ token: "", password: "12345678" }))).toEqual({ error: "sifre-baglanti" });
+    expect(await actions.resetPassword(undefined, form({ token: "t", password: "kisa" }))).toEqual({ error: "bicim-sifre", field: "password" });
+    vi.mocked(getAuth().resetPassword).mockResolvedValueOnce({ error: { status: 400 } });
+    expect(await actions.resetPassword(undefined, form({ token: "t", password: "12345678" }))).toEqual({ error: "sifre-baglanti" });
+    await expect(redirectOf(actions.resetPassword(undefined, form({ token: "t", password: "12345678" })))).resolves.toBe("REDIRECT /giris?mesaj=sifre-yeni");
   });
 });
 

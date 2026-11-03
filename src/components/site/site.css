@@ -1,0 +1,88 @@
+/* Public top bar and cookie notice (docs/design/YON.md 14). Tokens only. The bar rests on a tone step and a 1px edge, no shadow. */
+
+.site-dock { position: sticky; top: 0; z-index: 20; height: 0; }
+.site-bar {
+  position: absolute; top: var(--s4); inset-inline: max(var(--page-margin), calc((100% - 1150px) / 2));
+  display: flex; align-items: center; gap: var(--s5); height: 56px; padding: 0 var(--s2) 0 var(--s4);
+  background: var(--surface); color: var(--ink); border: 1px solid var(--border); /* taste-skill-ignore: data-ui bar edge (YON 14.1) */
+  border-radius: var(--radius-card);
+}
+.site-brand { min-height: var(--touch); flex: none; }
+.site-links { display: flex; gap: var(--s1); min-width: 0; }
+.site-links a {
+  display: inline-flex; align-items: center; min-height: var(--control); padding: 0 var(--s3); border-radius: var(--radius-control);
+  color: var(--ink); text-decoration: none; font-size: var(--fs-body); font-weight: 500; white-space: nowrap;
+  transition: background-color var(--t-hover) ease;
+}
+@media (hover: hover) and (pointer: fine) { .site-links a:hover { background: var(--active); color: var(--ink); } }
+.site-links a:active { background: var(--active); }
+.site-actions { margin-left: auto; display: flex; align-items: center; gap: var(--s2); }
+.site-actions .btn { min-height: var(--control); }
+.site-actions .theme-cycle { width: var(--control); height: var(--control); }
+
+/* Narrow: the section links move into a native disclosure menu. */
+.site-menu { display: none; position: relative; }
+.site-menu summary {
+  list-style: none; display: grid; place-items: center; width: var(--touch); height: var(--touch); border-radius: var(--radius-control);
+  background: var(--active); color: var(--ink); cursor: pointer; transition: background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out);
+}
+.site-menu summary::-webkit-details-marker { display: none; }
+.site-menu summary svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.site-menu summary:active { transform: scale(0.96); }
+.site-menu summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .site-menu summary:hover { background: var(--secondary-hover); } }
+.site-menu-list {
+  position: absolute; right: 0; top: calc(100% + var(--s3)); min-width: 220px; display: grid; padding: var(--s1);
+  background: var(--surface); border-radius: var(--radius-card);
+}
+.site-menu[open] .site-menu-list { box-shadow: var(--shadow-float); } /* taste-skill-ignore: the open menu floats */
+.site-menu-list a { display: flex; align-items: center; min-height: var(--touch); padding: 0 var(--s3); border-radius: var(--radius-chip); color: var(--ink); text-decoration: none; font-weight: 500; }
+@media (hover: hover) and (pointer: fine) { .site-menu-list a:hover { background: var(--active); color: var(--ink); } }
+@media (prefers-reduced-motion: no-preference) {
+  .site-menu[open] .site-menu-list { animation: site-drop 160ms var(--ease-out) both; }
+}
+@keyframes site-drop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 767px) {
+  .site-links, .site-login { display: none; }
+  .site-menu { display: block; }
+  .site-bar { top: max(var(--s2), env(safe-area-inset-top)); padding: 0 var(--s1) 0 var(--s3); gap: var(--s3); }
+  .site-actions { gap: var(--s1); }
+  .site-actions .btn, .site-actions .theme-cycle { min-height: var(--touch); height: var(--touch); }
+  .site-actions .theme-cycle { width: var(--touch); }
+}
+/* Smallest phones: the mark carries the brand, the name stays for screen readers. */
+@media (max-width: 400px) {
+  .site-brand { font-size: 0; gap: 0; }
+  .site-cta { padding-inline: var(--s3); }
+}
+
+/* ---------- Cookie notice: bottom right on desktop, a short sheet on phones, never over the first screen's headline ---------- */
+.cookie-note {
+  position: fixed; z-index: 30; right: var(--page-margin); bottom: var(--s5); width: min(26rem, calc(100% - 2 * var(--page-margin)));
+  display: grid; gap: var(--s3); padding: var(--s5); background: var(--surface); color: var(--ink); border-radius: var(--radius-card);
+  box-shadow: var(--shadow-float); /* taste-skill-ignore: floats over the page */
+}
+.cookie-note h2, .cookie-dialog h2 { margin: 0; font-size: var(--fs-section); font-weight: 600; }
+.cookie-note p { margin: 0; font-size: var(--fs-body); line-height: 1.5; }
+.cookie-note a { color: var(--accent); }
+.cookie-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.cookie-actions .btn { min-height: var(--touch); flex: 1 1 auto; }
+.cookie-dialog { width: min(26rem, calc(100% - 2 * var(--s4))); border: 0; padding: var(--s5); color: var(--ink); }
+.cookie-dialog[open] { display: grid; gap: var(--s3); }
+.cookie-dialog::backdrop { background: var(--scrim); }
+.cookie-dialog p { margin: 0; }
+.cookie-row { display: flex; align-items: center; gap: var(--s3); min-height: var(--touch); font-weight: 500; }
+.cookie-row input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+/* Past the first screen the notice steps aside (it is back at the top until Tamam); it never sits over the page's headings. */
+.cookie-note { transition: transform 240ms var(--ease-out), opacity 240ms var(--ease-out), visibility 0s linear 0s; }
+.cookie-note[data-away] { transform: translateY(calc(100% + var(--s5))); opacity: 0; visibility: hidden; transition: transform 240ms var(--ease-out), opacity 240ms var(--ease-out), visibility 0s linear 240ms; }
+@media (prefers-reduced-motion: reduce) { .cookie-note, .cookie-note[data-away] { transition: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .cookie-note { animation: site-rise 320ms var(--ease-out) backwards; animation-delay: 600ms; }
+}
+@keyframes site-rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-width: 640px) {
+  .cookie-note { left: var(--s2); right: var(--s2); bottom: max(var(--s2), env(safe-area-inset-bottom)); width: auto; max-height: 33svh; overflow: auto; overscroll-behavior: contain; padding: var(--s3) var(--s4); gap: var(--s2); }
+  .cookie-note p { font-size: 13px; line-height: 1.4; }
+}

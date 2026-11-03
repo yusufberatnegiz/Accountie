@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { journalFor, SAMPLES, shownAccountName } from "./samples";
+import { journalFor, PAYMENTS, SAMPLES, shownAccountName, sourcesFor, type Payment } from "./samples";
 
-const rows = (id: string, payment: "card" | "cash") =>
+const rows = (id: string, payment: Payment["id"]) =>
   journalFor(SAMPLES.find((s) => s.id === id)!, payment).lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus]);
 
 describe("ana sayfa fiş tezgâhı örnekleri", () => {
-  it("alabalık fişi kartla 331.01, nakitle 100.01 alacaklı olur", () => {
-    expect(rows("alabalik", "card")).toEqual([["770.08", 793182, 0], ["191.03.10", 79318, 0], ["331.01", 0, 872500]]);
+  it("lokanta fişi ortağın kartıyla 331.01, şirket kartıyla 309.01, nakitle 100.01 alacaklı olur", () => {
+    expect(rows("alabalik", "partner")).toEqual([["770.08", 793182, 0], ["191.03.10", 79318, 0], ["331.01", 0, 872500]]);
+    expect(rows("alabalik", "company")[2]).toEqual(["309.01", 0, 872500]);
     expect(rows("alabalik", "cash")[2]).toEqual(["100.01", 0, 872500]);
   });
 
@@ -15,17 +16,30 @@ describe("ana sayfa fiş tezgâhı örnekleri", () => {
   });
 
   it("iki oranlı market fişi her oran için ayrı satır açar ve dengededir", () => {
-    expect(rows("market", "card")).toEqual([
+    expect(rows("market", "partner")).toEqual([
       ["770.12", 40842, 0], ["191.03.01", 408, 0], ["770.12", 15500, 0], ["191.03.20", 3100, 0], ["331.01", 0, 59850],
     ]);
   });
 
   it("her örnek her ödeme şeklinde dengede ve uyarısız toplamdır", () => {
-    for (const s of SAMPLES) for (const p of ["card", "cash"] as const) {
-      const r = journalFor(s, p);
+    for (const s of SAMPLES) for (const p of PAYMENTS) {
+      const r = journalFor(s, p.id);
       expect(r.balanced).toBe(true);
       expect(r.warnings.map((w) => w.code).filter((c) => c !== "meal")).toEqual([]);
     }
+  });
+
+  it("fişteki kalemler her oranın brütünü tutar ve her satırın fişte bir kaynağı vardır", () => {
+    for (const s of SAMPLES) {
+      for (const v of s.receipt.vatLines) expect(s.items.filter((i) => i.rate === v.rate).reduce((a, i) => a + i.kurus, 0)).toBe(v.grossKurus);
+      expect(sourcesFor(s)).toHaveLength(journalFor(s, "partner").lines.length);
+    }
+  });
+
+  it("ağırlama uyarısı ortağın kartında çıkar, şirket kartında çıkmaz", () => {
+    const codes = (p: Payment["id"]) => journalFor(SAMPLES[0], p).warnings.map((w) => w.code);
+    expect(codes("partner")).toContain("meal");
+    expect(codes("company")).not.toContain("meal");
   });
 
   it("Luca hesap adları sayfada yazım kuralıyla görünür", () => {

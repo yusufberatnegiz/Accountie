@@ -534,3 +534,52 @@ Skill'ler yeniden çağrıldı: `taste-skill:design-taste-frontend` (SKILL.md "T
 - Kontrol ekranı: Onayla engelliyken `aria-disabled` ile odaklanabilir; basınca ya da çubuktaki eylem düğmesine ("Evrak tarihini girin") basınca ilgili alana kaydırıp odaklanır. Başlıktaki bulgu da aynı düğmedir. Telefonda çubuk iki satır: neden, sonra Fişler (geri) ve Onayla. 900px altında satırlar iki satırlı kart. Durum pill'i h1'in yanında.
 - Liste: sekmede "Onaylı"; "Gider hesaplarına göre" matrahı (KDV hariç) 8px izli tek ton mavi çubukla gösterir, altında 191 İndirilecek KDV toplamı. Boş durumda kartın içinde Fiş çek / Galeriden seç ve Luca'ya giden dört adım.
 - Kurallar: panel `--surface` + 1px kenar, önizleme `--stage`; telefonda bir kural tek satır (kod 7rem + ad), alanlar 44px, değişen grubun Kaydet çubuğu yapışkan.
+
+## 14. Kullanıcı referansı: nirene.vercel.app/tr (tur 3'ten itibaren; bölüm 13'ün üstündedir)
+
+Kullanıcı kendi sitesini örnek verdi: https://nirene.vercel.app/tr. Kopyalanmaz. Üst menü, tema düğmesi ve çerez kutusunda **ilham alınır ve daha iyisi yapılır**. Accountie'nin tokenları (radius 6/8, defter mavisi, Stack Sans, gölge kuralı) geçerli kalır. Geliştirici sayfayı kendi açıp masaüstünde ve 390px'te bakmalı. Çerez kutusunda yalnız "Tercihler"e basılabilir; kabul ve ret düğmelerine basılmaz.
+
+Nirene'de gözlenenler:
+- **Menü çubuğu:** yapışkan (`top: 16px`), sayfa kenarından ayrık, ortalı, en çok yaklaşık 1150px, 56px yükseklik. Yüzey rengi, ince halka ve yumuşak gölge var. Solda marka, ortada metin bağlantıları (hover'da zemin tonu), sağda tema düğmesi, dil, "Giriş yap" ve tek vurgulu birincil düğme. İlk öğe "İçeriğe geç" atlama bağlantısı. 1280px altında bağlantılar hamburger menüye iner.
+- **Tema düğmesi:** tek ikon düğmesi (ay/güneş), 40px. Zayıf yanı: `aria-label` yok.
+- **Çerez kutusu:** `section aria-labelledby`, sağ altta 26rem kart (telefonda kenarlardan 8px). h2 "Çerez tercihleri", tek dürüst cümle ("yalnızca zorunlu çerezler... analitik veya reklam yok") ve Gizlilik bağlantısı. "Tümünü kabul et" ve "Tümünü reddet" eşit ağırlıkta, "Tercihler" tam genişlikte ikincil. Düğmeler en az 44px. Zayıf yanı: kutu ilk ekranda başlığın üstüne biniyor.
+
+Accountie için:
+1. **Üst çubuk (ana sayfa, giriş, kayıt):** yapışkan, ayrık tek satır. Panel radius 8px, `--surface` ve 1px kenar. Dinlenen öğede gölge yok kuralı geçerli; ayrımı yalnız ton ve kenar sağlar. Kaydırma başlayınca çubuk zeminin üstünde kalır. Bağlantılar sayfadaki gerçek bölümlere gider: Nasıl çalışır (`#path-title` bölümü), Kontrol ekranı (`#show-title`), SSS (`#sss`), sonra "Giriş yap" ve "Hesap oluştur" (vurgu). "İçeriğe geç" atlama bağlantısı ilk odak. 768px altında bağlantılar native `<dialog>` ya da `<details>` menüye iner: odak tuzağı, Esc ile kapanma, 44px satırlar. Çubuk hero'nun iki tonlu bölünmesini bozmamalı.
+2. **Tema düğmesi:** çubukta tek düğme (`ThemeCycle`), her genişlikte, 40px, `aria-label` ile "Tema: Koyu. Değiştir" biçiminde. Nirene'den daha iyisi: döngü Sistem → Açık → Koyu, ikon seçili durumu gösterir, tooltip yerine görünür etiket gerekmez çünkü `aria-label` ve `title` var. Üç seçenekli `ThemeSwitch` Hesap ve Kurallar > Görünüm'de kalır.
+3. **Çerez kutusu:** Nirene'deki yapı, ama ilk ekranı kapatmadan. Masaüstünde sağ altta 26rem, telefonda altta tam genişlikte ve en çok ekranın üçte biri kadar. Başlık ve birincil düğme görünür kalmalı. Metin olgu olarak yazılır: Accountie yalnız oturum çerezi kullanır, tema tercihi tarayıcıda saklanır, analitik veya reklam yoktur. "Tamam" ile "Tercihler" verilir. Uydurma bir seçim yaratan kabul/ret ikilisi yok, çünkü reddedilecek çerez yok; bu bilinçli bir farktır. "Tercihler" küçük bir `<dialog>` açar: "Zorunlu (oturum)", kapatılamaz anahtar ve açıklama. Seçim `localStorage` `cerez-bildirimi` anahtarında, try/catch ile saklanır. Kutu panelde gösterilmez (orada zaten oturum var). Gizlilik bağlantısı `/gizlilik` adresine gider. Bu sayfa yoksa kısa ve olgusal bir sayfa eklenir: fiş fotoğrafı okunmak için Anthropic'e (ABD) gönderilir ve saklanmaz, EXIF silinir, yalnız çıkarılan satırlar ve onaylanan kayıtlar saklanır, hesap silme talebi için e-posta. Sayfa KVKK aydınlatma metni yerine geçmez ve bunu söyler.
+4. **Jüri:** bu üç parçayı Nirene ile yan yana değerlendirir. "Aynı" olması artı puan değildir. Ölçüt, Nirene'den daha erişilebilir, daha dürüst ve Accountie'nin diline daha uygun olmasıdır.
+
+## 15. Kullanıcı isteği: animasyon ve resim (tur 3'ten itibaren; bölüm 6.6 madde 9'un ve bölüm 13'ün üstündedir)
+
+Kullanıcı açıkça istedi: animasyonlar ve resimler unutulmasın, **panele de animasyon** eklensin. Kurallar geçerli kalır: anlam taşıyan hareket, yalnız `transform`/`opacity`/`clip-path`, `transition: all` yok, `prefers-reduced-motion: reduce` altında son durum hemen gösterilir. Hareket tokenları (6.6) kullanılır. Kaydırmada her bölüme solarak girme yine yok.
+
+**Ana sayfa**
+- **Resimler:** sayfada en az 6 gerçek resim ya da klip, hepsi gerçekten yüklenmiş olmalı. Son çekimlerde bazı büyük kutular boş ve bulanık görünüyordu. Her resim `next/image` ile, boyutlu, `placeholder` rengi zemin tonunda. Boş ya da bulanık bir kutu jüride kritik bulgudur. Krediler footer'da.
+- **Animasyonlar:**
+  - **Hero örneği:** fiş türü veya ödeme değişince satırlar yeniden dizilir. Tutarlar sayarak değil, eski değerden yeniye kısa bir geçişle değişir. "Dengede" işareti denge kurulunca belirir.
+  - **"Bir fişin yolu":** dört aşama, kullanıcı bölüme geldiğinde bir kez sırayla oynar: fiş basılır, satırlar okunur, Onaylandı damgası düşer, Excel dosyası iner.
+  - **Diğerleri:** resimlerin deklanşörle açılışı ve klip korunur.
+
+**Panel**
+- **Fiş yükleme:** "Fiş çek" sonrası kartta fişin okunduğunu gösteren ilerleme: termal kâğıt şeridi aşağı akar, satırlar tek tek gelir. Sahte yüzde gösterilmez; aşamalar gerçek (yükleniyor, okunuyor, satırlar hazır).
+- **Liste:** yeni fiş listenin başına yükselerek girer. Sekme değişince alt çizgi seçilen sekmeye kayar. Sekme sayaçları değişince rakam kısa bir geçişle yenilenir.
+- **Kontrol ekranı:**
+  - Borç ve alacak toplamları eşitlenince denge çubuğu ve "Dengede" işareti belirir.
+  - Onayla'ya basınca durum pill'i Taslak'tan Onaylı'ya geçer ve kısa bir damga hareketi oynar.
+  - Engelli Onayla'ya basınca ilgili alana kaydırılır ve alan bir kez vurgulanır.
+- **Luca dosyası kartı:** fiş ve satır çubukları onaylanan fişle birlikte dolar. "Excel indir" sonrası fişler Aktarıldı sekmesine kayar.
+- **Geçişler:** fiş listesinden kontrol ekranına React View Transitions ile geçilir (`vercel-react-view-transitions` skill'i). Fiş kartı, kontrol ekranının başlığına dönüşür. Desteklemeyen tarayıcıda anında geçiş olur.
+- **Süreler:** arayüz geri bildirimi 120–200 ms, damga ve view transition en çok 320 ms. Muhasebeci gün boyu çalışır, hiçbir hareket işi bekletmez.
+
+**Jüri:** hareket-gorsel jürisi bu listeyi madde madde kontrol eder: oynatır, `prefers-reduced-motion` ile tekrar dener, boş resim kutusu arar. Eksik madde puan düşürür.
+
+## 16. Tur 3 kararları: ana sayfa, giriş ve kayıt (bölüm 14 ve 15'in uygulanışı)
+
+- **Üst çubuk:** `components/site/SiteBar.tsx`, ana sayfa, giriş, kayıt, şifre ve gizlilik sayfalarında aynı. Yüksekliği olmayan yapışkan bir yuvaya oturur, bu yüzden hero'nun iki tonu ekranın üst kenarına kadar uzanır ve kaydırmada çubuk zeminin üstünde kalır. Giriş ve kayıtta "Hesap oluştur" ikincildir; o ekranda tek vurgulu eylem formun düğmesidir. 768px altında bağlantılar `<details>` menüye iner (Esc ve dışarı tıklama kapatır). Ana sayfadaki telefon çubuğu (`.mbar`) kaldırıldı, işini bu çubuk görür.
+- **Çerez bildirimi:** `components/site/CookieNote.tsx`. Kaydırma ilk ekranın yarısını geçince kenara çekilir, en üste dönünce yine görünür; yalnız "Tamam" ya da tercihler penceresinde "Kaydet ve kapat" onu kalıcı kapatır. Böylece hiçbir başlığın üstünde durmaz (inspect.mjs covered-text). Panelde yok.
+- **Görseller:** Amerikan defterleri ve yazar kasa kaldırıldı. Sayfada 5 fotoğraf ve 1 klip: Kapalıçarşı (Sébah & Joaillier, kamu malı), toplama makinesi klibi, Osmanlı Bankası kasa dairesindeki defterler ve 1863 imtiyaz belgesi (SALT Araştırma), tezgâhta para çekmecesi ve ödeme cihazı, defterdarlık dairesi gravürü (Lespinasse). Galeri iki satır: üstte Kapalıçarşı ve klip aynı yükseklikte, altta üç resim aynı 4:3 oranında. Kamu malı olanlar koyu temada `brightness(0.82)`; CC BY-SA olanlara işlem uygulanmaz.
+- **Giriş ve kayıt:** fotoğraf yerine ürünün kendi parçası (termal fiş ve ondan çıkan üç Luca satırı, `Thermal.tsx` ortak). 900px altında form ortalanır, parça formun altında bir bant olur. Şerit yukarıdan basılır, satırlar sırayla gelir; reduced-motion'da son durum.
+- **Şifre yenileme:** `/giris/sifre` (e-posta, Turnstile, `resetIp` ve `resetEmail` sınırları, hesap olsun olmasın aynı yanıt) ve `/giris/sifre/yeni?token=` (yeni şifre, sonra `/giris?mesaj=sifre-yeni`). Neon Auth projesinde site alan adı güvenilir alan adı olarak tanımlı olmalı; yoksa `redirectTo` reddedilir.
+- **Derin bağlantı:** proxy `/giris?sonra=/panel/...` ekler; giriş eylemi yalnız `safeNextPath` ile doğrulanan panel yoluna döner.
+- **Gizlilik:** `/gizlilik` olgusal bir sayfa; KVKK aydınlatma metninin yerine geçmediğini söyler. Veri sorumlusunun unvanı ve iletişim adresi ürün sahibinden gelmeli (sayfada bu yazılı).

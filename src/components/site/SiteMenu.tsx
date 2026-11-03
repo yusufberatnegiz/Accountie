@@ -1,0 +1,33 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useRef } from "react";
+
+/** The bar's links on narrow screens: a native disclosure, closed by Esc (focus back on the button), an outside click or a chosen link. */
+export function SiteMenu({ links }: { links: { href: string; label: string }[] }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const close = (e: Event) => {
+      const d = ref.current;
+      if (!d?.open) return;
+      if (e instanceof KeyboardEvent) {
+        if (e.key !== "Escape") return;
+        d.open = false;
+        d.querySelector("summary")?.focus();
+      } else if (!d.contains(e.target as Node)) d.open = false;
+    };
+    document.addEventListener("keydown", close);
+    document.addEventListener("pointerdown", close);
+    return () => { document.removeEventListener("keydown", close); document.removeEventListener("pointerdown", close); };
+  }, []);
+  return (
+    <details className="site-menu" ref={ref}>
+      <summary aria-label="Menü">
+        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" /></svg>
+      </summary>
+      <nav className="site-menu-list" aria-label="Menü">
+        {links.map((l) => <Link key={l.href} href={l.href} onClick={() => { if (ref.current) ref.current.open = false; }}>{l.label}</Link>)}
+      </nav>
+    </details>
+  );
+}

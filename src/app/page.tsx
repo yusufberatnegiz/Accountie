@@ -1,19 +1,25 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
-import { ThemeCycle, ThemeSwitch } from "@/components/ThemeSwitch";
+import { CookieNote } from "@/components/site/CookieNote";
+import { SiteBar } from "@/components/site/SiteBar";
 import { Counter } from "@/components/home/Counter";
 import { Faq, type Qa } from "@/components/home/Faq";
 import { HomeMotion } from "@/components/home/HomeMotion";
 import { LoopVideo } from "@/components/home/LoopVideo";
+import { ShowRow, type Piece } from "@/components/home/ShowRow";
 import { SignupDialog } from "@/components/home/SignupDialog";
+import { SAMPLES } from "@/components/home/samples";
+import { Thermal } from "@/components/home/Thermal";
 import { WARNING_MESSAGES } from "@/lib/journal";
 import { PAYMENT_ALTERNATIVES } from "@/lib/default-rules";
-import ledger1833 from "../../public/gorseller/yevmiye-defteri-1833.jpg";
-import ledger1870 from "../../public/gorseller/hesap-defteri-1870.jpg";
-import register from "../../public/gorseller/yazar-kasa.jpg";
+import bazaar from "../../public/gorseller/kapalicarsi-1890.jpg";
+import defterdar from "../../public/gorseller/defterdar-dairesi.jpg";
+import bankVault from "../../public/gorseller/osmanli-bankasi-kasa-dairesi.jpg";
+import concession from "../../public/gorseller/osmanli-bankasi-imtiyaz-1863.jpg";
+import drawer from "../../public/gorseller/para-cekmecesi.jpg";
 import "@/components/home/home.css";
 
 // Public and static: no session, no user data (docs/design/YON.md 5.5).
@@ -27,7 +33,6 @@ export const metadata: Metadata = {
 // Marks <html> before the hero paints, so the masked headline starts hidden only when script runs.
 const cssVars = (v: Record<string, string | number>) => v as CSSProperties;
 const JS_FLAG = "document.documentElement.classList.add('js')";
-const VENDOR = "ÖRNEK BALIK LOKANTASI";
 
 const LINES_0047 = [
   { code: "770.08", name: "Yeme-İçme ve Ağırlama Giderleri", debit: "7.931,82", credit: "" },
@@ -52,12 +57,11 @@ function MiniLines() {
   );
 }
 
-type Piece = { name: string; text: string; span: number; body: ReactNode };
 
 const PIECES: Piece[] = [
   {
-    name: "Kontrol ekranı", span: 7,
-    text: "Fotoğraf ve satırlar aynı ekranda. Hesap kodu, tutar, evrak no ve BT orada düzeltilir.",
+    name: "Kontrol ekranı",
+    text: "Fişten okunan alanlar ve Luca satırları aynı ekranda. Hesap kodu, tutar, evrak no ve BT orada düzeltilir.",
     body: (
       <div className="ui-card ui-review">
         <dl className="ui-read">
@@ -75,7 +79,7 @@ const PIECES: Piece[] = [
     ),
   },
   {
-    name: "Alacak hesabı", span: 5,
+    name: "Alacak hesabı",
     text: "Ortağın kartıyla ödendiyse 331.01, şirket kartıysa 309.01. Tek seçimle değişir.",
     body: (
       <div className="ui-card ui-menu-wrap">
@@ -92,7 +96,7 @@ const PIECES: Piece[] = [
     ),
   },
   {
-    name: "Dengesiz fiş", span: 5,
+    name: "Dengesiz fiş",
     text: "Borç ile alacak tutmazsa Onayla kapanır ve fark kuruşuyla görünür.",
     body: (
       <div className="ui-card">
@@ -109,7 +113,7 @@ const PIECES: Piece[] = [
     ),
   },
   {
-    name: "Uyarı notları", span: 7,
+    name: "Uyarı notları",
     text: "Binek araç, ağırlama ve eski KDV oranı satırın yanında not olarak durur, onayı engellemez.",
     body: (
       <div className="ui-card ui-notes">
@@ -120,19 +124,23 @@ const PIECES: Piece[] = [
     ),
   },
   {
-    name: "Luca dosyası", span: 6,
-    text: "Luca bir yüklemede 50 fiş ve 400 satır kabul eder. Fazlası ek dosyaya geçer, fiş ortadan bölünmez.",
+    name: "Luca dosyası",
+    text: "Accountie onaylı fişleri dosya başına en fazla 50 fiş ve 400 satır olarak yazar. Fazlası ek dosyaya geçer, bir fiş iki dosyaya bölünmez.",
     body: (
       <div className="ui-card ui-file">
-        <p className="ui-file-head">3 onaylı fiş, 9 satır</p>
-        <div className="ui-meter"><span>Fiş</span><span className="ui-track"><span style={{ width: "6%" }} /></span><span className="num">3 / 50</span></div>
-        <div className="ui-meter"><span>Satır</span><span className="ui-track"><span style={{ width: "2.25%" }} /></span><span className="num">9 / 400</span></div>
+        <p className="ui-file-head"><span>Eylül 2026</span><span className="ui-meta">38 onaylı fiş, 296 satır</span></p>
+        <div className="ui-meter"><span>Fiş</span><span className="ui-track"><span style={{ width: "76%" }} /></span><span className="num">38 / 50</span></div>
+        <div className="ui-meter"><span>Satır</span><span className="ui-track"><span style={{ width: "74%" }} /></span><span className="num">296 / 400</span></div>
+        <ul className="ui-files">
+          <li><span className="ui-file-name">luca-fisler-2026-09-1.xlsx</span><span className="ui-meta">50 fiş, 388 satır</span></li>
+          <li><span className="ui-file-name">luca-fisler-2026-09-2.xlsx</span><span className="ui-meta">38 fiş, 296 satır</span></li>
+        </ul>
         <span className="btn">Luca için indir</span>
       </div>
     ),
   },
   {
-    name: "Chrome eklentisi (deneysel)", span: 6,
+    name: "Eklenti uyarısı",
     text: "Açık Fiş Detayı ekranına satırları yazmayı dener. Luca’da henüz denenmedi; birincil yol Excel aktarımıdır.",
     body: (
       <div className="ui-card ui-ext">
@@ -149,7 +157,7 @@ const NOTES = [
   { name: "Orandan KDV hesabı", text: "%1, %10 ve %20 için ayrı 191 hesabı. Çok oranlı fişte her oran kendi satırını açar." },
   { name: "Ödemeden alacak hesabı", text: "Nakit Kasa’ya, kart Ortaklara Borçlar’a. Fiş bazında tek seçimle değişir." },
   { name: "Belge türü", text: "Büronuzun Luca’daki BT kodu neyse o. Varsayılan ÖK." },
-  { name: "Kod biçimi", text: "770.08 gibi üç hane ve noktalı alt hesaplar kabul edilir. Hatalı kod kaydedilmez." },
+  { name: "Kod biçimi", text: "770.08 gibi üç hane ve noktalı alt hesaplar kabul edilir. 770-07 gibi hatalı kod kaydedilmez." },
   { name: "Yalnız yeni fişler", text: "Kural değişikliği kayıtlı satırları değiştirmez, sonraki fişlere uygulanır." },
 ];
 
@@ -157,7 +165,7 @@ function RulePart({ n }: { n: number }) {
   const row = (label: string, code: string, name: string) => (
     <div className="ui-rule" key={label}>
       <span className="ui-rule-label">{label}</span>
-      <input className="field ui-code" aria-label={`${label} hesap kodu`} defaultValue={code} spellCheck={false} autoComplete="off" />
+      <span className="field ui-code" translate="no">{code}</span>
       <span className="ui-rule-name">{name}</span>
     </div>
   );
@@ -169,8 +177,8 @@ function RulePart({ n }: { n: number }) {
     case 5: return (
       <div className="ui-rule">
         <span className="ui-rule-label">Bakım ve onarım</span>
-        <input className="field ui-code" aria-label="Bakım ve onarım hesap kodu" defaultValue="770,07" aria-invalid="true" aria-describedby="kod-hata" spellCheck={false} autoComplete="off" />
-        <span className="field-error" id="kod-hata">Kod 770.07 biçiminde olmalı.</span>
+        <span className="field ui-code ui-code-bad" translate="no">770-07</span>
+        <span className="field-error">Kod 770.07 biçiminde olmalı.</span>
       </div>
     );
     default: return (
@@ -184,9 +192,9 @@ function RulePart({ n }: { n: number }) {
 const PART_TITLES = ["Gider hesapları", "KDV hesapları", "Ödeme ve alacak", "Belge türü", "Kod biçimi", "Kaydet"];
 
 const ROUTES: { group: string; rows: [string, string][] }[] = [
-  { group: "Excel veri aktarımı", rows: [["Onaylı fişler tek dosyada", ".xlsx"], ["Bir dosyada en fazla", "50 fiş, 400 satır"], ["Evrak No metin hücresi", "0047 korunur"], ["İndirilen fişler", "Aktarıldı olur"]] },
+  { group: "Excel veri aktarımı", rows: [["Onaylı fişler tek dosyada", ".xlsx"], ["Accountie dosya başına yazar", "en fazla 50 fiş, 400 satır"], ["Evrak No metin hücresi", "0047 korunur"], ["İndirilen fişler", "Aktarıldı olur"]] },
   { group: "Pano", rows: [["Tek fişin satırları", "Fiş Detayı sırasında"], ["Kolonlar", "Hesap, Evrak No, Tarih, BT, Açıklama, Borç, Alacak"]] },
-  { group: "Chrome eklentisi (deneysel)", rows: [["Açık Fiş Detayı ekranını doldurur", "Kaydet sizde"], ["Luca ekranıyla", "Henüz denenmedi"]] },
+  { group: "Chrome eklentisi, deneysel", rows: [["Açık Fiş Detayı ekranını doldurur", "Kaydet sizde"], ["Luca ekranıyla", "Henüz denenmedi"]] },
   { group: "Luca’da", rows: [["Muhasebe, Fiş İşlemleri", "Excel veri aktarımı"], ["Dosya, doğrulama kodu", "Yükle"], ["Önizleme", "Fiş Kes"]] },
 ];
 
@@ -197,31 +205,38 @@ const FAQ: Qa[] = [
   { q: "KDV’yi yeniden hesaplıyor mu?", a: "Hayır. Matrah, toplamdan fişte yazan KDV düşülerek bulunur. KDV okunamazsa orandan hesaplanır ve satıra not düşülür." },
   { q: "Okuma yanlış çıkarsa?", a: "Okunamayan alan boş kalır ve işaretlenir. Toplam ile KDV tutmazsa fiş bir kez daha okunur, yine tutmazsa uyarıyla size gelir." },
   { q: "Hesap kodlarını kim seçiyor?", a: "Siz. Yapay zeka yalnız kategori önerir; hesap kodu kendi kural tablonuzdan gelir." },
-  { q: "Ücretli mi?", a: "Fiyat henüz belirlenmedi. Şu an hesap açmak ve fiş okutmak ücretsiz." },
+  { q: "Ücretli mi?", a: "Fiyat henüz belirlenmedi. Ücretlendirme başlamadan önce hesabınızdaki e-postaya haber verilir." },
+  { q: "Kişisel verilerim nasıl işleniyor?", a: "Hangi verinin hangi hizmete gittiği ve ne kadar tutulduğu gizlilik ve aydınlatma metninde yazılı. Bağlantısı sayfanın altında." },
   { q: "Telefonda uygulama gibi açılır mı?", a: "Evet. Ana ekrana eklediğinizde ayrı bir uygulama gibi açılır, Fiş çek tek dokunuştur." },
 ];
 
+const PD = "https://creativecommons.org/publicdomain/mark/1.0/";
+const FLICKR_COMMONS = "https://www.flickr.com/commons/usage/";
 const CREDITS = [
-  { title: "Pittsboro Merchant Business Ledger", by: null, license: "kamu malı", licenseUrl: "https://creativecommons.org/publicdomain/mark/1.0/", page: "https://commons.wikimedia.org/wiki/File:Pittsboro_Merchant_Business_Ledger_-_DPLA_-_4cbfce8f8f08c14f851ab74af046c082_(page_258).jpg" },
-  { title: "Nealon pp135-136", by: "Deseronto Archives", license: "bilinen telif kısıtlaması yok", licenseUrl: "https://www.flickr.com/commons/usage/", page: "https://commons.wikimedia.org/wiki/File:Nealon_pp135-136_(3301348540).jpg" },
+  { title: "Intérieur du Gran Bazar", by: "Sébah & Joaillier", license: "kamu malı", licenseUrl: PD, page: "https://commons.wikimedia.org/wiki/File:Int%C3%A9rieur_du_Gran_Bazar,_by_S%C3%A9bah_%26_Joaillier,_c._1889-1900,_from_the_Digital_Commonwealth_-_commonwealth_3x8195553.jpg" },
   { title: "Keystrokes in a vintage mechanical calculator", by: "Subhashish Panigrahi", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", page: "https://commons.wikimedia.org/wiki/File:Keystrokes_in_a_vintage_mechanical_calculator.webm" },
-  { title: "Antique cash register", by: "Thomas Quine", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0", page: "https://commons.wikimedia.org/wiki/File:Antique_cash_register_(43766820702).jpg" },
+  { title: "Ottoman Bank, Safe Rooms", by: "SALT Araştırma", license: "bilinen telif kısıtlaması yok", licenseUrl: FLICKR_COMMONS, page: "https://commons.wikimedia.org/wiki/File:Ottoman_Bank,_Safe_Rooms_(12965331153).jpg" },
+  { title: "Act of concession of the Imperial Ottoman Bank, February 4, 1863", by: "SALT Araştırma", license: "bilinen telif kısıtlaması yok", licenseUrl: FLICKR_COMMONS, page: "https://commons.wikimedia.org/wiki/File:Act_of_concession_of_the_Imperial_Ottoman_Bank,_February_4,_1863._(22175414171).jpg" },
+  { title: "Para Çekmecesi (Cash Drawer)", by: "Paracekmecesi", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", page: "https://commons.wikimedia.org/w/index.php?curid=87593460" },
+  { title: "Louis-Nicolas de Lespinasse, Deferdar’s office", by: "Gmihail, Sırpça Vikipedi", license: "CC BY-SA 3.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0", page: "https://commons.wikimedia.org/wiki/File:Louis-Nicolas_de_Lespinasse,_Deferdar%27s_office.jpg" },
+];
+
+// Second gallery row: three pictures, one ratio (4:3), one caption line. The public-domain ones are dimmed on the dark page.
+const GALLERY = [
+  { src: bankVault, pd: true, at: "30% 50%", alt: "Osmanlı Bankası’nın kasa dairesi: ahşap kasa kapakları ve raflarda ciltli hesap defterleri", caption: "Osmanlı Bankası’nın kasa dairesinde ciltli defterler, bugün SALT Galata." },
+  { src: concession, pd: true, at: "40% 50%", alt: "Osmanlı Bankası’nın 1863 tarihli imtiyaz belgesi, Osmanlıca ve Fransızca iki sütun halinde açık duruyor", caption: "Osmanlı Bankası imtiyaz belgesi, 1863. Osmanlıca ve Fransızca." },
+  { src: drawer, pd: false, at: "60% 50%", alt: "Bir tezgâhta para çekmecesi açık, üstünde kart ödeme cihazı duruyor", caption: "Bir tezgâhta para çekmecesi ve kartlı ödeme cihazı." },
 ];
 
 const PATH = [
   { clause: "Önce telefonla çekilir.", card: (
     <>
       <p className="ui-card-head"><span>Fiş</span><span className="status" data-step>Okunuyor…</span></p>
-      <div className="thermal thermal-mini" aria-label="Çekilen fişin termal baskısı" role="group" translate="no">
-        <p className="thermal-vendor">{VENDOR}</p>
-        <p className="thermal-row"><span>FİŞ NO 0047</span><span>05.09.2026</span></p>
-        <p className="thermal-row"><span>KDV %10</span><span>*793,18</span></p>
-        <p className="thermal-row thermal-total"><span>TOPLAM</span><span>*8.725,00</span></p>
-      </div>
+      <div className="path-strip"><Thermal sample={SAMPLES[0]} printedPayment="KREDİ KARTI" compact /></div>
       <p className="ui-meta" data-step>Fotoğraf cihazınızda kalır.</p>
     </>
   ) },
-  { clause: "Sonra satırları okunur.", card: (
+  { clause: "Sonra fiş okunur.", card: (
     <>
       <p className="ui-card-head"><span>Fiş 0047</span><span className="status" data-step>Taslak</span></p>
       {[["Satıcı", "ÖRNEK BALIK…"], ["Evrak No", "0047"], ["Tarih", "05.09.2026"], ["KDV %10", "793,18"], ["Toplam", "8.725,00"], ["Kategori", "Yemek ve ağırlama"]].map(([k, v]) => (
@@ -242,7 +257,15 @@ const PATH = [
     <>
       <p className="ui-card-head"><span>Fiş 0047</span><span className="status status-exported" data-step>Aktarıldı</span></p>
       <p className="ui-file-name" data-step>luca-fisler-2026-09-05.xlsx</p>
-      <p className="ui-meta" data-step>1 fiş, 3 satır</p>
+      <table className="ui-sheet" data-step>
+        <thead><tr><th scope="col">Hesap</th><th scope="col">Evrak</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
+        <tbody>
+          {LINES_0047.map((l) => (
+            <tr key={l.code}><td translate="no">{l.code}</td><td>0047</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td></tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="ui-meta" data-step>1 fiş, 3 satır, BT ÖK</p>
     </>
   ) },
 ];
@@ -252,17 +275,10 @@ export default function LandingPage() {
     <>
       <script dangerouslySetInnerHTML={{ __html: JS_FLAG }} />
       <HomeMotion />
+      <SiteBar />
       <main id="icerik" tabIndex={-1} className="home">
         {/* Hero: two tones, the counter is the picture */}
         <section className="hero" aria-labelledby="hero-title">
-          <header className="hero-bar">
-            <Link className="brand hero-brand" href="/" translate="no"><BrandMark />Accountie</Link>
-            <div className="hero-actions">
-              <span className="theme-wide"><ThemeSwitch /></span>
-              <span className="theme-narrow"><ThemeCycle /></span>
-              <Link className="btn hero-login" href="/giris">Giriş yap</Link>
-            </div>
-          </header>
           <div className="hero-copy">
             <h1 className="hero-title lines" id="hero-title">
               <span className="line"><span data-line style={cssVars({ "--i": 0 })}>Fişten Luca’ya</span></span>{" "}
@@ -283,8 +299,8 @@ export default function LandingPage() {
         {/* how-it-works: one card, four fields */}
         <section className="path" aria-labelledby="path-title">
           {PATH.map((f, i) => (
-            <div className={`path-field path-field-${i + 1}`} key={f.clause} data-reveal>
-              {i === 0 ? <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2> : null}
+            <div className={`path-field path-field-${i + 1}`} key={f.clause} data-reveal style={cssVars({ "--r": i })}>
+              {i === 0 ? <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2> : <span className="path-title" aria-hidden="true" />}
               <div className="ui-card path-card" data-ui>{f.card}</div>
               <p className="path-clause">{f.clause}</p>
             </div>
@@ -296,45 +312,37 @@ export default function LandingPage() {
           <div className="rule-copy">
             <h2 className="t-head" id="rule-title" data-reveal>Defterin kuralı aynı</h2>
             <p className="rule-sub" data-reveal style={cssVars({ "--r": 1 })}>
-              Elle tutulan defterde de, Luca’da da borç ile alacak eşit olmadan kayıt kapanmaz. Accountie tutmayan fişi onaya göndermez.
+              Çarşı esnafının defterinde de, Luca’da da borç ile alacak eşit olmadan kayıt kapanmaz. Accountie tutmayan fişi onaya göndermez.
             </p>
           </div>
-          <figure className="rule-figure rule-figure-book" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
-            <div className="frame"><Image src={ledger1870} placeholder="blur" alt="Açık duran el yazısı bir hesap defteri, iki sayfada isimler, tarihler ve tutar sütunları; yanında bir kalem" sizes="(max-width: 900px) 100vw, 64vw" /></div>
-            <figcaption>Elle tutulmuş bir hesap defterinin iki sayfası, 1869-1870.</figcaption>
+          <figure className="rule-figure rule-figure-bazaar" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
+            <div className="frame frame-43"><Image className="pd-photo" src={bazaar} placeholder="blur" loading="eager" alt="1890’larda Kapalıçarşı’nın içi: kemerli tavanın altında dükkânlar, kumaş tezgâhları ve fesli esnaf" sizes="(max-width: 900px) 100vw, 50vw" /></div>
+            <figcaption>Kapalıçarşı’da dükkânlar, İstanbul, 1890’lar.</figcaption>
           </figure>
-          <figure className="rule-figure rule-figure-clip" data-reveal="shutter" style={cssVars({ "--r": 0 })}>
-            <LoopVideo src={{ mp4: "/gorseller/hesap-makinesi.mp4", webm: "/gorseller/hesap-makinesi.webm" }} poster="/gorseller/hesap-makinesi-poster.jpg" width={854} height={480} />
+          <figure className="rule-figure rule-figure-clip" data-reveal="shutter" style={cssVars({ "--r": 2 })}>
+            <div className="frame frame-43"><LoopVideo src={{ mp4: "/gorseller/hesap-makinesi.mp4", webm: "/gorseller/hesap-makinesi.webm" }} poster="/gorseller/hesap-makinesi-poster.jpg" width={854} height={480} /></div>
             <figcaption>Eski bir toplama makinesinde tuşlama.</figcaption>
           </figure>
-          <figure className="rule-figure rule-figure-register" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
-            <div className="frame"><Image src={register} placeholder="blur" alt="Ahşap tezgâh üstünde eski, pirinç kaplı mekanik bir yazar kasa ve para çekmecesi" sizes="(max-width: 900px) 100vw, 40vw" /></div>
-            <figcaption>Mekanik bir yazar kasa, bugünkü ÖKC’nin atası.</figcaption>
-          </figure>
+          {GALLERY.map((g, i) => (
+            <figure className="rule-figure rule-figure-third" key={g.caption} data-reveal="shutter" style={cssVars({ "--r": i })}>
+              <div className="frame frame-43"><Image className={g.pd ? "pd-photo" : undefined} src={g.src} placeholder="blur" alt={g.alt} sizes="(max-width: 900px) 100vw, 33vw" style={{ objectPosition: g.at }} /></div>
+              <figcaption>{g.caption}</figcaption>
+            </figure>
+          ))}
         </section>
 
-        {/* showcase: the six pieces at once, on the dark field */}
+        {/* showcase: lit panel, dark row */}
         <section className="show" aria-labelledby="show-title">
           <div className="show-inner wrap">
             <h2 className="t-head show-title" id="show-title" data-reveal>Kontrol ekranından Luca’ya</h2>
-            <div className="show-grid">
-              {PIECES.map((p, i) => (
-                <figure className="show-piece" key={p.name} style={cssVars({ "--span": p.span, "--r": i % 2 })} data-reveal>
-                  <div className="show-ui" data-ui>{p.body}</div>
-                  <figcaption>
-                    <h3 className="show-name">{p.name}</h3>
-                    <p className="show-text">{p.text}</p>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
+            <ShowRow pieces={PIECES} />
           </div>
         </section>
 
-        {/* features: panel with margin notes */}
+        {/* features: panel with margin notes; the panel is a picture of the rules screen, nothing in it is editable */}
         <section className="feat wrap" aria-labelledby="feat-title">
           <h2 className="t-head feat-title" id="feat-title" data-reveal>Sizin hesap planınız</h2>
-          <div className="feat-panel" data-ui aria-label="Hesap kuralları paneli" role="group">
+          <div className="feat-panel" data-ui aria-label="Örnek hesap kuralları paneli" role="group">
             <p className="ui-panel-head">Hesap kuralları</p>
             {PART_TITLES.map((t, i) => (
               <div className="feat-part" data-part={i + 1} key={t} style={{ gridRow: i + 2 }}>
@@ -344,7 +352,7 @@ export default function LandingPage() {
             ))}
           </div>
           {NOTES.map((n, i) => (
-            <div className={`feat-note ${i % 2 ? "feat-note-r" : "feat-note-l"}`} data-note={i + 1} key={n.name} style={{ gridRow: i + 3, ...cssVars({ "--r": 2 + (i >> 1) }) }} data-reveal>
+            <div className={`feat-note ${i % 2 ? "feat-note-r" : "feat-note-l"}`} data-note={i + 1} key={n.name} style={{ gridRow: i + 3, ...cssVars({ "--r": i + 1 }) }} data-reveal>
               <h3 className="feat-note-name">{n.name}</h3>
               <p className="feat-note-text">{n.text}</p>
             </div>
@@ -356,11 +364,11 @@ export default function LandingPage() {
           <div className="routes-list">
             <h2 className="t-head" id="routes-title" data-reveal>Luca’ya üç yol</h2>
             {ROUTES.map((g, gi) => (
-              <div className="routes-group" key={g.group} data-reveal style={cssVars({ "--r": gi + 1 })}>
-                <h3 className="routes-group-name">{g.group}</h3>
+              <div className="routes-group" key={g.group}>
+                <h3 className="routes-group-name" data-reveal style={cssVars({ "--r": gi + 1 })}>{g.group}</h3>
                 <ul>
-                  {g.rows.map(([name, value]) => (
-                    <li key={name}><span className="dot" aria-hidden="true" /><span className="routes-name">{name}</span><span className="routes-value">{value}</span></li>
+                  {g.rows.map(([name, value], ri) => (
+                    <li key={name} data-reveal style={cssVars({ "--r": gi + ri + 2 })}><span className="dot" aria-hidden="true" /><span className="routes-name">{name}</span><span className="routes-value">{value}</span></li>
                   ))}
                 </ul>
               </div>
@@ -368,8 +376,8 @@ export default function LandingPage() {
             <p className="routes-tip" data-reveal style={cssVars({ "--r": 5 })}>İlk aktarımı tek fişle deneyin: Luca’nın önizlemesinde satırları kontrol edip Fiş Kes’e basın.</p>
           </div>
           <figure className="routes-figure" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
-            <div className="frame"><Image src={ledger1833} placeholder="blur" alt="Elle tutulmuş 1833 tarihli bir tüccar hesap defteri sayfası, isimler ve iki sütun tutar" sizes="(max-width: 900px) 100vw, 46vw" /></div>
-            <figcaption>Elle tutulmuş bir tüccar hesap defteri sayfası, 1833.</figcaption>
+            <div className="frame frame-45"><Image src={defterdar} placeholder="blur" alt="Gravür: Osmanlı defterdarlık dairesinde minderlere oturmuş kâtipler, önlerindeki rahlelerde defter tutuyor" sizes="(max-width: 900px) 100vw, 40vw" /></div>
+            <figcaption>Defterdarlık dairesinde kâtipler, İstanbul. Louis-Nicolas de Lespinasse gravürü, 18. yüzyıl.</figcaption>
           </figure>
         </section>
 
@@ -397,6 +405,7 @@ export default function LandingPage() {
             <Link href="/giris">Giriş yap</Link>
             <Link href="/kayit">Hesap oluştur</Link>
             <a href="#sss">Sık sorulanlar</a>
+            <Link href="/gizlilik">Gizlilik ve aydınlatma</Link>
           </nav>
           <div className="foot-credits">
             <p className="foot-credits-title">Görsel kaynakları</p>
@@ -411,6 +420,7 @@ export default function LandingPage() {
         </div>
         <p className="foot-name" translate="no" aria-hidden="true">Accountie</p>
       </footer>
+      <CookieNote />
     </>
   );
 }

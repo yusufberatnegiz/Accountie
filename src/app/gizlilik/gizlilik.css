@@ -1,0 +1,15 @@
+/* /gizlilik: a reading page. Title large, each section's name on the left, its text in the full ink on the right. */
+.legal { padding: calc(56px + var(--s10)) var(--page-margin) var(--s10); display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s7); max-width: 1440px; margin-inline: auto; box-sizing: border-box; }
+.legal-title { grid-column: 1 / -1; margin: 0; font-family: var(--font-head); font-weight: 300; font-size: var(--step-head); letter-spacing: -0.03em; line-height: 1.02; text-wrap: balance; }
+.legal-lead { grid-column: 5 / 13; margin: 0; font-size: var(--step-body); line-height: 1.55; max-width: 60ch; }
+.legal-body { grid-column: 1 / -1; display: grid; gap: var(--s8); }
+.legal-body section { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; row-gap: var(--s3); }
+.legal-body h2 { grid-column: 1 / 5; grid-row: 1 / span 4; margin: 0; font-size: var(--step-lead); font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; }
+.legal-body p { grid-column: 5 / 13; margin: 0; font-size: var(--step-body); line-height: 1.55; max-width: 64ch; }
+.legal-back { grid-column: 5 / 13; margin: 0; font-size: var(--step-body); }
+.legal-back a { color: var(--accent); display: inline-flex; align-items: center; min-height: var(--touch); }
+@media (max-width: 900px) {
+  .legal { padding-top: calc(56px + var(--s9)); grid-template-columns: minmax(0, 1fr); }
+  .legal-title, .legal-lead, .legal-body, .legal-body section, .legal-body h2, .legal-body p, .legal-back { grid-column: 1; grid-row: auto; }
+  .legal-body section { grid-template-columns: minmax(0, 1fr); }
+}
