@@ -45,7 +45,12 @@ async function load() {
   $("token-form").hidden = true;
   $("list-view").hidden = false;
   $("fill").disabled = receipts.length === 0;
+  // The popup closes when the user clicks Luca's Kaydet; reopen on the filled receipt with "Luca'da kaydettim" visible.
+  const { filledId } = await chrome.storage.session.get("filledId");
+  const filled = receipts.some((r) => r.id === filledId);
+  if (filled) $("receipt").value = filledId;
   renderPreview();
+  $("done").hidden = !filled;
   status(receipts.length ? "" : "Aktarılacak onaylı fiş yok.");
 }
 
@@ -65,11 +70,13 @@ async function fill() {
   status(summary.message, !summary.ok);
   // Shown after partial fills too: the user completes the missing cells by hand and still has to mark the receipt.
   $("done").hidden = !summary.gridFound;
+  if (summary.gridFound) await chrome.storage.session.set({ filledId: receipt.id });
 }
 
 async function done() {
   const receipt = current();
   await api(`/api/extension/receipts/${encodeURIComponent(receipt.id)}/transferred`, "POST");
+  await chrome.storage.session.remove("filledId");
   await load();
   status("Fiş Accountie'de aktarıldı olarak işaretlendi.");
 }
@@ -77,7 +84,7 @@ async function done() {
 async function forget() {
   token = "";
   receipts = [];
-  await chrome.storage.session.remove("token");
+  await chrome.storage.session.remove(["token", "filledId"]);
   $("list-view").hidden = true;
   $("token-form").hidden = false;
 }

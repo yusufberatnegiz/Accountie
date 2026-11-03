@@ -71,6 +71,7 @@ Aynı kaynağa göre: başlıklar Luca ekranındakiyle birebir aynı olmalı; do
 - Tarih hücresinin Excel tarih tipi mi, "GG.AA.YYYY" metni mi olacağı.
 - Hesap kodu ayırıcısı: ekranda noktalı (770.08, 191.03.10), dosyada da aynı biçim beklenir (doğrulanamadı).
 - Alacak/Borç boşken 0 mı boş mu yazılmalı.
+- Fiş No her dosyada 1'den başlar (dosya içinde fişleri gruplamak için). Luca'nın bu numarayı dönemdeki mevcut mahsup numaralarıyla çakıştırıp çakıştırmadığı veya "Fiş Kes" adımında yeniden numaralayıp numaralamadığı doğrulanamadı; ilk tek fişlik denemede kontrol edin.
 
 İlk iş: kullanıcıdan Luca'da "Şablon indir" ile inen boş dosyayı (kişisel veri içermez) almak ve üreteci buna göre kilitlemek. O zamana kadar 14 kolonlu düzen varsayılan olarak kullanılır, kolon adları tek bir sabitte tutulur.
 
