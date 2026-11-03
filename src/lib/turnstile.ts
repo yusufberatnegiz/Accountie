@@ -3,9 +3,6 @@ const VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 /** Public site key for the widget; read on the server so it needs no NEXT_PUBLIC_ build-time value. */
 export const turnstileSiteKey = () => process.env.TURNSTILE_SITE_KEY || undefined;
 
-/** Whether the server can actually verify challenges (secret key present). */
-export const turnstileEnabled = () => Boolean(process.env.TURNSTILE_SECRET_KEY);
-
 /**
  * Server-side Cloudflare Turnstile check for public forms.
  * Without TURNSTILE_SECRET_KEY the check is skipped everywhere; in Vercel production a warning is logged.
@@ -13,7 +10,7 @@ export const turnstileEnabled = () => Boolean(process.env.TURNSTILE_SECRET_KEY);
 export async function verifyTurnstile(token: unknown, ip: string, fetchImpl: typeof fetch = fetch): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) {
-    // Optional by design: Neon Auth still rate-limits and locks accounts, so a missing key must not block the first deploy.
+    // Optional so the first deploy works; Neon Auth only sees our server IP and does not lock accounts, so the app's own per-IP and per-e-mail limits are the guard.
     if (process.env.VERCEL_ENV === "production") console.warn("TURNSTILE_SECRET_KEY eksik: giriş ve kayıtta bot doğrulaması atlanıyor.");
     return true;
   }

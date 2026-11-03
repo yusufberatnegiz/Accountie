@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(), getRules: vi.fn(), listReceipts: vi.fn() }));
-vi.mock("@/lib/auth/session", () => ({ getUserId: async () => "user-1" }));
+const session = vi.hoisted(() => ({ createdAt: new Date(0) }));
+vi.mock("@/lib/auth/session", () => ({ getUserId: async () => "user-1", getSessionUser: async () => ({ id: "user-1", createdAt: session.createdAt }) }));
 vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn() }));
 vi.mock("@/lib/image", async (orig) => ({ ...(await orig<typeof import("@/lib/image")>()), normalizeImage: async (b: Buffer) => b }));
 
@@ -28,6 +29,19 @@ describe("POST /api/receipts", () => {
     const res = await POST(new Request("http://test/api/receipts", { method: "POST", headers: { "content-length": String(5 * 1024 * 1024) } }));
     expect(res.status).toBe(413);
     expect(extractReceipt).not.toHaveBeenCalled();
+  });
+
+  it("yeni hesap düşük günlük sınırla, fiş okuma IP başına da sınırlanır", async () => {
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(createReceipt).mockResolvedValue("r-1");
+    const kinds = () => vi.mocked(hitRateLimit).mock.calls.map(([k]) => k.split(":")[0]);
+    await POST(jpeg());
+    expect(kinds()).toEqual(["receipt", "receiptIp", "receiptGlobal"]);
+    vi.mocked(hitRateLimit).mockClear();
+    session.createdAt = new Date();
+    await POST(jpeg());
+    expect(kinds()).toEqual(["receiptNew", "receiptIp", "receiptGlobal"]);
+    session.createdAt = new Date(0);
   });
 
   it("günlük genel tavan dolunca modeli çağırmaz", async () => {

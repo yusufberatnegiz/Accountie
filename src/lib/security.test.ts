@@ -14,7 +14,7 @@ vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error
 const { hitRateLimit } = await import("@/db/queries");
 const { getAuth } = await import("@/lib/auth/server");
 const { sniffImageType } = await import("./image");
-const { clientIp } = await import("./rate-limit");
+const { clientIp, ipBucket } = await import("./rate-limit");
 const actions = await import("@/app/giris/actions");
 const authRoute = await import("@/app/api/auth/[...path]/route");
 
@@ -45,10 +45,19 @@ describe("oran sınırı", () => {
     expect(clientIp(new Headers({ "x-real-ip": "198.51.100.1", "x-forwarded-for": "1.1.1.1" }))).toBe("198.51.100.1");
   });
 
+  it("IPv6 adresleri /64 önekiyle sınırlanır, IPv4 olduğu gibi kalır", () => {
+    expect(ipBucket("2001:db8:1:2:aaaa::1")).toBe("2001:db8:1:2::/64");
+    expect(ipBucket("2001:0db8:0001:0002:ffff:ffff:ffff:ffff")).toBe("2001:db8:1:2::/64");
+    expect(ipBucket("2001:db8::5")).toBe("2001:db8:0:0::/64");
+    expect(ipBucket("::1")).toBe("0:0:0:0::/64");
+    expect(ipBucket("::ffff:203.0.113.9")).toBe("203.0.113.9");
+    expect(ipBucket("203.0.113.9")).toBe("203.0.113.9");
+  });
+
   it("anahtar e-posta veya IP'yi açık metin içermez", async () => {
     await expect(redirectOf(actions.login(form({ email: "muhasebe@ornek.com", password: "12345678" })))).resolves.toBe("REDIRECT /");
     const keys = vi.mocked(hitRateLimit).mock.calls.map(([k]) => k);
-    expect(keys).toHaveLength(1); // Turnstile yokken yalnızca IP sınırı
+    expect(keys).toHaveLength(2); // Turnstile yokken de IP ve e-posta sınırı
     for (const k of keys) expect(k).not.toMatch(/muhasebe|ornek|203\.0/);
   });
 
@@ -91,13 +100,13 @@ describe("bot koruması", () => {
     expect(getAuth().signUp.email).not.toHaveBeenCalled();
   });
 
-  it("e-posta başına sınır yalnızca Turnstile açıkken uygulanır (hesap kilitleme)", async () => {
+  it("e-posta başına sınır Turnstile olsa da olmasa da uygulanır", async () => {
     const kinds = () => vi.mocked(hitRateLimit).mock.calls.map(([k]) => k.split(":")[0]);
     vi.stubEnv("TURNSTILE_SECRET_KEY", "");
     vi.stubEnv("VERCEL_ENV", "production");
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     await redirectOf(actions.login(form({ email: "kurban@ornek.com", password: "yanlis-sifre" })));
-    expect(kinds()).toEqual(["loginIp"]);
+    expect(kinds()).toEqual(["loginIp", "loginEmail"]);
     warn.mockRestore();
 
     vi.clearAllMocks();

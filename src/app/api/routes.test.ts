@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_RULES } from "@/lib/default-rules";
 import { buildJournalLines } from "@/lib/journal";
 
-vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
+vi.mock("@/lib/auth/session", () => {
+  const getUserId = vi.fn();
+  return { getUserId, getSessionUser: async () => { const id = await getUserId(); return id ? { id, createdAt: new Date(0) } : null; } };
+});
 vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(async () => false), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
   replaceLines: vi.fn(), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
 }));
-vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn() }));
+vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), clientIp: () => "203.0.113.9" }));
 vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn() }));
 vi.mock("@/lib/image", async (original) => ({ ...(await original<typeof import("@/lib/image")>()), normalizeImage: vi.fn(async () => Buffer.from("jpeg")) }));
 
