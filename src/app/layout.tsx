@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="tr" className={sans.variable}>
-      <body>{children}</body>
+      <body><a className="skip-link" href="#icerik">İçeriğe atla</a>{children}</body>
     </html>
   );
 }

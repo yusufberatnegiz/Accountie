@@ -4,7 +4,7 @@ import type { RuleRow } from "@/lib/default-rules";
 /** Rules screen body; the page and the dev preview both render it. */
 export function RulesView({ rows }: { rows: RuleRow[] }) {
   return (
-    <main className="page">
+    <main id="icerik" tabIndex={-1} className="page">
       <div className="page-head">
         <div>
           <h1>Hesap kuralları</h1>

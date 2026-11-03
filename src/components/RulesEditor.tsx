@@ -24,6 +24,8 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
     setError("");
     if (rows.some(invalid)) {
       setError("Hesap kodu 770.08 biçiminde olmalı.");
+      // Let React paint aria-invalid first, then jump to the field the user must fix.
+      requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.rules-table [aria-invalid="true"]')?.focus());
       return;
     }
     setBusy(true);
@@ -52,9 +54,8 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
             </table>
         </section>
       ))}
-      {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
-      {message ? <p role="status" className="muted">{message}</p> : null}
-      <div className="action-bar"><p className="muted small">Değişiklik yalnızca yeni fişlere uygulanır.</p><button className="btn btn-primary btn-lg" type="button" onClick={save} disabled={busy}>{busy ? "Kaydediliyor…" : "Kuralları kaydet"}</button></div>
+      {/* Messages live in the sticky bar; below a 30-row list they are off screen on the phone. */}
+      <div className="action-bar"><p className={error ? "balance balance-off" : message ? "balance balance-ok" : "muted small"} aria-live="polite">{error || message || "Değişiklik yalnızca yeni fişlere uygulanır."}</p><button className="btn btn-primary btn-lg" type="button" onClick={save} disabled={busy}>{busy ? "Kaydediliyor…" : "Kuralları kaydet"}</button></div>
     </div>
   );
 }

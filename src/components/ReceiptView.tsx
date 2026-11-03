@@ -9,7 +9,7 @@ import { STATUS_LABELS } from "@/lib/status";
 export function ReceiptView({ receipt, rules }: { receipt: ReceiptDetail; rules: Rules }) {
   const vknUnsure = receipt.warnings.some((w) => w.code === "tax_number_invalid");
   return (
-    <main className="page">
+    <main id="icerik" tabIndex={-1} className="page">
       <div className="page-head">
         <div>
           <p className="crumb"><Link href="/">Fişler</Link></p>
