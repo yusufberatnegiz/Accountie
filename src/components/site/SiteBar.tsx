@@ -12,7 +12,8 @@ const LINKS = [
 
 /**
  * The public top bar (docs/design/YON.md 14.1): detached, sticky, one row. Brand, the page's sections, the theme button,
- * Giriş yap and the one accent action. Outside <main>, so the skip link jumps past it. Below 768px the links go into a menu.
+ * Giriş yap and the one accent action. Outside <main>, so the skip link jumps past it. Below 960px (where all of it no longer
+ * fits on one row) the section links go into a menu; on phones the bar keeps the name, the theme, Giriş yap and the menu.
  * The dock has no height, so the hero's two tones run up to the top edge under the bar.
  */
 export function SiteBar({ current }: { current?: "giris" | "kayit" }) {
@@ -28,7 +29,7 @@ export function SiteBar({ current }: { current?: "giris" | "kayit" }) {
           {current === "giris" ? null : <Link className="btn site-login" href="/giris">Giriş yap</Link>}
           {/* On the auth screens the form's own button is the one accent action. */}
           {current === "kayit" ? null : <Link className={current ? "btn site-cta" : "btn btn-accent site-cta"} href="/kayit">Hesap oluştur</Link>}
-          <SiteMenu links={[...LINKS, ...(current === "giris" ? [] : [{ href: "/giris", label: "Giriş yap" }])]} />
+          <SiteMenu links={[...LINKS, ...(current === "kayit" ? [] : [{ href: "/kayit", label: "Hesap oluştur" }])]} />
         </div>
       </header>
     </div>

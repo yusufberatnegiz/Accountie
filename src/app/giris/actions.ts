@@ -55,8 +55,9 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   if (!input.success) return invalid(input.error.issues, raw);
   const typed = typedBack(raw);
   const ip = clientIp(await headers());
-  if (!(await allow("signupIp", ip))) return { error: "kayit-cok", ...typed };
+  // Turnstile first, as for login: without a challenge token nobody can spend a network's sign-up limit.
   if (!(await verifyTurnstile(formData.get(BOT_FIELD), ip))) return { error: "bot", ...typed };
+  if (!(await allow("signupIp", ip))) return { error: "kayit-cok", ...typed };
   const { name, email, password } = input.data;
   const { data, error } = await getAuth().signUp.email({ name, email, password });
   if (error) return { error: "kayit", field: "email", ...typed };

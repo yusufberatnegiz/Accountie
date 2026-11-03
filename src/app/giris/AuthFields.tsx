@@ -25,13 +25,13 @@ export function TurnstileWidget({ siteKey }: { siteKey?: string }) {
   );
 }
 
-/** Password with a show/hide toggle and its rule tied by aria-describedby. `aside` sits at the end of the label row (the reset link). */
+/** Password with a show/hide toggle and its rule tied by aria-describedby. `aside` (the reset link) comes last in tab order and is drawn at the end of the label row. */
 export function PasswordField({ label, name, autoComplete, hint, error, aside }: { label: string; name: string; autoComplete: string; hint?: string; aside?: ReactNode } & Err) {
   const id = "auth-password";
   const [shown, setShown] = useState(false);
   return (
     <div className="auth-field">
-      {aside ? <div className="auth-label-row"><label htmlFor={id}>{label}</label>{aside}</div> : <label htmlFor={id}>{label}</label>}
+      <label htmlFor={id}>{label}</label>
       <div className="auth-password">
         <input className="field" id={id} name={name} type={shown ? "text" : "password"} autoComplete={autoComplete}
           minLength={8} maxLength={128} required spellCheck={false} aria-invalid={error ? true : undefined} aria-describedby={described(id, hint, error)} />
@@ -46,6 +46,8 @@ export function PasswordField({ label, name, autoComplete, hint, error, aside }:
       </div>
       {hint ? <p className="hint" id={`${id}-hint`}>{hint}</p> : null}
       <FieldError id={id} error={error} />
+      {/* After the field and its toggle in tab order; drawn at the end of the label row. */}
+      {aside ? <div className="auth-aside">{aside}</div> : null}
     </div>
   );
 }
@@ -70,7 +72,7 @@ export function NameField({ error, defaultValue }: Err & { defaultValue?: string
   return (
     <div className="auth-field">
       <label htmlFor={id}>Ad soyad</label>
-      <input ref={ref} className="field" id={id} name="name" autoComplete="name" minLength={2} maxLength={100} required
+      <input ref={ref} className="field" id={id} name="name" autoComplete="name" autoCapitalize="words" minLength={2} maxLength={100} required
         defaultValue={defaultValue} aria-invalid={error ? true : undefined} aria-describedby={described(id, undefined, error)} />
       <FieldError id={id} error={error} />
     </div>
@@ -85,7 +87,7 @@ export function EmailField({ prefill, error, defaultValue }: { prefill?: boolean
     <div className="auth-field">
       <label htmlFor={id}>E-posta</label>
       <input ref={ref} className="field" id={id} name="email" type="email" autoComplete="email" spellCheck={false}
-        placeholder="ornek@buro.com.tr…" maxLength={200} required defaultValue={defaultValue}
+        maxLength={200} required defaultValue={defaultValue}
         aria-invalid={error ? true : undefined} aria-describedby={described(id, undefined, error)} />
       <FieldError id={id} error={error} />
     </div>

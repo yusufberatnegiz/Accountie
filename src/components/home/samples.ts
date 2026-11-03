@@ -15,10 +15,10 @@ export const SAMPLES: readonly Sample[] = [
       vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
     },
     items: [
-      { name: "LEVREK IZGARA 2 AD", rate: 10, kurus: 310000 },
+      { name: "LEVREK 2 AD", rate: 10, kurus: 310000 },
       { name: "KARİDES GÜVEÇ", rate: 10, kurus: 185000 },
-      { name: "MEZE TABAĞI 4 AD", rate: 10, kurus: 220000 },
-      { name: "MEVSİM SALATA 2 AD", rate: 10, kurus: 57500 },
+      { name: "MEZE TABAĞI 4", rate: 10, kurus: 220000 },
+      { name: "SALATA 2 AD", rate: 10, kurus: 57500 },
       { name: "İÇECEK 4 AD", rate: 10, kurus: 100000 },
     ],
   },

@@ -13,8 +13,10 @@
 .auth-fields { display: grid; gap: var(--s4); }
 .auth-field { display: grid; gap: var(--s2); }
 .auth-field > label { font-size: var(--fs-body); font-weight: 500; }
-.auth-label-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
-.auth-label-row a { font-size: var(--fs-body); font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; min-height: var(--touch); margin-block: calc((var(--touch) - 1.5em) / -2); }
+/* The reset link follows the password field in the DOM (tab order) and is drawn at the end of its label row. */
+.auth-field:has(.auth-aside) { position: relative; }
+.auth-aside { position: absolute; top: 0; right: 0; line-height: 1.5; }
+.auth-aside a { font-size: var(--fs-body); font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; min-height: var(--touch); margin-block: calc((var(--touch) - 1.5em) / -2); }
 .auth-password { position: relative; }
 .auth-password .field { padding-right: var(--s8); }
 .auth-reveal {
@@ -31,7 +33,7 @@
 
 /* ---------- The stage: the product piece, sticky beside the form ---------- */
 .auth-stage { grid-column: 2; grid-row: 1 / span 2; background: var(--stage); display: grid; place-content: center; justify-items: center; gap: var(--s5); padding: calc(56px + var(--s8)) var(--page-margin) var(--s8); position: sticky; top: 0; height: 100dvh; box-sizing: border-box; }
-.auth-piece { display: grid; grid-template-columns: 250px minmax(0, 340px); gap: var(--s5); align-items: start; }
+.auth-piece { display: grid; grid-template-columns: 300px minmax(0, 340px); gap: var(--s5); align-items: start; }
 .auth-strip { overflow: clip; padding-bottom: var(--s2); }
 .auth-sheet { background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s5); display: grid; gap: var(--s4); margin-top: var(--s7); }
 .auth-sheet p { margin: 0; }

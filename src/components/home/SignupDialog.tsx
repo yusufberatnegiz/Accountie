@@ -27,11 +27,11 @@ export function SignupDialog() {
       }}>
       <p className="cta-dialog-title" id="cta-dialog-title">Hesap oluşturun</p>
       <label>Ad soyad
-        <input className="field" name="name" autoComplete="name" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="field" name="name" autoComplete="name" autoCapitalize="words" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
       </label>
       <label>E-posta
         <input className="field" type="email" name="email" autoComplete="email" spellCheck={false}
-          placeholder="ornek@buro.com.tr…" value={email} onChange={(e) => setEmail(e.target.value)} />
+          value={email} onChange={(e) => setEmail(e.target.value)} />
       </label>
       <button type="submit" className="btn btn-accent btn-lg">Hesap oluştur</button>
       <p className="cta-dialog-alt">Hesabınız var mı? <Link href="/giris">Giriş yapın</Link></p>

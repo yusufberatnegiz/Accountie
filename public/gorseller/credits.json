@@ -97,30 +97,6 @@
   "saved": "2026-11-03T11:03:31.457Z"
  },
  {
-  "file": "public/gorseller/para-cekmecesi.jpg",
-  "media": "image",
-  "ref": "openverse:75cc1c1a-7ed0-42a9-a2ac-43610d591436",
-  "title": "Para Çekmecesi (Cash Drawer)",
-  "creator": "Paracekmecesi",
-  "creatorUrl": "https://commons.wikimedia.org/w/index.php?title=User:Paracekmecesi&action=edit&redlink=1",
-  "date": null,
-  "license": "CC BY-SA 4.0",
-  "licenseCode": "by-sa",
-  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
-  "creditRequired": true,
-  "page": "https://commons.wikimedia.org/w/index.php?curid=87593460",
-  "via": "Wikimedia Commons",
-  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/Para_%C3%87ekmecesi_%28Cash_Drawer%29.jpg/1920px-Para_%C3%87ekmecesi_%28Cash_Drawer%29.jpg",
-  "width": 1920,
-  "height": 1440,
-  "bytes": 500946,
-  "credit": "\"Para Çekmecesi (Cash Drawer)\" by Paracekmecesi, CC BY-SA 4.0, via Wikimedia Commons",
-  "notes": [
-   "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence."
-  ],
-  "saved": "2026-11-03T11:03:32.947Z"
- },
- {
   "file": "public/gorseller/defterdar-dairesi.jpg",
   "media": "image",
   "ref": "commons:106427261",
@@ -143,5 +119,29 @@
    "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence."
   ],
   "saved": "2026-11-03T11:03:34.437Z"
+ },
+ {
+  "file": "public/gorseller/osmanli-bankasi-samsun-1930.jpg",
+  "media": "image",
+  "ref": "commons:41514599",
+  "title": "Osmanlı Bankası, 1930",
+  "creator": "SALTOnline",
+  "creatorUrl": null,
+  "date": "2014-08-15",
+  "license": "no known copyright restrictions",
+  "licenseCode": "pd",
+  "licenseUrl": "https://www.flickr.com/commons/usage/",
+  "creditRequired": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Osmanl%C4%B1_Bankas%C4%B1,_1930.jpg",
+  "via": "Wikimedia Commons",
+  "image": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Osmanl%C4%B1_Bankas%C4%B1%2C_1930.jpg",
+  "width": 1919,
+  "height": 1398,
+  "bytes": 646598,
+  "credit": "\"Osmanlı Bankası, 1930\" by SALTOnline, no known copyright restrictions, via Wikimedia Commons",
+  "notes": [
+   "Not a formal licence: the archive that published it states it knows of no copyright restrictions."
+  ],
+  "saved": "2026-11-03T15:34:21.789Z"
  }
 ]

@@ -19,7 +19,7 @@ import bazaar from "../../public/gorseller/kapalicarsi-1890.jpg";
 import defterdar from "../../public/gorseller/defterdar-dairesi.jpg";
 import bankVault from "../../public/gorseller/osmanli-bankasi-kasa-dairesi.jpg";
 import concession from "../../public/gorseller/osmanli-bankasi-imtiyaz-1863.jpg";
-import drawer from "../../public/gorseller/para-cekmecesi.jpg";
+import bankCounter from "../../public/gorseller/osmanli-bankasi-samsun-1930.jpg";
 import "@/components/home/home.css";
 
 // Public and static: no session, no user data (docs/design/YON.md 5.5).
@@ -155,7 +155,7 @@ const PIECES: Piece[] = [
 const NOTES = [
   { name: "Kategoriden gider hesabı", text: "Yemek ve ağırlama 770.08’e, akaryakıt 770.01’e yazılır. Kodları kendi planınıza göre değiştirin." },
   { name: "Orandan KDV hesabı", text: "%1, %10 ve %20 için ayrı 191 hesabı. Çok oranlı fişte her oran kendi satırını açar." },
-  { name: "Ödemeden alacak hesabı", text: "Nakit Kasa’ya, kart Ortaklara Borçlar’a. Fiş bazında tek seçimle değişir." },
+  { name: "Ödemeden alacak hesabı", text: "Nakit Kasa’ya, ortağın kartı Ortaklara Borçlar’a, şirket kartı 309.01’e. Fiş bazında tek seçimle değişir." },
   { name: "Belge türü", text: "Büronuzun Luca’daki BT kodu neyse o. Varsayılan ÖK." },
   { name: "Kod biçimi", text: "770.08 gibi üç hane ve noktalı alt hesaplar kabul edilir. 770-07 gibi hatalı kod kaydedilmez." },
   { name: "Yalnız yeni fişler", text: "Kural değişikliği kayıtlı satırları değiştirmez, sonraki fişlere uygulanır." },
@@ -172,7 +172,7 @@ function RulePart({ n }: { n: number }) {
   switch (n) {
     case 1: return <>{row("Yemek ve ağırlama", "770.08", "Yeme-İçme ve Ağırlama Giderleri")}{row("Akaryakıt", "770.01", "Akaryakıt Giderleri")}{row("Kırtasiye", "770.02", "Kırtasiye Giderleri")}</>;
     case 2: return <>{row("%1 KDV", "191.03.01", "%1 İndirilecek KDV")}{row("%10 KDV", "191.03.10", "%10 İndirilecek KDV")}{row("%20 KDV", "191.03.20", "%20 İndirilecek KDV")}</>;
-    case 3: return <>{row("Nakit", "100.01", "Kasa")}{row("Kart", "331.01", "Ortaklara Borçlar")}</>;
+    case 3: return <>{row("Nakit", "100.01", "Kasa")}{row("Ortağın kartı", "331.01", "Ortaklara Borçlar")}{row("Şirket kartı", "309.01", "Diğer Mali Borçlar")}</>;
     case 4: return row("Belge türü (BT)", "ÖK", "Luca belge türü");
     case 5: return (
       <div className="ui-rule">
@@ -192,7 +192,7 @@ function RulePart({ n }: { n: number }) {
 const PART_TITLES = ["Gider hesapları", "KDV hesapları", "Ödeme ve alacak", "Belge türü", "Kod biçimi", "Kaydet"];
 
 const ROUTES: { group: string; rows: [string, string][] }[] = [
-  { group: "Excel veri aktarımı", rows: [["Onaylı fişler tek dosyada", ".xlsx"], ["Accountie dosya başına yazar", "en fazla 50 fiş, 400 satır"], ["Evrak No metin hücresi", "0047 korunur"], ["İndirilen fişler", "Aktarıldı olur"]] },
+  { group: "Excel veri aktarımı", rows: [["Onaylı fişler tek dosyada", ".xlsx"], ["Bir dosyada en fazla", "50 fiş, 400 satır"], ["Evrak No metin hücresi", "0047 korunur"], ["İndirilen fişler", "Aktarıldı olur"]] },
   { group: "Pano", rows: [["Tek fişin satırları", "Fiş Detayı sırasında"], ["Kolonlar", "Hesap, Evrak No, Tarih, BT, Açıklama, Borç, Alacak"]] },
   { group: "Chrome eklentisi, deneysel", rows: [["Açık Fiş Detayı ekranını doldurur", "Kaydet sizde"], ["Luca ekranıyla", "Henüz denenmedi"]] },
   { group: "Luca’da", rows: [["Muhasebe, Fiş İşlemleri", "Excel veri aktarımı"], ["Dosya, doğrulama kodu", "Yükle"], ["Önizleme", "Fiş Kes"]] },
@@ -217,21 +217,21 @@ const CREDITS = [
   { title: "Keystrokes in a vintage mechanical calculator", by: "Subhashish Panigrahi", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", page: "https://commons.wikimedia.org/wiki/File:Keystrokes_in_a_vintage_mechanical_calculator.webm" },
   { title: "Ottoman Bank, Safe Rooms", by: "SALT Araştırma", license: "bilinen telif kısıtlaması yok", licenseUrl: FLICKR_COMMONS, page: "https://commons.wikimedia.org/wiki/File:Ottoman_Bank,_Safe_Rooms_(12965331153).jpg" },
   { title: "Act of concession of the Imperial Ottoman Bank, February 4, 1863", by: "SALT Araştırma", license: "bilinen telif kısıtlaması yok", licenseUrl: FLICKR_COMMONS, page: "https://commons.wikimedia.org/wiki/File:Act_of_concession_of_the_Imperial_Ottoman_Bank,_February_4,_1863._(22175414171).jpg" },
-  { title: "Para Çekmecesi (Cash Drawer)", by: "Paracekmecesi", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", page: "https://commons.wikimedia.org/w/index.php?curid=87593460" },
+  { title: "Osmanlı Bankası, 1930", by: "SALT Araştırma", license: "bilinen telif kısıtlaması yok", licenseUrl: FLICKR_COMMONS, page: "https://commons.wikimedia.org/wiki/File:Osmanl%C4%B1_Bankas%C4%B1,_1930.jpg" },
   { title: "Louis-Nicolas de Lespinasse, Deferdar’s office", by: "Gmihail, Sırpça Vikipedi", license: "CC BY-SA 3.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0", page: "https://commons.wikimedia.org/wiki/File:Louis-Nicolas_de_Lespinasse,_Deferdar%27s_office.jpg" },
 ];
 
-// Second gallery row: three pictures, one ratio (4:3), one caption line. The public-domain ones are dimmed on the dark page.
+// Second gallery row: three archive pictures, one ratio (4:3), one caption line, shown as they are in both themes.
 const GALLERY = [
-  { src: bankVault, pd: true, at: "30% 50%", alt: "Osmanlı Bankası’nın kasa dairesi: ahşap kasa kapakları ve raflarda ciltli hesap defterleri", caption: "Osmanlı Bankası’nın kasa dairesinde ciltli defterler, bugün SALT Galata." },
-  { src: concession, pd: true, at: "40% 50%", alt: "Osmanlı Bankası’nın 1863 tarihli imtiyaz belgesi, Osmanlıca ve Fransızca iki sütun halinde açık duruyor", caption: "Osmanlı Bankası imtiyaz belgesi, 1863. Osmanlıca ve Fransızca." },
-  { src: drawer, pd: false, at: "60% 50%", alt: "Bir tezgâhta para çekmecesi açık, üstünde kart ödeme cihazı duruyor", caption: "Bir tezgâhta para çekmecesi ve kartlı ödeme cihazı." },
+  { src: bankVault, at: "30% 50%", alt: "Osmanlı Bankası’nın kasa dairesi: ahşap kasa kapakları ve raflarda ciltli hesap defterleri", caption: "Osmanlı Bankası’nın kasa dairesinde ciltli defterler, bugün SALT Galata." },
+  { src: concession, at: "40% 50%", alt: "Osmanlı Bankası’nın 1863 tarihli imtiyaz belgesi, Osmanlıca ve Fransızca iki sütun halinde açık duruyor", caption: "Osmanlı Bankası imtiyaz belgesi, 1863. Osmanlıca ve Fransızca." },
+  { src: bankCounter, at: "55% 50%", alt: "Osmanlı Bankası Samsun şubesinin içi: sütunlar arasında camlı gişe, kâtip masaları ve eğik yazı pultu", caption: "Osmanlı Bankası Samsun şubesinde gişe ve kâtip masaları, 1930." },
 ];
 
 const PATH = [
   { clause: "Önce telefonla çekilir.", card: (
     <>
-      <p className="ui-card-head"><span>Fiş</span><span className="status" data-step>Okunuyor…</span></p>
+      <p className="ui-card-head"><span>Fiş</span><span className="status" data-step>Çekildi</span></p>
       <div className="path-strip"><Thermal sample={SAMPLES[0]} printedPayment="KREDİ KARTI" compact /></div>
       <p className="ui-meta" data-step>Fotoğraf cihazınızda kalır.</p>
     </>
@@ -312,11 +312,11 @@ export default function LandingPage() {
           <div className="rule-copy">
             <h2 className="t-head" id="rule-title" data-reveal>Defterin kuralı aynı</h2>
             <p className="rule-sub" data-reveal style={cssVars({ "--r": 1 })}>
-              Çarşı esnafının defterinde de, Luca’da da borç ile alacak eşit olmadan kayıt kapanmaz. Accountie tutmayan fişi onaya göndermez.
+              Borç alacağa eşit olmadan Luca’da kayıt kapanmaz. Accountie da tutmayan fişi onaya göndermez; fark kuruşuyla görünür.
             </p>
           </div>
           <figure className="rule-figure rule-figure-bazaar" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
-            <div className="frame frame-43"><Image className="pd-photo" src={bazaar} placeholder="blur" loading="eager" alt="1890’larda Kapalıçarşı’nın içi: kemerli tavanın altında dükkânlar, kumaş tezgâhları ve fesli esnaf" sizes="(max-width: 900px) 100vw, 50vw" /></div>
+            <div className="frame frame-43"><Image src={bazaar} alt="1890’larda Kapalıçarşı’nın içi: kemerli tavanın altında dükkânlar, kumaş tezgâhları ve fesli esnaf" sizes="(max-width: 900px) 100vw, 50vw" /></div>
             <figcaption>Kapalıçarşı’da dükkânlar, İstanbul, 1890’lar.</figcaption>
           </figure>
           <figure className="rule-figure rule-figure-clip" data-reveal="shutter" style={cssVars({ "--r": 2 })}>
@@ -325,7 +325,8 @@ export default function LandingPage() {
           </figure>
           {GALLERY.map((g, i) => (
             <figure className="rule-figure rule-figure-third" key={g.caption} data-reveal="shutter" style={cssVars({ "--r": i })}>
-              <div className="frame frame-43"><Image className={g.pd ? "pd-photo" : undefined} src={g.src} placeholder="blur" alt={g.alt} sizes="(max-width: 900px) 100vw, 33vw" style={{ objectPosition: g.at }} /></div>
+              {/* Two per row up to 900px, the last one full width. */}
+              <div className="frame frame-43"><Image src={g.src} alt={g.alt} sizes={i === GALLERY.length - 1 ? "(max-width: 900px) 100vw, 33vw" : "(max-width: 900px) 50vw, 33vw"} style={{ objectPosition: g.at }} /></div>
               <figcaption>{g.caption}</figcaption>
             </figure>
           ))}
@@ -352,7 +353,7 @@ export default function LandingPage() {
             ))}
           </div>
           {NOTES.map((n, i) => (
-            <div className={`feat-note ${i % 2 ? "feat-note-r" : "feat-note-l"}`} data-note={i + 1} key={n.name} style={{ gridRow: i + 3, ...cssVars({ "--r": i + 1 }) }} data-reveal>
+            <div className={`feat-note ${i % 2 ? "feat-note-l" : "feat-note-r"}`} data-note={i + 1} key={n.name} style={{ gridRow: i + 3, ...cssVars({ "--r": i + 1 }) }} data-reveal>
               <h3 className="feat-note-name">{n.name}</h3>
               <p className="feat-note-text">{n.text}</p>
             </div>
@@ -376,7 +377,7 @@ export default function LandingPage() {
             <p className="routes-tip" data-reveal style={cssVars({ "--r": 5 })}>İlk aktarımı tek fişle deneyin: Luca’nın önizlemesinde satırları kontrol edip Fiş Kes’e basın.</p>
           </div>
           <figure className="routes-figure" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
-            <div className="frame frame-45"><Image src={defterdar} placeholder="blur" alt="Gravür: Osmanlı defterdarlık dairesinde minderlere oturmuş kâtipler, önlerindeki rahlelerde defter tutuyor" sizes="(max-width: 900px) 100vw, 40vw" /></div>
+            <div className="frame frame-43"><Image src={defterdar} alt="Gravür: Osmanlı defterdarlık dairesinde minderlere oturmuş kâtipler, önlerindeki rahlelerde defter tutuyor" sizes="(max-width: 900px) 100vw, 40vw" /></div>
             <figcaption>Defterdarlık dairesinde kâtipler, İstanbul. Louis-Nicolas de Lespinasse gravürü, 18. yüzyıl.</figcaption>
           </figure>
         </section>

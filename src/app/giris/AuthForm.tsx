@@ -53,7 +53,7 @@ export function AuthForm({ isSignup, initialError, turnstileSiteKey, next }: { i
   const at = (f: AuthField) => (state?.field === f ? text : undefined);
 
   return (
-    <form action={action} className="auth-fields">
+    <form action={action} className="auth-fields" noValidate>
       {text && !state?.field ? <p className="alert alert-error" role="alert" tabIndex={-1} ref={alertRef}>{text}</p> : null}
       {next ? <input type="hidden" name="sonra" value={next} /> : null}
       {isSignup ? <NameField error={at("name")} defaultValue={state?.name} /> : null}
