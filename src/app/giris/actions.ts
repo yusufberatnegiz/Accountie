@@ -23,7 +23,7 @@ export async function login(formData: FormData) {
   // Turnstile first: otherwise anyone could fill a victim's per-e-mail limit without solving a challenge and lock them out.
   if (!(await verifyTurnstile(formData.get(BOT_FIELD), ip))) back({ hata: "bot" });
   if (!(await allow("loginIp", ip))) back({ hata: "cok-deneme" });
-  // Always on: the IP limit alone is bypassed by rotating addresses. Its window is loose enough that a lockout lasts an hour at most.
+  // Always on: the IP limit alone is bypassed by rotating addresses. Sized in LIMITS so one IP cannot fill it.
   if (!(await allow("loginEmail", input.data!.email))) back({ hata: "cok-deneme" });
   const { error } = await getAuth().signIn.email(input.data!);
   if (error) back({ hata: "kimlik" });

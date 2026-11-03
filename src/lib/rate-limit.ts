@@ -13,8 +13,9 @@ export const LIMITS = {
   // Ceiling on vision-model spend across all accounts, since signup is open. Also set a spend limit in the Anthropic console.
   receiptGlobal: [[2000, 24 * 60 * MIN]],
   loginIp: [[10, 15 * MIN]],
-  // Always on: looser than loginIp so a victim can be locked out for an hour at most, while guessing stays capped.
-  loginEmail: [[30, 60 * MIN]],
+  // Always on, against guessing from rotating IPs. Above one IP's hourly loginIp budget (40) so a single address cannot lock a victim out;
+  // locking needs several networks, which Turnstile (set TURNSTILE_SECRET_KEY in production) stops.
+  loginEmail: [[100, 60 * MIN]],
   signupIp: [[5, 60 * MIN]],
 } as const;
 

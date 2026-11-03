@@ -14,7 +14,7 @@ vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error
 const { hitRateLimit } = await import("@/db/queries");
 const { getAuth } = await import("@/lib/auth/server");
 const { sniffImageType } = await import("./image");
-const { clientIp, ipBucket } = await import("./rate-limit");
+const { clientIp, ipBucket, LIMITS } = await import("./rate-limit");
 const actions = await import("@/app/giris/actions");
 const authRoute = await import("@/app/api/auth/[...path]/route");
 
@@ -61,6 +61,13 @@ describe("oran sınırı", () => {
     for (const k of keys) expect(k).not.toMatch(/muhasebe|ornek|203\.0/);
   });
 
+  it("tek bir IP, e-posta başına giriş sınırını dolduramaz (hesap kilitleme)", () => {
+    const [[ipLimit, ipWindow]] = LIMITS.loginIp;
+    const [[emailLimit, emailWindow]] = LIMITS.loginEmail;
+    const maxFromOneIp = ipLimit * Math.ceil(emailWindow / ipWindow);
+    expect(emailLimit).toBeGreaterThan(maxFromOneIp);
+  });
+
   it("sınır aşılınca giriş denenmez", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(false);
     expect(await redirectOf(actions.login(form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=cok-deneme");
@@ -83,6 +90,7 @@ describe("oran sınırı", () => {
     expect(getAuth().handler().POST).not.toHaveBeenCalled();
     vi.mocked(hitRateLimit).mockResolvedValue(false);
     expect((await post("request-password-reset")).status).toBe(429);
+    expect((await post("send-verification-email")).status).toBe(429);
     expect((await post("sign-out")).status).toBe(200);
   });
 });
