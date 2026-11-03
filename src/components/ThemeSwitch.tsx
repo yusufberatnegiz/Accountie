@@ -11,15 +11,15 @@ function read(): ThemeChoice {
   return t === "light" || t === "dark" ? t : "system";
 }
 
-/** The browser bar colour follows a manual choice too; the media-query metas cover "system". */
-function syncThemeColor(choice: ThemeChoice) {
-  document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => {
-    // Original media and colour are kept on the element (the head script may have stored them first).
-    if (m.dataset.media === undefined) m.dataset.media = m.media;
-    if (m.dataset.content === undefined) m.dataset.content = m.content;
-    if (choice === "system") { m.media = m.dataset.media; m.content = m.dataset.content; }
-    else { m.media = ""; m.content = THEME_COLOR[choice]; }
-  });
+/** The browser bar colour: the one theme-color meta the head script owns (theme.ts), set to the shown look. */
+function syncThemeColor(look: "light" | "dark") {
+  let m = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!m) {
+    m = document.createElement("meta");
+    m.name = "theme-color";
+    document.head.appendChild(m);
+  }
+  m.content = THEME_COLOR[look];
 }
 
 export function applyTheme(choice: ThemeChoice) {
@@ -28,14 +28,15 @@ export function applyTheme(choice: ThemeChoice) {
   root.classList.add(FREEZE_CLASS);
   if (choice === "system") delete root.dataset.theme;
   else root.dataset.theme = choice;
-  root.dataset.look = choice === "system" ? (matchMedia(DARK_QUERY).matches ? "dark" : "light") : choice;
+  const look = choice === "system" ? (matchMedia(DARK_QUERY).matches ? "dark" : "light") : choice;
+  root.dataset.look = look;
   try {
     if (choice === "system") localStorage.removeItem(THEME_STORAGE_KEY);
     else localStorage.setItem(THEME_STORAGE_KEY, choice);
   } catch {
     // Private mode or blocked storage: the choice still applies for this page.
   }
-  syncThemeColor(choice);
+  syncThemeColor(look);
   void getComputedStyle(root).color; // flush the new colours while transitions are off
   requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove(FREEZE_CLASS)));
   window.dispatchEvent(new Event(EVENT));
