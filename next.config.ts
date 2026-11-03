@@ -1,22 +1,7 @@
 import type { NextConfig } from "next";
+import { PUBLIC_CSP } from "./src/lib/csp";
 
 const dev = process.env.NODE_ENV === "development";
-
-// 'unsafe-inline' stays: App Router streams its RSC payload as inline <script>self.__next_f.push(...)</script> whose text changes per build and page, so a hash list cannot cover it, and listing any hash makes browsers ignore 'unsafe-inline' (every page breaks). A nonce would work but forces dynamic rendering, losing the static homepage. Today no XSS sink exists: dangerouslySetInnerHTML takes fixed strings or JSON.stringify output only.
-// shortcut: no nonce CSP, upgrade to a per-request nonce for /panel in proxy.ts if a raw-HTML sink is ever added.
-const csp = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com${dev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' blob: data:",
-  "font-src 'self'",
-  "connect-src 'self' https://challenges.cloudflare.com",
-  "frame-src https://challenges.cloudflare.com",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "object-src 'none'",
-].join("; ");
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -32,9 +17,12 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [{
+      // The panel's CSP (per-request nonce) comes from proxy.ts; two policies on one response would both be enforced.
+      source: "/((?!panel(?:/|$)).*)",
+      headers: [{ key: "Content-Security-Policy", value: PUBLIC_CSP }],
+    }, {
       source: "/:path*",
       headers: [
-        { key: "Content-Security-Policy", value: csp },
         { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

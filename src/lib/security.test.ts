@@ -191,10 +191,14 @@ describe("bot koruması", () => {
 describe("yapılandırma", () => {
   it("güvenlik başlıkları her yanıtta", async () => {
     const config = (await import("../../next.config")).default;
-    const [rule] = await config.headers!();
+    const [cspRule, rule] = await config.headers!();
     const h = Object.fromEntries(rule.headers.map((x) => [x.key, x.value]));
     expect(rule.source).toBe("/:path*");
-    expect(h["Content-Security-Policy"]).toMatch(/default-src 'self'.*frame-ancestors 'none'.*object-src 'none'/);
+    // Every path but the panel; the panel's nonce CSP comes from proxy.ts (proxy.test.ts).
+    const outsidePanel = new RegExp(`^${cspRule.source}$`);
+    for (const path of ["/", "/giris", "/api/receipts", "/panelx", "/gorseller/a.jpg"]) expect(outsidePanel.test(path), path).toBe(true);
+    for (const path of ["/panel", "/panel/", "/panel/fis/abc"]) expect(outsidePanel.test(path), path).toBe(false);
+    expect(cspRule.headers[0].value).toMatch(/default-src 'self'.*frame-ancestors 'none'.*object-src 'none'/);
     expect(h["Strict-Transport-Security"]).toContain("max-age=63072000");
     expect(h["X-Content-Type-Options"]).toBe("nosniff");
     expect(h["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");

@@ -7,7 +7,7 @@ export const THEME_COLOR = { light: "#f2f4f7", dark: "#0e1114" } as const;
 /**
  * Runs in <head> before first paint (layout.tsx): applies a saved manual choice so the page never flashes.
  * "System" is the absence of data-theme; data-look then follows prefers-color-scheme.
- * Constant string, no user data: safe as an inline script under the current CSP ('unsafe-inline').
+ * Constant string, no user data: allowed by hash under the panel CSP (src/lib/csp.ts), so any edit stays covered.
  */
 /** Class that switches every transition off (globals.css) for the frame the colours change in. */
 export const FREEZE_CLASS = "tema-degisiyor";
