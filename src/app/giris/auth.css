@@ -3,8 +3,9 @@
   Desktop: the form column left, the product's own piece (fiş strip and its three Luca lines) on the stage tone right.
   Below 900px the form is centred and the piece becomes a band under it, so no half of the screen is left empty.
 */
-/* Form and piece share one top line (--auth-top), so the two halves read as one composition. */
-.auth { --auth-top: calc(72px + var(--s9) + var(--s5)); min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+/* Form and piece share one top line (--auth-top), so the two halves read as one composition; on a tall screen that line
+   drops so the pair sits in the middle of the screen instead of leaving its lower third empty. */
+.auth { --auth-top: max(calc(72px + var(--s8)), calc((100dvh - 580px) / 2)); min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
 .auth > .site-dock { grid-column: 1 / -1; grid-row: 1; }
 .auth-main { grid-column: 1; grid-row: 1 / span 2; display: grid; padding: var(--auth-top) var(--page-margin) var(--s8); }
 .auth-form { align-self: start; justify-self: center; width: 100%; max-width: 420px; display: grid; gap: var(--s5); }
@@ -40,7 +41,9 @@
 .auth-strip { overflow: clip; padding-bottom: var(--s2); }
 .auth-sheet { background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s5); display: grid; gap: var(--s4); }
 .auth-sheet p { margin: 0; }
-.auth-sheet-head { display: grid; gap: var(--s1); font-weight: 600; font-size: var(--fs-section); }
+.auth-sheet-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--s1) var(--s3); font-weight: 600; font-size: var(--fs-section); }
+.auth-sheet-head .auth-sheet-meta { grid-column: 1; }
+.auth-sheet-head .status { grid-column: 2; grid-row: 1; }
 .auth-sheet-meta { font-size: var(--fs-small); font-weight: 400; color: var(--muted); }
 .auth-sheet table { font-size: var(--fs-body); }
 .auth-sheet th { text-align: left; padding: 0 var(--s2) var(--s2); }
@@ -51,6 +54,9 @@
 .auth-code { display: block; font-weight: 500; font-variant-numeric: tabular-nums; }
 .auth-code-name { display: block; font-size: var(--fs-small); color: var(--muted); }
 .auth-balance { font-size: var(--fs-body); font-weight: 500; font-variant-numeric: tabular-nums; }
+.auth-balance .balance-ok { color: var(--positive); }
+/* The approved lines' next stop: the Excel file Luca reads. */
+.auth-file { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) var(--s3); background: var(--raised); border-radius: var(--radius-control); font-size: var(--fs-body); font-weight: 500; overflow-wrap: anywhere; }
 .auth-stage-note { margin: 0; font-size: var(--fs-body); color: var(--muted); }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -62,8 +68,9 @@
   .auth-balance { animation: auth-row 320ms var(--ease-out) both; animation-delay: 1300ms; }
 }
 @keyframes auth-rise { from { transform: translateY(12px); } to { transform: none; } }
-@keyframes auth-print { from { transform: translateY(-100%); } to { transform: none; } }
-@keyframes auth-row { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* Arrivals start from a visible state (YON.md 16.3). */
+@keyframes auth-print { from { transform: translateY(-12%); } to { transform: none; } }
+@keyframes auth-row { from { opacity: 0.6; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 @media (max-width: 1180px) and (min-width: 901px) {
   .auth { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -77,6 +84,8 @@
   .auth { grid-template-columns: minmax(0, 1fr); }
   .auth-main { padding: calc(72px + var(--s8)) var(--page-margin) var(--s8); }
   .auth-form { align-self: start; max-width: 440px; }
+  /* The file row only fills the desktop stage; here it would make the sheet taller than the strip beside it. */
+  .auth-file { display: none; }
   .auth-stage { grid-column: 1; grid-row: auto; position: static; height: auto; justify-items: center; padding: var(--s8) var(--page-margin) max(var(--s8), env(safe-area-inset-bottom)); }
 }
 @media (max-width: 640px) {

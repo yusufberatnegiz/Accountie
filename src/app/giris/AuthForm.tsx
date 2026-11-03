@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef } from "react";
-import { login, signup, type AuthField, type AuthState } from "./actions";
+import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
+import { login, signup } from "./actions";
+import { checkAuthForm, type AuthField, type AuthState } from "./validation";
 import { EmailField, NameField, PasswordField, TurnstileWidget } from "./AuthFields";
 import { SubmitButton } from "./SubmitButton";
 
@@ -48,14 +49,23 @@ export function useAfterAttempt(state: { error?: string; field?: string } | unde
  * focus moves there, and the typed e-mail and name stay. Errors without a field go in the alert above the form.
  */
 export function AuthForm({ isSignup, initialError, turnstileSiteKey, next }: { isSignup: boolean; initialError?: string; turnstileSiteKey?: string; next?: string }) {
-  const [state, action] = useActionState<AuthState, FormData>(isSignup ? signup : login, initialState(initialError));
+  const [served, action] = useActionState<AuthState, FormData>(isSignup ? signup : login, initialState(initialError));
+  // Format errors are caught here before the round trip (same schema as the server, which checks again).
+  const [checked, setChecked] = useState<{ result: AuthState; after: AuthState } | null>(null);
+  const state = checked && checked.after === served ? checked.result : served;
   const alertRef = useAfterAttempt(state);
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const f = new FormData(e.currentTarget);
+    const result = checkAuthForm(isSignup, { name: isSignup ? f.get("name") : undefined, email: f.get("email"), password: f.get("password") });
+    if (result) e.preventDefault();
+    setChecked(result ? { result, after: served } : null);
+  };
   const text = state ? ERRORS[state.error] : undefined;
   // Every invalid field shows its own message; focus still goes to the first one.
   const at = (f: AuthField) => (state?.fields?.includes(f) ? ERRORS[CODE_OF[f]] : state?.field === f ? text : undefined);
 
   return (
-    <form action={action} className="auth-fields" noValidate>
+    <form action={action} onSubmit={onSubmit} className="auth-fields" noValidate>
       {text && !state?.field ? <p className="alert alert-error" role="alert" tabIndex={-1} ref={alertRef}>{text}</p> : null}
       {next ? <input type="hidden" name="sonra" value={next} /> : null}
       {isSignup ? <NameField error={at("name")} defaultValue={state?.name} /> : null}

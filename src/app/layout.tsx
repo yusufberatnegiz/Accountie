@@ -24,6 +24,10 @@ export const viewport: Viewport = {
   // No themeColor and no JSX meta: the head script owns the one theme-color meta (src/lib/theme.ts).
 };
 
+// Marks <html> before first paint so the homepage's entrance animations run only with script, and not in a tab opened in
+// the background. In the root layout (not the page), so it is also set when the homepage is reached by client navigation.
+const JS_FLAG = "if(document.visibilityState!=='hidden')document.documentElement.classList.add('js')";
+
 // Production only: public/sw.js serves public/cevrimdisi.html when a navigation fails offline (caches nothing else).
 const SW_REGISTER = `if("serviceWorker" in navigator)addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(){})})`;
 
@@ -32,7 +36,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     // suppressHydrationWarning: the theme script sets data-theme on <html> before React hydrates.
     <html lang="tr" className={`${text.variable} ${head.variable}`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT + ";" + JS_FLAG }} />
       </head>
       <body><a className="skip-link" href="#icerik">İçeriğe atla</a>{children}{process.env.NODE_ENV === "production" ? <script dangerouslySetInnerHTML={{ __html: SW_REGISTER }} /> : null}</body>
     </html>

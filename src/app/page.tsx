@@ -14,10 +14,10 @@ import { SAMPLES } from "@/components/home/samples";
 import { Thermal } from "@/components/home/Thermal";
 import { WARNING_MESSAGES } from "@/lib/journal";
 import { PAYMENT_ALTERNATIVES } from "@/lib/default-rules";
-import bazaar from "../../public/gorseller/kapalicarsi-1890.jpg";
+import register from "../../public/gorseller/yazar-kasa-eski.jpg";
 import defterdar from "../../public/gorseller/defterdar-dairesi.jpg";
 import bankVault from "../../public/gorseller/osmanli-bankasi-kasa-dairesi.jpg";
-import concession from "../../public/gorseller/osmanli-bankasi-imtiyaz-1863.jpg";
+import ncr from "../../public/gorseller/national-yazar-kasa-1918.jpg";
 import ledger from "../../public/gorseller/dedo-defteri-1876.jpg";
 import "@/components/home/home.css";
 
@@ -29,9 +29,7 @@ export const metadata: Metadata = {
   description: "Yazar kasa fişini telefonla çekin, Luca Fiş Detayı satırları hesap planınıza göre hazırlansın. Kontrol edip onaylayın, Excel ile Luca'ya aktarın.",
 };
 
-// Marks <html> before the hero paints, so the entrance animations run only with script, and not in a tab opened in the background.
 const cssVars = (v: Record<string, string | number>) => v as CSSProperties;
-const JS_FLAG = "if(document.visibilityState!=='hidden')document.documentElement.classList.add('js')";
 
 const LINES_0047 = [
   { code: "770.08", name: "Yeme-İçme ve Ağırlama Giderleri", debit: "7.931,82", credit: "" },
@@ -154,7 +152,7 @@ const PIECES: Piece[] = [
 const NOTES = [
   { name: "Kategoriden gider hesabı", text: "Yemek ve ağırlama 770.08’e, akaryakıt 770.01’e yazılır. Kodları kendi planınıza göre değiştirin." },
   { name: "Orandan KDV hesabı", text: "%1, %10 ve %20 için ayrı 191 hesabı. Çok oranlı fişte her oran kendi satırını açar." },
-  { name: "Ödemeden alacak hesabı", text: "Nakit Kasa’ya, ortağın kartı Ortaklara Borçlar’a, şirket kartı 309.01’e. Fiş bazında tek seçimle değişir." },
+  { name: "Ödemeden alacak hesabı", text: "Nakit 100.01 Kasa’ya, ortağın kartı 331.01 Ortaklara Borçlar’a, şirket kartı 309.01 Diğer Mali Borçlar’a. Fiş bazında tek seçimle değişir." },
   { name: "Belge türü", text: "Büronuzun Luca’daki BT kodu neyse o. Varsayılan ÖK." },
   { name: "Kod biçimi", text: "770.08 gibi üç hane ve noktalı alt hesaplar kabul edilir. 770-07 gibi hatalı kod kaydedilmez." },
   { name: "Yalnız yeni fişler", text: "Kural değişikliği kayıtlı satırları değiştirmez, sonraki fişlere uygulanır." },
@@ -191,7 +189,7 @@ function RulePart({ n }: { n: number }) {
 const PART_TITLES = ["Gider hesapları", "KDV hesapları", "Ödeme ve alacak", "Belge türü", "Kod biçimi", "Kaydet"];
 
 const ROUTES: { group: string; rows: [string, string][] }[] = [
-  { group: "Excel veri aktarımı", rows: [["Onaylı fişler tek dosyada", ".xlsx"], ["Yeni dosyaya geçiş", "50 fiş ya da 400 satırda, fiş bölünmez"], ["Evrak No metin hücresi", "0047 korunur"], ["İndirilen fişler", "Aktarıldı olur"]] },
+  { group: "Excel veri aktarımı", rows: [["Onaylı fişler tek dosyada", ".xlsx"], ["Yeni dosyaya geçiş", "50 fiş ya da 400 satır"], ["Bir fiş", "İki dosyaya bölünmez"], ["Evrak No metin hücresi", "0047 korunur"], ["İndirilen fişler", "Aktarıldı olur"]] },
   { group: "Pano", rows: [["Tek fişin satırları", "Fiş Detayı sırasında"], ["Kolonlar", "Hesap, Evrak No, Tarih, BT, Açıklama, Borç, Alacak"]] },
   { group: "Chrome eklentisi, deneysel", rows: [["Açık Fiş Detayı ekranını doldurur", "Kaydet sizde"], ["Luca ekranıyla", "Henüz denenmedi"]] },
   { group: "Luca’da", rows: [["Muhasebe, Fiş İşlemleri", "Excel veri aktarımı"], ["Dosya, doğrulama kodu", "Yükle"], ["Önizleme", "Fiş Kes"]] },
@@ -212,19 +210,19 @@ const FAQ: Qa[] = [
 const PD = "https://creativecommons.org/publicdomain/mark/1.0/";
 const FLICKR_COMMONS = "https://www.flickr.com/commons/usage/";
 // lang: titles kept in their own language are read with that language's rules (WCAG 3.1.2). Every picture is shown in one monochrome grade, so each credit says so.
-const CREDITS = [
+const CREDITS: { title: string; lang: string; by: string; license: string; licenseUrl: string; page: string; note?: string }[] = [
   { title: "Ledger of the fur trader Dedo from Leipzig, 1876-1885", lang: "en", by: "Dedo", license: "kamu malı", licenseUrl: PD, page: "https://commons.wikimedia.org/wiki/File:Ledger_of_the_fur_trader_Dedo_from_Leipzig,_1876-1885_003.jpg" },
-  { title: "Intérieur du Gran Bazar", lang: "fr", by: "Sébah & Joaillier", license: "kamu malı", licenseUrl: PD, page: "https://commons.wikimedia.org/wiki/File:Int%C3%A9rieur_du_Gran_Bazar,_by_S%C3%A9bah_%26_Joaillier,_c._1889-1900,_from_the_Digital_Commonwealth_-_commonwealth_3x8195553.jpg" },
+  { title: "Antique cash register", lang: "en", by: "Thomas Quine", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0/", page: "https://commons.wikimedia.org/wiki/File:Antique_cash_register_(43766820702).jpg" },
+  { title: "National Cash Register 1918", lang: "en", by: "", license: "kamu malı", licenseUrl: PD, page: "https://commons.wikimedia.org/wiki/File:National_Cash_Register_1918.jpg", note: "kâğıt tonu koyulaştırıldı" },
   { title: "Keystrokes in a vintage mechanical calculator", lang: "en", by: "Subhashish Panigrahi", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", page: "https://commons.wikimedia.org/wiki/File:Keystrokes_in_a_vintage_mechanical_calculator.webm" },
   { title: "Ottoman Bank, Safe Rooms", lang: "en", by: "SALT Araştırma", license: "bilinen telif kısıtlaması yok", licenseUrl: FLICKR_COMMONS, page: "https://commons.wikimedia.org/wiki/File:Ottoman_Bank,_Safe_Rooms_(12965331153).jpg" },
-  { title: "Act of concession of the Imperial Ottoman Bank, February 4, 1863", lang: "en", by: "SALT Araştırma", license: "bilinen telif kısıtlaması yok", licenseUrl: FLICKR_COMMONS, page: "https://commons.wikimedia.org/wiki/File:Act_of_concession_of_the_Imperial_Ottoman_Bank,_February_4,_1863._(22175414171).jpg" },
   { title: "Louis-Nicolas de Lespinasse, Deferdar’s office", lang: "en", by: "Gmihail, Sırpça Vikipedi", license: "CC BY-SA 3.0 RS", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/rs/deed.en", page: "https://commons.wikimedia.org/wiki/File:Louis-Nicolas_de_Lespinasse,_Deferdar%27s_office.jpg" },
 ];
 
 // The rule's world, under its proof: one ratio (4:3), one caption line, one grade.
 const GALLERY = [
-  { src: bankVault, at: "30% 50%", alt: "Osmanlı Bankası’nın kasa dairesi: ahşap kasa kapakları ve raflarda ciltli hesap defterleri", caption: "Osmanlı Bankası’nın kasa dairesinde ciltli defterler, bugün SALT Galata." },
-  { src: concession, at: "40% 50%", alt: "Osmanlı Bankası’nın 1863 tarihli imtiyaz belgesi, Osmanlıca ve Fransızca iki sütun halinde açık duruyor", caption: "Osmanlı Bankası imtiyaz belgesi, 1863. Osmanlıca ve Fransızca." },
+  { src: ncr, at: "50% 50%", alt: "1918 tarihli bir baskıda National yazar kasası: sıra sıra tutar tuşları, üstte kâğıt rulosu, solda açık para çekmecesi", caption: "National yazar kasası, 1918. Accountie’nin okuduğu fişi bugün bu makinenin torunu basar." },
+  { src: bankVault, at: "30% 50%", alt: "Osmanlı Bankası’nın kasa dairesi: ahşap kasa kapakları ve raflarda ciltli hesap defterleri", caption: "Osmanlı Bankası’nın kasa dairesinde ciltli defterler. Accountie’de de onaylı fiş kilitlenir." },
 ];
 
 const PATH = [
@@ -238,7 +236,7 @@ const PATH = [
   { clause: "Sonra fiş okunur.", card: (
     <>
       <p className="ui-card-head"><span>Fiş 0047</span><span className="status" data-step>Taslak</span></p>
-      {[["Satıcı", "ÖRNEK BALIK…"], ["Evrak No", "0047"], ["Tarih", "05.09.2026"], ["KDV %10", "793,18"], ["Toplam", "8.725,00"], ["Kategori", "Yemek ve ağırlama"]].map(([k, v]) => (
+      {[["Satıcı", "ÖRNEK BALIK LOKANTASI"], ["Evrak No", "0047"], ["Tarih", "05.09.2026"], ["KDV %10", "793,18"], ["Toplam", "8.725,00"], ["Kategori", "Yemek ve ağırlama"]].map(([k, v]) => (
         <p className="ui-kv" key={k}><span>{k}</span><span className="from-receipt" data-step>{v}</span></p>
       ))}
     </>
@@ -252,7 +250,7 @@ const PATH = [
       <p className="ui-meta balance-ok" data-step>Borç 8.725,00 = Alacak 8.725,00</p>
     </>
   ) },
-  { clause: "En son Luca’ya gider.", card: (
+  { clause: "En son Excel ile Luca’ya yüklenir.", card: (
     <>
       <p className="ui-card-head"><span>Fiş 0047</span><span className="status status-exported" data-step>Aktarıldı</span></p>
       <p className="ui-file-name" data-step>luca-fisler-2026-09-05.xlsx</p>
@@ -272,7 +270,6 @@ const PATH = [
 export default function LandingPage() {
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: JS_FLAG }} />
       <HomeMotion />
       <CookieNote />
       <SiteBar />
@@ -285,7 +282,7 @@ export default function LandingPage() {
               <span className="line"><span data-line style={cssVars({ "--i": 1 })}>yevmiye kaydı</span></span>
             </h1>
             <p className="hero-sub" data-load style={cssVars({ "--d": "420ms" })}>
-              Yazar kasa fişini telefonla çekin; gider, KDV ve alacak satırları sizin hesap kodlarınızla hazırlanır, siz onaylayınca Luca’ya gider.
+              Yazar kasa fişini telefonla çekin; gider, KDV ve alacak satırları sizin hesap kodlarınızla hazırlanır, siz onaylayınca Excel ile Luca’ya aktarırsınız.
             </p>
             <p data-load style={cssVars({ "--d": "480ms" })}>
               <Link className="btn btn-accent btn-lg" href="/kayit">Hesap oluştur</Link>
@@ -298,9 +295,9 @@ export default function LandingPage() {
 
         {/* how-it-works: one card, four fields; the four acts play once, in order (YON.md 15) */}
         <section className="path" aria-labelledby="path-title">
+          <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2>
           {PATH.map((f, i) => (
             <div className={`path-field path-field-${i + 1}`} key={f.clause} data-reveal style={cssVars({ "--r": i })}>
-              {i === 0 ? <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2> : <span className="path-title" aria-hidden="true" />}
               <p className="path-clause">{f.clause}</p>
               <div className="ui-card path-card" data-ui>{f.card}</div>
             </div>
@@ -332,7 +329,7 @@ export default function LandingPage() {
           </div>
           <figure className="rule-figure rule-figure-ledger" data-reveal="shutter" style={cssVars({ "--r": 2 })}>
             <div className="frame frame-43"><Image src={ledger} alt="El yazısı bir hesap defterinin açık iki sayfası: solda Debet, sağda Credit başlıklı kolonlar ve çift çizgiyle kapanmış toplamlar" sizes="(max-width: 900px) 100vw, 42vw" /></div>
-            <figcaption>Leipzigli kürk tüccarı Dedo’nun defteri, 1876: solda Debet, sağda Credit, iki taraf aynı toplamla kapanır.</figcaption>
+            <figcaption>Leipzigli kürk tüccarı Dedo’nun defteri, 1876: solda Debet, sağda Credit kolonları, Luca’daki Borç ve Alacak gibi.</figcaption>
           </figure>
           {GALLERY.map((g, i) => (
             <figure className="rule-figure rule-figure-third" key={g.caption} data-reveal="shutter" style={cssVars({ "--r": i })}>
@@ -342,7 +339,7 @@ export default function LandingPage() {
           ))}
           <figure className="rule-figure rule-figure-third" data-reveal="shutter" style={cssVars({ "--r": 2 })}>
             <div className="frame frame-43"><LoopVideo src={{ mp4: "/gorseller/hesap-makinesi.mp4", webm: "/gorseller/hesap-makinesi.webm" }} poster="/gorseller/hesap-makinesi-poster.jpg" width={854} height={480} /></div>
-            <figcaption>Eski bir toplama makinesinde tuşlama.</figcaption>
+            <figcaption>Eski bir toplama makinesinde tuşlama. Accountie’de borç ve alacak toplamını siz tuşlamazsınız.</figcaption>
           </figure>
         </section>
 
@@ -383,17 +380,34 @@ export default function LandingPage() {
                 <h3 className="routes-group-name" data-reveal style={cssVars({ "--r": gi + 1 })}>{g.group}</h3>
                 <ul>
                   {g.rows.map(([name, value], ri) => (
-                    <li key={name} data-reveal style={cssVars({ "--r": gi + ri + 2 })}><span className="dot" aria-hidden="true" /><span className="routes-name">{name}</span><span className="routes-value">{value}</span></li>
+                    <li key={name} data-reveal style={cssVars({ "--r": gi + ri + 2 })}><span className="routes-name">{name}</span><span className="routes-value">{value}</span></li>
                   ))}
                 </ul>
               </div>
             ))}
             <p className="routes-tip" data-reveal style={cssVars({ "--r": 5 })}>İlk aktarımı tek fişle deneyin: Luca’nın önizlemesinde satırları kontrol edip Fiş Kes’e basın.</p>
           </div>
-          <figure className="routes-figure" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
-            <div className="frame frame-43"><Image src={defterdar} alt="Gravür: Osmanlı defterdarlık dairesinde minderlere oturmuş kâtipler, önlerindeki rahlelerde defter tutuyor" sizes="(max-width: 900px) 100vw, 40vw" /></div>
-            <figcaption>Defterdarlık dairesinde kâtipler, İstanbul. Louis-Nicolas de Lespinasse gravürü, 18. yüzyıl.</figcaption>
-          </figure>
+          <div className="routes-aside">
+            <figure className="routes-figure" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
+              <div className="frame frame-43"><Image src={defterdar} alt="Gravür: Osmanlı defterdarlık dairesinde minderlere oturmuş kâtipler, önlerindeki rahlelerde defter tutuyor" sizes="(max-width: 900px) 100vw, 50vw" /></div>
+              <figcaption>Defterdarlık dairesinde kâtipler kaydı elle deftere geçirir. Lespinasse gravürü, İstanbul, 18. yüzyıl.</figcaption>
+            </figure>
+            {/* The file Luca reads: the export's own columns (src/lib/luca/export.ts) for fiş 0047. */}
+            <div className="ui-card routes-file" data-ui data-reveal style={cssVars({ "--r": 2 })}>
+              <p className="ui-card-head"><span className="ui-file-name">luca-fisler-2026-09-1.xlsx</span><span className="ui-meta">Fişler sayfası</span></p>
+              {/* Scrolls sideways on a phone, so it is reachable by keyboard there (WCAG 2.1.1). */}
+              <div className="routes-file-scroll" tabIndex={0} role="region" aria-label="Luca Excel dosyasının ilk satırları">
+                <table className="ui-sheet">
+                  <thead><tr>{["Fiş No", "Fiş Tarihi", "Hesap Kodu", "Evrak No", "Borç", "Alacak", "Belge Türü"].map((c) => <th scope="col" key={c} className={c === "Borç" || c === "Alacak" ? "num" : undefined}>{c}</th>)}</tr></thead>
+                  <tbody>
+                    {LINES_0047.map((l) => (
+                      <tr key={l.code}><td>1</td><td>05.09.2026</td><td translate="no">{l.code}</td><td>0047</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td><td>ÖK</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* faq: question index, one answer */}
@@ -401,7 +415,7 @@ export default function LandingPage() {
           <Faq items={FAQ} titleId="sss-title" />
         </section>
 
-        {/* cta: one action, beside the bazaar whose counters print the receipts */}
+        {/* cta: one action, beside the machine the receipt comes from */}
         <section className="cta" aria-labelledby="cta-title">
           <div className="cta-inner wrap">
             <div className="cta-copy" data-reveal>
@@ -413,8 +427,8 @@ export default function LandingPage() {
               </div>
             </div>
             <figure className="cta-figure" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
-              <div className="frame frame-43"><Image src={bazaar} alt="1890’larda Kapalıçarşı’nın içi: kemerli tavanın altında dükkânlar, kumaş tezgâhları ve fesli esnaf" sizes="(max-width: 900px) 100vw, 45vw" /></div>
-              <figcaption>Kapalıçarşı’da dükkânlar, İstanbul, 1890’lar.</figcaption>
+              <div className="frame frame-43"><Image src={register} alt="Ahşap bir tezgâhta eski bir yazar kasa: tutar tuşları, yanında kol, önünde açık para çekmecesi" sizes="(max-width: 900px) 100vw, 45vw" /></div>
+              <figcaption>Eski bir yazar kasa, Heritage Acres müzesi, Kanada. Fişi tezgâhtaki kasa basar, siz telefonla çekersiniz.</figcaption>
             </figure>
           </div>
         </section>
@@ -434,7 +448,7 @@ export default function LandingPage() {
             <ul>
               {CREDITS.map((c) => (
                 <li key={c.page}>
-                  <a href={c.page} rel="noopener noreferrer">&ldquo;<span lang={c.lang}>{c.title}</span>&rdquo;</a>{c.by ? `, ${c.by}` : ""}, <a href={c.licenseUrl} rel="noopener noreferrer">{c.license}</a>, Wikimedia Commons, siyah beyaza çevrildi
+                  <a href={c.page} rel="noopener noreferrer">&ldquo;<span lang={c.lang}>{c.title}</span>&rdquo;</a>{c.by ? `, ${c.by}` : ""}, <a href={c.licenseUrl} rel="noopener noreferrer">{c.license}</a>, Wikimedia Commons, {c.note ?? "siyah beyaza çevrildi"}
                 </li>
               ))}
             </ul>

@@ -7,29 +7,12 @@ import { getAuth } from "@/lib/auth/server";
 import { AFTER_LOGIN, safeNextPath } from "@/lib/auth/next-path";
 import { allow, clientIp } from "@/lib/rate-limit";
 import { verifyTurnstile } from "@/lib/turnstile";
+import { invalid, loginSchema, signupSchema, typedBack, type AuthField, type AuthState } from "./validation";
+
+export type { AuthField, AuthState };
 
 const BOT_FIELD = "cf-turnstile-response";
 
-const loginSchema = z.object({ email: z.email().max(200), password: z.string().min(8).max(128) });
-// One password field with a show/hide toggle: no second "repeat" field (docs/design/YON.md 5.4).
-const signupSchema = loginSchema.extend({ name: z.string().trim().min(2).max(100) });
-
-export type AuthField = "name" | "email" | "password";
-/** What a failed attempt hands back to the form: a fixed error code, the field it belongs to, and what was typed (never the password). */
-export type AuthState = { error: string; field?: AuthField; fields?: AuthField[]; email?: string; name?: string } | undefined;
-
-const FIELD_ERRORS: Record<AuthField, string> = { name: "bicim-ad", email: "bicim-eposta", password: "bicim-sifre" };
-
-function invalid(issues: readonly { path: readonly PropertyKey[] }[], typed: { email?: unknown; name?: unknown }): AuthState {
-  // Every invalid field comes back at once (each shows its message); `field`, the first in form order, gets focus.
-  const fields = (["name", "email", "password"] as const).filter((f) => issues.some((i) => i.path[0] === f));
-  const field = fields[0] ?? "email";
-  return { error: FIELD_ERRORS[field], field, fields: fields.length ? fields : [field], ...typedBack(typed) };
-}
-const typedBack = ({ email, name }: { email?: unknown; name?: unknown }) => ({
-  email: typeof email === "string" ? email.slice(0, 200) : undefined,
-  name: typeof name === "string" ? name.slice(0, 100) : undefined,
-});
 
 // Only codes go back to the page; the form maps them to fixed text, so nothing typed is ever shown as a message.
 const back = (params: Record<string, string>) => redirect(`/giris?${new URLSearchParams(params)}`);
@@ -64,7 +47,7 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   const { data, error } = await getAuth().signUp.email({ name, email, password });
   if (error) return { error: "kayit", field: "email", ...typed };
   // A session exists right away unless e-mail verification is on; then the user verifies the address and signs in.
-  if (data?.token) redirect(AFTER_LOGIN);
+  if (data?.token) redirect(safeNextPath(formData.get("sonra")) ?? AFTER_LOGIN);
   back({ mesaj: "kayit-tamam" });
 }
 
