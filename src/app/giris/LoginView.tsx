@@ -2,6 +2,8 @@ import Link from "next/link";
 import Script from "next/script";
 import { login, signup } from "./actions";
 import { SubmitButton } from "./SubmitButton";
+import { Brand } from "@/components/BrandMark";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 const ERRORS: Record<string, string> = {
   bicim: "E-posta ve şifreyi kontrol edin.",
@@ -20,9 +22,10 @@ export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey }: { hata?: 
   const message = mesaj ? MESSAGES[mesaj] : undefined;
   return (
     <main id="icerik" tabIndex={-1} className="auth">
+      <div className="auth-top"><ThemeSwitch /></div>
       <section className="panel auth-card">
         <div>
-          <p className="brand">Accountie</p>
+          <Brand href="/" />
           <h1>{isSignup ? "Hesap oluşturun" : "Giriş yapın"}</h1>
           <p className="muted">Fiş fotoğrafından Luca yevmiye kaydı hazırlayın.</p>
         </div>
