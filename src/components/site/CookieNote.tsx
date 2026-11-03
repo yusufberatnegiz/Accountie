@@ -45,7 +45,7 @@ export function CookieNote() {
       <dialog className="cookie-dialog floating" ref={dialog} aria-labelledby="cookie-dialog-title">
         <h2 id="cookie-dialog-title">Çerez tercihleri</h2>
         <label className="cookie-row">
-          <input type="checkbox" checked disabled aria-describedby="cookie-session-hint" />
+          <input type="checkbox" defaultChecked disabled aria-describedby="cookie-session-hint" />
           <span>Zorunlu: oturum</span>
         </label>
         <p className="hint" id="cookie-session-hint">Giriş yaptıktan sonra panelin sizi tanıması için gerekir, kapatılamaz. Başka çerez yok.</p>

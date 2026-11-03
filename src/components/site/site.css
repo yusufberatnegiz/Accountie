@@ -1,6 +1,8 @@
 /* Public top bar and cookie notice (docs/design/YON.md 14). Tokens only. The bar rests on a tone step and a 1px edge, no shadow. */
 
 .site-dock { position: sticky; top: 0; z-index: 20; height: 0; }
+/* Keyboard focus and in-page jumps stop below the bar (16px offset + 56px bar + a gap), never under it. */
+html:has(.site-dock) { scroll-padding-top: 88px; }
 .site-bar {
   position: absolute; top: var(--s4); inset-inline: max(var(--page-margin), calc((100% - 1150px) / 2));
   display: flex; align-items: center; gap: var(--s5); height: 56px; padding: 0 var(--s2) 0 var(--s4);
@@ -53,7 +55,7 @@
 }
 /* Smallest phones: the mark carries the brand, the name stays for screen readers. */
 @media (max-width: 400px) {
-  .site-brand { font-size: 0; gap: 0; }
+  .site-bar:has(.site-cta) .site-brand { font-size: 0; gap: 0; }
   .site-cta { padding-inline: var(--s3); }
 }
 
@@ -82,6 +84,13 @@
   .cookie-note { animation: site-rise 320ms var(--ease-out) backwards; animation-delay: 600ms; }
 }
 @keyframes site-rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* Wide screens: a low strip (text beside the two buttons) so it stays under the first screen's content instead of over it. */
+@media (min-width: 1024px) {
+  .cookie-note { width: min(44rem, calc(100% - 2 * var(--page-margin))); grid-template-columns: 1fr auto; column-gap: var(--s5); row-gap: var(--s2); padding: var(--s4) var(--s5); }
+  .cookie-note > :not(.cookie-actions, dialog) { grid-column: 1; }
+  .cookie-note > .cookie-actions { grid-column: 2; grid-row: 1 / span 2; align-self: center; flex-direction: column; }
+  .cookie-note > .cookie-actions .btn { min-width: 9rem; }
+}
 @media (max-width: 640px) {
   .cookie-note { left: var(--s2); right: var(--s2); bottom: max(var(--s2), env(safe-area-inset-bottom)); width: auto; max-height: 33svh; overflow: auto; overscroll-behavior: contain; padding: var(--s3) var(--s4); gap: var(--s2); }
   .cookie-note p { font-size: 13px; line-height: 1.4; }

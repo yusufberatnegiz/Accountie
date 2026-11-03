@@ -70,14 +70,17 @@ export function ThemeSwitch({ labelled = false }: { labelled?: boolean }) {
 }
 
 const CYCLE: ThemeChoice[] = ["system", "light", "dark"];
+const NEXT_PHRASE: Record<ThemeChoice, string> = { system: "Sistem temasına geç", light: "Açık temaya geç", dark: "Koyu temaya geç" };
 
 /** One button for narrow bars: each press moves to the next theme; the name says the current one and what a press does. */
 export function ThemeCycle() {
   const current = useSyncExternalStore(subscribe, read, () => "system" as ThemeChoice);
   const o = OPTIONS.find((x) => x.value === current) ?? OPTIONS[0];
   const next = CYCLE[(CYCLE.indexOf(current) + 1) % CYCLE.length];
+  // Names the current theme and what a press does, so neither sighted nor screen-reader users have to guess the cycle.
+  const label = `Tema: ${o.short}. ${NEXT_PHRASE[next]}`;
   return (
-    <button type="button" className="theme-cycle" onClick={() => applyTheme(next)} aria-label={`${o.label} seçili. Temayı değiştir`} title={o.label}>
+    <button type="button" className="theme-cycle" onClick={() => applyTheme(next)} aria-label={label} title={label}>
       <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">{o.icon}</svg>
     </button>
   );
