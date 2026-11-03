@@ -15,6 +15,11 @@ describe("panel list", () => {
     expect(first).toMatchObject({ expenseCode: "770.08", lineCount: 3 });
     expect(PREVIEW_LIST).toHaveLength(PREVIEW_RECEIPTS.length);
   });
+
+  it("splits each receipt's debits into matrah and 191 VAT, which add up to the total", () => {
+    expect(PREVIEW_LIST.find((r) => r.receiptNo === "0047")).toMatchObject({ expenseKurus: 793182, vatKurus: 79318 });
+    for (const r of PREVIEW_LIST) expect(r.expenseKurus + r.vatKurus).toBe(r.totalKurus);
+  });
 });
 
 describe("routes moved under /panel", () => {

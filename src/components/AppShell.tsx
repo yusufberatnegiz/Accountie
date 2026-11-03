@@ -1,26 +1,25 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { logout } from "@/app/giris/actions";
+import { AccountMenu } from "@/components/AccountMenu";
 import { BrandMark } from "@/components/BrandMark";
 import { CaptureButton } from "@/components/CaptureButton";
-import { ThemeSwitch } from "@/components/ThemeSwitch";
 import "./panel/panel.css";
 
 type Current = "fisler" | "fis" | "kurallar";
 
-// Four drawn icons, 16px outline at 1.5px (docs/design/YON.md 5.2).
+// Drawn icons, 16px outline at 1.5px (docs/design/YON.md 5.2).
 const ICONS = {
   receipt: <path d="M4 1.75h8v12.5l-1.33-1-1.34 1-1.33-1-1.33 1-1.34-1-1.33 1zM6.25 5.25h3.5M6.25 8h2.5" />,
   table: <><rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1" /><path d="M1.75 6.25h12.5M6 6.25v7" /></>,
-  door: <path d="M9.5 2.25h-6v11.5h6M7 8h7.25M11.75 5.5 14.25 8l-2.5 2.5" />,
 };
 const Icon = ({ name }: { name: keyof typeof ICONS }) => <svg className="rail-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">{ICONS[name]}</svg>;
 
 /**
- * Panel shell: a 56px icon rail on desktop, a bottom bar on the phone (Fişler, Fiş çek, Kurallar, Çıkış).
+ * Panel shell: a 64px rail with its labels always under the icons on desktop, a bottom bar on the phone
+ * (Fişler, Fiş çek, Kurallar, Hesap). Theme and Çıkış live in the Hesap sheet.
  * `base` lets the dev preview (/onizleme/panel) keep its links inside the preview.
  */
-export function AppShell({ current, base = "/panel", children }: { current: Current; base?: string; children: ReactNode }) {
+export function AppShell({ current, base = "/panel", email, children }: { current: Current; base?: string; email?: string; children: ReactNode }) {
   const item = (href: string, label: string, icon: keyof typeof ICONS, active: boolean) => (
     <Link className="rail-item" href={href} aria-current={active ? "page" : undefined}>
       <Icon name={icon} /><span className="rail-label">{label}</span>
@@ -33,12 +32,7 @@ export function AppShell({ current, base = "/panel", children }: { current: Curr
         {item(base, "Fişler", "receipt", current !== "kurallar")}
         <CaptureButton pickers={["camera"]} variant="rail" />
         {item(`${base}/kurallar`, "Kurallar", "table", current === "kurallar")}
-        <div className="rail-end">
-          <ThemeSwitch />
-          <form action={logout}>
-            <button className="rail-item" type="submit"><Icon name="door" /><span className="rail-label">Çıkış</span></button>
-          </form>
-        </div>
+        <div className="rail-end"><AccountMenu email={email} /></div>
       </nav>
       {children}
     </div>

@@ -527,3 +527,10 @@ Skill'ler yeniden çağrıldı: `taste-skill:design-taste-frontend` (SKILL.md "T
 **Koyu tema tokenları (değişen)**: `--deep` `#15253a` (showcase alanı, zeminden belirgin ayrı), how-it-works alanları `#1b2129`, `#262e38`, `#333d4a` (yaklaşık 7-8 L* adım).
 
 **Giriş ve kayıt**: form ve marka aynı sol kenarda; h1 Headline 300, en çok 32px (app-screens başlık sınırı). Hatalar `useActionState` ile alanın altında (`aria-invalid`, `aria-describedby`), odak ilk hatalı alana; yazılan e-posta ve ad korunur. "Şifre tekrar" kaldırıldı (göster/gizle var). Birincil düğme defter mavisi, ana sayfadaki "Hesap oluştur" ile aynı. Önizlemeler `?tema=acik|koyu` alır.
+
+**Panel (tur 2; bölüm 5'teki eski satırların üstündedir)**
+- Mavi kuralı tek anlamlı: **Luca satırına yazılacak tutar** mavi (kontrol ekranında satır Borç/Alacak alanları ve toplamlar, kurallar önizlemesindeki tutar, listede matrah ve 191 toplamları). Hesap kodları, fiş toplamı, sayaç sayıları mürekkep.
+- Ray 80px, etiketler ikonların altında kalıcı (hover tooltip yok, WCAG 1.4.13). Telefon alt çubuğu: Fişler, Fiş çek, Kurallar, Hesap. Hesap native `<dialog>` açar: e-posta, tema, Çıkış yap. Çıkış artık tek dokunuşla olmaz. Ray altındaki tema seçici Hesap'a taşındı (Kurallar > Görünüm de duruyor).
+- Kontrol ekranı: Onayla engelliyken `aria-disabled` ile odaklanabilir; basınca ya da çubuktaki eylem düğmesine ("Evrak tarihini girin") basınca ilgili alana kaydırıp odaklanır. Başlıktaki bulgu da aynı düğmedir. Telefonda çubuk iki satır: neden, sonra Fişler (geri) ve Onayla. 900px altında satırlar iki satırlı kart. Durum pill'i h1'in yanında.
+- Liste: sekmede "Onaylı"; "Gider hesaplarına göre" matrahı (KDV hariç) 8px izli tek ton mavi çubukla gösterir, altında 191 İndirilecek KDV toplamı. Boş durumda kartın içinde Fiş çek / Galeriden seç ve Luca'ya giden dört adım.
+- Kurallar: panel `--surface` + 1px kenar, önizleme `--stage`; telefonda bir kural tek satır (kod 7rem + ad), alanlar 44px, değişen grubun Kaydet çubuğu yapışkan.

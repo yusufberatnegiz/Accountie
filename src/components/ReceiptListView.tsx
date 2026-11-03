@@ -11,7 +11,7 @@ import { listFinding, STATUS_LABELS } from "@/lib/status";
 export const TABS: { slug: string; label: string; status?: ReceiptStatus }[] = [
   { slug: "", label: "Tümü" },
   { slug: "taslak", label: "Taslak", status: "draft" },
-  { slug: "onayli", label: "Onaylandı", status: "approved" },
+  { slug: "onayli", label: "Onaylı", status: "approved" },
   { slug: "aktarildi", label: "Aktarıldı", status: "exported" },
 ];
 
@@ -26,7 +26,7 @@ const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".")
 function LucaMeter({ label, value, max }: { label: string; value: number; max: number }) {
   return (
     <div className="meter">
-      <p className="meter-head"><span>{label}</span><span className="num"><span className="to-luca">{value}</span> / {max}</span></p>
+      <p className="meter-head"><span>{label}</span><span className="num"><span className="meter-value">{value}</span> / {max}</span></p>
       <span className="meter-track" aria-hidden="true"><span className="meter-fill" style={{ transform: `scaleX(${Math.min(1, value / max)})` }} /></span>
     </div>
   );
@@ -40,10 +40,12 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
   const readyLines = ready.reduce((n, r) => n + r.lineCount, 0);
   const files = Math.max(Math.ceil(ready.length / MAX_RECEIPTS_PER_FILE), Math.ceil(readyLines / MAX_LINES_PER_FILE));
   const drafts = count("draft");
-  // Money per expense account in the current view, most first; receipts without an account or total are left out.
+  // Matrah per expense account in the current view, most first: the debits Luca books on 770, VAT apart on 191.
+  // shortcut: a receipt's whole expense side is booked to its first expense code; split per line if users start mixing 770 codes on one receipt.
   const sums = new Map<string, number>();
-  for (const r of receipts) if (r.expenseCode && r.totalKurus) sums.set(r.expenseCode, (sums.get(r.expenseCode) ?? 0) + r.totalKurus);
+  for (const r of receipts) if (r.expenseCode && r.expenseKurus) sums.set(r.expenseCode, (sums.get(r.expenseCode) ?? 0) + r.expenseKurus);
   const byAccount = [...sums].sort((a, b) => b[1] - a[1]);
+  const vatTotal = receipts.reduce((n, r) => n + (r.expenseCode ? r.vatKurus : 0), 0);
 
   return (
     <main id="icerik" tabIndex={-1} className="canvas canvas-list">
@@ -53,12 +55,12 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
           <h1>Fişler</h1>
           <p className="finding">{listFinding(drafts, ready.length)}</p>
         </div>
-        <CaptureButton />
+        {all.length ? <CaptureButton /> : null}
       </div>
 
       {/* Phone: the Luca block moves up as one line; Excel and the extension are desktop tasks. */}
       <p className="phone-summary phone-only">
-        {ready.length ? <><span className="to-luca">{ready.length}</span> onaylı fiş hazır. Luca dosyasını bilgisayardan indirin.</> : "Luca dosyasına hazır fiş yok."}
+        {ready.length ? <>{ready.length} onaylı fiş hazır. Luca dosyasını bilgisayardan indirin.</> : "Luca dosyasına hazır fiş yok."}
       </p>
 
       <section className="panel list-panel" aria-labelledby="liste-baslik">
@@ -72,7 +74,20 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
         </nav>
         {receipts.length === 0 ? (
           <div className="empty-row">
-            <p>{tab.status ? `${tab.label} durumunda fiş yok.` : "Henüz fiş yok. İlk fişin fotoğrafını çekin; satırlar burada kontrolünüzü bekler."}</p>
+            {all.length ? <p>{tab.label} durumunda fiş yok.</p> : (
+              <>
+                <h3>Henüz fiş yok</h3>
+                <p>İlk fişin fotoğrafını çekin. Satırlar hesap kurallarınıza göre hazırlanır ve burada kontrolünüzü bekler.</p>
+                <CaptureButton />
+                {/* First run: the whole way to Luca, in the order it happens. */}
+                <ol className="first-run">
+                  <li><strong>Hesap kodlarını kontrol edin.</strong> Varsayılan plan kopyalandı; <Link href={`${base}/kurallar`}>hesap kurallarında</Link> kendi kodlarınızı yazın.</li>
+                  <li><strong>Fişi çekin.</strong> Satıcı, tarih, KDV ve toplam okunur, satırlar hazırlanır.</li>
+                  <li><strong>Kontrol edip onaylayın.</strong> Borç ile alacak eşit olmadan onay verilmez.</li>
+                  <li><strong>Luca için indirin.</strong> Onaylı fişler tek Excel dosyasında, Luca&apos;nın Excel veri aktarımı ekranına yüklenir.</li>
+                </ol>
+              </>
+            )}
           </div>
         ) : (
           <table className="receipts">
@@ -132,18 +147,23 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
           <section className="panel side-block desktop-only" aria-labelledby="hesap-title">
             <div className="side-head">
               <h2 id="hesap-title">Gider hesaplarına göre</h2>
-              <p className="muted small">KDV dahil, bu listede</p>
+              <p className="muted small">Matrah, KDV hariç</p>
             </div>
             <ol className="by-account">
               {byAccount.slice(0, 5).map(([code, kurus]) => (
                 <li key={code}>
                   <span className="acc-name"><span className="tnum" translate="no">{code}</span> <span className="muted">{accountNames[code] ?? ""}</span></span>
-                  <span className="num">{formatTrAmount(kurus)}</span>
-                  <span className="acc-bar" aria-hidden="true" style={{ transform: `scaleX(${kurus / byAccount[0][1]})` }} />
+                  <span className="num to-luca">{formatTrAmount(kurus)}</span>
+                  <span className="acc-track" aria-hidden="true"><span className="acc-bar" style={{ transform: `scaleX(${kurus / byAccount[0][1]})` }} /></span>
                 </li>
               ))}
             </ol>
             {byAccount.length > 5 ? <p className="muted small">ve {byAccount.length - 5} hesap daha</p> : null}
+            {/* The VAT side of the same receipts, apart from the expense accounts above. */}
+            <p className="by-account-foot">
+              <span><span className="tnum" translate="no">191</span> <span className="muted">İndirilecek KDV</span></span>
+              <span className="num to-luca">{formatTrAmount(vatTotal)}</span>
+            </p>
           </section>
         ) : null}
 
