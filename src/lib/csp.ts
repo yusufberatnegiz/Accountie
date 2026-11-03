@@ -14,6 +14,8 @@ const dev = process.env.NODE_ENV === "development";
 const policy = (scriptSrc: string) => [
   "default-src 'self'",
   `script-src ${scriptSrc}${dev ? " 'unsafe-eval'" : ""}`,
+  // Explicit: worker-src falls back to script-src, where 'strict-dynamic' drops 'self' and would block /sw.js.
+  "worker-src 'self'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:",
   "font-src 'self'",
@@ -25,13 +27,14 @@ const policy = (scriptSrc: string) => [
   "object-src 'none'",
 ].join("; ");
 
-// Public pages (next.config.ts) keep 'unsafe-inline': App Router streams its RSC payload as inline <script> whose text
-// changes per build and page, so only a nonce could cover it, and a nonce forces dynamic rendering (the homepage is static).
+// Static public pages (next.config.ts: homepage, /gizlilik, 404) keep 'unsafe-inline': App Router streams its RSC payload as
+// inline <script> whose text changes per build and page, so only a nonce could cover it, and a nonce forces dynamic rendering.
 // They carry no user data and no raw-HTML sink: dangerouslySetInnerHTML takes the constant strings above only.
 export const PUBLIC_CSP = policy("'self' 'unsafe-inline' https://challenges.cloudflare.com");
 
 const sha256 = (text: string) => `'sha256-${createHash("sha256").update(text).digest("base64")}'`;
 const LAYOUT_HASHES = [HEAD_SCRIPT, SW_REGISTER].map(sha256).join(" ");
 
-/** The panel (user data) is dynamic anyway: per-request nonce for Next's scripts, hashes for the layout's two constants. */
-export const panelCsp = (nonce: string) => policy(`'self' 'nonce-${nonce}' 'strict-dynamic' ${LAYOUT_HASHES}`);
+/** The panel and the auth pages are dynamic anyway: per-request nonce for Next's scripts (and next/script, so Turnstile
+ * loads through 'strict-dynamic'), hashes for the layout's two constants. */
+export const nonceCsp = (nonce: string) => policy(`'self' 'nonce-${nonce}' 'strict-dynamic' ${LAYOUT_HASHES}`);
