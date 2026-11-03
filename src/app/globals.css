@@ -253,43 +253,20 @@ label .field { font-weight: 400; }
 .theme-switch label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 1px; }
 @media (pointer: coarse) { .theme-switch label { width: var(--touch); height: var(--touch); } }
 
-/* ---------- Shell ---------- */
-.topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding: var(--s3) var(--s5); padding-top: max(var(--s3), env(safe-area-inset-top)); background: var(--ground); border-bottom: 1px solid var(--border); }
-.topbar-end { display: flex; align-items: center; gap: var(--s3); }
-.nav { display: flex; align-items: center; gap: var(--s1); }
-.nav a, .nav button { display: inline-flex; align-items: center; min-height: var(--touch); padding: var(--s2) var(--s3); border-radius: var(--radius-control); color: var(--muted); font-size: var(--fs-body); font-weight: 500; text-decoration: none; background: none; border: 0; cursor: pointer; transition: background-color var(--t-hover) ease, color var(--t-hover) ease; }
-@media (hover: hover) and (pointer: fine) { .nav a:hover, .nav button:hover { background: var(--active); color: var(--ink); } }
-.nav a[aria-current="page"] { color: var(--ink); background: var(--active); }
+/* ---------- Plain pages (error, not found). The panel shell lives in src/components/panel/panel.css. ---------- */
 .page { max-width: 1200px; margin: 0 auto; padding: var(--s6) var(--s5) var(--s8); display: grid; gap: var(--s5); }
-.page-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--s4); }
-.page-head p { color: var(--muted); margin-top: var(--s1); font-size: var(--fs-body); }
-.page-head h1 { overflow-wrap: anywhere; }
-.crumb { font-size: var(--fs-small); color: var(--muted); }
-/* 44px touch target without moving the layout. */
-.crumb a { display: inline-block; padding: 13px 8px 13px 0; margin: -13px 0; outline-offset: -2px; color: var(--muted); }
-.meta { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); align-items: baseline; }
 .flagged { background: var(--warn-bg); color: var(--warn-ink); padding: 0 var(--s1); border-radius: var(--radius-chip); }
 
-/* ---------- Tables: rules and alignment, 12px grey sentence-case headers, no band, no zebra ---------- */
-.tabs { display: flex; gap: var(--s1); border-bottom: 1px solid var(--border); overflow-x: auto; overflow-y: hidden; padding: 0 var(--s3); overscroll-behavior-x: contain; }
-.tabs a { display: inline-flex; align-items: center; min-height: var(--touch); padding: 0 var(--s3); color: var(--muted); font-size: var(--fs-body); font-weight: 500; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; transition: color var(--t-hover) ease, border-color var(--t-hover) ease; }
-@media (hover: hover) and (pointer: fine) { .tabs a:hover { color: var(--ink); } }
-.tabs a[aria-current="page"] { color: var(--ink); border-color: var(--ink); }
+/* ---------- Tables and status: shared by the panel (src/components/panel/panel.css) and the homepage's interface fragments ---------- */
 table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
 th, td { padding: var(--s3); border-bottom: 1px solid var(--rule); text-align: left; vertical-align: middle; }
 th { font-size: var(--fs-small); font-weight: 500; color: var(--muted); white-space: nowrap; border-bottom-color: var(--border); }
 th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:last-child td { border-bottom: 0; }
-.row-link { color: var(--ink); text-decoration: none; font-weight: 500; }
-@media (hover: hover) and (pointer: fine) { .row-link:hover { color: var(--ink); text-decoration: underline; } .receipts tbody tr:hover { background: var(--raised); } }
 /* Status marks: Taslak neutral, Onaylandı ledger blue, Aktarıldı green. Pale tint, dark ink. */
-.status { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--s2); border-radius: var(--radius-chip); font-size: var(--fs-small); font-weight: 500; white-space: nowrap; background: var(--active); color: var(--ink); }
+.status { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--s2); border-radius: var(--radius-chip); font-size: var(--fs-small); font-weight: 500; white-space: nowrap; flex: none; background: var(--active); color: var(--ink); }
 .status-approved { background: var(--accent-soft); color: var(--accent); }
 .status-exported { background: var(--positive-soft); color: var(--positive); }
-.skeleton { min-height: 240px; background: var(--raised); }
-.empty { padding: var(--s6) var(--s4); text-align: center; color: var(--muted); }
-.side-sections { display: grid; gap: var(--s5); }
-@media (min-width: 900px) { .side-sections { grid-template-columns: 1fr 1fr; align-items: start; } }
 
 /* ---------- Messages ---------- */
 .alert { padding: var(--s3) var(--s4); border-radius: var(--radius-control); background: var(--raised); color: var(--ink); }
@@ -299,96 +276,15 @@ tbody tr:last-child td { border-bottom: 0; }
 .notes { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); }
 .reading { display: flex; align-items: center; min-height: 52px; padding: 0 var(--s4); border-radius: var(--radius-control); background: var(--accent-soft); color: var(--ink); font-weight: 500; }
 
-/* ---------- Screens (current app; panel developers restyle these) ---------- */
-.capture { display: grid; gap: var(--s2); }
-.capture-buttons { display: flex; gap: var(--s2); }
-
-/* Review screen: photo left, editor right on desktop; stacked on phone */
-.review { display: grid; gap: var(--s5); }
-.review-main { display: grid; gap: var(--s4); min-width: 0; }
-/* 1100px: below this the photo column squeezes the account name column to ~76px. */
-@media (min-width: 1100px) { .review { grid-template-columns: minmax(280px, 360px) 1fr; align-items: start; } .review-photo { position: sticky; top: var(--s4); } }
-.review-photo img { display: block; width: 100%; border-radius: var(--radius-control); }
-.check-note { margin-left: var(--s1); font-size: var(--fs-small); font-weight: 500; color: var(--warn-ink); }
-.read-values { display: grid; gap: var(--s3); margin: var(--s3) 0 var(--s4); }
-.read-values dt { font-size: var(--fs-small); color: var(--muted); }
-.read-values dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; color: var(--thermal-ink); font-variant-numeric: tabular-nums; }
-.lines td { padding: var(--s2) var(--s1); vertical-align: top; /* a "Kontrol edin" note must not push its field above the row */ }
-.lines td:first-child, .lines th:first-child { padding-left: var(--s4); }
-.lines td:last-child, .lines th:last-child { padding-right: var(--s4); }
-/* Journal amounts go to Luca: ledger blue. */
-.lines .col-amount .field { color: var(--accent); font-variant-numeric: tabular-nums; text-align: right; }
-.col-code { width: 140px; }
-.col-amount { width: 140px; }
-.col-del { width: 72px; }
-.totals { display: flex; flex-wrap: wrap; gap: var(--s5); margin: 0; padding: var(--s3) var(--s4); border-top: 1px solid var(--border); background: var(--raised); border-radius: 0 0 var(--radius-card) var(--radius-card); }
-.totals div { display: grid; }
-.totals dt { font-size: var(--fs-small); color: var(--muted); }
-.totals dd { margin: 0; font-size: 18px; font-weight: 600; text-align: left; font-variant-numeric: tabular-nums; }
+/* ---------- Shared bits the panel and the plain pages (error, not found) use ---------- */
 .actions { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
-.action-bar { position: sticky; bottom: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s3) var(--s4); padding-bottom: max(var(--s3), env(safe-area-inset-bottom)); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); }
-.action-bar .actions { justify-content: flex-end; }
-.action-bar .actions > p { flex-basis: 100%; text-align: right; }
-.lines .check-note { display: block; margin: 2px 0 0; }
 .balance { font-weight: 600; font-variant-numeric: tabular-nums; }
 .balance-ok { color: var(--positive); }
 .balance-off { color: var(--negative); }
-
-.rule-label { font-weight: 500; }
 .phone-only { display: none; }
-
-/* ---------- Phone ---------- */
-/* Until the two-column layout, keep the form in view: a tall receipt photo would push it a full screen down. */
-@media (max-width: 1099px) { .review-photo img { max-height: 40vh; object-fit: contain; margin: 0 auto; width: auto; max-width: 100%; } }
-
 @media (max-width: 720px) {
   h1 { font-size: 22px; }
   .page { padding: var(--s4) var(--s4) var(--s7); gap: var(--s4); }
-  .topbar { padding-left: var(--s4); padding-right: var(--s2); }
-  .nav a, .nav button { padding: var(--s2); }
-  .topbar-end { gap: var(--s1); }
-
-  /* Capture sits in a bar at the bottom, under the thumb. */
-  .page-home { padding-bottom: calc(var(--s8) + var(--s7)); }
-  .page-home .capture { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; padding: var(--s3) var(--s4); padding-bottom: max(var(--s3), env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
-  .capture-buttons .btn { flex: 1; }
-  .capture-buttons .btn-primary { flex: 2; }
-
-  /* Receipt list rows become two-line items; the whole row is the link target. */
-  .receipts thead { display: none; }
-  .receipts, .receipts tbody { display: block; }
-  .receipts tr { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 0 var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
-  .receipts tbody tr:last-child { border-bottom: 0; }
-  .receipts td { border: 0; padding: 0; }
-  .receipts .r-vendor { grid-column: 1; overflow-wrap: anywhere; }
-  .receipts .r-total { grid-column: 2; grid-row: 1; font-weight: 600; }
-  .receipts .r-date { grid-column: 1; grid-row: 2; color: var(--muted); font-size: var(--fs-small); }
-  .receipts .r-status { grid-column: 2; grid-row: 2; text-align: right; }
-  .receipts .r-no { display: none; }
-  .receipts .row-link::after { content: ""; position: absolute; inset: 0; }
-
-  /* Journal lines become small cards: code, name, then debit, credit and delete. */
-  .lines thead { display: none; }
-  .lines, .lines tbody { display: block; }
-  .lines tr { display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
-  .lines td, .lines td:first-child, .lines td:last-child { border: 0; padding: 0; }
-  .lines td[data-label]::before, .rules-table td[data-label]::before { content: attr(data-label); display: block; font-size: var(--fs-small); color: var(--muted); margin-bottom: 2px; }
-  .lines td:nth-child(1) { grid-column: 1; }
-  .lines td:nth-child(2) { grid-column: 1 / -1; }
-  .lines td.col-del { grid-column: 3; grid-row: 3; align-self: start; padding-top: 22px; /* label height */ width: auto; }
-
-  .rules-table thead { display: none; }
-  .rules-table, .rules-table tbody { display: block; }
-  .rules-table tr { display: grid; grid-template-columns: 7rem 1fr; gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
-  .rules-table td { border: 0; padding: 0; }
-  .rules-table .rule-label, .rules-table td[data-label="Hesap Adı"] { grid-column: 1 / -1; }
-
-  .action-bar { margin: 0 calc(-1 * var(--s4)); border-radius: 0; border-width: 1px 0 0; }
-  .action-bar .btn-lg { padding: 0 var(--s4); }
-  .page:has(.action-bar) { padding-bottom: 0; }
-  /* The header already shows vendor, total and VKN on the phone. */
-  .review-read { display: none; }
-  /* Excel import and the extension key are desktop tasks. */
   .desktop-only { display: none; }
   .phone-only { display: block; }
 }
@@ -396,7 +292,6 @@ tbody tr:last-child td { border-bottom: 0; }
 /* ---------- Auth: src/app/giris/auth.css ---------- */
 .alert-ok { background: var(--positive-soft); color: var(--positive); }
 
-.guide { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); }
 
 .skip-link { position: absolute; left: var(--s4); top: -100px; z-index: 10; padding: var(--s2) var(--s3); background: var(--surface); color: var(--ink); border-radius: var(--radius-control); outline: 2px solid var(--focus); }
 .skip-link:focus { top: var(--s2); }

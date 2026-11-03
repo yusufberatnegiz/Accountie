@@ -29,6 +29,42 @@ export const PREVIEW_RECEIPTS: ReceiptDetail[] = [
     vendorName: "PTT KARGO", receiptNo: "5531", date: "2026-08-28",
     vatLines: [{ rate: 20, grossKurus: 13500, vatKurus: 2250 }], totalKurus: 13500, paymentMethod: "card", category: "cargo",
   }), status: "exported" },
+  // A month of a small office at its real size, so the list is seen at working density.
+  base("00000000-0000-4000-8000-000000000005", {
+    vendorName: "KALEİÇİ PANSİYON TURİZM LTD.ŞTİ", receiptNo: "0311", date: "2026-09-04",
+    vatLines: [{ rate: 10, grossKurus: 360000, vatKurus: 32727 }], totalKurus: 360000, paymentMethod: "card", category: "lodging",
+  }),
+  { ...base("00000000-0000-4000-8000-000000000006", {
+    vendorName: "ŞELALE OTOPARK İŞLETMECİLİĞİ", receiptNo: "2208", date: "2026-09-03",
+    vatLines: [{ rate: 20, grossKurus: 15000, vatKurus: 2500 }], totalKurus: 15000, paymentMethod: "cash", category: "parking",
+  }), status: "approved" },
+  { ...base("00000000-0000-4000-8000-000000000007", {
+    vendorName: "AKDENİZ TEMİZLİK MALZEMELERİ", receiptNo: "0764", date: "2026-09-01",
+    vatLines: [{ rate: 20, grossKurus: 64800, vatKurus: 10800 }], totalKurus: 64800, paymentMethod: "card", category: "cleaning",
+  }), status: "approved" },
+  { ...base("00000000-0000-4000-8000-000000000008", {
+    vendorName: "MURATPAŞA KARDEŞLER GIDA", receiptNo: "4419", date: "2026-08-30",
+    vatLines: [{ rate: 1, grossKurus: 21740, vatKurus: 215 }], totalKurus: 21740, paymentMethod: "cash", category: "food_grocery",
+  }), status: "approved" },
+  { ...base("00000000-0000-4000-8000-000000000009", {
+    vendorName: "LARA TAKSİ DURAĞI", receiptNo: "0093", date: "2026-08-29",
+    vatLines: [{ rate: 20, grossKurus: 42000, vatKurus: 7000 }], totalKurus: 42000, paymentMethod: "cash", category: "transport",
+  }), status: "exported" },
+  { ...base("00000000-0000-4000-8000-000000000010", {
+    vendorName: "ÖZ İLETİŞİM BAYİ", receiptNo: "1276", date: "2026-08-27",
+    vatLines: [{ rate: 20, grossKurus: 89900, vatKurus: 14983 }], totalKurus: 89900, paymentMethod: "card", category: "telecom",
+  }), status: "exported" },
 ];
 
 export const PREVIEW_RULE_ROWS = rulesToRows(DEFAULT_RULES);
+
+/** The list screen's row shape, computed from the fixtures the way listReceipts computes it in SQL. */
+export const PREVIEW_LIST = PREVIEW_RECEIPTS.map(({ lines, taxNumber, paymentMethod, category, ...r }) => ({
+  ...r,
+  expenseCode: lines.find((l) => l.debitKurus > 0 && !l.accountCode.startsWith("191"))?.accountCode ?? null,
+  lineCount: lines.length,
+}));
+
+/** `?tema=acik|koyu` for the previews: forces a theme so a headless browser can measure both. */
+export const previewThemeScript = (tema?: string) =>
+  tema === "acik" || tema === "koyu" ? `document.documentElement.dataset.theme=${JSON.stringify(tema === "koyu" ? "dark" : "light")}` : "";
