@@ -11,7 +11,7 @@ Ayrıntılar: `docs/PRD.md`, `docs/TECH_DESIGN.md`, `docs/research/luca-aktarim.
 
 Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
 
-1. **Ortam değişkenleri.** Vercel'de projeyi açın, Settings, Environment Variables. `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` zaten olmalı; yoksa Neon panelinden kopyalayın. `ANTHROPIC_API_KEY` ekleyin (console.anthropic.com, API Keys). İsteğe bağlı: `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`. Hiçbirine `NEXT_PUBLIC_` öneki vermeyin.
+1. **Ortam değişkenleri.** Vercel'de projeyi açın, Settings, Environment Variables. `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` zaten olmalı; yoksa Neon panelinden kopyalayın. `ANTHROPIC_API_KEY` ekleyin (console.anthropic.com, API Keys). Cloudflare Turnstile anahtarları `TURNSTILE_SITE_KEY` ve `TURNSTILE_SECRET_KEY` da zorunludur (dash.cloudflare.com, Turnstile); canlıda gizli anahtar yoksa giriş ve kayıt kapalı kalır. Hiçbirine `NEXT_PUBLIC_` öneki vermeyin.
 2. **Tablolar.** Neon panelinde SQL Editor'ü açın, `drizzle/` klasöründeki dosyaların içeriğini **bu sırayla** yapıştırıp çalıştırın:
    1. `20261102225754_receipts.sql`
    2. `20261102230939_extension_tokens.sql`

@@ -11,6 +11,15 @@ describe("verifyTurnstile", () => {
     expect(await verifyTurnstile(undefined, "1.2.3.4", answer(false))).toBe(true);
   });
 
+  it("canlıda gizli anahtar yoksa reddeder (fail closed)", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "");
+    vi.stubEnv("VERCEL_ENV", "production");
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await verifyTurnstile("tok", "1.2.3.4", answer(true))).toBe(false);
+    expect(err).toHaveBeenCalled();
+    err.mockRestore();
+  });
+
   it("anahtar varken token yoksa, Cloudflare reddederse veya ulaşılamazsa reddeder", async () => {
     vi.stubEnv("TURNSTILE_SECRET_KEY", "test-secret");
     expect(await verifyTurnstile(null, "1.2.3.4", answer(true))).toBe(false);

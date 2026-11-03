@@ -74,11 +74,12 @@ export async function saveRules(userId: string, rows: readonly RuleRow[]): Promi
 export async function hitRateLimit(key: string, windows: readonly (readonly [limit: number, windowMs: number])[]): Promise<boolean> {
   const db = getDb();
   const now = Date.now();
-  const longest = Math.max(...windows.map(([, ms]) => ms));
   const counts = windows.map(([, ms]) =>
     db.select({ n: count() }).from(rateLimitHits).where(and(eq(rateLimitHits.key, key), gt(rateLimitHits.createdAt, new Date(now - ms)))));
   const [, , ...results] = await db.batch([
-    db.delete(rateLimitHits).where(and(eq(rateLimitHits.key, key), lt(rateLimitHits.createdAt, new Date(now - longest)))),
+    // Global sweep so one-off keys (other e-mails/IPs) do not pile up; no LIMITS window is longer than a day.
+    // shortcut: no index on created_at alone, so this scans the (one day of hits) table; add one if it grows large.
+    db.delete(rateLimitHits).where(lt(rateLimitHits.createdAt, new Date(now - 24 * 60 * 60_000))),
     db.insert(rateLimitHits).values({ key }),
     ...counts,
   ]);

@@ -20,8 +20,9 @@ export async function login(formData: FormData) {
   const input = loginSchema.safeParse({ email: formData.get("email"), password: formData.get("password") });
   if (!input.success) back({ hata: "bicim" });
   const ip = clientIp(await headers());
-  if (!(await allow("loginIp", ip)) || !(await allow("loginEmail", input.data!.email))) back({ hata: "cok-deneme" });
+  // Turnstile first: otherwise anyone could fill a victim's per-e-mail limit without solving a challenge and lock them out.
   if (!(await verifyTurnstile(formData.get(BOT_FIELD), ip))) back({ hata: "bot" });
+  if (!(await allow("loginIp", ip)) || !(await allow("loginEmail", input.data!.email))) back({ hata: "cok-deneme" });
   const { error } = await getAuth().signIn.email(input.data!);
   if (error) back({ hata: "kimlik" });
   redirect("/");
