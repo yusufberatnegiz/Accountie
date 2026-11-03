@@ -48,13 +48,20 @@ type Source = "base" | "vat" | "total";
 const sourceOf = (code: string, creditKurus: number): Source => (creditKurus > 0 ? "total" : code.startsWith("191") ? "vat" : "base");
 const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : null);
 
-/** The field that fixes an approval problem, and the words for the button that takes the user there. */
-export function problemTarget(problem: string): { id: string; action: string } {
+/** The field that fixes an approval problem, and the words for the button that takes the user there.
+ *  On an imbalance the side whose sum differs from the receipt total is the wrong one; its first line is the target. */
+export function problemTarget(problem: string, lines: JournalLine[] = [], totalKurus: number | null = null): { id: string; action: string } {
   const row = /^(\d+)\. satırda (hesap kodu)?/.exec(problem);
   if (row) return row[2] ? { id: `satir-${row[1]}-kod`, action: `${row[1]}. satırın hesap kodunu girin` } : { id: `satir-${row[1]}-borc`, action: `${row[1]}. satırın tutarını düzeltin` };
   if (problem.startsWith("Evrak tarihi") || problem.startsWith("Satırlarda evrak tarihi")) return { id: "evrak-tarihi", action: "Evrak tarihini girin" };
   if (problem.startsWith("Evrak no")) return { id: "evrak-no", action: "Evrak numarasını girin" };
   if (problem.startsWith("Satır yok")) return { id: "satir-ekle", action: "Satır ekleyin" };
+  if (problem.startsWith("Borç ile alacak") && totalKurus !== null) {
+    const debitOff = lines.reduce((s, l) => s + l.debitKurus, 0) !== totalKurus;
+    const creditOff = lines.reduce((s, l) => s + l.creditKurus, 0) !== totalKurus;
+    const at = debitOff === creditOff ? -1 : lines.findIndex((l) => (creditOff ? l.creditKurus : l.debitKurus) > 0);
+    if (at >= 0) return creditOff ? { id: `satir-${at + 1}-alacak`, action: `${at + 1}. satırın alacağını düzeltin` } : { id: `satir-${at + 1}-borc`, action: `${at + 1}. satırın borcunu düzeltin` };
+  }
   return { id: "satir-1-borc", action: problem.startsWith("Borç ile alacak") ? "Tutarları düzeltin" : "Tutar biçimini düzeltin" };
 }
 
@@ -192,7 +199,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
     : gap ? `Fark ${formatTrAmount(gap)} TL: borç ile alacak tutmuyor.`
     : problem ?? `Borç ${formatTrAmount(debit)}, alacak ${formatTrAmount(credit)}. Onaya hazır.`;
   const findingOff = invalid || (editable && !!problem);
-  const target = editable && problem ? problemTarget(problem) : null;
+  const target = editable && problem ? problemTarget(problem, parsed, receipt.totalKurus) : null;
   // With an invalid amount the first flagged field is the one to fix, wherever it is.
   const fix = () => {
     const bad = invalid ? document.querySelector<HTMLInputElement>('.journal [aria-invalid="true"]') : null;
@@ -244,6 +251,15 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
               </label>
             ) : null}
           </div>
+          {/* Locked: the header fields every line carries, one strip over the lines in the balance strip's rhythm. */}
+          {!editable ? (
+            <dl className="head-strip" aria-label="Fiş bilgileri">
+              <div><dt>Evrak No</dt><dd className="tnum" translate="no">{head?.documentNo || <span className="dash">-</span>}</dd></div>
+              <div><dt>Evrak tarihi</dt><dd className="tnum">{trDate(head?.documentDate ?? null) ?? <span className="dash">-</span>}</dd></div>
+              <div><dt>Belge türü (BT)</dt><dd>{head?.documentType || <span className="dash">-</span>}</dd></div>
+              <div><dt>Açıklama</dt><dd>{head?.description || <span className="dash">-</span>}</dd></div>
+            </dl>
+          ) : null}
           <table className="journal">
             <thead>
               <tr>
@@ -267,7 +283,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
                   <td data-label="Hesap adı"><input autoComplete="off" className="field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable} onChange={(e) => update(l.key, { accountName: e.target.value })} /></td>
                   <td data-label="Borç (TL)" className="col-amount"><input id={`satir-${i + 1}-borc`} autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} borç${unsure(debitFlag)}`} value={l.debit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.debit))}
                     {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} />{checkNote(debitFlag)}</td>
-                  <td data-label="Alacak (TL)" className="col-amount"><input autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
+                  <td data-label="Alacak (TL)" className="col-amount"><input id={`satir-${i + 1}-alacak`} autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
                     {...flag(creditFlag)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} />{checkNote(creditFlag)}</td>
                   {editable ? <td className="col-del"><button className="btn btn-quiet btn-sm" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => ((!l.debit && !l.credit) || confirm(`Satır ${i + 1} (${l.accountCode || "hesap kodu yok"}) silinsin mi?`)) && setLines((ls) => ls.filter((x) => x.key !== l.key))}>Sil</button></td> : null}
                 </tr>
@@ -309,7 +325,8 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             </dl>
             <p className="muted small">{photo ? "Fotoğraf yalnızca bu cihazda, bu oturumda görünür." : "Fotoğraf bu cihazda değil; sunucu fotoğrafı saklamaz. Satırları kâğıt fişle karşılaştırın."}</p>
           </section>
-          {/* Header fields that every line carries: beside what the receipt said, under the same eye. */}
+          {/* Header fields that every line carries: beside what the receipt said, under the same eye. Locked, they sit atop the lines instead. */}
+          {editable ? (
           <section className="panel panel-pad info" aria-labelledby="bilgi-baslik">
             <h2 id="bilgi-baslik">Fiş bilgileri</h2>
             <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>
@@ -337,6 +354,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
               </label>
             </div>
           </section>
+          ) : null}
         </div>
 
         <div className="actions">

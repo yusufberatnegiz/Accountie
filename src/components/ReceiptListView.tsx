@@ -90,7 +90,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
                     update={{ "fis-eklendi": "row-move", aktarim: "row-move", default: "none" }} default="none">
                   <tr>
                     <td className="r-vendor">
-                      <Link className="row-link" href={`${base}/fis/${r.id}`} title={r.vendorName ?? undefined}>
+                      <Link className="row-link" href={`${base}/fis/${r.id}`} title={r.vendorName ?? undefined} transitionTypes={["fis-ac"]}>
                         {/* The vendor name becomes the review screen's title (ReviewEditor). */}
                         <ViewTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{r.vendorName ?? "Okunamayan fiş"}</span></ViewTransition>
                         <RowPending />
@@ -140,7 +140,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
 
         {byAccount.length ? (
           <section className="panel side-block desktop-only" aria-labelledby="hesap-title">
-            <div className="side-head">
+            <div className="side-head side-head-stack">
               <h2 id="hesap-title">Gider hesaplarına göre</h2>
               <p className="muted small">{SCOPES[tab.slug] ?? "Onaylı ve aktarılan fişler"}, matrah</p>
             </div>

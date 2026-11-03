@@ -1,11 +1,11 @@
 import { TABS } from "@/components/ReceiptListView";
 
 /**
- * Loading state of the list: the real title, buttons, tabs and table header, rows enough to fill the first screen at the size of the values
+ * Loading state of the list: the real title, buttons, tabs and table header, ten rows (the list then reaches the Luca column's foot, as a filled list does) at the size of the values
  * they stand for and one line saying what is happening. No shimmer, no layout shift when data lands.
  */
 export function PanelLoading() {
-  const rows = [62, 48, 70, 55, 66, 44, 58, 72, 50, 64, 46, 68];
+  const rows = [62, 48, 70, 55, 66, 44, 58, 72, 50, 64];
   return (
     <main id="icerik" tabIndex={-1} className="canvas canvas-list" aria-busy="true">
       <div className="title-row">
@@ -43,12 +43,18 @@ export function PanelLoading() {
           {["Fiş", "Satır"].map((l) => (
             <div key={l} className="meter"><div className="meter-head"><span>{l}</span><span className="sk sk-cell" /></div><span className="meter-track" /></div>
           ))}
+          {/* The filled card's button and folded steps at their real size, so the column ends where the filled screen's does. */}
+          <span className="btn" aria-disabled="true" style={{ justifySelf: "start" }}>Luca için indir</span>
+          <p className="small">Luca&apos;da yükleme adımları</p>
         </section>
         <section className="panel side-block">
-          <p className="sk-label">Gider hesaplarına göre</p>
+          <div className="side-head side-head-stack"><p className="sk-label">Gider hesaplarına göre</p><p className="muted small">Onaylı ve aktarılan fişler, matrah</p></div>
           <ul className="by-account">
             {[70, 52, 40, 28, 18].map((w) => <li key={w}><span className="sk" style={{ width: `${w + 20}%` }} /><span className="sk sk-num" /><span className="acc-track" /></li>)}
           </ul>
+          <span className="sk" style={{ width: "30%" }} />
+          {/* The filled card's foot: the 191 VAT line under the expense accounts. */}
+          <p className="by-account-foot"><span><span className="tnum">191</span> <span className="muted">İndirilecek KDV</span></span><span className="sk sk-num" /></p>
         </section>
       </aside>
     </main>
