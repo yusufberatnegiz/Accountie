@@ -81,8 +81,8 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
               <p className="muted small">{g.text}</p>
               <p className="setting-preview" aria-label="Örnek fiş 0047 ile sonuç">
                 <span className="muted">{from}</span>
-                <span className="to-luca" translate="no">{account}</span>
-                {amount ? <span className="tnum">{amount}</span> : null}
+                <span className="tnum" translate="no">{account}</span>
+                {amount ? <span className="to-luca">{amount}</span> : null}
               </p>
             </div>
             <div className="setting-panel">

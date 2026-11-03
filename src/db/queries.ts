@@ -110,6 +110,9 @@ const listColumns = {
   warnings: receipts.warnings,
   expenseCode: sql<string | null>`(select jl.account_code from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
   lineCount: sql<number>`(select count(*)::int from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId})`,
+  // Debits as they go to Luca: the expense side (matrah) and the 191 VAT side, so the list never sums gross amounts into 770.
+  expenseKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::int from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code not like '191%')`,
+  vatKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::int from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code like '191%')`,
 };
 
 export async function listReceipts(userId: string, status?: ReceiptStatus) {

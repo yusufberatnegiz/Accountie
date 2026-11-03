@@ -1,12 +1,12 @@
 /*
   Panel screens (docs/design/YON.md section 5; taste-skill references/app-screens.md).
   Style: achromatic ledger. The chrome carries no colour; the one hue (ledger blue, --accent) is on what goes to Luca.
-  Grid: rail 56 + canvas with 32px gutters. At 1440: 1440 - 56 - 2 x 32 = 1320 = list 920 + 16 + side 384.
+  Grid: rail 80 (labels under the icons, 16px clear of the screen edge) + canvas with 32px gutters. At 1440: 1440 - 80 - 2 x 32 = 1296 = list 896 + 16 + side 384.
   One gap value inside the canvas: 16px (--s4), horizontally and vertically.
 */
 
 /* ---------- Shell: icon rail ---------- */
-.app { display: grid; grid-template-columns: 56px minmax(0, 1fr); min-height: 100dvh; }
+.app { display: grid; grid-template-columns: 80px minmax(0, 1fr); min-height: 100dvh; }
 .rail {
   position: sticky; top: 0; height: 100dvh; z-index: 3;
   display: flex; flex-direction: column; align-items: center; gap: var(--s1);
@@ -16,7 +16,8 @@
 .rail-mark { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: var(--s4); border-radius: var(--radius-control); }
 .rail-mark .mark { width: 26px; height: 26px; }
 .rail-item {
-  position: relative; display: grid; place-items: center; width: 40px; height: 40px; padding: 0;
+  position: relative; display: grid; grid-template-rows: 18px auto; align-content: center; justify-items: center; gap: 4px;
+  width: 64px; min-height: 52px; padding: var(--s1) 0;
   border: 0; border-radius: var(--radius-control); background: none; color: var(--muted); cursor: pointer; text-decoration: none;
   transition: background-color var(--t-hover) ease, color var(--t-hover) ease, transform var(--t-press) var(--ease-out);
 }
@@ -24,27 +25,37 @@
 .rail-item[aria-current="page"] { background: var(--active); color: var(--ink); }
 .rail-item:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
 .rail-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-/* The label is the tooltip on desktop and the caption under the icon on the phone; screen readers read it either way. */
-.rail-label {
-  position: absolute; left: calc(100% + var(--s2)); top: 50%; transform: translate(-4px, -50%);
-  padding: var(--s1) var(--s2); border-radius: var(--radius-chip); background: var(--primary); color: var(--on-primary);
-  font-size: var(--fs-small); font-weight: 500; line-height: 1.4; white-space: nowrap; pointer-events: none;
-  opacity: 0; transition: opacity var(--t-hover) ease, transform var(--t-hover) var(--ease-out);
-}
-.rail-item:focus-visible .rail-label, .rail-item:has(input:focus-visible) .rail-label { opacity: 1; transform: translate(0, -50%); }
-@media (hover: hover) and (pointer: fine) {
-  .rail-item:hover { background: var(--active); color: var(--ink); }
-  .rail-item:hover .rail-label { opacity: 1; transform: translate(0, -50%); }
-}
+/* The label is always shown under the icon, on desktop and phone alike: nothing to hover for, nothing to dismiss. */
+.rail-label { font-size: var(--fs-small); font-weight: 500; line-height: 1.2; white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .rail-item:hover { background: var(--active); color: var(--ink); } }
 .rail-end { margin-top: auto; display: grid; justify-items: center; gap: var(--s3); }
-.rail .theme-switch { flex-direction: column; }
 .rail .capture-rail { display: none; }
+
+/* Hesap sheet: a native dialog. Beside the rail's foot on desktop, a bottom sheet on the phone. */
+.account-sheet {
+  position: fixed; inset: auto auto var(--s4) 88px; margin: 0; padding: 0; width: min(340px, calc(100vw - 2 * var(--s4)));
+  border: 1px solid var(--border); color: var(--ink); overscroll-behavior: contain;
+}
+.account-sheet::backdrop { background: rgb(0 0 0 / 0.32); }
+.account-body { display: grid; gap: var(--s4); padding: var(--s5); }
+.account-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.account-email { font-size: var(--fs-body); color: var(--muted); overflow-wrap: anywhere; }
+.account-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); font-size: var(--fs-body); font-weight: 500; }
+.account-logout { width: 100%; }
+@media (prefers-reduced-motion: no-preference) {
+  .account-sheet[open] { animation: sheet-in var(--t-ui) var(--ease-out); }
+  @keyframes sheet-in { from { opacity: 0; transform: translateY(8px); } }
+}
+/* A text button inside a sentence: the problem line goes to the field that fixes it. */
+.link-button { display: inline; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; border-radius: var(--radius-chip); }
+@media (hover: hover) and (pointer: fine) { .link-button:hover { text-decoration-thickness: 2px; } }
 
 /* ---------- Canvas and title row ---------- */
 .canvas { display: grid; gap: var(--s4); align-content: start; padding: var(--s6) var(--s6) var(--s8); min-width: 0; max-width: 1504px; }
 .title-row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s4); margin-bottom: var(--s2); }
 .title-text { display: grid; gap: var(--s1); min-width: 0; flex: 1 1 420px; }
 .title-text h1 { overflow-wrap: anywhere; }
+.title-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); min-width: 0; }
 .crumb { font-size: var(--fs-small); color: var(--muted); }
 /* 44px touch target without moving the layout. */
 .crumb a { display: inline-block; padding: 13px 8px 13px 0; margin: -13px 0; outline-offset: -2px; color: var(--muted); }
@@ -81,10 +92,19 @@
 .receipts tbody tr:has(.row-link:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
 @media (hover: hover) and (pointer: fine) { .receipts tbody tr:hover { background: var(--raised); } }
 .r-notes { display: block; font-size: var(--fs-small); color: var(--warn-ink); }
-.r-code { color: var(--accent); }
+.r-code { color: var(--ink); }
 .list-foot { padding: var(--s4) var(--s5); border-top: 1px solid var(--rule); }
-.empty-row { padding: var(--s6) var(--s5); }
-.empty-row p { font-size: var(--fs-section); max-width: 60ch; }
+.empty-row { display: grid; gap: var(--s3); justify-items: start; padding: var(--s6) var(--s5); }
+.empty-row h3 { font-size: var(--fs-section); }
+.empty-row p { font-size: var(--fs-section); max-width: 60ch; color: var(--muted); }
+.empty-row .capture { margin-top: var(--s2); }
+.first-run { display: grid; gap: var(--s3); margin: var(--s5) 0 0; padding: var(--s5) 0 0 var(--s5); border-top: 1px solid var(--rule); max-width: 72ch; font-size: var(--fs-body); color: var(--muted); align-self: stretch; }
+.first-run strong { color: var(--ink); font-weight: 500; }
+.first-run a { color: var(--ink); }
+/* An empty list and the Luca block beside it end on one line. */
+.canvas-list:has(.empty-row) > .list-panel, .canvas-list:has(.empty-row) > .side { align-self: stretch; }
+.canvas-list:has(.empty-row) > .side { align-content: stretch; }
+.canvas-list:has(.empty-row) > .side > .side-block { align-content: start; }
 
 .side { display: grid; gap: var(--s4); align-content: start; min-width: 0; }
 .side-block { padding: var(--s5); display: grid; gap: var(--s4); }
@@ -95,7 +115,7 @@ details.side-block:not([open]) { gap: 0; }
 /* Luca file meter: the true ratio of 50 receipts / 400 lines, both ends labelled, no stub at zero. */
 .meter { display: grid; gap: var(--s2); }
 .meter-head { display: flex; justify-content: space-between; font-size: var(--fs-body); color: var(--muted); }
-.meter-head .to-luca { font-weight: 600; }
+.meter-head .meter-value { color: var(--ink); font-weight: 600; }
 .meter-track { display: block; height: 8px; border-radius: 999px; background: var(--active); overflow: hidden; }
 .meter-fill { display: block; height: 100%; background: var(--accent); transform-origin: left center; transition: transform var(--t-ui) var(--ease-out); }
 .guide { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); font-size: var(--fs-body); }
@@ -105,8 +125,8 @@ details.side-block:not([open]) { gap: 0; }
 .review { display: grid; gap: var(--s4); align-items: start; }
 @media (min-width: 1100px) { .review { grid-template-columns: 360px minmax(0, 1fr); } .source { position: sticky; top: var(--s4); } }
 .source { display: grid; gap: var(--s4); min-width: 0; }
-.photo { margin: 0; background: var(--stage); }
-.photo img { display: block; width: 100%; max-height: 70vh; object-fit: contain; }
+.photo { margin: 0; background: var(--stage); aspect-ratio: 3 / 4; max-height: 70vh; }
+.photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .read { padding: var(--s5); display: grid; gap: var(--s3); }
 .read-values { display: grid; margin: 0; }
 .read-values > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4); padding: var(--s2); margin: 0 calc(-1 * var(--s2)); border-radius: var(--radius-chip); transition: background-color var(--t-hover) ease; }
@@ -131,6 +151,8 @@ details.side-block:not([open]) { gap: 0; }
 .journal .col-code { width: 150px; }
 .journal .col-amount { width: 150px; }
 .journal .col-del { width: 64px; }
+.journal .col-del .btn { min-height: var(--control); }
+.journal .field.to-luca { color: var(--accent); }
 .journal .field.num { text-align: right; }
 .check-note { margin-left: var(--s1); font-size: var(--fs-small); font-weight: 500; color: var(--warn-ink); }
 .journal .check-note { display: block; margin: 2px 0 0; }
@@ -151,6 +173,10 @@ details.side-block:not([open]) { gap: 0; }
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card);
 }
 .action-bar .actions { justify-content: flex-end; }
+.action-bar .balance { flex: 1; min-width: 0; }
+.action-bar .bar-back { display: none; }
+/* A focused field is never under the sticky bar. */
+html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .action-bar .actions > p { flex-basis: 100%; text-align: right; }
 .danger-zone { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s4); padding-top: var(--s5); margin-top: var(--s4); border-top: 1px solid var(--border); }
 .danger-zone h2 { font-size: var(--fs-body); }
@@ -161,8 +187,8 @@ details.side-block:not([open]) { gap: 0; }
 .setting-row:first-child { border-top: 0; padding-top: var(--s2); }
 .setting-label { display: grid; gap: var(--s1); align-content: start; align-self: start; padding-top: var(--s2); position: sticky; top: var(--s4); }
 .setting-label h2 { font-weight: 500; }
-.setting-preview { display: grid; gap: 2px; margin-top: var(--s3); padding: var(--s3) var(--s4); border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); font-size: var(--fs-body); }
-.setting-panel { align-self: start; padding: var(--s4); border-radius: var(--radius-card); background: var(--raised); min-width: 0; }
+.setting-preview { display: grid; gap: 2px; margin-top: var(--s3); padding: var(--s3) var(--s4); border-radius: var(--radius-card); background: var(--stage); font-size: var(--fs-body); }
+.setting-panel { align-self: start; padding: var(--s4); border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); min-width: 0; }
 .danger-zone.setting-row { margin-top: 0; }
 .danger-zone .setting-panel { background: none; padding-left: 0; }
 .rules-table td, .rules-table th { padding: var(--s1) var(--s2); border-bottom: 0; }
@@ -173,18 +199,28 @@ details.side-block:not([open]) { gap: 0; }
 .rules-table .col-code { width: 160px; }
 .rules-table .field { min-height: 36px; }
 .setting-save { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s4); margin-top: var(--s4); }
+/* An unsaved group keeps its Save in reach while the user scrolls through its rows. */
+.setting-save:has(.btn-primary) {
+  position: sticky; bottom: var(--s4); z-index: 1; margin: var(--s4) calc(-1 * var(--s2)) 0; padding: var(--s3) var(--s2);
+  border-radius: var(--radius-control); background: var(--surface); box-shadow: var(--shadow-float); /* taste-skill-ignore: floats over the rows */
+}
 .setting-save > p { flex: 1; min-width: 0; }
 .saved { color: var(--positive); font-size: var(--fs-body); font-weight: 500; }
 .theme-switch-labelled label { width: auto; padding: 0 var(--s3); display: inline-flex; gap: var(--s2); font-size: var(--fs-body); font-weight: 500; }
 
 /* ---------- Loading: final layout, flat grey bars at real size, no shimmer ---------- */
-.sk { display: block; background: var(--active); border-radius: var(--radius-chip); }
-.sk-title { width: 120px; height: 24px; }
-.sk-tab { width: 64px; height: 14px; margin: 15px var(--s2); }
-.sk-row { display: flex; justify-content: space-between; align-items: center; height: 56px; padding: 0 var(--s5); border-top: 1px solid var(--rule); }
-.sk-wide { width: 40%; height: 14px; }
-.sk-num { width: 80px; height: 14px; }
-.sk-bar { width: 100%; height: 8px; }
+.sk { display: block; height: 14px; background: var(--secondary-hover); border-radius: var(--radius-chip); }
+.sk-finding { display: inline-block; width: 320px; max-width: 100%; height: 16px; vertical-align: middle; }
+.sk-tab { width: 64px; margin: 15px var(--s2); }
+.sk-head { display: flex; justify-content: space-between; align-items: center; height: 40px; padding: 0 var(--s5); font-size: var(--fs-small); font-weight: 500; color: var(--muted); border-top: 1px solid var(--border); }
+.sk-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s5); height: 56px; padding: 0 var(--s5); border-top: 1px solid var(--rule); }
+.sk-row .sk:first-child { max-width: 50%; }
+.sk-num { width: 88px; flex: none; }
+.sk-label { font-size: var(--fs-section); font-weight: 600; }
+.sk-line { width: 100%; }
+.sk-bar { width: 100%; height: 8px; border-radius: 999px; }
+.sk-button { width: 136px; height: var(--control); border-radius: var(--radius-control); }
+.sk-acc { height: 14px; margin-bottom: var(--s3); }
 
 /* ---------- Tablet: side blocks under the list ---------- */
 @media (max-width: 1180px) {
@@ -202,10 +238,19 @@ details.side-block:not([open]) { gap: 0; }
   .receipts .r-vendor { grid-column: 1 / 4; }
   .receipts .r-total { grid-column: 4; grid-row: 1; font-weight: 600; }
   .receipts .r-no, .receipts .r-date, .receipts .r-code { grid-row: 2; font-size: var(--fs-small); color: var(--muted); }
-  .receipts .r-code { color: var(--accent); }
+  .receipts .r-code { color: var(--ink); }
   .receipts .r-status { grid-column: 4; grid-row: 2; text-align: right; }
-  .r-notes { display: inline; margin-left: var(--s2); }
+  .r-notes { display: block; margin: 0; }
   .side { grid-template-columns: minmax(0, 1fr); }
+  /* Journal lines become small cards: code and name, then debit, credit and delete. */
+  .journal thead { display: none; }
+  .journal, .journal tbody { display: block; }
+  .journal tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: var(--s2) var(--s3); padding: var(--s3) var(--s5); border-bottom: 1px solid var(--rule); }
+  .journal td, .journal td:first-child, .journal td:last-child { border: 0; padding: 0; }
+  .journal td[data-label]::before { content: attr(data-label); display: block; font-size: var(--fs-small); color: var(--muted); margin-bottom: 2px; }
+  .journal td:nth-child(2) { grid-column: 2 / -1; }
+  .journal td.col-del { grid-column: 3; grid-row: 2; align-self: end; width: auto; }
+  .journal .col-code, .journal .col-amount { width: auto; }
 }
 @media (max-width: 900px) { .setting-row { grid-template-columns: minmax(0, 1fr); gap: var(--s4); } .setting-label { position: static; } .canvas { padding: var(--s5) var(--s5) var(--s8); } }
 
@@ -217,12 +262,12 @@ details.side-block:not([open]) { gap: 0; }
     padding: var(--s1) var(--s2); padding-bottom: max(var(--s1), env(safe-area-inset-bottom));
     background: var(--surface); border-right: 0; border-top: 1px solid var(--border);
   }
-  .rail-mark, .rail .theme-switch { display: none; }
+  .rail-mark { display: none; }
   .rail-end { display: contents; }
-  .rail-end form { display: contents; }
-  .rail-item { width: auto; min-width: 64px; height: 52px; grid-template-rows: 18px auto; align-content: center; gap: 2px; }
-  .rail-label { position: static; transform: none; opacity: 1; padding: 0; background: none; color: inherit; font-size: var(--fs-small); }
-  .rail-item:active .rail-label { transform: none; }
+  .rail-item { width: auto; min-width: 64px; min-height: 52px; gap: 2px; padding: 0; }
+  .account-sheet { inset: auto 0 0 0; width: 100%; max-width: none; border-radius: var(--radius-card) var(--radius-card) 0 0; border-width: 1px 0 0; }
+  .account-body { padding-bottom: max(var(--s5), env(safe-area-inset-bottom)); }
+  .account-logout { min-height: var(--touch); }
   .rail .capture-rail { display: block; }
   .rail-capture { background: var(--primary); color: var(--on-primary); min-width: 88px; }
   .rail-capture:hover { background: var(--primary-hover) !important; color: var(--on-primary) !important; }
@@ -241,39 +286,44 @@ details.side-block:not([open]) { gap: 0; }
   .capture-head, .capture-head .capture-buttons, .capture-head .btn { width: 100%; }
   .capture-head .btn { min-height: var(--touch); }
 
-  .tabs { padding: 0 var(--s2); }
+  /* Four tabs fit in 343px: tighter padding, the count close to its label. */
+  .tabs { padding: 0 var(--s1); gap: 0; }
+  .tabs a { padding: 0 6px; gap: 4px; }
 
   .side { grid-template-columns: minmax(0, 1fr); }
   .photo img { max-height: 32vh; }
   .read { padding: var(--s4); }
   .panel-head { padding: var(--s4); }
   .inline-field, .inline-field .field { width: 100%; }
-  /* Journal lines become small cards: code, name, then debit, credit and delete. */
-  .journal thead { display: none; }
-  .journal, .journal tbody { display: block; }
-  .journal tr { display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
-  .journal td, .journal td:first-child, .journal td:last-child { border: 0; padding: 0; }
-  .journal td[data-label]::before, .rules-table td[data-label]::before { content: attr(data-label); display: block; font-size: var(--fs-small); color: var(--muted); margin-bottom: 2px; }
-  .journal td:nth-child(1) { grid-column: 1; }
+  /* On the phone the name takes its own line under the code. */
+  .journal tr { padding: var(--s3) var(--s4); }
   .journal td:nth-child(2) { grid-column: 1 / -1; }
-  .journal td.col-del { grid-column: 3; grid-row: 3; align-self: start; padding-top: 22px; width: auto; }
-  .journal .col-code, .journal .col-amount { width: auto; }
+  .journal td.col-del { grid-row: 3; }
   .journal-add { padding: var(--s3) var(--s4); }
+  .inline-field .field { min-height: var(--touch); font-size: 16px; }
   .balance-strip { grid-template-columns: 1fr 1fr; }
   .balance-strip > div { padding: var(--s3) var(--s4); }
   .balance-strip > div:nth-child(3) { border-left: 0; }
   .balance-strip > div:nth-child(n + 3) { border-top: 1px solid var(--rule); }
   .balance-answer dd { font-size: 24px; }
-  .action-bar { margin: 0 calc(-1 * var(--s4)); border-radius: 0; border-width: 1px 0 0; }
+  .action-bar { flex-wrap: wrap; margin: 0 calc(-1 * var(--s4)); border-radius: 0; border-width: 1px 0 0; }
+  .action-bar .balance { flex-basis: 100%; font-size: var(--fs-body); }
   .action-bar .btn-lg { padding: 0 var(--s4); }
+  .action-bar .bar-back { display: inline-flex; }
+  .action-bar > .btn-primary { flex: 1; }
 
   .setting-row { padding: var(--s5) 0; }
-  .rules-table thead { display: none; }
-  .rules-table, .rules-table tbody { display: block; }
-  .rules-table tr { display: grid; grid-template-columns: 7rem 1fr; gap: var(--s2); padding: var(--s3) 0; border-bottom: 1px solid var(--rule); }
-  .rules-table td { padding: 0; }
-  .rules-table .rule-label, .rules-table td[data-label="Hesap Adı"] { grid-column: 1 / -1; width: auto; }
+  /* One rule per row: its name, then code and account name side by side; the column names once at the top. */
+  .rules-table, .rules-table tbody, .rules-table thead { display: block; }
+  .rules-table tr { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: var(--s1) var(--s2); padding: var(--s2) 0; border-bottom: 1px solid var(--rule); }
+  .rules-table thead tr { padding-top: 0; }
+  .rules-table thead th:first-child { display: none; }
+  .rules-table tbody tr:last-child { border-bottom: 0; }
+  .rules-table td, .rules-table th { padding: 0; }
+  .rules-table .rule-label { grid-column: 1 / -1; width: auto; font-size: var(--fs-body); }
   .rules-table .col-code { width: auto; }
+  .rules-table .field { min-height: var(--touch); font-size: 16px; }
+  .setting-save:has(.btn-primary) { bottom: calc(68px + env(safe-area-inset-bottom)); }
   .setting-save .btn { width: 100%; }
 }
 
@@ -285,8 +335,9 @@ details.side-block:not([open]) { gap: 0; }
 .by-account { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
 .by-account li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s1) var(--s3); font-size: var(--fs-body); }
 .by-account .acc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.by-account .acc-bar { grid-column: 1 / -1; display: block; height: 2px; background: var(--faint); opacity: 0.45; transform-origin: left center; }
-.by-account li:first-child .acc-bar { background: var(--ink); opacity: 1; }
+.by-account .acc-track { grid-column: 1 / -1; display: block; height: 8px; border-radius: 999px; background: var(--active); overflow: hidden; }
+.by-account .acc-bar { display: block; height: 100%; background: var(--accent); transform-origin: left center; }
+.by-account-foot { display: flex; justify-content: space-between; gap: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--rule); font-size: var(--fs-body); }
 
 /* Locked (approved) lines read as plain text on the column edges, and what goes to Luca stays ledger blue. */
 .journal .field:disabled, .form-grid .field:disabled { padding-left: 0; padding-right: 0; }

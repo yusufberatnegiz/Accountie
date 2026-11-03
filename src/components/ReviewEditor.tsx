@@ -47,6 +47,23 @@ type Source = "base" | "vat" | "total";
 const sourceOf = (code: string, creditKurus: number): Source => (creditKurus > 0 ? "total" : code.startsWith("191") ? "vat" : "base");
 const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : null);
 
+/** The field that fixes an approval problem, and the words for the button that takes the user there. */
+export function problemTarget(problem: string): { id: string; action: string } {
+  const row = /^(\d+)\. satırda (hesap kodu)?/.exec(problem);
+  if (row) return row[2] ? { id: `satir-${row[1]}-kod`, action: `${row[1]}. satırın hesap kodunu girin` } : { id: `satir-${row[1]}-borc`, action: `${row[1]}. satırın tutarını düzeltin` };
+  if (problem.startsWith("Evrak tarihi") || problem.startsWith("Satırlarda evrak tarihi")) return { id: "evrak-tarihi", action: "Evrak tarihini girin" };
+  if (problem.startsWith("Evrak no")) return { id: "evrak-no", action: "Evrak numarasını girin" };
+  if (problem.startsWith("Satır yok")) return { id: "satir-ekle", action: "Satır ekleyin" };
+  return { id: "satir-1-borc", action: problem.startsWith("Borç ile alacak") ? "Tutarları düzeltin" : "Tutar biçimini düzeltin" };
+}
+
+/** Scrolls the field into view, clear of the sticky bar, and focuses it. */
+function goTo(id: string) {
+  const el = document.getElementById(id);
+  el?.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  el?.focus({ preventScroll: true });
+}
+
 export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: ReceiptDetail; rules: Rules; base?: string }) {
   const router = useRouter();
   const editable = receipt.status === "draft";
@@ -163,6 +180,13 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
     : gap ? `Fark ${formatTrAmount(gap)} TL: borç ile alacak tutmuyor.`
     : problem ?? `Borç ${formatTrAmount(debit)}, alacak ${formatTrAmount(credit)}. Onaya hazır.`;
   const findingOff = invalid || (editable && !!problem);
+  const target = editable && problem ? problemTarget(problem) : null;
+  // With an invalid amount the first flagged field is the one to fix, wherever it is.
+  const fix = () => {
+    const bad = invalid ? document.querySelector<HTMLInputElement>('.journal [aria-invalid="true"]') : null;
+    if (bad) { bad.scrollIntoView({ block: "center" }); bad.focus({ preventScroll: true }); }
+    else if (target) goTo(target.id);
+  };
   const traced = (s: Source) => (trace === s ? { "data-traced": "" } : {});
   const deleteQuestion = receipt.receiptNo ? `${receipt.receiptNo} numaralı fişi silmek istiyor musunuz?` : "Bu taslak fişi silmek istiyor musunuz?";
   const read = (v: string | null | undefined) => v ?? <span className="dash">Okunamadı</span>;
@@ -172,18 +196,23 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
       <div className="title-row">
         <div className="title-text">
           <p className="crumb"><Link href={base}>Fişler</Link><span aria-hidden="true"> / </span><span translate="no">Fiş {receipt.receiptNo ?? "numarasız"}</span></p>
-          <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
-          <p className={findingOff ? "finding finding-off" : "finding"}>{finding}</p>
+          <div className="title-line">
+            <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
+            <span className={`status status-${receipt.status}`}>{STATUS_LABELS[receipt.status]}</span>
+          </div>
+          <p className={findingOff ? "finding finding-off" : "finding"}>
+            {target ? <button className="link-button" type="button" onClick={fix}>{finding}</button> : finding}
+          </p>
         </div>
-        <span className={`status status-${receipt.status}`}>{STATUS_LABELS[receipt.status]}</span>
       </div>
 
       <div className="review">
         <aside className="source" aria-label="Fiş">
           {photo ? (
             <figure className="photo">
+              {/* A fixed 3:4 box (the photo is shrunk to a 1600px long edge) so the lines beside it never move when it decodes. */}
               {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
-              <img src={photo} alt="Fiş fotoğrafı" />
+              <img src={photo} alt="Fiş fotoğrafı" width={1200} height={1600} decoding="async" />
             </figure>
           ) : null}
           {/* The receipt as read; the journal line in focus lights the figure it came from. */}
@@ -240,11 +269,11 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
                   return (
                   <tr key={l.key} {...traced(src)} onMouseEnter={() => setTrace(src)} onMouseLeave={() => setTrace(null)} onFocus={() => setTrace(src)} onBlur={() => setTrace(null)}>
                     {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
-                    <td data-label="Hesap Kodu"><input autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
+                    <td data-label="Hesap Kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
                       autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder="770.08…" aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
                       {...flag(codeFlag)} onChange={(e) => { touch(`code-${l.key}`); setCode(l.key, e.target.value); }} />{checkNote(codeFlag)}</td>
                     <td data-label="Hesap Adı"><input autoComplete="off" className="field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable} onChange={(e) => update(l.key, { accountName: e.target.value })} /></td>
-                    <td data-label="Borç (TL)" className="col-amount"><input autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} borç${unsure(debitFlag)}`} value={l.debit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.debit))}
+                    <td data-label="Borç (TL)" className="col-amount"><input id={`satir-${i + 1}-borc`} autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} borç${unsure(debitFlag)}`} value={l.debit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.debit))}
                       {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} />{checkNote(debitFlag)}</td>
                     <td data-label="Alacak (TL)" className="col-amount"><input autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
                       {...flag(creditFlag)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} />{checkNote(creditFlag)}</td>
@@ -254,11 +283,11 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
                 })}
               </tbody>
             </table>
-            {editable ? <div className="journal-add"><button className="btn btn-sm" type="button" disabled={busy} onClick={addLine}>Satır ekle</button></div> : null}
+            {editable ? <div className="journal-add"><button id="satir-ekle" className="btn btn-sm" type="button" disabled={busy} onClick={addLine}>Satır ekle</button></div> : null}
             <dl className="balance-strip">
               <div><dt>Borç toplamı</dt><dd className="num to-luca">{formatTrAmount(debit)}</dd></div>
               <div><dt>Alacak toplamı</dt><dd className="num to-luca">{formatTrAmount(credit)}</dd></div>
-              <div><dt>KDV (191)</dt><dd className="num">{formatTrAmount(vat)}</dd></div>
+              <div><dt>KDV (191)</dt><dd className="num to-luca">{formatTrAmount(vat)}</dd></div>
               <div className="balance-answer"><dt>{gap ? "Fark" : "Fark yok, dengede"}</dt><dd className={gap ? "num balance-off" : "num balance-ok"}>{formatTrAmount(gap)}</dd></div>
             </dl>
           </section>
@@ -269,13 +298,13 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
             <div className="form-grid">
               <label>
                 <span>Evrak No {checkNote(headFlags.documentNo)}</span>
-                <input className="field tnum" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40} required autoComplete="off" spellCheck={false}
+                <input id="evrak-no" className="field tnum" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40} required autoComplete="off" spellCheck={false}
                   {...flag(headFlags.documentNo)}
                   onChange={(e) => updateAll("documentNo", e.target.value)} />
               </label>
               <label>
                 <span>Evrak Tarihi {checkNote(headFlags.documentDate)}</span>
-                <input className="field tnum" type="date" value={head?.documentDate ?? ""} disabled={!editable} required
+                <input id="evrak-tarihi" className="field tnum" type="date" value={head?.documentDate ?? ""} disabled={!editable} required
                   {...flag(headFlags.documentDate)}
                   onChange={(e) => updateAll("documentDate", e.target.value || null)} />
               </label>
@@ -317,11 +346,16 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
               {error ? error
                 : receipt.status === "approved" ? <><span className="phone-only">{"Onaylandı. Luca'ya aktarmak için Excel'i bilgisayarda indirin."}</span><span className="desktop-only">{"Onaylandı. Excel'i indirip Luca'nın Excel veri aktarımı ekranına yükleyin."}</span></>
                 : receipt.status === "exported" ? "Luca'ya aktarıldı."
-                : problem ?? (dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır.")}
+                : target ? <><span id="onay-engeli">{problem}</span> <button className="link-button" type="button" onClick={fix}>{target.action}</button></>
+                : dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır."}
             </p>
+            {/* The way back sits under the thumb on the phone, where this screen hides the bottom bar. */}
+            <Link className="btn btn-lg bar-back" href={base}>Fişler</Link>
             {editable ? (
-              <button className="btn btn-primary btn-lg" type="button" disabled={busy || !!problem}
-                onClick={() => run(async () => { if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) router.refresh(); })}>
+              // aria-disabled keeps the button in the Tab order; pressing it while blocked goes to the field that fixes it.
+              <button className="btn btn-primary btn-lg" type="button" disabled={busy} aria-disabled={target ? true : undefined}
+                aria-describedby={target ? "onay-engeli" : undefined}
+                onClick={() => (target ? fix() : run(async () => { if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) router.refresh(); }))}>
                 {busy ? "Kaydediliyor…" : "Onayla"}
               </button>
             ) : (

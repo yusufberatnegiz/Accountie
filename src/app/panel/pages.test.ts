@@ -10,7 +10,7 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn((to: string) => { throw new Error(`NEXT_REDIRECT ${to}`); }),
   notFound: vi.fn(() => { throw new Error("NEXT_NOT_FOUND"); }),
 }));
-vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
+vi.mock("@/lib/auth/session", () => ({ getSessionUser: vi.fn() }));
 vi.mock("@/db/queries", () => ({ listReceipts: vi.fn(), getReceipt: vi.fn(), getRules: vi.fn() }));
 vi.mock("@/components/AppShell", () => ({ AppShell: () => null }));
 vi.mock("@/components/ReceiptListView", () => ({ ReceiptListView: () => null, TABS: [{ slug: "" }] }));
@@ -19,7 +19,7 @@ vi.mock("@/components/RulesView", () => ({ RulesView: () => null }));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(session.getUserId).mockResolvedValue(null);
+  vi.mocked(session.getSessionUser).mockResolvedValue(null);
 });
 
 describe("panel pages without a session", () => {

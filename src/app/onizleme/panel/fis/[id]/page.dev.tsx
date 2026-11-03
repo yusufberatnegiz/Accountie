@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { ReceiptView } from "@/components/ReceiptView";
 import { DEFAULT_RULES } from "@/lib/default-rules";
-import { PREVIEW_RECEIPTS, previewThemeScript } from "@/lib/preview-fixtures";
+import { PREVIEW_RECEIPTS, previewThemeScript, PREVIEW_EMAIL } from "@/lib/preview-fixtures";
 
 export default async function PreviewReceipt({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tema?: string }> }) {
   const [{ id }, { tema }] = await Promise.all([params, searchParams]);
@@ -12,7 +12,7 @@ export default async function PreviewReceipt({ params, searchParams }: { params:
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: previewThemeScript(tema) }} />
-      <AppShell current="fis" base="/onizleme/panel">
+      <AppShell current="fis" base="/onizleme/panel" email={PREVIEW_EMAIL}>
         <ReceiptView receipt={receipt} rules={DEFAULT_RULES} base="/onizleme/panel" />
       </AppShell>
     </>
