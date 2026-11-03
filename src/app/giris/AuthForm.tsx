@@ -28,7 +28,8 @@ export const ERRORS: Record<string, string> = {
 const FIELD_OF: Record<string, AuthField> = { "bicim-ad": "name", "bicim-eposta": "email", "bicim-sifre": "password" };
 const CODE_OF = Object.fromEntries(Object.entries(FIELD_OF).map(([code, field]) => [field, code])) as Record<AuthField, string>;
 export const initialState = (code?: string): AuthState =>
-  code && ERRORS[code] ? { error: code, field: FIELD_OF[code] } : undefined;
+  // kimlik marks the password field, as the login action does.
+  code && ERRORS[code] ? { error: code, field: FIELD_OF[code] ?? (code === "kimlik" ? "password" : undefined) } : undefined;
 
 declare global { interface Window { turnstile?: { reset: () => void } } }
 
@@ -87,7 +88,7 @@ export function AuthForm({ isSignup, initialError, turnstileSiteKey, next }: { i
       <TurnstileWidget siteKey={turnstileSiteKey} />
       <SubmitButton label={isSignup ? "Hesap oluştur" : "Giriş yap"} pendingLabel={isSignup ? "Hesap oluşturuluyor…" : "Giriş yapılıyor…"} />
       {isSignup ? (
-        <p className="auth-consent">Hesap oluşturmadan önce <Link href="/gizlilik">gizlilik sayfasını</Link> okuyun: fiş fotoğrafı okunmak için Anthropic’e (ABD) gönderilir ve saklanmaz.</p>
+        <p className="auth-consent">Hesap oluşturmadan önce <Link href="/gizlilik">gizlilik sayfasını</Link> okuyun: fiş fotoğrafı okunmak için Anthropic’e (ABD) gönderilir; Accountie fotoğrafı sunucuda ve veritabanında saklamaz.</p>
       ) : null}
     </form>
   );

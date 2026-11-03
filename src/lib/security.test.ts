@@ -127,6 +127,11 @@ describe("giriş sonrası dönüş", () => {
     expect(await go("/panel/fis/abc-1")).toBe("REDIRECT /panel/fis/abc-1");
     for (const bad of ["//evil.example", "https://evil.example/panel", "/panel/../giris", "/"]) expect(await go(bad), bad).toBe("REDIRECT /panel");
   });
+  it("e-posta doğrulaması açıkken kayıt, doğrulanmış panel yolunu girişe taşır", async () => {
+    const signup = (sonra: string) => redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", sonra })));
+    expect(await signup("/panel/fis/abc-1")).toBe("REDIRECT /giris?mesaj=kayit-tamam&sonra=/panel/fis/abc-1");
+    expect(await signup("//evil.example")).toBe("REDIRECT /giris?mesaj=kayit-tamam");
+  });
 });
 
 describe("şifre yenileme", () => {

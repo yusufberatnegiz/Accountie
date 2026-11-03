@@ -52,7 +52,7 @@ export function CookieNote() {
         <p className="hint" id="cookie-session-hint">Giriş yaptıktan sonra panelin sizi tanıması için gerekir, kapatılamaz. Başka çerez yok.</p>
         <p className="hint">Tema seçimi çerez değildir; bu tarayıcının belleğinde durur ve sunucuya gitmez.</p>
         <div className="cookie-actions">
-          <button type="button" className="btn btn-primary" onClick={done}>Kaydet ve kapat</button>
+          <button type="button" className="btn btn-primary" onClick={done}>Kapat</button>
         </div>
       </dialog>
     </section>

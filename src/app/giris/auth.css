@@ -12,7 +12,7 @@
 .auth-form { align-self: start; justify-self: start; width: 100%; max-width: 420px; display: grid; gap: var(--s5); }
 .auth-head { display: grid; gap: var(--s2); }
 .auth-head p { margin: 0; font-size: var(--fs-section); color: var(--muted); max-width: 36ch; }
-.auth-head h1 { font-family: var(--font-head); font-weight: 300; font-size: clamp(1.5rem, 1rem + 1vw, 2rem); letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
+.auth-head h1 { font-family: var(--font-head); font-weight: 300; font-size: clamp(1.75rem, 1rem + 2vw, 2.25rem); letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
 .auth-fields { display: grid; gap: var(--s4); }
 .auth-field { display: grid; gap: var(--s2); }
 .auth-field > label { font-size: var(--fs-body); font-weight: var(--w-medium); }
@@ -40,7 +40,7 @@
 .auth-stage { grid-column: 2; grid-row: 1 / span 2; background: var(--split); display: grid; align-content: start; justify-content: center; justify-items: start; gap: var(--s5); padding: var(--auth-top) var(--page-margin) var(--s8); position: sticky; top: 0; height: 100dvh; box-sizing: border-box; }
 .auth-piece { display: grid; grid-template-columns: 280px minmax(0, 380px); gap: var(--s5); align-items: start; }
 .auth-strip { overflow: clip; padding-bottom: var(--s2); }
-.auth-sheet { background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s5); display: grid; gap: var(--s4); }
+.auth-sheet { background: var(--lift); border: 1px solid var(--lift-edge); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s5); display: grid; gap: var(--s4); }
 .auth-sheet p { margin: 0; }
 .auth-sheet-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--s1) var(--s3); font-weight: var(--w-strong); font-size: var(--fs-section); }
 .auth-sheet-head .auth-sheet-meta { grid-column: 1; }
@@ -88,6 +88,11 @@
   /* The file row only fills the desktop stage; here it would make the sheet taller than the strip beside it. */
   .auth-file { display: none; }
   .auth-stage { grid-column: 1; grid-row: auto; position: static; height: auto; justify-items: center; padding: var(--s8) var(--page-margin) max(var(--s8), env(safe-area-inset-bottom)); }
+}
+/* While the cookie strip is up, the form can scroll clear of it and focus never lands under it (WIG: no overlay over the primary control). */
+@media (max-width: 900px) {
+  html:has(.cookie-note:not([data-away])) { scroll-padding-bottom: 96px; }
+  .auth:has(.cookie-note:not([data-away])) .auth-main { padding-bottom: calc(var(--s8) + 72px); }
 }
 @media (max-width: 640px) {
   .auth-main { padding: calc(56px + var(--s7)) var(--page-margin) var(--s7); }

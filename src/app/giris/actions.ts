@@ -48,7 +48,9 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   if (error) return { error: "kayit", field: "email", ...typed };
   // A session exists right away unless e-mail verification is on; then the user verifies the address and signs in.
   if (data?.token) redirect(safeNextPath(formData.get("sonra")) ?? AFTER_LOGIN);
-  back({ mesaj: "kayit-tamam" });
+  // The deep link survives the verification detour: /giris carries it to the login form.
+  const next = safeNextPath(formData.get("sonra"));
+  back({ mesaj: "kayit-tamam", ...(next ? { sonra: next } : {}) });
 }
 
 /** What the password-reset forms hand back: an error code (and its field), or that the e-mail step is done. */
