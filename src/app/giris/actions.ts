@@ -16,13 +16,15 @@ const signupSchema = loginSchema.extend({ name: z.string().trim().min(2).max(100
 
 export type AuthField = "name" | "email" | "password";
 /** What a failed attempt hands back to the form: a fixed error code, the field it belongs to, and what was typed (never the password). */
-export type AuthState = { error: string; field?: AuthField; email?: string; name?: string } | undefined;
+export type AuthState = { error: string; field?: AuthField; fields?: AuthField[]; email?: string; name?: string } | undefined;
 
 const FIELD_ERRORS: Record<AuthField, string> = { name: "bicim-ad", email: "bicim-eposta", password: "bicim-sifre" };
 
 function invalid(issues: readonly { path: readonly PropertyKey[] }[], typed: { email?: unknown; name?: unknown }): AuthState {
-  const field = (["name", "email", "password"] as const).find((f) => issues.some((i) => i.path[0] === f)) ?? "email";
-  return { error: FIELD_ERRORS[field], field, ...typedBack(typed) };
+  // Every invalid field comes back at once (each shows its message); `field`, the first in form order, gets focus.
+  const fields = (["name", "email", "password"] as const).filter((f) => issues.some((i) => i.path[0] === f));
+  const field = fields[0] ?? "email";
+  return { error: FIELD_ERRORS[field], field, fields: fields.length ? fields : [field], ...typedBack(typed) };
 }
 const typedBack = ({ email, name }: { email?: unknown; name?: unknown }) => ({
   email: typeof email === "string" ? email.slice(0, 200) : undefined,

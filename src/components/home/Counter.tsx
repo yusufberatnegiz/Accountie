@@ -13,7 +13,7 @@ const PRINTED: Record<Payment["id"], string> = { partner: "KREDİ KARTI", compan
  * buildJournalLines with the default chart of accounts, and "Satırları kopyala" writes them in Luca Fiş Detayı order.
  * First paint only: the strip prints, the lines arrive one by one and "Dengede" lights last. After a choice (YON.md 15) only the
  * lines that changed swap in (keyed by account and amount), the strip and the totals cross-fade to their new values, never counting.
- * Pointing at a line marks the strip rows it came from. Server-rendered with sample A, so without script the table is there.
+ * Pointing at a line marks the strip rows it came from (a pointer extra only: the rows are not focus stops). Server-rendered with sample A, so without script the table is there.
  */
 export function Counter() {
   const [sampleId, setSampleId] = useState(SAMPLES[0].id);
@@ -69,12 +69,12 @@ export function Counter() {
 
         <div className="counter-sheet">
           <table className="counter-lines" onMouseLeave={() => setHot(null)}>
-            <caption className="visually-hidden">Luca Fiş Detayı satırları. Bir satıra gelince fişte geldiği yer işaretlenir.</caption>
+            <caption className="visually-hidden">Luca Fiş Detayı satırları</caption>
             <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
             <tbody>
               {lines.map((l, i) => (
-                <tr key={`${l.accountCode}-${l.debitKurus}-${l.creditKurus}`} className="counter-row" style={{ "--i": i } as CSSProperties} tabIndex={0}
-                  onMouseEnter={() => setHot(sources[i])} onFocus={() => setHot(sources[i])} onBlur={() => setHot(null)}>
+                <tr key={`${l.accountCode}-${l.debitKurus}-${l.creditKurus}`} className="counter-row" style={{ "--i": i } as CSSProperties}
+                  onMouseEnter={() => setHot(sources[i])}>
                   <td><span className="code" translate="no">{l.accountCode}</span><span className="code-name">{shownAccountName(l.accountName)}</span></td>
                   <td className="num to-luca">{l.debitKurus ? formatTrAmount(l.debitKurus) : ""}</td>
                   <td className="num to-luca">{l.creditKurus ? formatTrAmount(l.creditKurus) : ""}</td>

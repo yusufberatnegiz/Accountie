@@ -22,7 +22,8 @@ export function Faq({ items, titleId }: { items: Qa[]; titleId: string }) {
           <li key={it.q} data-open={i === shown || undefined} data-reveal style={{ "--r": i + 1 } as CSSProperties}>
             <button type="button" className="faq-q" aria-expanded={i === open} aria-controls={`${id}-a${i}`}
               onClick={() => { setOpen(i); setPeek(null); }} onMouseEnter={() => setPeek(i)} onFocus={() => { setOpen(i); setPeek(null); }}>
-              {it.q}
+              <span>{it.q}</span>
+              <svg className="faq-chev" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 6l4 4 4-4" /></svg>
             </button>
             <p className="faq-a-inline" id={`${id}-a${i}`} hidden={i !== open}>{it.a}</p>
           </li>

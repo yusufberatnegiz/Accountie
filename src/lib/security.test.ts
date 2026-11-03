@@ -115,6 +115,8 @@ describe("giriş ve kayıt formu", () => {
     expect(await actions.login(undefined, form({ email: "yok", password: "12345678" }))).toMatchObject({ error: "bicim-eposta", field: "email" });
     expect(await actions.signup(undefined, form({ name: "A", email: "a@ornek.com", password: "12345678" }))).toMatchObject({ error: "bicim-ad", field: "name" });
     expect(await actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "kisa" }))).toMatchObject({ error: "bicim-sifre", field: "password" });
+    // Every invalid field comes back at once; focus goes to the first.
+    expect(await actions.signup(undefined, form({ name: "", email: "abc", password: "" }))).toMatchObject({ field: "name", fields: ["name", "email", "password"] });
     expect(getAuth().signUp.email).not.toHaveBeenCalled();
   });
 });

@@ -25,6 +25,7 @@ export const ERRORS: Record<string, string> = {
 
 // An old ?hata= link that names a field marks that field, as a failed attempt does.
 const FIELD_OF: Record<string, AuthField> = { "bicim-ad": "name", "bicim-eposta": "email", "bicim-sifre": "password" };
+const CODE_OF = Object.fromEntries(Object.entries(FIELD_OF).map(([code, field]) => [field, code])) as Record<AuthField, string>;
 export const initialState = (code?: string): AuthState =>
   code && ERRORS[code] ? { error: code, field: FIELD_OF[code] } : undefined;
 
@@ -50,20 +51,21 @@ export function AuthForm({ isSignup, initialError, turnstileSiteKey, next }: { i
   const [state, action] = useActionState<AuthState, FormData>(isSignup ? signup : login, initialState(initialError));
   const alertRef = useAfterAttempt(state);
   const text = state ? ERRORS[state.error] : undefined;
-  const at = (f: AuthField) => (state?.field === f ? text : undefined);
+  // Every invalid field shows its own message; focus still goes to the first one.
+  const at = (f: AuthField) => (state?.fields?.includes(f) ? ERRORS[CODE_OF[f]] : state?.field === f ? text : undefined);
 
   return (
     <form action={action} className="auth-fields" noValidate>
       {text && !state?.field ? <p className="alert alert-error" role="alert" tabIndex={-1} ref={alertRef}>{text}</p> : null}
       {next ? <input type="hidden" name="sonra" value={next} /> : null}
       {isSignup ? <NameField error={at("name")} defaultValue={state?.name} /> : null}
-      <EmailField prefill={isSignup} error={at("email")} defaultValue={state?.email} />
+      <EmailField error={at("email")} defaultValue={state?.email} />
       <PasswordField label="Şifre" name="password" autoComplete={isSignup ? "new-password" : "current-password"} hint={isSignup ? "En az 8 karakter" : undefined} error={at("password")}
         aside={isSignup ? undefined : <Link href="/giris/sifre">Şifremi unuttum</Link>} />
       <TurnstileWidget siteKey={turnstileSiteKey} />
       <SubmitButton label={isSignup ? "Hesap oluştur" : "Giriş yap"} pendingLabel={isSignup ? "Hesap oluşturuluyor…" : "Giriş yapılıyor…"} />
       {isSignup ? (
-        <p className="auth-consent">Hesap oluşturarak <Link href="/gizlilik">gizlilik ve aydınlatma metnini</Link> okuduğunuzu onaylarsınız. Fiş fotoğrafı okunmak için Anthropic’e (ABD) gönderilir ve saklanmaz.</p>
+        <p className="auth-consent">Hesap oluşturmadan önce <Link href="/gizlilik">gizlilik sayfasını</Link> okuyun: fiş fotoğrafı okunmak için Anthropic’e (ABD) gönderilir ve saklanmaz.</p>
       ) : null}
     </form>
   );
