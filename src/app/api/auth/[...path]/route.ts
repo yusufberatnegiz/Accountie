@@ -8,7 +8,8 @@ type Handler = ReturnType<ReturnType<typeof getAuth>["handler"]>;
 // Sign-in/up go through the /giris server actions (Turnstile + per-e-mail limit); the raw endpoints would bypass both.
 // No boundaries on purpose: over-matching only blocks or limits, under-matching is a bypass.
 const CLOSED = /sign-?(in|up)/;
-const LIMITED = /sign-?(in|up)|forget-password|password-reset|reset-password|change-password/;
+// verification: each call sends an e-mail, so unlimited calls would flood unverified addresses.
+const LIMITED = /sign-?(in|up)|forget-password|password-reset|reset-password|change-password|send-verification|verify-email/;
 
 /**
  * The path as the upstream will see it. Next decodes the catch-all params and the proxy re-joins them into a URL that the
