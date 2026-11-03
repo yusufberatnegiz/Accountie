@@ -1,4 +1,4 @@
-// Sample receipts for the homepage counter (docs/design/YON.md 3.3). A and B mirror preview-fixtures; C is sample data.
+// Sample receipts for the homepage counter (docs/design/YON.md 3.3). Amounts of A and B mirror preview-fixtures; every vendor name is invented.
 // No tax number, no card digits, no photo: only what a thermal print shows and the journal needs.
 import { DEFAULT_RULES, type PaymentMethod } from "@/lib/default-rules";
 import { buildJournalLines, type ReceiptData } from "@/lib/journal";
@@ -7,9 +7,9 @@ export type Sample = { id: string; label: string; receipt: ReceiptData };
 
 export const SAMPLES: readonly Sample[] = [
   {
-    id: "alabalik", label: "Alabalık, %10",
+    id: "alabalik", label: "Lokanta, %10",
     receipt: {
-      vendorName: "ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
+      vendorName: "ÖRNEK BALIK LOKANTASI", receiptNo: "0047", date: "2026-09-05",
       vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
     },
   },
@@ -34,3 +34,9 @@ export const SAMPLES: readonly Sample[] = [
 export function journalFor(sample: Sample, payment: PaymentMethod) {
   return buildJournalLines({ ...sample.receipt, paymentMethod: payment }, DEFAULT_RULES);
 }
+
+/**
+ * The default chart keeps Luca's own account names ("% 10 Lı İndirilecek Kdv"); the public page shows them in written Turkish.
+ */
+export const shownAccountName = (name: string) =>
+  name.replace(/^% ?(\d+) L[ıiu] İndirilecek Kdv$/, "%$1 İndirilecek KDV").replace(/ Ve /g, " ve ");

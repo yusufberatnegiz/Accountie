@@ -93,12 +93,12 @@
     --accent-field: #23406a; --on-accent-field: #eef1f4;
     --primary: #eef1f4; --primary-hover: #d5dbe2; --on-primary: #0e1114;
     --secondary: #232931; --secondary-hover: #2d343e;
-    --deep: #0a0d10;
+    --deep: #15253a;
     --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
     --warn-ink: #e8c477; --warn-bg: #2a2412;
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-    --field-1: #161a1f; --field-2: #1d232b; --field-3: #252d38;
+    --field-1: #1b2129; --field-2: #262e38; --field-3: #333d4a;
     color-scheme: dark;
   }
 }
@@ -110,12 +110,12 @@
   --accent-field: #23406a; --on-accent-field: #eef1f4;
   --primary: #eef1f4; --primary-hover: #d5dbe2; --on-primary: #0e1114;
   --secondary: #232931; --secondary-hover: #2d343e;
-  --deep: #0a0d10;
+  --deep: #15253a;
   --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
   --warn-ink: #e8c477; --warn-bg: #2a2412;
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-  --field-1: #161a1f; --field-2: #1d232b; --field-3: #252d38;
+  --field-1: #1b2129; --field-2: #262e38; --field-3: #333d4a;
   color-scheme: dark;
 }
 
@@ -252,6 +252,11 @@ label .field { font-weight: 400; }
 .theme-switch label:has(input:checked) { background: var(--surface); color: var(--ink); }
 .theme-switch label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 1px; }
 @media (pointer: coarse) { .theme-switch label { width: var(--touch); height: var(--touch); } }
+/* One-button theme control for narrow bars (ThemeCycle). */
+.theme-cycle { display: inline-grid; place-items: center; width: var(--touch); height: var(--touch); border: 0; border-radius: var(--radius-control); background: var(--active); color: var(--ink); cursor: pointer; transition: background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
+.theme-cycle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.theme-cycle:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) { .theme-cycle:hover { background: var(--secondary-hover); } }
 
 /* ---------- Plain pages (error, not found). The panel shell lives in src/components/panel/panel.css. ---------- */
 .page { max-width: 1200px; margin: 0 auto; padding: var(--s6) var(--s5) var(--s8); display: grid; gap: var(--s5); }

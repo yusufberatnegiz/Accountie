@@ -507,3 +507,23 @@ node "<skill>/scripts/draw.mjs" --app --kind finance --brief "Accountie: muhaseb
 ```
 
 Seed'ler: sayfa 975044981, panel 1951193909. Kâğıt ile bu belge çelişirse bu belge geçerlidir (çelişkiler burada bilerek çözüldü: CTA boyutu, showcase başlığı, giriş animasyonları, segmented kontrolün düşürülmesi).
+
+## 13. Tur 2 kararları (jüri tur 1 bulgularına göre; bölüm 3, 4 ve 6'daki eski satırların üstündedir)
+
+Skill'ler yeniden çağrıldı: `taste-skill:design-taste-frontend` (SKILL.md "The run", critique.md, motion.md) ve `web-design-guidelines` (command.md yeniden çekildi).
+
+**Ana sayfa**
+- Hero h1 display boyutunda: Stack Sans Headline 300, `clamp(2.375rem, 1rem + 5.2vw, 5.5rem)` (telefonda 38px, 1440'ta 88px), iki satır, satırlar `display: block`; maskelenmiş başlık imzası bu büyük h1'de. Sol yarıda dikey ortalı; üst çubuk (marka, tema, 44px "Giriş yap" ikincil düğmesi) iki tonun üstünde tek satır. 480px altında tema seçici tek düğmeye (`ThemeCycle`) iner.
+- Bütün bölüm h2'leri `.t-head` (`--step-head`, Headline 300); SSS başlığı dahil.
+- how-it-works: dört alan subgrid ile aynı satırlarda (başlık, kart, cümle); `min-height` yok, yükseklik içerikten. İlk kart gri iskelet yerine fişin termal baskısını gösterir.
+- Liman fotoğrafı ve dinlenme bölümü kaldırıldı. Yerine "Defterin kuralı aynı" galeri bölümü: 1869-1870 hesap defteri (büyük), toplama makinesi klibi (durdur/oynat düğmeli, MP4 + WebM), mekanik yazar kasa. Sayfada 4 gerçek resim ve klip.
+- Showcase karuseli kaldırıldı: altı parça 12 kolonluk ızgarada aynı anda (7+5, 5+7, 6+6), her biri adı ve cümlesiyle. Parçalar sayfa temasını izler (zorla açık tema yok).
+- Liste: sayfa kenarından başlar (1-6), 1833 sayfası 8-12'de büyük; noktalar tek mürekkep, ilk satıra hizalı; grup adları h3; "İlk aktarımı tek fişle deneyin" cümlesi.
+- CTA penceresi başlıkla alt hizada, gölgesiz (ton farkı). Footer: açıklama, bağlantılar, açık kredi listesi ve tam genişlikte "Accountie".
+- Hareket: her bölümde başlık, metin, parça `--r` adımıyla 80 ms arayla; resimler deklanşör (clip-path) ile açılır; telefonda yalnız yükselme (solma yok).
+- Örnek fiş satıcısı uydurma ad ("ÖRNEK BALIK LOKANTASI"); Luca hesap adları sayfada `shownAccountName` ile yazım kuralına göre gösterilir, veri değişmez.
+- Chrome eklentisi parçası "deneysel" adını taşır ve gerçek "Alan bulunamadı" uyarısını gösterir. SSS: fotoğrafın Anthropic'e (ABD) gittiği yazılır; "Ücretli mi?" sorusu eklendi.
+
+**Koyu tema tokenları (değişen)**: `--deep` `#15253a` (showcase alanı, zeminden belirgin ayrı), how-it-works alanları `#1b2129`, `#262e38`, `#333d4a` (yaklaşık 7-8 L* adım).
+
+**Giriş ve kayıt**: form ve marka aynı sol kenarda; h1 Headline 300, en çok 32px (app-screens başlık sınırı). Hatalar `useActionState` ile alanın altında (`aria-invalid`, `aria-describedby`), odak ilk hatalı alana; yazılan e-posta ve ad korunur. "Şifre tekrar" kaldırıldı (göster/gizle var). Birincil düğme defter mavisi, ana sayfadaki "Hesap oluştur" ile aynı. Önizlemeler `?tema=acik|koyu` alır.

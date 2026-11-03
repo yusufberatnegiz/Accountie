@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { journalFor, SAMPLES } from "./samples";
+import { journalFor, SAMPLES, shownAccountName } from "./samples";
 
 const rows = (id: string, payment: "card" | "cash") =>
   journalFor(SAMPLES.find((s) => s.id === id)!, payment).lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus]);
@@ -26,5 +26,12 @@ describe("ana sayfa fiş tezgâhı örnekleri", () => {
       expect(r.balanced).toBe(true);
       expect(r.warnings.map((w) => w.code).filter((c) => c !== "meal")).toEqual([]);
     }
+  });
+
+  it("Luca hesap adları sayfada yazım kuralıyla görünür", () => {
+    expect(shownAccountName("% 10 Lı İndirilecek Kdv")).toBe("%10 İndirilecek KDV");
+    expect(shownAccountName("% 1 Li İndirilecek Kdv")).toBe("%1 İndirilecek KDV");
+    expect(shownAccountName("Yeme-İçme Ve Ağırlama Giderleri")).toBe("Yeme-İçme ve Ağırlama Giderleri");
+    expect(shownAccountName("Kasa")).toBe("Kasa");
   });
 });
