@@ -118,10 +118,12 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
       <section className="setting-row" aria-labelledby="grp-eklenti">
         <div className="setting-label">
           <h2 id="grp-eklenti">Chrome eklentisi (deneysel)</h2>
-          <p className="muted small">Eklenti onaylı fişin satırlarını Luca&apos;da açık Fiş Detayı ekranına yazar; Kaydet&apos;e siz basarsınız. Anahtar 12 saat geçerlidir ve yalnızca sizin onaylı fişlerinizi okur.</p>
-          <p className="muted small">Luca&apos;da henüz denenmedi; alanları bulamayabilir. Excel ile aktarım birincil yoldur.</p>
+          <p className="muted small desktop-only">Eklenti onaylı fişin satırlarını Luca&apos;da açık Fiş Detayı ekranına yazar; Kaydet&apos;e siz basarsınız. Anahtar 12 saat geçerlidir ve yalnızca sizin onaylı fişlerinizi okur.</p>
+          <p className="muted small desktop-only">Luca&apos;da henüz denenmedi; alanları bulamayabilir. Excel ile aktarım birincil yoldur.</p>
+          {/* Luca and Chrome extensions live on the computer; the key is made there. */}
+          <p className="muted small phone-only">Eklenti bilgisayardaki Chrome içindir. Anahtarı bilgisayarda bu sayfadan oluşturun.</p>
         </div>
-        <div className="setting-panel"><ExtensionTokenPanel /></div>
+        <div className="setting-panel desktop-only"><ExtensionTokenPanel /></div>
       </section>
 
       <section className="setting-row" aria-labelledby="grp-gorunum">

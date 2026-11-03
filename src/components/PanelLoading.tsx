@@ -1,26 +1,27 @@
+import { TABS } from "@/components/ReceiptListView";
+
 /**
- * Loading state of a panel screen: the list's final layout (title-row buttons, tabs, the real six-column table with ten rows)
- * with flat bars at the size of the values they stand for. No shimmer, no layout shift when data lands.
+ * Loading state of the list: the real title, buttons, tabs and table header, three rows at the size of the values
+ * they stand for and one line saying what is happening. No shimmer, no layout shift when data lands.
  */
 export function PanelLoading() {
-  const rows = [62, 48, 70, 40, 56, 66, 44, 52, 60, 46];
+  const rows = [62, 48, 70];
   return (
     <main id="icerik" tabIndex={-1} className="canvas canvas-list" aria-busy="true">
       <div className="title-row">
         <div className="title-text">
-          <p className="crumb" translate="no">Accountie</p>
-          <h1 role="status">Yükleniyor…</h1>
-          <p className="finding" aria-hidden="true"><span className="sk sk-finding" /></p>
+          <h1>Fişler</h1>
+          <p className="finding" role="status">Fişler yükleniyor…</p>
         </div>
         <div className="capture capture-head desktop-only" aria-hidden="true">
-          <div className="capture-buttons"><span className="sk sk-button sk-capture" /><span className="sk sk-button sk-capture" /></div>
+          <div className="capture-buttons"><span className="btn btn-primary capture-camera" aria-disabled="true">Fiş çek</span><span className="btn capture-gallery" aria-disabled="true">Galeriden seç</span></div>
         </div>
       </div>
       <section className="panel list-panel" aria-hidden="true">
-        <div className="tabs"><span className="sk sk-tab" /><span className="sk sk-tab" /><span className="sk sk-tab" /><span className="sk sk-tab" /></div>
+        <div className="tabs">{TABS.map((t) => <span key={t.slug} className="tab-static">{t.label}</span>)}</div>
         <table className="receipts">
           <thead>
-            <tr><th className="col-vendor">Satıcı</th><th className="num">Evrak No</th><th className="num">Tarih</th><th className="num">Gider hesabı</th><th className="num">Toplam</th><th className="col-status">Durum</th></tr>
+            <tr><th className="col-vendor">Satıcı</th><th className="num col-no">Evrak No</th><th className="num col-date">Tarih</th><th className="num col-code">Gider hesabı</th><th className="num col-total">Toplam</th><th className="col-status">Durum</th></tr>
           </thead>
           <tbody>
             {rows.map((w, i) => (
@@ -37,16 +38,7 @@ export function PanelLoading() {
         </table>
       </section>
       <aside className="side desktop-only" aria-hidden="true">
-        <div className="panel side-block">
-          <p className="sk-label">Luca dosyası</p>
-          <span className="sk sk-line" /><span className="sk sk-bar" />
-          <span className="sk sk-line" /><span className="sk sk-bar" />
-          <span className="sk sk-button" />
-        </div>
-        <div className="panel side-block">
-          <p className="sk-label">Gider hesaplarına göre</p>
-          {[90, 70, 55, 40, 30].map((w) => <span key={w} className="sk sk-acc" style={{ width: `${w}%` }} />)}
-        </div>
+        <div className="panel side-block"><p className="sk-label">Luca dosyası</p><p className="muted small">Onaylı fişler sayılıyor…</p></div>
       </aside>
     </main>
   );

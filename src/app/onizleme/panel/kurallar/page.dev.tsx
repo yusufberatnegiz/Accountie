@@ -1,13 +1,14 @@
 // Dev-only fixture preview of the account rules screen. ?tema=acik|koyu forces a theme.
+import { PreviewTheme } from "../PreviewTheme";
 import { AppShell } from "@/components/AppShell";
 import { RulesView } from "@/components/RulesView";
-import { PREVIEW_RULE_ROWS, previewThemeScript, PREVIEW_EMAIL } from "@/lib/preview-fixtures";
+import { PREVIEW_RULE_ROWS, PREVIEW_EMAIL } from "@/lib/preview-fixtures";
 
 export default async function PreviewRules({ searchParams }: { searchParams: Promise<{ tema?: string }> }) {
   const { tema } = await searchParams;
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: previewThemeScript(tema) }} />
+      <PreviewTheme tema={tema} />
       <AppShell current="kurallar" base="/onizleme/panel" email={PREVIEW_EMAIL}>
         <RulesView rows={PREVIEW_RULE_ROWS} />
       </AppShell>

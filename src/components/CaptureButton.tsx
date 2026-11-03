@@ -29,7 +29,7 @@ async function shrink(file: File): Promise<Blob> {
 type Picker = "camera" | "gallery";
 
 /** `head`: the screen's title-row buttons. `rail`: the camera button in the phone's bottom bar (hidden on desktop). */
-export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head" }: { pickers?: Picker[]; variant?: "head" | "rail" }) {
+export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head", primary = true }: { pickers?: Picker[]; variant?: "head" | "rail" | "bar"; primary?: boolean }) {
   const router = useRouter();
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -102,7 +102,7 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
     />
   );
   const picker = (kind: Picker) => kind === "camera"
-    ? <label key={kind} className="btn btn-primary capture-camera" aria-disabled={busy}>Fiş çek{input(true)}</label>
+    ? <label key={kind} className={primary ? "btn btn-primary capture-camera" : "btn capture-camera"} aria-disabled={busy}>Fiş çek{input(true)}</label>
     : <label key={kind} className="btn capture-gallery" aria-disabled={busy}>Galeriden seç{input(false)}</label>;
 
   return (
