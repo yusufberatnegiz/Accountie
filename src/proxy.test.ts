@@ -10,13 +10,20 @@ const guarded = (url: string) => unstable_doesMiddlewareMatch({ config, url });
 
 describe("proxy matcher", () => {
   it("sends the panel through the session check", () => {
-    for (const url of ["/panel", "/panel/fis/abc", "/panel/kurallar", "/fis/abc", "/kurallar", "/girisx", "/kayit-x", "/kayitlar", "/onizlemex", "/iconlar", "/icon-ayar", "/apple-touch-iconx", "/robots.txtx", "/sw.jsx", "/cevrimdisi", "/gizlilikx"]) {
+    for (const url of ["/panel", "/panel/", "/panel/fis/abc", "/panel/kurallar"]) {
       expect(guarded(url), url).toBe(true);
     }
   });
 
   it("leaves the public pages and assets open", () => {
-    for (const url of ["/", "/giris", "/giris/sifre", "/giris/sifre/yeni", "/kayit", "/gizlilik", "/gorseller/antalya-liman.jpg", "/manifest.webmanifest", "/robots.txt", "/sw.js", "/cevrimdisi.html", "/icon.svg", "/icon-192.png", "/icon-maskable-512.png", "/apple-touch-icon.png", "/favicon.ico", "/_next/static/x.js"]) {
+    for (const url of ["/", "/giris", "/giris/sifre", "/giris/sifre/yeni", "/kayit", "/gizlilik", "/gorseller/antalya-liman.jpg", "/manifest.webmanifest", "/robots.txt", "/sw.js", "/cevrimdisi.html", "/icon.svg", "/icon-192.png", "/icon-maskable-512.png", "/apple-touch-icon.png", "/favicon.ico", "/_next/static/x.js", "/onizleme/panel", "/auth/callback"]) {
+      expect(guarded(url), url).toBe(false);
+    }
+  });
+
+  // An unknown public address must reach not-found, not bounce to /giris; /fis/:id and /kurallar 308 to /panel first (next.config.ts).
+  it("leaves unknown public addresses to the 404 page", () => {
+    for (const url of ["/yok-boyle", "/panelx", "/panel-x", "/fis/abc", "/kurallar", "/girisx"]) {
       expect(guarded(url), url).toBe(false);
     }
   });
