@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuth } from "@/lib/auth/server";
 import { allow, clientIp } from "@/lib/rate-limit";
-import { verifyTurnstile } from "@/lib/turnstile";
+import { turnstileEnabled, verifyTurnstile } from "@/lib/turnstile";
 
 const BOT_FIELD = "cf-turnstile-response";
 
@@ -22,7 +22,9 @@ export async function login(formData: FormData) {
   const ip = clientIp(await headers());
   // Turnstile first: otherwise anyone could fill a victim's per-e-mail limit without solving a challenge and lock them out.
   if (!(await verifyTurnstile(formData.get(BOT_FIELD), ip))) back({ hata: "bot" });
-  if (!(await allow("loginIp", ip)) || !(await allow("loginEmail", input.data!.email))) back({ hata: "cok-deneme" });
+  if (!(await allow("loginIp", ip))) back({ hata: "cok-deneme" });
+  // Per-e-mail limit only behind a real challenge; without one it would let anyone lock a victim out (IP limit still applies).
+  if (turnstileEnabled() && !(await allow("loginEmail", input.data!.email))) back({ hata: "cok-deneme" });
   const { error } = await getAuth().signIn.email(input.data!);
   if (error) back({ hata: "kimlik" });
   redirect("/");

@@ -3,6 +3,9 @@ const VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 /** Public site key for the widget; read on the server so it needs no NEXT_PUBLIC_ build-time value. */
 export const turnstileSiteKey = () => process.env.TURNSTILE_SITE_KEY || undefined;
 
+/** Whether the server can actually verify challenges (secret key present). */
+export const turnstileEnabled = () => Boolean(process.env.TURNSTILE_SECRET_KEY);
+
 /**
  * Server-side Cloudflare Turnstile check for public forms.
  * Without TURNSTILE_SECRET_KEY the check is skipped everywhere; in Vercel production a warning is logged.
