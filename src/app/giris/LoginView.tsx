@@ -24,7 +24,7 @@ function Stage() {
       <div className="auth-piece" data-ui>
         <div className="auth-strip"><Thermal sample={SAMPLE} printedPayment="KREDİ KARTI" /></div>
         <div className="auth-sheet">
-          <p className="auth-sheet-head"><span>Luca Fiş Detayı</span><span className="auth-sheet-meta">Evrak No {SAMPLE.receipt.receiptNo}, BT ÖK</span></p>
+          <p className="auth-sheet-head"><span>Luca Fiş Detayı</span><span className="status status-approved">Onaylandı</span><span className="auth-sheet-meta">Evrak No {SAMPLE.receipt.receiptNo}, BT ÖK</span></p>
           <table>
             <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
             <tbody>
@@ -37,7 +37,8 @@ function Stage() {
               ))}
             </tbody>
           </table>
-          <p className="auth-balance">Borç <span className="to-luca">{formatTrAmount(total)}</span> = Alacak <span className="to-luca">{formatTrAmount(total)}</span></p>
+          <p className="auth-balance">Borç <span className="to-luca">{formatTrAmount(total)}</span> = Alacak <span className="to-luca">{formatTrAmount(total)}</span> · <span className="balance-ok">Dengede</span></p>
+          <p className="auth-file"><span>luca-fisler-2026-09-1.xlsx</span><span className="auth-sheet-meta">1 fiş, 3 satır</span></p>
         </div>
       </div>
       <p className="auth-stage-note">Fişten okunan rakam gri, Luca’ya giden rakam mavi.</p>
@@ -67,7 +68,7 @@ export function AuthShell({ title, lead, current, children }: { title: string; l
 
 /**
  * Login (/giris) and signup (/kayit) as two separate screens (docs/design/YON.md 5.4); the pages and the dev previews render it.
- * `next` is an already validated panel path (?sonra=) the login returns to.
+ * `next` is an already validated panel path (?sonra=) that login or signup returns to; the switch link carries it along.
  */
 export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey, next }: { hata?: string; mesaj?: string; isSignup: boolean; turnstileSiteKey?: string; next?: string }) {
   const message = mesaj ? MESSAGES[mesaj] : undefined;
@@ -80,7 +81,7 @@ export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey, next }: { h
       <AuthForm isSignup={isSignup} initialError={hata} turnstileSiteKey={turnstileSiteKey} next={next} />
       <p className="auth-switch">
         {isSignup ? "Hesabınız var mı? " : "Hesabınız yok mu? "}
-        <Link href={isSignup ? "/giris" : "/kayit"}>{isSignup ? "Giriş yapın" : "Hesap oluşturun"}</Link>
+        <Link href={`${isSignup ? "/giris" : "/kayit"}${next ? `?sonra=${encodeURIComponent(next)}` : ""}`}>{isSignup ? "Giriş yapın" : "Hesap oluşturun"}</Link>
       </p>
     </AuthShell>
   );

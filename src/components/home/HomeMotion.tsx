@@ -2,11 +2,11 @@
 
 import { useEffect } from "react";
 
-/** Resolves when the frame's picture is decoded (or after 3 s), so a shutter never opens on an empty box. */
+/** Resolves when the frame's picture is decoded, or after 600ms: the frame is 86% open meanwhile, so waiting longer only delays. */
 function pictureReady(el: HTMLElement): Promise<void> {
   const img = el.querySelector("img");
   if (!img || (img.complete && img.naturalWidth > 0)) return Promise.resolve();
-  return Promise.race([img.decode().catch(() => {}), new Promise<void>((r) => setTimeout(r, 3000))]);
+  return Promise.race([img.decode().catch(() => {}), new Promise<void>((r) => setTimeout(r, 600))]);
 }
 
 /**
@@ -30,11 +30,17 @@ export function HomeMotion() {
       return !inView || el.dataset.reveal === "shutter";
     });
     root.classList.add("motion");
-    const io = new IntersectionObserver((entries) => {
-      for (const e of entries) if (e.isIntersecting) { arrive(e.target as HTMLElement); io.unobserve(e.target); }
-    }, { rootMargin: "0px", threshold: 0 });
-    pending.forEach((el) => io.observe(el));
-    return () => { io.disconnect(); root.classList.remove("motion"); };
+    const watch = (opts: IntersectionObserverInit) => {
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) if (e.isIntersecting) { arrive(e.target as HTMLElement); io.unobserve(e.target); }
+      }, opts);
+      return io;
+    };
+    // "Bir fişin yolu" plays its acts once a third of the field is on screen (YON.md 16.4); everything else as it enters.
+    const fields = watch({ threshold: 0.35 });
+    const rest = watch({ threshold: 0 });
+    pending.forEach((el) => (el.classList.contains("path-field") ? fields : rest).observe(el));
+    return () => { fields.disconnect(); rest.disconnect(); root.classList.remove("motion"); };
   }, []);
   return null;
 }

@@ -36,8 +36,8 @@ export function CookieNote() {
   };
   if (!shown) return null;
   return (
-    <section className="cookie-note" aria-labelledby="cookie-title" data-away={away || undefined}>
-      <h2 id="cookie-title">Çerezler</h2>
+    // A labelled region, not a heading: a screen reader's heading list starts with the page's own h1.
+    <section className="cookie-note" aria-label="Çerezler" data-away={away || undefined}>
       <p>Yalnız oturum çerezi.<span className="cookie-more"> Analitik ve reklam yok.</span> <Link href="/gizlilik">Gizlilik</Link></p>
       <div className="cookie-actions">
         <button type="button" className="btn" onClick={done}>Tamam</button>

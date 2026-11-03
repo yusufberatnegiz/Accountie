@@ -29,7 +29,8 @@ export function Thermal({ sample, printedPayment, hot, compact }: { sample: Samp
     <div className={`thermal${compact ? " thermal-compact" : ""}`} aria-label="Fişin termal baskısı" role="group" translate="no">
       <div className="thermal-paper">
         <p className="thermal-vendor">{r.vendorName}</p>
-        {row("date", "", null, `TARİH ${lucaDate(r.date)}`, `FİŞ NO ${r.receiptNo}`)}
+        {row("date", "", null, "TARİH", lucaDate(r.date))}
+        {row("no", "", null, "FİŞ NO", r.receiptNo ?? "")}
         <div className="thermal-items">
           {sample.items.map((it) => (
             <p key={it.name} className="thermal-row thermal-item" data-lit={lit(hot, { kind: "items", rate: it.rate }) || undefined} style={{ "--p": n++ } as CSSProperties}>

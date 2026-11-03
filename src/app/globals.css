@@ -67,6 +67,8 @@
   --field-4: var(--accent-field); --on-field-4: var(--on-accent-field);
   /* The homepage hero and the auth screens: a clear second field beside the ground (1.3:1), and the hero's unselected choices on it. */
   --split: #ccd6e2; --choice: #ffffff;
+  /* Homepage: the showcase field and the archive pictures. Dark lowers the pictures white point (opacity over --raised) and sinks the field below the ground, so the product card is the lighter step. */
+  --show-field: var(--deep); --picture-opacity: 1;
   /* Thermal paper: white in light; a dimmed cool grey in dark (still paper, no longer the brightest surface on the screen). */
   --paper: #ffffff; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #dce6f3;
 
@@ -109,7 +111,7 @@
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
     --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
-    --split: #1d2229; --choice: #2a3139;
+    --split: #1d2229; --choice: #2a3139; --show-field: #0a0d10; --picture-opacity: 0.86;
     --paper: #d8dadc; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #bfcde0;
     color-scheme: dark;
   }
@@ -128,7 +130,7 @@
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
   --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
-  --split: #1d2229; --choice: #2a3139;
+  --split: #1d2229; --choice: #2a3139; --show-field: #0a0d10; --picture-opacity: 0.86;
   --paper: #d8dadc; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #bfcde0;
   color-scheme: dark;
 }
@@ -348,7 +350,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .alert-ok { background: var(--positive-soft); color: var(--positive); }
 
 
-.skip-link { position: absolute; left: var(--s4); top: -100px; z-index: 40; /* above .site-dock (20) and the cookie strip (30): WCAG 2.4.11 */ padding: var(--s2) var(--s3); background: var(--surface); color: var(--ink); border-radius: var(--radius-control); outline: 2px solid var(--focus); }
+.skip-link { position: absolute; left: var(--s4); top: -100px; z-index: 40; /* above .site-dock (20) and the cookie strip (30): WCAG 2.4.11 */ padding: var(--s2) var(--s3); font-size: var(--fs-body); background: var(--surface); color: var(--ink); border-radius: var(--radius-control); outline: 2px solid var(--focus); }
 .skip-link:focus { top: var(--s2); }
 main:focus, main:focus-visible { outline: none; }
 

@@ -16,7 +16,8 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
   background: var(--surface); color: var(--ink); border: 1px solid var(--border); /* taste-skill-ignore: data-ui bar edge (YON 14.1) */
   border-radius: var(--radius-card);
 }
-.site-brand { min-height: var(--touch); flex: none; }
+/* The name takes the page's body step, so the public pages keep to their few type sizes. */
+.site-brand { min-height: var(--touch); flex: none; font-size: var(--step-body); }
 .site-links { display: flex; gap: var(--s1); min-width: 0; }
 .site-links a {
   display: inline-flex; align-items: center; min-height: var(--control); padding: 0 var(--s3); border-radius: var(--radius-control);
@@ -45,7 +46,7 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
   background: var(--surface); border-radius: var(--radius-card);
 }
 .site-menu[open] .site-menu-list { box-shadow: var(--shadow-float); } /* taste-skill-ignore: the open menu floats */
-.site-menu-list a { display: flex; align-items: center; min-height: var(--touch); padding: 0 var(--s3); border-radius: var(--radius-chip); color: var(--ink); text-decoration: none; font-weight: 500; }
+.site-menu-list a { display: flex; align-items: center; min-height: var(--touch); padding: 0 var(--s3); border-radius: var(--radius-chip); color: var(--ink); text-decoration: none; font-weight: 500; font-size: var(--step-body); }
 @media (hover: hover) and (pointer: fine) { .site-menu-list a:hover { background: var(--active); color: var(--ink); } }
 @media (prefers-reduced-motion: no-preference) {
   .site-menu[open] .site-menu-list { animation: site-drop 160ms var(--ease-out) both; }
@@ -72,15 +73,14 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
   .site-login, .site-cta { padding-inline: var(--s3); }
 }
 
-/* ---------- Cookie notice: bottom right on desktop, a short sheet on phones, never over the first screen's headline ---------- */
+/* ---------- Cookie notice: a compact strip at the bottom left on desktop (the hero's live card is on the right), edge to edge on phones ---------- */
 /* A low strip at every width: one sentence beside two quiet buttons, on a tone step and a 1px edge (no heavy shadow). */
 .cookie-note {
-  position: fixed; z-index: 30; right: var(--page-margin); bottom: var(--s4); width: min(44rem, calc(100% - 2 * var(--page-margin)));
+  position: fixed; z-index: 30; left: var(--page-margin); bottom: var(--s4); width: min(31rem, calc(100% - 2 * var(--page-margin)));
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--s4);
   padding: var(--s3) var(--s3) var(--s3) var(--s4); background: var(--surface); color: var(--ink); border-radius: var(--radius-card);
   border: 1px solid var(--border); /* taste-skill-ignore: floating strip edge */
 }
-.cookie-note > h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .cookie-dialog h2 { margin: 0; font-size: var(--fs-section); font-weight: 600; }
 .cookie-note p { margin: 0; font-size: var(--fs-body); line-height: 1.45; }
 .cookie-note a { color: var(--accent); }

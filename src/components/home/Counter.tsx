@@ -4,6 +4,7 @@ import { useState, type CSSProperties } from "react";
 import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount } from "@/lib/money";
 import { defaultPayment, journalFor, PAYMENTS, SAMPLES, shownAccountName, sourcesFor, type Payment, type Source } from "./samples";
+import { crossFade } from "./crossFade";
 import { Thermal } from "./Thermal";
 
 const PRINTED: Record<Payment["id"], string> = { partner: "KREDİ KARTI", company: "KREDİ KARTI", cash: "NAKİT" };
@@ -11,8 +12,8 @@ const PRINTED: Record<Payment["id"], string> = { partner: "KREDİ KARTI", compan
 /**
  * The homepage's one live thing (YON.md 3.3): pick a sample receipt and how it was paid; the lines come from the product's own
  * buildJournalLines with the default chart of accounts, and "Satırları kopyala" writes them in Luca Fiş Detayı order.
- * First paint only: the strip prints, the lines arrive one by one and "Dengede" lights last. After a choice (YON.md 15) only the
- * lines that changed swap in (keyed by account and amount), the strip and the totals cross-fade to their new values, never counting.
+ * First paint only: the strip prints, the lines arrive one by one and "Dengede" lights last. After a choice (YON.md 16.2) a view
+ * transition cross-fades the old state into the new one in 180ms; amounts change straight to their new values, never counting.
  * Pointing at a line marks the strip rows it came from (a pointer extra only: the rows are not focus stops). Server-rendered with sample A, so without script the table is there.
  */
 export function Counter() {
@@ -46,7 +47,7 @@ export function Counter() {
           {SAMPLES.map((s) => (
             <label key={s.id}>
               <input type="radio" name="ornek-fis" value={s.id} checked={s.id === sampleId}
-                onChange={() => { setSampleId(s.id); setPayment(defaultPayment(s)); setCopy(""); setHot(null); setFirst(false); }} />
+                onChange={() => crossFade(() => { setSampleId(s.id); setPayment(defaultPayment(s)); setCopy(""); setHot(null); setFirst(false); })} />
               <span>{s.label}</span>
             </label>
           ))}
@@ -55,7 +56,7 @@ export function Counter() {
           <legend>Ödeme</legend>
           {PAYMENTS.map((p) => (
             <label key={p.id}>
-              <input type="radio" name="odeme" value={p.id} checked={p.id === payment} onChange={() => { setPayment(p.id); setCopy(""); setFirst(false); }} />
+              <input type="radio" name="odeme" value={p.id} checked={p.id === payment} onChange={() => crossFade(() => { setPayment(p.id); setCopy(""); setFirst(false); })} />
               <span>{p.label}</span>
             </label>
           ))}
@@ -91,13 +92,13 @@ export function Counter() {
             <p className="counter-formula">
               Matrah = {vat.map((v) => `${formatTrAmount(v.grossKurus)} - ${formatTrAmount(v.vatKurus ?? 0)}`).join(" ve ")}
             </p>
-            {warnings.map((w) => <p className="counter-warn" key={w.code}>{w.message}</p>)}
             <div className="counter-copy">
               <button type="button" className="btn" onClick={copyLines}>Satırları kopyala</button>
               <p aria-live="polite" className="counter-status">
                 {copy === "ok" ? "Kopyalandı. Satırlar Luca Fiş Detayı kolon sırasında." : copy === "fail" ? "Panoya yazılamadı. Satırları seçip kopyalayın." : ""}
               </p>
             </div>
+            {warnings.map((w) => <p className="counter-warn" key={w.code}>{w.message}</p>)}
           </div>
         </div>
       </div>
