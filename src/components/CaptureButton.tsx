@@ -1,12 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { addTransitionType, startTransition, useEffect, useState } from "react";
 import { setPhoto } from "@/lib/photo-store";
 
 const MAX_EDGE = 1600;
 const TIMEOUT_MS = 60_000;
 const SLOW_MS = 10_000;
+// The real stages of one photo: shrunk on this device, read on the server, lines back.
+const STAGES = ["Fotoğraf hazırlanıyor", "", "Satırlar hazır"];
 
 /** Shrinks to ~1600px JPEG and applies EXIF orientation. Falls back to the original file if the browser cannot decode it. */
 async function shrink(file: File): Promise<Blob> {
@@ -32,6 +34,7 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState(0);
   const [slow, setSlow] = useState(false);
   const [notice, setNotice] = useState("");
 
@@ -51,8 +54,10 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
     // Each photo becomes its own receipt; files are copied out of the input first because iOS replaces them on the next capture.
     for (const [i, file] of list.entries()) {
       setSlow(false);
+      setStage(0);
       setStatus(list.length > 1 ? `Fiş okunuyor (${i + 1}/${list.length})` : "Fiş okunuyor");
       const blob = await shrink(file);
+      setStage(1);
       const form = new FormData();
       form.set("image", blob, "fis.jpg");
       let failure = "Bağlantı kurulamadı. Tekrar deneyin.";
@@ -67,15 +72,18 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
         break;
       }
       const { id } = await res.json();
+      setStage(2);
       setPhoto(id, blob);
       lastId = id;
       added++;
     }
+    // One photo goes straight to its review; the reading card stays until that screen replaces it.
+    if (lastId && list.length === 1) return router.push(`/panel/fis/${lastId}`);
     setBusy(false);
     setStatus("");
     if (list.length > 1 && added === list.length) setNotice(`${added} fiş eklendi.`);
-    if (lastId && list.length === 1) router.push(`/panel/fis/${lastId}`);
-    else router.refresh();
+    // The type lets the new rows rise in at the top of the list (ReceiptListView).
+    startTransition(() => { addTransitionType("fis-eklendi"); router.refresh(); });
   }
 
   const input = (capture: boolean) => (
@@ -102,7 +110,16 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       {/* The status region stays mounted so screen readers announce its text changes. */}
       <div role="status" className={busy ? "reading" : notice ? "" : "visually-hidden"}>
         {busy ? (
-          <p>{status}… Sayfadan ayrılmayın.{slow ? <><br /><span className="small">Hâlâ okunuyor, fiş uzunsa biraz sürebilir.</span></> : null}</p>
+          <>
+            {/* Paper feeding out of a printer while the server reads; it means "working", not a percentage. */}
+            <span className="feed" aria-hidden="true"><span className="feed-paper"><i /><i /><i /><i /></span></span>
+            <div className="reading-text">
+              <ol className="stages">
+                {STAGES.slice(0, stage + 1).map((s, i) => <li key={i} data-done={i < stage || undefined}>{s || status}{i === stage && i < 2 ? "…" : ""}</li>)}
+              </ol>
+              <p className="small">Sayfadan ayrılmayın.{slow ? " Hâlâ okunuyor, fiş uzunsa biraz sürebilir." : ""}</p>
+            </div>
+          </>
         ) : notice ? <p className="alert">{notice}</p> : null}
       </div>
       {variant === "rail" ? (
