@@ -66,9 +66,12 @@ describe("oran sınırı", () => {
   });
 
   it("/api/auth giriş ve kayıt uçları kapalı, şifre uçları sınırlı, diğerleri açık", async () => {
-    const post = (path: string) => authRoute.POST(new Request(`http://test/api/auth/${path}`, { method: "POST" }) as never, { params: Promise.resolve({ path: path.split("/") }) } as never);
-    expect((await post("sign-in/email")).status).toBe(404);
-    expect((await post("sign-up/email")).status).toBe(404);
+    const post = (path: string) => authRoute.POST(new Request(`http://test/api/auth/${path}`, { method: "POST" }) as never, { params: Promise.resolve({ path: path.split("/").map(decodeURIComponent) }) } as never);
+    // Next decodes each catch-all segment; encoded, double-encoded and upper-case variants must not slip past.
+    for (const p of ["sign-in/email", "sign-up/email", "sign%2Din/email", "sign-in%2Femail", "sign%252Dup/email", "SIGN-IN/email", "x/..%2Fsign-in/email"]) {
+      expect((await post(p)).status, p).toBe(404);
+    }
+    expect(getAuth().handler().POST).not.toHaveBeenCalled();
     vi.mocked(hitRateLimit).mockResolvedValue(false);
     expect((await post("request-password-reset")).status).toBe(429);
     expect((await post("sign-out")).status).toBe(200);
@@ -82,6 +85,7 @@ describe("bot koruması", () => {
     vi.stubEnv("TURNSTILE_SECRET_KEY", "test-secret");
     expect(await redirectOf(actions.login(form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=bot");
     expect(getAuth().signIn.email).not.toHaveBeenCalled();
+    expect(hitRateLimit).not.toHaveBeenCalled(); // Turnstile'sız deneme kurbanın e-posta limitini dolduramaz
     const res = await redirectOf(actions.signup(form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", passwordAgain: "12345678" })));
     expect(res).toContain("hata=bot");
     expect(getAuth().signUp.email).not.toHaveBeenCalled();

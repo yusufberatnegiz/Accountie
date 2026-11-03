@@ -135,7 +135,7 @@ Tümü oturum ister (yoksa 401), girdiyi Zod ile doğrular, başka kullanıcın�
 | `POST /api/extension/receipts/[id]/transferred` | Bearer anahtar | Kullanıcı Luca'da kaydettiğini bildirir, fiş `exported` olur (204) |
 
 - `status`, `user_id`, `model`, token sayıları ve `*_at` alanları istemciden asla kabul edilmez.
-- Oran sınırı: `POST /api/receipts` kullanıcı başına dakikada 10, günde 300 (son kayıtlar sayılarak, ek servis yok). Aşılırsa 429.
+- Oran sınırı: `POST /api/receipts` kullanıcı başına dakikada 10, günde 100 (son kayıtlar sayılarak, ek servis yok). Aşılırsa 429.
 - `next.config` ile güvenlik başlıkları: CSP, HSTS, `nosniff`, `Referrer-Policy`, `frame-ancestors 'none'`, `Permissions-Policy: camera=(self)`.
 
 ## 6. Yapay zeka ile fiş okuma
