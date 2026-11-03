@@ -10,6 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
+    // A manifest has one splash colour and cannot follow the theme; any value flashes for one of the two looks.
+    // Light ground kept on purpose: the system default for most phones, and the splash lasts only until the first paint.
     background_color: "#f2f4f7",
     theme_color: "#f2f4f7",
     lang: "tr",

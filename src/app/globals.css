@@ -264,13 +264,18 @@ label .field { font-weight: 400; }
 .theme-switch input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
 .theme-switch svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 @media (hover: hover) and (pointer: fine) { .theme-switch label:hover { color: var(--ink); } }
-.theme-switch label:has(input:checked) { background: var(--surface); color: var(--ink); }
+/* The shown choice comes from <html data-theme>, which the head script sets before paint; the radios' checked state only catches up at hydration. */
+:root:not([data-theme]) .theme-switch [data-choice="system"], :root[data-theme="light"] .theme-switch [data-choice="light"], :root[data-theme="dark"] .theme-switch [data-choice="dark"] { background: var(--surface); color: var(--ink); }
 .theme-switch label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 1px; }
 @media (pointer: coarse) { .theme-switch label { width: var(--touch); height: var(--touch); } }
 /* One-button theme control for narrow bars (ThemeCycle). */
 .theme-cycle { display: inline-grid; place-items: center; width: var(--touch); height: var(--touch); border: 0; border-radius: var(--radius-control); background: var(--active); color: var(--ink); cursor: pointer; transition: background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
 .theme-cycle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .theme-cycle:active { transform: scale(0.96); }
+/* The icon follows the look the head script set; without it (no JS) the system preference picks. */
+.theme-cycle-dark, :root[data-look="dark"] .theme-cycle-light { display: none; }
+:root[data-look="dark"] .theme-cycle-dark { display: block; }
+@media (prefers-color-scheme: dark) { :root:not([data-look]) .theme-cycle-light { display: none; } :root:not([data-look]) .theme-cycle-dark { display: block; } }
 @media (hover: hover) and (pointer: fine) { .theme-cycle:hover { background: var(--secondary-hover); } }
 
 /* ---------- Plain pages (error, not found). The panel shell lives in src/components/panel/panel.css. ---------- */
@@ -343,7 +348,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .alert-ok { background: var(--positive-soft); color: var(--positive); }
 
 
-.skip-link { position: absolute; left: var(--s4); top: -100px; z-index: 10; padding: var(--s2) var(--s3); background: var(--surface); color: var(--ink); border-radius: var(--radius-control); outline: 2px solid var(--focus); }
+.skip-link { position: absolute; left: var(--s4); top: -100px; z-index: 40; /* above .site-dock (20) and the cookie strip (30): WCAG 2.4.11 */ padding: var(--s2) var(--s3); background: var(--surface); color: var(--ink); border-radius: var(--radius-control); outline: 2px solid var(--focus); }
 .skip-link:focus { top: var(--s2); }
 main:focus, main:focus-visible { outline: none; }
 
