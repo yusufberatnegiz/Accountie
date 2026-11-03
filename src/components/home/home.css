@@ -469,8 +469,8 @@ html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), ht
      the Onaylandı stamp lands on the approved lines, the Excel file comes down into the last card. On a phone the fields
      stack, so each act starts when its own field arrives; on a tablet the second of each pair follows the first. */
   .path-field { --act: 0ms; }
-  @media (min-width: 1101px) { .path-field { --act: calc(var(--r, 0) * 250ms); } }
-  @media (min-width: 641px) and (max-width: 1100px) { :is(.path-field-2, .path-field-4) { --act: 250ms; } }
+  @media (min-width: 1101px) { .path-field { --act: calc(var(--r, 0) * 350ms); } }
+  @media (min-width: 641px) and (max-width: 1100px) { :is(.path-field-2, .path-field-4) { --act: 350ms; } }
   .motion .path-field[data-reveal] { transform: none; }
   .path-card > :nth-child(2) { --k: 1; } .path-card > :nth-child(3) { --k: 2; } .path-card > :nth-child(4) { --k: 3; }
   .path-card > :nth-child(5) { --k: 4; } .path-card > :nth-child(6) { --k: 5; } .path-card > :nth-child(7) { --k: 6; }
