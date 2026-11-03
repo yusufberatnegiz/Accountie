@@ -199,6 +199,6 @@ Veritabanı ve yapay zeka testlerde her zaman mock'lanır. Gerçek model doğrul
 |---|---|---|
 | Luca şablon kolonları | 14 kolon | Resmi şablonla `LUCA_EXPORT_COLUMNS` kilitlenecek |
 | RLS'nin etkin olması | Sorgu filtresi asıl koruma, RLS açık | Neon'da sahip olmayan uygulama rolü ve `set_config('app.user_id')` |
-| Kayıt formunda bot koruması | Giriş ve kayıtta Turnstile sunucuda doğrulanır; `/api/auth` giriş/kayıt uçları kapalı | Vercel'e `TURNSTILE_SITE_KEY` ve `TURNSTILE_SECRET_KEY` eklenecek (yoksa doğrulama kapalı) |
+| Kayıt formunda bot koruması | Giriş ve kayıtta Turnstile sunucuda doğrulanır; `/api/auth` giriş/kayıt uçları kapalı | Vercel'e `TURNSTILE_SITE_KEY` ve `TURNSTILE_SECRET_KEY` eklenecek (önerilir; yoksa doğrulama atlanır, canlıda logda uyarı çıkar) |
 | Thinking ayarı | `disabled` | 10 ila 20 fişte `adaptive` + `low` ile karşılaştırma |
 | KVKK aydınlatma metni | Yurt dışı hizmet sağlayıcı (Anthropic) belirtilecek | Yayına çıkmadan önce metin |
