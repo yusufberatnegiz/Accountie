@@ -37,6 +37,8 @@ const toLine = ({ key, debit, credit, ...rest }: EditLine): JournalLine => ({ ..
 
 // Warning codes that mean "the reader was unsure about this field".
 const AMOUNT_WARNINGS = ["amount_unreadable", "total_mismatch", "vat_mismatch", "vat_computed", "vat_missing", "rounding_adjusted", "extraction_failed"];
+// Warnings about one header field; they clear once that field is edited.
+const WARNING_FIELD: Record<string, string> = { date_invalid: "documentDate", date_unusual: "documentDate", receipt_no_unsure: "documentNo", payment_unsure: "credit" };
 
 export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules: Rules }) {
   const router = useRouter();
@@ -83,7 +85,9 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
   const amountsUnsure = codes.some((c) => AMOUNT_WARNINGS.includes(c));
   // A flag stays until the user touches that field.
   const flagged = (name: string, unsure: boolean) => editable && unsure && !seen.has(name);
-  const flag = (on: boolean) => (on ? { "data-check": "", ...(receipt.warnings.length ? { "aria-describedby": "uyarilar" } : {}) } : {});
+  // A field warning goes away once the user has edited that field, like its flag.
+  const warnings = receipt.warnings.filter((w) => !(editable && seen.has(WARNING_FIELD[w.code] ?? "")));
+  const flag = (on: boolean) => (on ? { "data-check": "", ...(warnings.length ? { "aria-describedby": "uyarilar" } : {}) } : {});
   const checkNote = (on: boolean) => (on ? <span className="check-note">Kontrol edin</span> : null);
   const headFlags = {
     documentNo: flagged("documentNo", codes.includes("extraction_failed") || codes.includes("receipt_no_unsure") || !head?.documentNo),
@@ -164,10 +168,10 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
       )}
 
       <div className="review-main">
-        {receipt.warnings.length ? (
+        {warnings.length ? (
           <div className="alert alert-warn" id="uyarilar">
             <p className="alert-title">Kontrol edilecekler</p>
-            <ul className="notes">{receipt.warnings.map((w) => <li key={w.code}>{w.message}</li>)}</ul>
+            <ul className="notes">{warnings.map((w) => <li key={w.code}>{w.message}</li>)}</ul>
           </div>
         ) : null}
 
@@ -247,7 +251,6 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
           </dl>
         </section>
 
-        {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
         {info ? <p role="status" className="muted">{info}</p> : null}
 
         <div className="actions">
@@ -279,8 +282,10 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
         </div>
 
         <div className="action-bar">
-          <p className={editable && problem ? "balance balance-off" : "balance balance-ok"} aria-live="polite">
-            {receipt.status === "approved" ? "Onaylandı. Luca'ya aktarmak için Excel'i bilgisayarda indirin."
+          {/* Errors show here, next to the button that caused them; a box higher up is off screen on the phone. */}
+          <p className={error || (editable && problem) ? "balance balance-off" : "balance balance-ok"} aria-live="polite">
+            {error ? error
+              : receipt.status === "approved" ? "Onaylandı. Luca'ya aktarmak için Excel'i bilgisayarda indirin."
               : receipt.status === "exported" ? "Luca'ya aktarıldı."
               : problem ?? (dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır.")}
           </p>

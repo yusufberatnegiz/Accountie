@@ -17,7 +17,7 @@ export function ReceiptView({ receipt, rules }: { receipt: ReceiptDetail; rules:
           <p className="meta">
             <span className={`status status-${receipt.status}`}>{STATUS_LABELS[receipt.status]}</span>
             {receipt.totalKurus !== null ? <span className="num-font">{formatTrAmount(receipt.totalKurus)} TL</span> : null}
-            {receipt.taxNumber ? <span className={vknUnsure ? "num-font flagged" : "num-font"}>VKN {receipt.taxNumber}</span> : null}
+            {receipt.taxNumber ? <span className={vknUnsure ? "num-font flagged" : "num-font"}>VKN {receipt.taxNumber}{vknUnsure ? " (kontrol edin)" : ""}</span> : null}
           </p>
         </div>
       </div>
