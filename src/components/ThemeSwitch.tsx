@@ -3,7 +3,8 @@
 import { useId, useSyncExternalStore, type ReactNode } from "react";
 import { FREEZE_CLASS, THEME_COLOR, THEME_STORAGE_KEY, type ThemeChoice } from "@/lib/theme";
 
-const EVENT = "accountie-theme";
+export const THEME_EVENT = "accountie-theme";
+const EVENT = THEME_EVENT;
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 function read(): ThemeChoice {
@@ -62,7 +63,7 @@ export function ThemeSwitch({ labelled = false }: { labelled?: boolean }) {
   return (
     <fieldset className={labelled ? "theme-switch theme-switch-labelled" : "theme-switch"} role="radiogroup" aria-label="Tema">
       {OPTIONS.map((o) => (
-        <label key={o.value} title={o.label}>
+        <label key={o.value} title={o.label} data-choice={o.value}>
           <input type="radio" name={name} value={o.value} checked={current === o.value} onChange={() => applyTheme(o.value)} aria-label={o.label} />
           <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">{o.icon}</svg>
           {labelled ? <span aria-hidden="true">{o.short}</span> : null}
@@ -94,13 +95,16 @@ export function nextChoice(look: Look, systemDark: boolean): ThemeChoice {
 }
 
 /** One button for narrow bars: every press visibly flips the theme (a three-step cycle had a press that changed nothing). */
+/** Both icons are in the server HTML and CSS shows the one for <html data-look> (globals.css), so the first paint is right. */
+/** The label waits for hydration: the server cannot know the look, and a wrong spoken theme is worse than a neutral name. */
 export function ThemeCycle() {
-  const look = useSyncExternalStore(subscribeLook, readLook, () => "light" as Look);
-  const o = OPTIONS.find((x) => x.value === look)!;
-  const label = look === "dark" ? "Tema: Koyu. Açık temaya geç" : "Tema: Açık. Koyu temaya geç";
+  const look = useSyncExternalStore(subscribeLook, readLook, () => null);
+  const label = look === null ? "Temayı değiştir" : look === "dark" ? "Tema: Koyu. Açık temaya geç" : "Tema: Açık. Koyu temaya geç";
   return (
-    <button type="button" className="theme-cycle" onClick={() => applyTheme(nextChoice(look, matchMedia(DARK_QUERY).matches))} aria-label={label} title={label}>
-      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">{o.icon}</svg>
+    <button type="button" className="theme-cycle" onClick={() => applyTheme(nextChoice(readLook(), matchMedia(DARK_QUERY).matches))} aria-label={label} title={label}>
+      {OPTIONS.filter((x) => x.value !== "system").map((x) => (
+        <svg key={x.value} className={`theme-cycle-${x.value}`} viewBox="0 0 16 16" aria-hidden="true" focusable="false">{x.icon}</svg>
+      ))}
     </button>
   );
 }
