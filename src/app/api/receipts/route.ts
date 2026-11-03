@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { createReceipt, getRules, hasDuplicateReceipt, listReceipts, type NewReceipt } from "@/db/queries";
-import { getUserId } from "@/lib/auth/session";
+import { getSessionUser, getUserId } from "@/lib/auth/session";
 import { extractReceipt, type ExtractResult } from "@/lib/extract/extract";
 import { toReceiptData } from "@/lib/extract/schema";
 import { fail, unauthorized } from "@/lib/http";
 import { ALLOWED_IMAGE_TYPES, MAX_UPLOAD_BYTES, normalizeImage, sniffImageType } from "@/lib/image";
-import { allow } from "@/lib/rate-limit";
+import { allow, clientIp } from "@/lib/rate-limit";
 import { buildJournalLines, warn, type ReceiptData, type Warning } from "@/lib/journal";
 
 export const runtime = "nodejs";
@@ -13,12 +13,16 @@ export const maxDuration = 60;
 
 const EMPTY: ReceiptData = { vendorName: null, receiptNo: null, date: null, vatLines: [], totalKurus: null, paymentMethod: "other", category: "other" };
 
+const DAY_MS = 24 * 60 * 60_000;
+
 export async function POST(request: Request) {
-  const userId = await getUserId();
-  if (!userId) return unauthorized();
+  const user = await getSessionUser();
+  if (!user) return unauthorized();
+  const userId = user.id;
 
   // Before any parsing: every attempt counts, so a flood of bad uploads is throttled too.
-  if (!(await allow("receipt", userId))) {
+  const isNew = !(Date.now() - user.createdAt.getTime() >= DAY_MS); // unknown sign-up time counts as new
+  if (!(await allow(isNew ? "receiptNew" : "receipt", userId)) || !(await allow("receiptIp", clientIp(request.headers)))) {
     return fail("Çok fazla fiş yüklendi. Biraz bekleyip tekrar deneyin.", 429);
   }
   // Rejected before the body is buffered; multipart overhead is allowed for.
