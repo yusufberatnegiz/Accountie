@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createReceipt, getRules, listReceipts, type NewReceipt } from "@/db/queries";
+import { createReceipt, getRules, hasDuplicateReceipt, listReceipts, type NewReceipt } from "@/db/queries";
 import { getUserId } from "@/lib/auth/session";
 import { extractReceipt, type ExtractResult } from "@/lib/extract/extract";
 import { toReceiptData } from "@/lib/extract/schema";
@@ -55,10 +55,15 @@ export async function POST(request: Request) {
   const { lines, warnings } = buildJournalLines(data, rules);
   const extra = result.ok ? result.problems : ["extraction_failed"];
   const allWarnings: Warning[] = [...warnings, ...extra.filter((c) => !warnings.some((w) => w.code === c)).map(warn)];
+  const taxNumber = result.ok ? result.extraction.taxNumber : null;
+  // Warn only, never block: the user decides. A failed lookup must not lose the upload.
+  if (taxNumber && data.receiptNo && data.date && (await hasDuplicateReceipt(userId, taxNumber, data.receiptNo, data.date).catch(() => false))) {
+    allWarnings.unshift(warn("duplicate"));
+  }
 
   const receipt: NewReceipt = {
     vendorName: data.vendorName,
-    taxNumber: result.ok ? result.extraction.taxNumber : null,
+    taxNumber,
     receiptNo: data.receiptNo,
     receiptDate: data.date,
     totalKurus: data.totalKurus,

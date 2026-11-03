@@ -44,6 +44,10 @@ export const WARNING_MESSAGES: Record<string, string> = {
   amount_unreadable: "Bazı tutarlar okunamadı. Fişle karşılaştırın.",
   tax_number_invalid: "VKN veya TCKN kontrol hanesi tutmuyor. Fişle karşılaştırın.",
   date_invalid: "Fiş tarihi okunamadı. Evrak Tarihini girin.",
+  date_unusual: "Fiş tarihi ileri bir tarih ya da bir yıldan eski. Yıl yanlış okunmuş olabilir, Evrak Tarihini kontrol edin.",
+  payment_unsure: "Ödeme şekli fişten okunamadı. Alacak hesabını kontrol edin.",
+  receipt_no_unsure: "Fiş no okunamadı. Evrak No'yu kontrol edin.",
+  duplicate: "Bu VKN, fiş no ve tarihle kayıtlı başka bir fiş var. Aynı fiş iki kez aktarılmasın.",
   extraction_failed: "Fiş okunamadı, tekrar deneyin veya elle girin.",
 };
 

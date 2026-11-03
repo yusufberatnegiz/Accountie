@@ -86,8 +86,9 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
   const flag = (on: boolean) => (on ? { "data-check": "", ...(receipt.warnings.length ? { "aria-describedby": "uyarilar" } : {}) } : {});
   const checkNote = (on: boolean) => (on ? <span className="check-note">Kontrol edin</span> : null);
   const headFlags = {
-    documentNo: flagged("documentNo", codes.includes("extraction_failed") || !head?.documentNo),
-    documentDate: flagged("documentDate", codes.includes("date_invalid") || !head?.documentDate),
+    documentNo: flagged("documentNo", codes.includes("extraction_failed") || codes.includes("receipt_no_unsure") || !head?.documentNo),
+    documentDate: flagged("documentDate", codes.includes("date_invalid") || codes.includes("date_unusual") || !head?.documentDate),
+    credit: flagged("credit", codes.includes("payment_unsure")),
     description: flagged("description", codes.includes("extraction_failed") || !head?.description),
   };
   const touch = (name: string) => !seen.has(name) && setSeen((s) => new Set(s).add(name));
@@ -190,8 +191,9 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
               <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} onChange={(e) => updateAll("documentType", e.target.value)} />
             </label>
             {editable ? (
-              <label>Alacak hesabı
-                <select className="field" value={PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? creditCode : ""} onChange={(e) => setCreditAccount(e.target.value)}>
+              <label>Alacak hesabı {checkNote(headFlags.credit)}
+                <select className="field" value={PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? creditCode : ""} {...flag(headFlags.credit)}
+                  onChange={(e) => { touch("credit"); setCreditAccount(e.target.value); }}>
                   {PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? null : <option value="">{creditCode || "Seçin"}</option>}
                   {PAYMENT_ALTERNATIVES.map((a) => <option key={a.code} value={a.code}>{a.code} {a.label}</option>)}
                 </select>

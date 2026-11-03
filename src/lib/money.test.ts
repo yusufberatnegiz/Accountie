@@ -10,11 +10,15 @@ describe("parseTrAmount", () => {
     ["*8.725,00", 872500],
     ["8725", 872500],
     [" 0,07 ", 7],
+    ["8.725,00 TL", 872500],
+    ["₺8.725,00", 872500],
+    ["8.725,00TL", 872500],
+    ["*8.725,00 TRY", 872500],
   ])("%s -> %i kuruş", (input, expected) => {
     expect(parseTrAmount(input)).toBe(expected);
   });
 
-  it.each(["", "abc", "1,234", "8.72,00", "1.2.3", "-5,00", "12,345"])("geçersiz: %s", (input) => {
+  it.each(["", "abc", "1,234", "8.72,00", "1.2.3", "-5,00", "12,345", "TL", "8,725.00 TL"])("geçersiz: %s", (input) => {
     expect(() => parseTrAmount(input)).toThrow();
   });
 });

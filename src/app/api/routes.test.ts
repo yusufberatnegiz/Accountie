@@ -4,7 +4,7 @@ import { buildJournalLines } from "@/lib/journal";
 
 vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
 vi.mock("@/db/queries", () => ({
-  createReceipt: vi.fn(), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
+  createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(async () => false), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
   replaceLines: vi.fn(), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
 }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn() }));
