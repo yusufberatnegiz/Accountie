@@ -1,6 +1,6 @@
 # Accountie: gece çalışması raporu
 
-Tarih: 2026-11-03. Dal: `main`, yalnızca yerel commit (push yapılmadı).
+Tarih: 2026-11-03. Dal: `main`, GitHub'a gönderildi (04:20). Vercel yeni sürümü otomatik yayınlar; migration'lar ve `ANTHROPIC_API_KEY` eklenene kadar canlı site hata verir.
 
 ## Kısa özet
 
@@ -69,7 +69,7 @@ Luca yüklemede doğrulama kodu istediği için Excel yüklemesini muhasebeci el
 
 | Komut | Sonuç |
 |---|---|
-| `npm install` | Başarılı. `npm ci` açık kalmış geliştirme sunucularının kilitlediği `next-swc` dosyası yüzünden yerelde başarısız oldu (EPERM); kodla ilgili değil. Sunucular kapatıldıktan sonra `npm ci` tekrar denenmeli |
+| `npm ci` | Açık kalan geliştirme sunucuları kapatıldıktan sonra temiz kurulum başarılı |
 | `npm test` | 13 dosya, 159 test geçti, 1 atlandı (gerçek anahtarla elle çalıştırılan smoke testi) |
 | `npm run typecheck` | Hata yok |
 | `npm run lint` | Hata yok |
@@ -95,11 +95,10 @@ Sırayla yapın; ayrıntılı hali `README.md` içinde "Canlıya alma" bölümü
 1. **Vercel ortam değişkenleri.** Vercel > proje > Settings > Environment Variables. `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` var mı kontrol edin. `ANTHROPIC_API_KEY` ekleyin (console.anthropic.com > API Keys) ve aynı konsolda aylık harcama limiti koyun. İsterseniz `TURNSTILE_SITE_KEY` ve `TURNSTILE_SECRET_KEY` ekleyin. Hiçbirine `NEXT_PUBLIC_` öneki vermeyin.
 2. **Migration'ları uygulayın.** Neon panelinde SQL Editor'de `drizzle/` klasöründeki dosyaları bu sırayla çalıştırın: `20261102225754_receipts.sql`, `20261102230939_extension_tokens.sql`, `20261102232316_rate_limit_hits.sql`. Yalnızca yeni tablo eklerler. `npx drizzle-kit migrate` kullanmayın. `DATABASE_URL` tablo sahibi rolle (varsayılan `neondb_owner`) bağlanmalı.
 3. **Neon Auth ayarı.** Neon panelinde Auth > izinli alan adlarında `https://accountie.vercel.app` olsun. E-posta doğrulamasını açın.
-4. **Yayın.** Commit'leri gözden geçirip `git push` ile main'i gönderin; Vercel otomatik yayınlar. Env değişkenini sonradan eklediyseniz Deployments > son yayın > Redeploy.
+4. **Yayın.** Kod GitHub'a gönderildi, Vercel otomatik yayınladı. 1-3. adımlardan sonra Vercel > Deployments > son yayın > Redeploy yapın ki yeni env değişkenleri devreye girsin.
 5. **Tek fiş okuma denemesi (bilgisayarda).** Repo klasöründe `npm install`, sonra PowerShell'de:
    `$env:SMOKE_RECEIPT="C:/yol/fis.jpg"; $env:ANTHROPIC_API_KEY="sk-ant-..."; npx vitest run src/lib/extract/smoke.test.ts`
    Çıktıda `"ok": true` ve fişteki tutarlar görünmeli.
 6. **Uçtan uca deneme (telefonda).** accountie.vercel.app'e girin, bir fiş çekin, kontrol ekranında satırları kağıt fişle karşılaştırıp onaylayın.
 7. **İlk gerçek Luca denemesi (tek fiş, Excel).** Fiş sayfasında "Luca için Excel indir". Luca'da Muhasebe > Fiş İşlemleri > Excel veri aktarımı ekranından yükleyin, önizlemeyi kağıt fişle karşılaştırın. Reddederse hata mesajını ve aynı ekrandaki "Şablon indir" dosyasını saklayın, bana iletin; kolonlar buna göre kilitlenir. Kabul ederse Fiş Kes ile fişi kesin.
 8. **Eklenti denemesi (isteğe bağlı).** `chrome://extensions` > Geliştirici modu > Paketlenmemiş öğe yükle > `extension/` klasörü. Accountie Fişler sayfasında eklenti anahtarı oluşturun, Luca'da Fiş Detayı ekranını açıp eklentiden fişi yazdırın. "Alan bulunamadı" çıkarsa Luca hücresinde sağ tık > İncele ile seçiciyi alıp iletin; Kaydet'e her zaman siz basın.
-9. **Açık kalmış geliştirme sunucularını kapatın.** Gece çalışmasından kalan `next dev` süreçleri (port 3917, 3124, 3458) son kontrolde hâlâ açıktı; otomatik kapatma izni verilmedi. Görev Yöneticisi'nden `node.exe` süreçlerini kapatın veya bilgisayarı yeniden başlatın, ardından repo klasöründe `npm ci` çalıştırıp temiz kurulumun geçtiğini görün.
