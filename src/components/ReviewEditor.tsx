@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState, useSyncExternalStore, ViewTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition, ViewTransition } from "react";
 import type { ReceiptDetail } from "@/db/queries";
 import { ACCOUNT_CODE_PATTERN, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type Account, type PaymentMethod, type Rules } from "@/lib/default-rules";
 import { approvalProblem, type JournalLine } from "@/lib/journal";
@@ -79,6 +79,12 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
+  // A saved action keeps its buttons off until the refreshed receipt arrives, so Onayla never flashes back on.
+  const [refreshing, startRefresh] = useTransition();
+  const [approved, setApproved] = useState(false);
+  const working = busy || refreshing;
+  const refresh = () => startRefresh(() => router.refresh());
+  const [allWarnings, setAllWarnings] = useState(false);
   const [trace, setTrace] = useState<Source | null>(null);
   // The approval stamp plays only when this screen sees the status turn to approved, never on load.
   const [shownStatus, setShownStatus] = useState(receipt.status);
@@ -86,7 +92,17 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   if (receipt.status !== shownStatus) {
     setShownStatus(receipt.status);
     setStamped(receipt.status === "approved");
+    setApproved(false);
   }
+  // When the status changes the pressed button is gone: focus moves to the next draft, or to the sentence that says what happened.
+  const statusLine = useRef<HTMLParagraphElement>(null);
+  const lastStatus = useRef(receipt.status);
+  useEffect(() => {
+    if (lastStatus.current === receipt.status) return;
+    lastStatus.current = receipt.status;
+    const nextLink = document.querySelector<HTMLElement>(".bar-next-draft");
+    (nextLink?.offsetParent ? nextLink : statusLine.current)?.focus({ preventScroll: true });
+  }, [receipt.status]);
   // Photo exists only in this tab; server render has none.
   const photo = useSyncExternalStore(noSubscribe, () => getPhoto(receipt.id), () => undefined);
 
@@ -206,6 +222,71 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
       </div>
 
       <div className="review">
+        {warnings.length ? (
+          <div className="alert alert-warn" id="uyarilar">
+            <p className="alert-title">Kontrol edilecekler</p>
+            {/* On the phone two notes show and the rest fold, so the first screen still reaches the journal lines. */}
+            <ul className="notes" data-folded={!allWarnings && warnings.length > 3 ? "" : undefined}>{warnings.map((w, i) => <li key={w.code} tabIndex={i === 2 ? -1 : undefined}>{w.message}</li>)}</ul>
+            {!allWarnings && warnings.length > 3 ? <button className="link-button warn-more" type="button" onClick={() => { setAllWarnings(true); requestAnimationFrame(() => document.querySelector<HTMLElement>("#uyarilar li:nth-child(3)")?.focus()); }}>{warnings.length - 2} uyarı daha</button> : null}
+          </div>
+        ) : null}
+
+        <section className="panel" aria-labelledby="satir-baslik">
+          <div className="panel-head">
+            <h2 id="satir-baslik">Yevmiye satırları</h2>
+            {editable ? (
+              <label className="inline-field"><span>Alacak hesabı {checkNote(headFlags.credit)}</span>
+                <select className="field" value={PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? creditCode : ""} {...flag(headFlags.credit)}
+                  onChange={(e) => { touch("credit"); setCreditAccount(e.target.value); }}>
+                  {PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? null : <option value="">{creditCode || "Seçin"}</option>}
+                  {PAYMENT_ALTERNATIVES.map((a) => <option key={a.code} value={a.code}>{a.code} {a.label}</option>)}
+                </select>
+              </label>
+            ) : null}
+          </div>
+          <table className="journal">
+            <thead>
+              <tr>
+                <th className="col-code">Hesap kodu</th><th>Hesap adı</th><th className="col-amount num">Borç (TL)</th><th className="col-amount num">Alacak (TL)</th>
+                {editable ? <th className="col-del"><span className="visually-hidden">Sil</span></th> : null}
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((l, i) => {
+                const codeFlag = flagged(`code-${l.key}`, !l.accountCode);
+                const debitFlag = flagged(`debit-${l.key}`, amountsUnsure && !!l.debit);
+                const creditFlag = flagged(`credit-${l.key}`, amountsUnsure && !!l.credit);
+                const unsure = (on: boolean) => (on ? ", kontrol edin" : "");
+                const src = sourceOf(l.accountCode, kurus(l.credit) || 0);
+                return (
+                <tr key={l.key} {...traced(src)} onMouseEnter={() => setTrace(src)} onMouseLeave={() => setTrace(null)} onFocus={() => setTrace(src)} onBlur={() => setTrace(null)}>
+                  {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
+                  <td data-label="Hesap kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
+                    autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder="770.08…" aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
+                    {...flag(codeFlag)} onChange={(e) => { touch(`code-${l.key}`); setCode(l.key, e.target.value); }} />{checkNote(codeFlag)}</td>
+                  <td data-label="Hesap adı"><input autoComplete="off" className="field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable} onChange={(e) => update(l.key, { accountName: e.target.value })} /></td>
+                  <td data-label="Borç (TL)" className="col-amount"><input id={`satir-${i + 1}-borc`} autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} borç${unsure(debitFlag)}`} value={l.debit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.debit))}
+                    {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} />{checkNote(debitFlag)}</td>
+                  <td data-label="Alacak (TL)" className="col-amount"><input autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
+                    {...flag(creditFlag)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} />{checkNote(creditFlag)}</td>
+                  {editable ? <td className="col-del"><button className="btn btn-quiet btn-sm" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => ((!l.debit && !l.credit) || confirm(`Satır ${i + 1} (${l.accountCode || "hesap kodu yok"}) silinsin mi?`)) && setLines((ls) => ls.filter((x) => x.key !== l.key))}>Sil</button></td> : null}
+                </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {editable ? <div className="journal-add"><button id="satir-ekle" className="btn btn-sm" type="button" disabled={working} onClick={addLine}>Satır ekle</button></div> : null}
+          <dl className="balance-strip" data-balanced={!gap && !invalid ? "" : undefined}>
+            <div><dt>Borç toplamı</dt><dd className="num to-luca">{formatTrAmount(debit)}</dd></div>
+            <div><dt>Alacak toplamı</dt><dd className="num to-luca">{formatTrAmount(credit)}</dd></div>
+            <div><dt>KDV (191)</dt><dd className="num to-luca">{formatTrAmount(vat)}</dd></div>
+            <div className="balance-answer"><dt>{gap ? "Fark" : "Fark yok, dengede"}</dt><dd className={gap ? "num balance-off" : "num balance-ok"}>{formatTrAmount(gap)}
+              {/* Shown when debit meets credit; a CSS transition, so it never plays on load. */}
+              <svg className="balance-check" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8.5l3.25 3.25L13 5" /></svg></dd></div>
+          </dl>
+        </section>
+
+
         <div className="source">
           {photo ? (
             <figure className="photo">
@@ -234,156 +315,91 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>
             <div className="form-grid">
               <label>
-                <span>Evrak No {checkNote(headFlags.documentNo)}</span>
+                <span>Evrak No</span>
                 <input id="evrak-no" className="field tnum" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40} required autoComplete="off" spellCheck={false}
                   {...flag(headFlags.documentNo)}
-                  onChange={(e) => updateAll("documentNo", e.target.value)} />
+                  onChange={(e) => updateAll("documentNo", e.target.value)} />{checkNote(headFlags.documentNo)}
               </label>
               <label>
-                <span>Evrak tarihi {checkNote(headFlags.documentDate)}</span>
+                <span>Evrak tarihi</span>
                 <input id="evrak-tarihi" className="field tnum" type="date" value={head?.documentDate ?? ""} disabled={!editable} required
                   {...flag(headFlags.documentDate)}
-                  onChange={(e) => updateAll("documentDate", e.target.value || null)} />
+                  onChange={(e) => updateAll("documentDate", e.target.value || null)} />{checkNote(headFlags.documentDate)}
               </label>
               <label>Belge türü (BT)
                 <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} autoComplete="off" onChange={(e) => updateAll("documentType", e.target.value)} />
               </label>
               <label className="span-all">
-                <span>Açıklama {checkNote(headFlags.description)}</span>
+                <span>Açıklama</span>
                 <input className="field" value={head?.description ?? ""} disabled={!editable} maxLength={200} autoComplete="off"
                   {...flag(headFlags.description)}
-                  onChange={(e) => updateAll("description", e.target.value)} />
+                  onChange={(e) => updateAll("description", e.target.value)} />{checkNote(headFlags.description)}
               </label>
             </div>
           </section>
         </div>
 
-        <div className="review-main">
-          {warnings.length ? (
-            <div className="alert alert-warn" id="uyarilar">
-              <p className="alert-title">Kontrol edilecekler</p>
-              <ul className="notes">{warnings.map((w) => <li key={w.code}>{w.message}</li>)}</ul>
-            </div>
-          ) : null}
-
-          <section className="panel" aria-labelledby="satir-baslik">
-            <div className="panel-head">
-              <h2 id="satir-baslik">Yevmiye satırları</h2>
-              {editable ? (
-                <label className="inline-field"><span>Alacak hesabı {checkNote(headFlags.credit)}</span>
-                  <select className="field" value={PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? creditCode : ""} {...flag(headFlags.credit)}
-                    onChange={(e) => { touch("credit"); setCreditAccount(e.target.value); }}>
-                    {PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? null : <option value="">{creditCode || "Seçin"}</option>}
-                    {PAYMENT_ALTERNATIVES.map((a) => <option key={a.code} value={a.code}>{a.code} {a.label}</option>)}
-                  </select>
-                </label>
-              ) : null}
-            </div>
-            <table className="journal">
-              <thead>
-                <tr>
-                  <th className="col-code">Hesap kodu</th><th>Hesap adı</th><th className="col-amount num">Borç (TL)</th><th className="col-amount num">Alacak (TL)</th>
-                  {editable ? <th className="col-del"><span className="visually-hidden">Sil</span></th> : null}
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map((l, i) => {
-                  const codeFlag = flagged(`code-${l.key}`, !l.accountCode);
-                  const debitFlag = flagged(`debit-${l.key}`, amountsUnsure && !!l.debit);
-                  const creditFlag = flagged(`credit-${l.key}`, amountsUnsure && !!l.credit);
-                  const unsure = (on: boolean) => (on ? ", kontrol edin" : "");
-                  const src = sourceOf(l.accountCode, kurus(l.credit) || 0);
-                  return (
-                  <tr key={l.key} {...traced(src)} onMouseEnter={() => setTrace(src)} onMouseLeave={() => setTrace(null)} onFocus={() => setTrace(src)} onBlur={() => setTrace(null)}>
-                    {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
-                    <td data-label="Hesap kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
-                      autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder="770.08…" aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
-                      {...flag(codeFlag)} onChange={(e) => { touch(`code-${l.key}`); setCode(l.key, e.target.value); }} />{checkNote(codeFlag)}</td>
-                    <td data-label="Hesap adı"><input autoComplete="off" className="field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable} onChange={(e) => update(l.key, { accountName: e.target.value })} /></td>
-                    <td data-label="Borç (TL)" className="col-amount"><input id={`satir-${i + 1}-borc`} autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} borç${unsure(debitFlag)}`} value={l.debit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.debit))}
-                      {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} />{checkNote(debitFlag)}</td>
-                    <td data-label="Alacak (TL)" className="col-amount"><input autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
-                      {...flag(creditFlag)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} />{checkNote(creditFlag)}</td>
-                    {editable ? <td className="col-del"><button className="btn btn-quiet btn-sm" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => ((!l.debit && !l.credit) || confirm(`Satır ${i + 1} (${l.accountCode || "hesap kodu yok"}) silinsin mi?`)) && setLines((ls) => ls.filter((x) => x.key !== l.key))}>Sil</button></td> : null}
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {editable ? <div className="journal-add"><button id="satir-ekle" className="btn btn-sm" type="button" disabled={busy} onClick={addLine}>Satır ekle</button></div> : null}
-            <dl className="balance-strip" data-balanced={!gap && !invalid ? "" : undefined}>
-              <div><dt>Borç toplamı</dt><dd className="num to-luca">{formatTrAmount(debit)}</dd></div>
-              <div><dt>Alacak toplamı</dt><dd className="num to-luca">{formatTrAmount(credit)}</dd></div>
-              <div><dt>KDV (191)</dt><dd className="num to-luca">{formatTrAmount(vat)}</dd></div>
-              <div className="balance-answer"><dt>{gap ? "Fark" : "Fark yok, dengede"}</dt><dd className={gap ? "num balance-off" : "num balance-ok"}>{formatTrAmount(gap)}
-                {/* Shown when debit meets credit; a CSS transition, so it never plays on load. */}
-                <svg className="balance-check" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8.5l3.25 3.25L13 5" /></svg></dd></div>
-            </dl>
-          </section>
-
-
-          <div className="actions">
-            {editable ? (
-              <button className="btn" type="button" disabled={busy} onClick={() => run(async () => { if (await save()) { setInfo("Kaydedildi."); router.refresh(); } })}>Taslağı kaydet</button>
-            ) : receipt.status === "approved" ? (
-              <>
-                <button className="btn" type="button" disabled={busy} onClick={() => run(async () => { if (await call(`/api/receipts/${receipt.id}/reopen`, { method: "POST" })) router.refresh(); })}>
-                  Taslağa al
-                </button>
-                {/* Without this, a receipt typed into Luca by hand stays approved and the next Excel file repeats it. */}
-                <button className="btn" type="button" disabled={busy}
-                  onClick={() => confirm("Bu fişi Luca'ya kendiniz kaydettiniz mi? Fiş “Aktarıldı” olur ve sonraki Excel dosyasına girmez.")
-                    && run(async () => { if (await call(`/api/receipts/${receipt.id}/exported`, { method: "POST" })) router.refresh(); })}>
-                  Luca&apos;ya elle girdim
-                </button>
-              </>
-            ) : null}
-            <button className="btn" type="button" disabled={invalid} onClick={copy}>Satırları kopyala</button>
-            <p role="status" className="muted small">{info}</p>
-          </div>
-
-          <div className="action-bar">
-            {/* Errors show here, next to the button that caused them; a box higher up is off screen on the phone. */}
-            <p className={error || (editable && problem) ? "balance balance-off" : "balance balance-ok"} aria-live="polite">
-              {error ? error
-                : receipt.status === "approved" ? <><span className="phone-only">{"Onaylandı. Luca'ya aktarmak için Excel'i bilgisayarda indirin."}</span><span className="desktop-only">{"Onaylandı. Excel'i indirip Luca'nın Excel veri aktarımı ekranına yükleyin."}</span></>
-                : receipt.status === "exported" ? "Luca'ya aktarıldı."
-                : target ? <><span id="onay-engeli">{problem}</span> <button className="link-button" type="button" onClick={fix}>{target.action}</button></>
-                : dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır."}
-            </p>
-            {/* The way back sits under the thumb on the phone, where this screen hides the bottom bar. */}
-            <Link className="btn btn-lg bar-back" href={base}>Fişler</Link>
-            {/* After approval the phone user goes on with the bag of receipts: the next draft, or the camera when none is left. */}
-            {!editable ? <div className="bar-next phone-only"><CaptureButton pickers={["camera"]} variant="bar" primary={!next} base={base} /></div> : null}
-            {!editable && next ? (
-              <Link className="btn btn-lg bar-next-draft" href={`${base}/fis/${next.id}`}>Sıradaki taslak ({next.left})</Link>
-            ) : null}
-            {editable ? (
-              // aria-disabled keeps the button in the Tab order; pressing it while blocked goes to the field that fixes it.
-              <button className="btn btn-primary btn-lg" type="button" disabled={busy} aria-disabled={target ? true : undefined}
-                aria-describedby={target ? "onay-engeli" : undefined}
-                onClick={() => (target ? fix() : run(async () => { if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) router.refresh(); }))}>
-                {busy ? "Kaydediliyor…" : "Onayla"}
-              </button>
-            ) : (
-              // Luca runs on the computer; downloading on the phone would mark the receipt exported for nothing.
-              <div className="desktop-only"><ExportButton receiptIds={[receipt.id]} label="Luca için Excel indir" primary /></div>
-            )}
-          </div>
-
+        <div className="actions">
           {editable ? (
-            <section className="danger-zone" aria-labelledby="sil-baslik">
-              <div>
-                <h2 id="sil-baslik">Fişi sil</h2>
-                <p className="muted small">Taslak ve satırları kalıcı olarak silinir.</p>
-              </div>
-              <button className="btn btn-danger" type="button" disabled={busy}
-                onClick={() => confirm(deleteQuestion) && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) router.push(base); })}>
-                Fişi sil
+            <button className="btn" type="button" disabled={working} onClick={() => run(async () => { if (await save()) { setInfo("Kaydedildi."); refresh(); } })}>Taslağı kaydet</button>
+          ) : receipt.status === "approved" ? (
+            <>
+              <button className="btn" type="button" disabled={working} onClick={() => run(async () => { if (await call(`/api/receipts/${receipt.id}/reopen`, { method: "POST" })) refresh(); })}>
+                Taslağa al
               </button>
-            </section>
+              {/* Without this, a receipt typed into Luca by hand stays approved and the next Excel file repeats it. */}
+              <button className="btn" type="button" disabled={working}
+                onClick={() => confirm("Bu fişi Luca'ya kendiniz kaydettiniz mi? Fiş “Aktarıldı” olur ve sonraki Excel dosyasına girmez.")
+                  && run(async () => { if (await call(`/api/receipts/${receipt.id}/exported`, { method: "POST" })) refresh(); })}>
+                Luca&apos;ya elle girdim
+              </button>
+            </>
           ) : null}
+          <button className="btn" type="button" disabled={invalid} onClick={copy}>Satırları kopyala</button>
+          <p role="status" className="muted small">{info}</p>
         </div>
+
+        <div className="action-bar">
+          {/* Errors show here, next to the button that caused them; a box higher up is off screen on the phone. */}
+          <p ref={statusLine} tabIndex={-1} className={error || (editable && problem) ? "balance balance-off" : "balance balance-ok"} aria-live="polite">
+            {error ? error
+              : receipt.status === "approved" ? <><span className="phone-only">{"Onaylandı. Luca'ya aktarmak için Excel'i bilgisayarda indirin."}</span><span className="desktop-only">{"Onaylandı. Excel'i indirip Luca'nın Excel veri aktarımı ekranına yükleyin."}</span></>
+              : receipt.status === "exported" ? "Luca'ya aktarıldı."
+              : target ? <><span id="onay-engeli">{problem}</span> <button className="link-button" type="button" onClick={fix}>{target.action}</button></>
+              : dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır."}
+          </p>
+          {/* The way back sits under the thumb on the phone, where this screen hides the bottom bar. */}
+          <Link className="btn btn-lg bar-back" href={base}>Fişler</Link>
+          {/* After approval the phone user goes on with the bag of receipts: the next draft, or the camera when none is left. */}
+          {!editable ? <div className="bar-next phone-only"><CaptureButton pickers={["camera"]} variant="bar" primary={!next} base={base} /></div> : null}
+          {!editable && next ? (
+            <Link className="btn btn-lg bar-next-draft" href={`${base}/fis/${next.id}`}>Sıradaki taslak ({next.left})</Link>
+          ) : null}
+          {editable ? (
+            // aria-disabled keeps the button in the Tab order; pressing it while blocked goes to the field that fixes it.
+            <button className="btn btn-primary btn-lg" type="button" disabled={working || approved} data-busy={working || approved || undefined} aria-disabled={target ? true : undefined}
+              aria-describedby={target ? "onay-engeli" : undefined}
+              onClick={() => (target ? fix() : run(async () => { if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) { setApproved(true); refresh(); } }))}>
+              {approved ? "Onaylandı" : busy ? "Kaydediliyor…" : "Onayla"}
+            </button>
+          ) : (
+            // Luca runs on the computer; downloading on the phone would mark the receipt exported for nothing.
+            <div className="desktop-only"><ExportButton receiptIds={[receipt.id]} label="Luca için Excel indir" primary /></div>
+          )}
+        </div>
+
+        {editable ? (
+          <section className="danger-zone" aria-labelledby="sil-baslik">
+            <div>
+              <h2 id="sil-baslik">Fişi sil</h2>
+              <p className="muted small">Taslak ve satırları kalıcı olarak silinir.</p>
+            </div>
+            <button className="btn btn-danger" type="button" disabled={working}
+              onClick={() => confirm(deleteQuestion) && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) router.push(base); })}>
+              Fişi sil
+            </button>
+          </section>
+        ) : null}
       </div>
     </>
   );
