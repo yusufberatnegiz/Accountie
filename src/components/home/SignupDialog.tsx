@@ -31,7 +31,7 @@ export function SignupDialog() {
       </label>
       <label>E-posta
         <input className="field" type="email" name="email" autoComplete="email" spellCheck={false}
-          placeholder="ornek@buro.com.tr" value={email} onChange={(e) => setEmail(e.target.value)} />
+          placeholder="ornek@buro.com.tr…" value={email} onChange={(e) => setEmail(e.target.value)} />
       </label>
       <button type="submit" className="btn btn-accent btn-lg">Hesap oluştur</button>
       <p className="cta-dialog-alt">Hesabınız var mı? <Link href="/giris">Giriş yapın</Link></p>

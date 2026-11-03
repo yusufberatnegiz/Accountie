@@ -17,6 +17,9 @@ export const LIMITS = {
   // locking needs several networks, which Turnstile (set TURNSTILE_SECRET_KEY in production) stops.
   loginEmail: [[100, 60 * MIN]],
   signupIp: [[5, 60 * MIN]],
+  // Password reset: each request sends an e-mail. Per network, and per address so one inbox cannot be flooded.
+  resetIp: [[10, 60 * MIN]],
+  resetEmail: [[3, 60 * MIN]],
 } as const;
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex").slice(0, 32);
