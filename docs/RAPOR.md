@@ -62,13 +62,15 @@ Luca yüklemede doğrulama kodu istediği için Excel yüklemesini muhasebeci el
 | 4 | 8,5 | 8,5 | 9 | 9 |
 | 5 | 8,8 | 8,5 | 9 | 9 |
 | 6 | 9 | 8,5 | 9 | 8,5 |
+| 7 | 8,9 | 9 | 9 | 9 |
+| 8 | 9 | 9 | 9 | 9 |
 
 ## Son kontrol sonuçları
 
 | Komut | Sonuç |
 |---|---|
-| `npm install` | Başarılı. `npm ci` açık kalmış geliştirme sunucularının kilitlediği bir dosya yüzünden yerelde başarısız oldu (EPERM); kodla ilgili değil |
-| `npm test` | 13 dosya, 158 test geçti, 1 atlandı (gerçek anahtarla elle çalıştırılan smoke testi) |
+| `npm install` | Başarılı. `npm ci` açık kalmış geliştirme sunucularının kilitlediği `next-swc` dosyası yüzünden yerelde başarısız oldu (EPERM); kodla ilgili değil. Sunucular kapatıldıktan sonra `npm ci` tekrar denenmeli |
+| `npm test` | 13 dosya, 159 test geçti, 1 atlandı (gerçek anahtarla elle çalıştırılan smoke testi) |
 | `npm run typecheck` | Hata yok |
 | `npm run lint` | Hata yok |
 | `npm run build` | Başarılı |
@@ -100,4 +102,4 @@ Sırayla yapın; ayrıntılı hali `README.md` içinde "Canlıya alma" bölümü
 6. **Uçtan uca deneme (telefonda).** accountie.vercel.app'e girin, bir fiş çekin, kontrol ekranında satırları kağıt fişle karşılaştırıp onaylayın.
 7. **İlk gerçek Luca denemesi (tek fiş, Excel).** Fiş sayfasında "Luca için Excel indir". Luca'da Muhasebe > Fiş İşlemleri > Excel veri aktarımı ekranından yükleyin, önizlemeyi kağıt fişle karşılaştırın. Reddederse hata mesajını ve aynı ekrandaki "Şablon indir" dosyasını saklayın, bana iletin; kolonlar buna göre kilitlenir. Kabul ederse Fiş Kes ile fişi kesin.
 8. **Eklenti denemesi (isteğe bağlı).** `chrome://extensions` > Geliştirici modu > Paketlenmemiş öğe yükle > `extension/` klasörü. Accountie Fişler sayfasında eklenti anahtarı oluşturun, Luca'da Fiş Detayı ekranını açıp eklentiden fişi yazdırın. "Alan bulunamadı" çıkarsa Luca hücresinde sağ tık > İncele ile seçiciyi alıp iletin; Kaydet'e her zaman siz basın.
-9. **Açık kalmış geliştirme sunucularını kapatın.** Gece çalışmasından kalan `next dev` süreçleri (port 3917, 3124, 3458) bilgisayarınızda açık olabilir; Görev Yöneticisi'nden `node.exe` süreçlerini kapatabilir veya bilgisayarı yeniden başlatabilirsiniz.
+9. **Açık kalmış geliştirme sunucularını kapatın.** Gece çalışmasından kalan `next dev` süreçleri (port 3917, 3124, 3458) son kontrolde hâlâ açıktı; otomatik kapatma izni verilmedi. Görev Yöneticisi'nden `node.exe` süreçlerini kapatın veya bilgisayarı yeniden başlatın, ardından repo klasöründe `npm ci` çalıştırıp temiz kurulumun geçtiğini görün.
