@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const dev = process.env.NODE_ENV === "development";
 
+// 'unsafe-inline' stays: App Router streams its RSC payload as inline <script>self.__next_f.push(...)</script> whose text changes per build and page, so a hash list cannot cover it, and listing any hash makes browsers ignore 'unsafe-inline' (every page breaks). A nonce would work but forces dynamic rendering, losing the static homepage. Today no XSS sink exists: dangerouslySetInnerHTML takes fixed strings or JSON.stringify output only.
+// shortcut: no nonce CSP, upgrade to a per-request nonce for /panel in proxy.ts if a raw-HTML sink is ever added.
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com${dev ? " 'unsafe-eval'" : ""}`,
