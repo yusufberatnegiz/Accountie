@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Accountie",
     short_name: "Accountie",
     description: "Yazar kasa fişinden Luca için yevmiye kaydı hazırlar.",
-    start_url: "/",
+    start_url: "/panel",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
@@ -21,6 +21,6 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
       { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
-    shortcuts: [{ name: "Fişler", url: "/" }, { name: "Hesap kuralları", url: "/kurallar" }],
+    shortcuts: [{ name: "Fişler", url: "/panel" }, { name: "Hesap kuralları", url: "/kurallar" }],
   };
 }

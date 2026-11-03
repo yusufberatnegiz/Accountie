@@ -12,7 +12,7 @@ export function ReceiptView({ receipt, rules }: { receipt: ReceiptDetail; rules:
     <main id="icerik" tabIndex={-1} className="page">
       <div className="page-head">
         <div>
-          <p className="crumb"><Link href="/">Fişler</Link></p>
+          <p className="crumb"><Link href="/panel">Fişler</Link></p>
           <h1>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
           <p className="meta">
             <span className={`status status-${receipt.status}`}>{STATUS_LABELS[receipt.status]}</span>

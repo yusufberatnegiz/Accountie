@@ -1,0 +1,39 @@
+/* Login and signup (docs/design/YON.md 5.4, taste-skill app-screens.md 8.1). Form left, an old ledger on the stage tone right. */
+.auth { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.auth-side { display: grid; grid-template-rows: auto 1fr; padding: var(--s6) var(--page-margin); padding-top: max(var(--s6), env(safe-area-inset-top)); }
+.auth-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); }
+.auth-form { align-self: center; justify-self: center; width: 100%; max-width: 400px; display: grid; gap: var(--s5); padding-block: var(--s8); }
+.auth-head { display: grid; gap: var(--s2); }
+.auth-head p { font-size: var(--fs-body); }
+.auth-fields { display: grid; gap: var(--s4); }
+.auth-field { display: grid; gap: var(--s2); }
+.auth-field > label { font-size: var(--fs-body); font-weight: 500; }
+.auth-password { position: relative; }
+.auth-password .field { padding-right: var(--s8); }
+.auth-reveal {
+  position: absolute; top: 0; right: 0; height: 100%; width: var(--touch); display: grid; place-items: center;
+  border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 0 var(--radius-control) var(--radius-control) 0;
+  transition: color var(--t-hover) ease, background-color var(--t-hover) ease;
+}
+.auth-reveal svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+@media (hover: hover) and (pointer: fine) { .auth-reveal:hover { color: var(--ink); background: var(--active); } }
+.auth-reveal:focus-visible { outline-offset: -2px; }
+.auth-fields .btn { margin-top: var(--s2); min-height: var(--touch); }
+.auth-switch { font-size: var(--fs-body); color: var(--muted); }
+.auth-stage { margin: 0; background: var(--stage); display: grid; align-content: center; justify-items: center; gap: var(--s4); padding: var(--s8) var(--page-margin); }
+.auth-stage img { width: min(100%, 640px); height: auto; }
+.auth-stage figcaption { font-size: var(--fs-body); color: var(--muted); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-form { animation: auth-rise 500ms var(--ease-out) both; }
+  .auth-stage img { animation: auth-settle 1200ms var(--ease-expo) both; }
+}
+@keyframes auth-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes auth-settle { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 900px) {
+  .auth { grid-template-columns: 1fr; }
+  .auth-stage { display: none; }
+  .auth-side { padding: var(--s4) var(--page-margin); padding-top: max(var(--s4), env(safe-area-inset-top)); }
+  .auth-form { align-self: start; padding-block: var(--s8) var(--s7); }
+}

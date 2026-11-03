@@ -8,9 +8,9 @@ export const metadata: Metadata = { title: "Giriş" };
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ hata?: string; mesaj?: string; mod?: string }> }) {
-  if (await getUserId()) redirect("/");
   const { hata, mesaj, mod } = await searchParams;
-  return (
-    <LoginView hata={hata} mesaj={mesaj} isSignup={mod === "kayit"} turnstileSiteKey={turnstileSiteKey()} />
-  );
+  // Old signup links (/giris?mod=kayit) still land on the signup screen.
+  if (mod === "kayit") redirect(hata ? `/kayit?${new URLSearchParams({ hata })}` : "/kayit");
+  if (await getUserId()) redirect("/panel");
+  return <LoginView hata={hata} mesaj={mesaj} isSignup={false} turnstileSiteKey={turnstileSiteKey()} />;
 }
