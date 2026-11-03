@@ -89,6 +89,19 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
                   </tbody>
                 </table>
               </figure>
+              {/* Beside the long expense table: every group of this page, one click away, travelling with the sticky column. */}
+              {g.kind === "expense" ? (
+                <nav className="jump" aria-labelledby="jump-title">
+                  <p id="jump-title" className="muted small">Bu sayfadaki diğer bölümler</p>
+                  <ul>
+                    {GROUPS.slice(1).map((o) => (
+                      <li key={o.kind}><a href={`#kural-${o.kind}`}><span>{o.title}</span><span className="muted">{o.kind === "setting" ? rows.find((r) => r.kind === "setting")?.accountCode : `${rows.filter((r) => r.kind === o.kind).length} kural`}</span></a></li>
+                    ))}
+                    <li><a href="#kural-eklenti"><span>Chrome eklentisi</span></a></li>
+                    <li><a href="#kural-gorunum"><span>Görünüm</span></a></li>
+                  </ul>
+                </nav>
+              ) : null}
             </div>
             <div className="setting-panel">
               <table className="rules-table">
@@ -115,7 +128,7 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
         );
       })}
 
-      <section className="setting-row" aria-labelledby="grp-eklenti">
+      <section id="kural-eklenti" className="setting-row" aria-labelledby="grp-eklenti">
         <div className="setting-label">
           <h2 id="grp-eklenti">Chrome eklentisi (deneysel)</h2>
           <p className="muted small desktop-only">Eklenti onaylı fişin satırlarını Luca&apos;da açık Fiş Detayı ekranına yazar; Kaydet&apos;e siz basarsınız. Anahtar 12 saat geçerlidir ve yalnızca sizin onaylı fişlerinizi okur.</p>
@@ -126,7 +139,7 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
         <div className="setting-panel desktop-only"><ExtensionTokenPanel /></div>
       </section>
 
-      <section className="setting-row" aria-labelledby="grp-gorunum">
+      <section id="kural-gorunum" className="setting-row" aria-labelledby="grp-gorunum">
         <div className="setting-label">
           <h2 id="grp-gorunum">Görünüm</h2>
           <p className="muted small">Sistem seçiliyken cihazın açık veya koyu ayarını izler. Seçim bu tarayıcıda hatırlanır.</p>

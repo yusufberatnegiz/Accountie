@@ -67,14 +67,27 @@
 .unit { color: var(--muted); font-size: var(--fs-small); }
 .small { font-size: var(--fs-body); }
 .panel-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s4); padding: var(--s4) var(--s5); }
-.capture { display: grid; gap: var(--s2); }
+.capture { position: relative; display: grid; gap: var(--s2); }
+/* While a receipt is read the card lies over the buttons' own slot (they keep their space, hidden), anchored to the slot's foot
+   and growing up into the free right side of the title row: the header and the list below never move. */
+.capture:has(.reading) .capture-buttons { visibility: hidden; }
+.capture-head .reading { position: absolute; right: 0; bottom: 0; z-index: 2; width: max(100%, 440px); padding-block: 10px; }
+/* Stages run on one line here so the card stays one feed tall and never rises past the top of the screen. */
+.capture-head .stages { display: flex; flex-wrap: wrap; gap: 0 var(--s3); }
+/* In the empty state text sits above the buttons, so the card grows down over the first-run steps instead. */
+.empty-row .capture-head .reading { top: 0; bottom: auto; right: auto; left: 0; }
 .capture-buttons { display: flex; gap: var(--s2); }
 
 /* ---------- List screen ---------- */
 .canvas-list { grid-template-columns: minmax(0, 1fr) 384px; align-items: start; }
 .list-panel { min-width: 0; }
-/* A full list card reaches the foot of the Luca column beside it; an empty one keeps its own height. */
-.canvas-list > .list-panel:not(:has(.empty-row)) { align-self: stretch; }
+/* The list card and the Luca column share one foot. A list reaches down to the column; an empty or loading list is short,
+   so there the column's last block grows to meet it instead (a long list never stretches the column). */
+.canvas-list > .list-panel { align-self: stretch; }
+@media (min-width: 1181px) {
+  .canvas-list:is(:has(.empty-row), [aria-busy]) > .side { align-self: stretch; display: flex; flex-direction: column; }
+  .canvas-list:is(:has(.empty-row), [aria-busy]) > .side > section.panel:last-of-type { flex: 1 0 auto; align-content: start; }
+}
 .tabs { display: flex; gap: var(--s1); padding: 0 var(--s4); border-bottom: 1px solid var(--border); overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
 .tabs a { position: relative; display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--touch); padding: 0 var(--s2); margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--muted); font-size: var(--fs-body); font-weight: 500; text-decoration: none; white-space: nowrap; transition: color var(--t-hover) ease, border-color var(--t-hover) ease; }
 @media (hover: hover) and (pointer: fine) { .tabs a:hover { color: var(--ink); border-color: var(--border); } }
@@ -100,7 +113,8 @@
 .row-link::after { content: ""; position: absolute; inset: 0; }
 .row-link:focus-visible { outline: none; }
 .receipts tbody tr:has(.row-link:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
-@media (hover: hover) and (pointer: fine) { .receipts tbody tr:hover { background: var(--raised); } }
+/* --raised is 1.07:1 on white; --active is a step the eye catches in both themes. */
+@media (hover: hover) and (pointer: fine) { .receipts tbody tr:hover { background: var(--active); } }
 .r-notes { display: block; font-size: var(--fs-small); color: var(--warn-ink); }
 .r-code { color: var(--ink); }
 .list-foot { padding: var(--s4) var(--s5); border-top: 1px solid var(--rule); }
@@ -130,7 +144,19 @@ details.side-block:not([open]) { gap: 0; }
 
 /* ---------- Review screen ---------- */
 .review { display: grid; gap: var(--s4); align-items: start; }
-@media (min-width: 1100px) { .review { grid-template-columns: 360px minmax(0, 1fr); } .source { position: sticky; top: var(--s4); } }
+@media (min-width: 1100px) { .review { grid-template-columns: 360px minmax(0, 1fr); } .source .form-grid { grid-template-columns: 1fr 1fr; align-items: end; } }
+/* The receipt column travels beside the lines, but only where all of it fits the screen; with the photo it would hide its own foot. */
+@media (min-width: 1100px) and (min-height: 820px) { .source:not(:has(.photo)) { position: sticky; top: var(--s4); } }
+/* One column: the journal lines and the balance answer the screen's question, so they come straight after the title;
+   what the receipt said follows, then the header fields, the actions and the delete. Both wrappers are plain divs. */
+@media (max-width: 1099px) {
+  .review { display: flex; flex-direction: column; align-items: stretch; }
+  .review > :is(.source, .review-main) { display: contents; }
+  .review .source > * { order: 1; }
+  .review .source > .info { order: 2; }
+  .review-main > :is(.actions, .action-bar) { order: 3; }
+  .review-main > .danger-zone { order: 4; }
+}
 .source { display: grid; gap: var(--s4); min-width: 0; }
 .photo { margin: 0; background: var(--stage); aspect-ratio: 3 / 4; max-height: 70vh; }
 .photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
@@ -211,6 +237,13 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .preview-lines tr { transition: background-color var(--t-hover) ease; }
 .preview-lines tr[data-traced] { background: var(--accent-soft); }
 .preview-lines tr[data-traced] td:first-child .muted { color: var(--ink); }
+/* Jump list of the page's other groups, under the first group's example. Rows are links, a tone step on hover, no rules. */
+.jump { display: grid; gap: var(--s2); margin-top: var(--s5); }
+.jump ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.jump a { display: flex; justify-content: space-between; gap: var(--s3); align-items: center; min-height: var(--control); padding: 0 var(--s2); margin: 0 calc(-1 * var(--s2)); border-radius: var(--radius-control); color: var(--ink); font-size: var(--fs-body); font-weight: 500; text-decoration: none; transition: background-color var(--t-hover) ease; }
+.jump a .muted { font-weight: 400; font-variant-numeric: tabular-nums; }
+@media (hover: hover) and (pointer: fine) { .jump a:hover { background: var(--active); } }
+.setting-row { scroll-margin-top: var(--s4); }
 .setting-panel { align-self: start; padding: var(--s4); border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); min-width: 0; }
 .danger-zone.setting-row { margin-top: 0; }
 .danger-zone .setting-panel { background: none; padding-left: 0; }
@@ -264,7 +297,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .receipts td, .receipts td:first-child, .receipts td:last-child { height: auto; padding: 0; border: 0; }
   .receipts .r-vendor { grid-column: 1 / 4; }
   .receipts .r-total { grid-column: 4; grid-row: 1; font-weight: 600; }
-  .receipts .r-no, .receipts .r-date, .receipts .r-code { grid-row: 2; font-size: var(--fs-small); color: var(--muted); }
+  /* The meta line is three fixed columns in tabular figures: number, date and code line up from row to row, left-aligned like the vendor above them. */
+  .receipts .r-no, .receipts .r-date, .receipts .r-code { grid-row: 2; font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; }
   .receipts .r-no { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Number and date start at the vendor's left edge, not right-aligned inside their columns. */
   .receipts .r-no, .receipts .r-date { text-align: left; }
@@ -283,7 +317,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .journal td.col-del { grid-column: 3; grid-row: 2; align-self: end; width: auto; }
   .journal .col-code, .journal .col-amount { width: auto; }
 }
-@media (max-width: 900px) { .setting-row { grid-template-columns: minmax(0, 1fr); gap: var(--s4); } .setting-label { position: static; } .canvas { padding: var(--s5) var(--s5) var(--s8); } }
+@media (max-width: 900px) { .setting-row { grid-template-columns: minmax(0, 1fr); gap: var(--s4); } .setting-label { position: static; } .jump { display: none; } .canvas { padding: var(--s5) var(--s5) var(--s8); } }
 
 /* ---------- Phone: the rail becomes a bottom bar ---------- */
 @media (max-width: 720px) {
@@ -305,7 +339,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .app[data-screen="fisler"] .rail-capture { background: var(--primary); color: var(--on-primary); }
   .app[data-screen="fisler"] .rail-capture:hover { background: var(--primary-hover) !important; color: var(--on-primary) !important; }
   /* Reading status and errors float just above the bar, under the thumb. */
-  .capture-rail .reading, .capture-rail .alert { position: fixed; left: var(--s4); right: var(--s4); bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 4; }
+  .capture-rail .reading, .capture-rail .alert, .capture-head .reading, .empty-row .capture-head .reading { position: fixed; top: auto; width: auto; left: var(--s4); right: var(--s4); bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 4; }
   /* The receipt screen has its own bottom bar (balance, Onayla); the crumb leads back. */
   .app[data-screen="fis"] .rail { display: none; }
 
@@ -409,14 +443,15 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .row-pending { animation: row-pending 900ms var(--ease-in-out) infinite; }
   @keyframes row-pending { from { transform: scaleX(0); } 60% { transform: scaleX(1); opacity: 1; } to { transform: scaleX(1); opacity: 0; } }
   .stages li:last-child { animation: stage-in 180ms var(--ease-out) both; }
+  .reading { animation: stage-in 180ms var(--ease-out) both; }
   @keyframes stage-in { from { opacity: 0; transform: translateY(6px); } }
 }
 /* Row opening: a thin ledger-blue bar along the row's foot while the review loads. */
 .row-pending { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--accent); transform-origin: left center; }
 .reading:has(.feed) { gap: var(--s3); padding: var(--s3) var(--s4); }
-.feed { flex: none; display: block; width: 28px; height: 40px; overflow: hidden; border-top: 2px solid var(--ink); border-radius: 2px; }
-.feed-paper { display: grid; align-content: start; gap: 4px; height: 100%; padding: 5px 4px; background: var(--paper); }
-.feed-paper i { display: block; height: 2px; background: var(--paper-ink); }
+.feed { flex: none; display: block; width: 40px; height: 56px; overflow: hidden; border-top: 2px solid var(--ink); border-radius: 2px; }
+.feed-paper { display: grid; align-content: start; gap: 6px; height: 100%; padding: 8px 6px; background: var(--paper); }
+.feed-paper i { display: block; height: 3px; background: var(--paper-ink); }
 .feed-paper i:nth-child(1) { --i: 0; width: 70%; } .feed-paper i:nth-child(2) { --i: 1; } .feed-paper i:nth-child(3) { --i: 2; width: 55%; } .feed-paper i:nth-child(4) { --i: 3; width: 80%; }
 .reading-text { display: grid; gap: 2px; min-width: 0; }
 .stages { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
@@ -426,19 +461,24 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 
 /* View transitions. Root cross-fades quickly; named parts carry the meaning. */
 ::view-transition-group(*) { animation-duration: 240ms; animation-timing-function: var(--ease-out); }
-::view-transition-group(root) { animation-duration: 200ms; }
+/* The old screen goes first and the new one comes in a beat later, so a travelling title never crosses fully drawn body text. */
+::view-transition-old(root) { animation: vt-fade-out 120ms var(--ease-exit) both; }
+::view-transition-new(root) { animation: vt-fade-in 140ms 60ms var(--ease-out) both; }
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; } }
 /* List row title into review title, without scaling the text raster. */
-::view-transition-group(.title-morph) { animation-duration: 280ms; }
+::view-transition-group(.title-morph) { animation-duration: 240ms; }
 ::view-transition-old(.title-morph) { display: none; }
 ::view-transition-new(.title-morph) { animation: none; object-fit: none; object-position: left top; }
 ::view-transition-group(.tab-slide) { animation-duration: 200ms; }
 ::view-transition-new(.row-rise) { animation: vt-rise 240ms var(--ease-out) both; }
-::view-transition-old(.row-out) { animation: vt-out-right 200ms var(--ease-exit) both; }
+::view-transition-old(.row-out) { animation: vt-out-up 200ms var(--ease-exit) both; }
 ::view-transition-group(.row-move) { animation-duration: 240ms; }
 ::view-transition-old(.count-out) { animation: vt-count-out 140ms var(--ease-exit) both; }
 ::view-transition-new(.count-in) { animation: vt-count-in 180ms var(--ease-out) both; }
 @keyframes vt-rise { from { opacity: 0; transform: translateY(16px); } }
-@keyframes vt-out-right { to { opacity: 0; transform: translateX(32px); } }
+/* Up and to the left: toward the Aktarıldı tab at the top of the list. */
+@keyframes vt-out-up { to { opacity: 0; transform: translate(-8px, -12px); } }
 @keyframes vt-count-out { to { opacity: 0; transform: translateY(-6px); } }
 @keyframes vt-count-in { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) {

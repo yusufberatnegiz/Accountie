@@ -29,7 +29,7 @@ async function shrink(file: File): Promise<Blob> {
 type Picker = "camera" | "gallery";
 
 /** `head`: the screen's title-row buttons. `rail`: the camera button in the phone's bottom bar (hidden on desktop). */
-export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head", primary = true }: { pickers?: Picker[]; variant?: "head" | "rail" | "bar"; primary?: boolean }) {
+export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head", primary = true, base = "/panel" }: { pickers?: Picker[]; variant?: "head" | "rail" | "bar"; primary?: boolean; base?: string }) {
   const router = useRouter();
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -67,7 +67,8 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       });
       if (!res?.ok) {
         const body = res ? await res.json().catch(() => null) : null;
-        const msg = body?.error ?? failure;
+        // A response without a message means the connection worked and the server failed; only no response is a connection problem.
+        const msg = body?.error ?? (res ? "Sunucu fişi işleyemedi. Tekrar deneyin." : failure);
         setError(list.length > 1 ? `${added}/${list.length} fiş eklendi, kalanlar gönderilmedi. ${msg}` : msg);
         break;
       }
@@ -78,7 +79,7 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       added++;
     }
     // One photo goes straight to its review; the reading card stays until that screen replaces it.
-    if (lastId && list.length === 1) return router.push(`/panel/fis/${lastId}`);
+    if (lastId && list.length === 1) return router.push(`${base}/fis/${lastId}`);
     setBusy(false);
     setStatus("");
     if (list.length > 1 && added === list.length) setNotice(`${added} fiş eklendi.`);
@@ -128,7 +129,10 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
           <span className="rail-label">Fiş çek</span>
           {input(true)}
         </label>
-      ) : busy ? null : <div className="capture-buttons">{pickers.map(picker)}</div>}
+      ) : (
+        // The buttons keep their slot while a receipt is read, so nothing below moves; the reading card lies over them.
+        <div className="capture-buttons" inert={busy || undefined}>{pickers.map(picker)}</div>
+      )}
       {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
     </div>
   );

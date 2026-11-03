@@ -1,11 +1,11 @@
 import { TABS } from "@/components/ReceiptListView";
 
 /**
- * Loading state of the list: the real title, buttons, tabs and table header, three rows at the size of the values
+ * Loading state of the list: the real title, buttons, tabs and table header, rows enough to fill the first screen at the size of the values
  * they stand for and one line saying what is happening. No shimmer, no layout shift when data lands.
  */
 export function PanelLoading() {
-  const rows = [62, 48, 70];
+  const rows = [62, 48, 70, 55, 66, 44, 58, 72, 50, 64, 46, 68];
   return (
     <main id="icerik" tabIndex={-1} className="canvas canvas-list" aria-busy="true">
       <div className="title-row">
@@ -38,7 +38,18 @@ export function PanelLoading() {
         </table>
       </section>
       <aside className="side desktop-only" aria-hidden="true">
-        <div className="panel side-block"><p className="sk-label">Luca dosyası</p><p className="muted small">Onaylı fişler sayılıyor…</p></div>
+        <section className="panel side-block">
+          <div className="side-head"><p className="sk-label">Luca dosyası</p><p className="muted small">Onaylı fişler sayılıyor…</p></div>
+          {["Fiş", "Satır"].map((l) => (
+            <div key={l} className="meter"><div className="meter-head"><span>{l}</span><span className="sk sk-cell" /></div><span className="meter-track" /></div>
+          ))}
+        </section>
+        <section className="panel side-block">
+          <p className="sk-label">Gider hesaplarına göre</p>
+          <ul className="by-account">
+            {[70, 52, 40, 28, 18].map((w) => <li key={w}><span className="sk" style={{ width: `${w + 20}%` }} /><span className="sk sk-num" /><span className="acc-track" /></li>)}
+          </ul>
+        </section>
       </aside>
     </main>
   );
