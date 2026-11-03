@@ -9,7 +9,7 @@ export default function NotFound() {
       <section className="panel panel-pad stack">
         <h1>Fiş veya sayfa bulunamadı</h1>
         <p className="muted">Fiş silinmiş olabilir ya da bağlantı hatalı.</p>
-        <p><Link className="btn" href="/panel">Fişlere dön</Link></p>
+        <p className="actions"><Link className="btn" href="/panel">Fişlere dön</Link><Link className="btn btn-quiet" href="/">Ana sayfa</Link></p>
       </section>
     </main>
   );

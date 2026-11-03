@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useSyncExternalStore, type ReactNode } from "react";
-import { THEME_COLOR, THEME_STORAGE_KEY, type ThemeChoice } from "@/lib/theme";
+import { FREEZE_CLASS, THEME_COLOR, THEME_STORAGE_KEY, type ThemeChoice } from "@/lib/theme";
 
 const EVENT = "accountie-theme";
 
@@ -23,6 +23,8 @@ function syncThemeColor(choice: ThemeChoice) {
 
 export function applyTheme(choice: ThemeChoice) {
   const root = document.documentElement;
+  // No colour fades: inputs and buttons would sit unreadable mid-way for 180ms (YON 6.2).
+  root.classList.add(FREEZE_CLASS);
   if (choice === "system") delete root.dataset.theme;
   else root.dataset.theme = choice;
   try {
@@ -32,6 +34,8 @@ export function applyTheme(choice: ThemeChoice) {
     // Private mode or blocked storage: the choice still applies for this page.
   }
   syncThemeColor(choice);
+  void getComputedStyle(root).color; // flush the new colours while transitions are off
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove(FREEZE_CLASS)));
   window.dispatchEvent(new Event(EVENT));
 }
 
