@@ -8,7 +8,7 @@ import "../../../extension/selectors.js";
 type FakeEl = { value: string; events: string[]; dispatchEvent(e: Event): boolean; focus(): void };
 type Fill = {
   FIELDS: string[];
-  fillReceipt(doc: unknown, rows: unknown[], sel: Selectors): { gridFound: boolean; filled: number; missing: { row: number; field: string }[] };
+  fillReceipt(doc: unknown, rows: unknown[], sel: Selectors): { gridFound: boolean; filled: number; missing: { row: number; field: string }[]; extraRows: number };
   summarize(results: unknown[], rowCount: number): { ok: boolean; gridFound: boolean; message: string };
 };
 type Selectors = { row: string; addRow: string | null; cells: Record<string, string> };
@@ -52,7 +52,7 @@ describe("eklenti satır doldurma", () => {
   it("üç satırı doldurur, boş tutarı yazmaz, input/change olaylarını tetikler", () => {
     const doc = fakeDoc(3);
     const result = fill.fillReceipt(doc, rows, SEL);
-    expect(result).toEqual({ gridFound: true, filled: 18, missing: [] });
+    expect(result).toEqual({ gridFound: true, filled: 18, missing: [], extraRows: 0 });
     expect(doc.grid[0].cells[".accountCode"].value).toBe("770.08");
     expect(doc.grid[0].cells[".debit"].value).toBe("7.931,82");
     expect(doc.grid[0].cells[".credit"].value).toBe("");
@@ -85,8 +85,15 @@ describe("eklenti satır doldurma", () => {
     expect(fill.fillReceipt(doc, rows, SEL).missing).toEqual([1, 2, 3].map((row) => ({ row, field: "documentType" })));
   });
 
+  it("kaydın altında kalan dolu satırları sayar ama silmez", () => {
+    const doc = fakeDoc(5);
+    doc.grid[4].cells[".debit"].value = "100,00";
+    expect(fill.fillReceipt(doc, rows, SEL).extraRows).toBe(1);
+    expect(doc.grid[4].cells[".debit"].value).toBe("100,00");
+  });
+
   it("tablo yoksa gridFound false döner", () => {
-    expect(fill.fillReceipt(fakeDoc(0), rows, SEL)).toEqual({ gridFound: false, filled: 0, missing: [] });
+    expect(fill.fillReceipt(fakeDoc(0), rows, SEL)).toEqual({ gridFound: false, filled: 0, missing: [], extraRows: 0 });
   });
 });
 
@@ -104,6 +111,12 @@ describe("çerçeve sonuçlarının özeti", () => {
     // Partial fill: the "Luca'da kaydettim" button must stay reachable so the receipt is not exported twice.
     expect(s.gridFound).toBe(true);
     expect(s.message).toContain("+ ile boş satır");
+  });
+  it("fazladan dolu satır varsa uyarır", () => {
+    const s = fill.summarize([{ gridFound: true, filled: 18, missing: [], extraRows: 2 }], 3);
+    expect(s.ok).toBe(false);
+    expect(s.gridFound).toBe(true);
+    expect(s.message).toContain("2 dolu satır daha var");
   });
   it("hepsi dolunca kullanıcıya Kaydet'i kendisinin basacağını söyler", () => {
     const s = fill.summarize([{ gridFound: false, filled: 0, missing: [] }, { gridFound: true, filled: 18, missing: [] }], 3);

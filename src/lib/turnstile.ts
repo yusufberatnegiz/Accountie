@@ -5,14 +5,14 @@ export const turnstileSiteKey = () => process.env.TURNSTILE_SITE_KEY || undefine
 
 /**
  * Server-side Cloudflare Turnstile check for public forms.
- * Without TURNSTILE_SECRET_KEY it passes only outside Vercel production (local dev, tests, previews); production fails closed.
+ * Without TURNSTILE_SECRET_KEY the check is skipped everywhere; in Vercel production a warning is logged.
  */
 export async function verifyTurnstile(token: unknown, ip: string, fetchImpl: typeof fetch = fetch): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) {
-    if (process.env.VERCEL_ENV !== "production") return true;
-    console.error("TURNSTILE_SECRET_KEY eksik: giriş ve kayıt kapalı.");
-    return false;
+    // Optional by design: Neon Auth still rate-limits and locks accounts, so a missing key must not block the first deploy.
+    if (process.env.VERCEL_ENV === "production") console.warn("TURNSTILE_SECRET_KEY eksik: giriş ve kayıtta bot doğrulaması atlanıyor.");
+    return true;
   }
   if (typeof token !== "string" || token.length === 0 || token.length > 2048) return false;
   try {
