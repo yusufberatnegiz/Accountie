@@ -23,6 +23,7 @@ const receiptRoute = await import("./receipts/[id]/route");
 const approveRoute = await import("./receipts/[id]/approve/route");
 const exportsRoute = await import("./exports/route");
 const exportedRoute = await import("./receipts/[id]/exported/route");
+const reopenRoute = await import("./receipts/[id]/reopen/route");
 const rulesRoute = await import("./account-rules/route");
 
 const USER = "user-a";
@@ -61,9 +62,10 @@ describe("oturum", () => {
       receiptRoute.GET(new Request("http://test"), params()), receiptRoute.PATCH(json({ lines }), params()),
       receiptRoute.DELETE(new Request("http://test"), params()), approveRoute.POST(new Request("http://test"), params()),
       exportsRoute.POST(json({}, "POST")), rulesRoute.GET(), rulesRoute.PUT(json({ rows: [] }, "PUT")),
-      exportedRoute.POST(new Request("http://test"), params()),
+      exportedRoute.POST(new Request("http://test"), params()), reopenRoute.POST(new Request("http://test"), params()),
     ]);
-    expect(responses.map((r) => r.status)).toEqual(Array(10).fill(401));
+    expect(responses.map((r) => r.status)).toEqual(Array(11).fill(401));
+    expect(q.transitionReceipt).not.toHaveBeenCalled();
     expect(q.createReceipt).not.toHaveBeenCalled();
   });
 });
