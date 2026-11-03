@@ -11,7 +11,10 @@ Ayrıntılar: `docs/PRD.md`, `docs/TECH_DESIGN.md`, `docs/research/luca-aktarim.
 
 Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
 
-1. **Ortam değişkenleri.** Vercel'de projeyi açın, Settings, Environment Variables. `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` zaten olmalı; yoksa Neon panelinden kopyalayın. `ANTHROPIC_API_KEY` ekleyin (console.anthropic.com, API Keys). Aynı konsolda Settings, Limits ekranından aylık harcama limiti koyun; uygulamadaki istek sınırı tek başına faturayı sınırlamaz. Cloudflare Turnstile anahtarları (`TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`; dash.cloudflare.com, Turnstile) önerilir ama zorunlu değildir: yoksa giriş ve kayıt çalışır, bot doğrulaması atlanır ve Vercel loguna uyarı düşer. Giriş her durumda IP başına (IPv6'da /64 ağı başına) ve e-posta başına (saatte 30 deneme) sınırlıdır. Fiş okuma kullanıcı başına (ilk 24 saatteki hesaplar için günde 20), ağ başına (günde 300) ve tüm uygulama için (günde 2000) sınırlıdır. Neon Auth panelinde e-posta doğrulamasını açmanız önerilir; bu ayar koddan yapılamaz. Kayıt formunda bot koruması olmaz; canlıya almadan önce eklemeniz önerilir. İlk kurulumdan sonra da ekleyebilirsiniz. Hiçbirine `NEXT_PUBLIC_` öneki vermeyin.
+1. **Ortam değişkenleri.** Vercel'de projeyi açın, Settings, Environment Variables. `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` zaten olmalı; yoksa Neon panelinden kopyalayın. `ANTHROPIC_API_KEY` ekleyin (console.anthropic.com, API Keys). Aynı konsolda Settings, Limits ekranından aylık harcama limiti koyun; uygulamadaki istek sınırı tek başına faturayı sınırlamaz. Hiçbirine `NEXT_PUBLIC_` öneki vermeyin.
+   - *İsteğe bağlı, Turnstile:* `TURNSTILE_SITE_KEY` ve `TURNSTILE_SECRET_KEY` (dash.cloudflare.com, Turnstile). Bu anahtarlar olmadan giriş ve kayıt bot korumasız çalışır (Vercel loguna uyarı düşer); ilk kurulumdan sonra eklenebilir.
+   - *Bilgi, sınırlar:* Giriş IP başına (IPv6'da /64 ağı başına) ve e-posta başına (saatte 30 deneme) sınırlıdır. Fiş okuma kullanıcı başına (ilk 24 saatteki hesaplar için günde 20), ağ başına (günde 300) ve tüm uygulama için (günde 2000) sınırlıdır.
+   - *Önerilen:* Neon Auth panelinde e-posta doğrulamasını açın; bu ayar koddan yapılamaz.
 2. **Tablolar.** Neon panelinde SQL Editor'ü açın, `drizzle/` klasöründeki dosyaların içeriğini **bu sırayla** yapıştırıp çalıştırın:
    1. `20261102225754_receipts.sql`
    2. `20261102230939_extension_tokens.sql`
@@ -31,7 +34,7 @@ Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
 
    `"ok": true` ve fişteki tutarlar görünmeli. Hata alırsanız model adı veya parametre API tarafından reddedilmiştir; ayrıntı Vercel'de Logs ekranında `receipt extraction failed` satırındadır.
 7. **Uçtan uca deneme.** Telefondan giriş yapıp bir fiş çekin. Fiş sayfası (`/fis/...`) açılmalı ve satırlar dolmalı. Onaylayın.
-8. **İlk Luca yüklemesi (tek fiş).** Excel dosyasının kolon düzeni Luca'nın resmi şablonuyla doğrulanmadı. İlk seferde tek fişlik dosya indirip Luca'da Excel veri aktarımı ekranından yükleyin, önizlemeyi kağıt fişle karşılaştırın. Luca reddederse hata mesajını ve Luca'nın "Şablon indir" dosyasını saklayın; kolonlar `src/lib/luca/export.ts` içindeki `LUCA_EXPORT_COLUMNS` ile düzeltilir. Şablon dosyası `docs/research/` altına konur; değişen yalnızca `LUCA_EXPORT_COLUMNS` ve `src/lib/luca/export.test.ts` içindeki beklentidir. Sonucu `docs/research/luca-aktarim.md` dosyasına yazın.
+8. **İlk Luca yüklemesi (tek fiş).** Excel dosyasının kolon düzeni Luca'nın resmi şablonuyla doğrulanmadı. İlk seferde tek fişlik dosya indirip Luca'da Excel veri aktarımı ekranından yükleyin, önizlemeyi kağıt fişle karşılaştırın. Kayıttan sonra Luca'nın verdiği fiş numarasına da bakın: dosyadaki Fiş No her dosyada 1'den başlar; mevcut bir mahsup numarasıyla çakışıyor mu, yeniden mi numaralanıyor, not edin. Luca reddederse hata mesajını ve Luca'nın "Şablon indir" dosyasını saklayın; kolonlar `src/lib/luca/export.ts` içindeki `LUCA_EXPORT_COLUMNS` ile düzeltilir. Şablon dosyası `docs/research/` altına konur; değişen yalnızca `LUCA_EXPORT_COLUMNS` ve `src/lib/luca/export.test.ts` içindeki beklentidir. Sonucu `docs/research/luca-aktarim.md` dosyasına yazın.
 
 Bilinen sınırlar:
 
@@ -61,7 +64,7 @@ Eklenti Chrome Web Store'da değil, klasörden yüklenir.
 3. Accountie'de Fişler sayfasındaki **Chrome eklentisi ile doldurma** bölümünden **Eklenti anahtarı oluştur**'a basın, anahtarı kopyalayın.
 4. Luca'da (auygs.luca.com.tr) Fiş Detayı ekranını açın. Aynı sekmede eklenti simgesine tıklayın, anahtarı yapıştırıp **Fişleri getir**'e basın.
 5. Fişi seçin, önizlemeyi kontrol edin, **Fiş Detayına yaz**'a basın.
-6. Luca'da satırları kontrol edip **Kaydet**'e kendiniz basın. Ardından eklentide **Luca'da kaydettim**'e basın; fiş Accountie'de "Aktarıldı" olur ve tekrar listelenmez. Bazı alanlar bulunamayıp elle tamamlandıysa da bu düğme görünür; Kaydet'ten sonra mutlaka basın, yoksa fiş sonraki Excel dosyasına tekrar girer.
+6. Luca'da satırları kontrol edip **Kaydet**'e kendiniz basın. Ardından eklenti simgesine tekrar tıklayın (Kaydet'e basınca eklenti penceresi kapanır, yeniden açıldığında doldurduğunuz fiş seçili ve düğme görünür olur) ve **Luca'da kaydettim**'e basın; fiş Accountie'de "Aktarıldı" olur ve tekrar listelenmez. Bazı alanlar bulunamayıp elle tamamlandıysa da bu düğme görünür; Kaydet'ten sonra mutlaka basın, yoksa fiş sonraki Excel dosyasına tekrar girer.
 
 Güvenlik:
 

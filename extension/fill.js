@@ -57,9 +57,9 @@
       const rowHint = best.missing.some((m) => m.field === "row")
         ? " Satır eksikse Luca'da + ile boş satır ekleyip Fiş Detayına yaz'a tekrar basabilirsiniz."
         : "";
-      return { ok: false, gridFound: true, message: `Alan bulunamadı: ${list}. Bu alanları elle doldurun, sonra Kaydet'e siz basın.${rowHint}${extra} Kaydettikten sonra Luca'da kaydettim'e basın.` };
+      return { ok: false, gridFound: true, message: `Alan bulunamadı: ${list}. Bu alanları elle doldurun, sonra Kaydet'e siz basın.${rowHint}${extra} Kaydettikten sonra eklentiyi yeniden açıp Luca'da kaydettim'e basın.` };
     }
-    return { ok: !extra, gridFound: true, message: `${rowCount} satır dolduruldu.${extra} Luca'da kontrol edip Kaydet'e siz basın, sonra Luca'da kaydettim'e basın.` };
+    return { ok: !extra, gridFound: true, message: `${rowCount} satır dolduruldu.${extra} Luca'da kontrol edip Kaydet'e siz basın, sonra eklentiyi yeniden açıp Luca'da kaydettim'e basın.` };
   }
 
   root.AccountieFill = { FIELDS, FIELD_LABELS, fillReceipt, summarize };

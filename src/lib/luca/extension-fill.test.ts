@@ -120,7 +120,7 @@ describe("çerçeve sonuçlarının özeti", () => {
   });
   it("hepsi dolunca kullanıcıya Kaydet'i kendisinin basacağını söyler", () => {
     const s = fill.summarize([{ gridFound: false, filled: 0, missing: [] }, { gridFound: true, filled: 18, missing: [] }], 3);
-    expect(s).toEqual({ ok: true, gridFound: true, message: "3 satır dolduruldu. Luca'da kontrol edip Kaydet'e siz basın, sonra Luca'da kaydettim'e basın." });
+    expect(s).toEqual({ ok: true, gridFound: true, message: "3 satır dolduruldu. Luca'da kontrol edip Kaydet'e siz basın, sonra eklentiyi yeniden açıp Luca'da kaydettim'e basın." });
   });
 });
 
