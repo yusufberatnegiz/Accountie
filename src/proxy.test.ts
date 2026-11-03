@@ -52,3 +52,25 @@ describe("proxy login redirect", () => {
     expect((await run("/panel/fis/abc", "https://auth.example/giris")).searchParams.has("sonra")).toBe(false);
   });
 });
+
+describe("proxy panel CSP", () => {
+  it("gives every panel request its own nonce, on the response and on the request Next renders", async () => {
+    let seen: string | null = null;
+    vi.mocked(getAuth).mockReturnValue({ middleware: () => async (req: NextRequest) => { seen = req.headers.get("content-security-policy"); return NextResponse.next(); } } as unknown as ReturnType<typeof getAuth>);
+    const a = (await proxy(new NextRequest("http://localhost/panel"))).headers.get("content-security-policy")!;
+    expect(seen).toBe(a);
+    const b = (await proxy(new NextRequest("http://localhost/panel"))).headers.get("content-security-policy")!;
+    const nonce = (csp: string) => csp.match(/'nonce-([^']+)'/)![1];
+    expect(nonce(a)).not.toBe(nonce(b));
+    expect(a).not.toMatch(/script-src[^;]*unsafe-inline/);
+    expect(a).toMatch(/script-src 'self' 'nonce-[^']+' 'strict-dynamic' 'sha256-[^']+' 'sha256-[^']+'/);
+    expect(a).toMatch(/frame-ancestors 'none'.*object-src 'none'/);
+  });
+
+  it("keeps the request body for POSTs to the panel", async () => {
+    let body = "";
+    vi.mocked(getAuth).mockReturnValue({ middleware: () => async (req: NextRequest) => { body = await req.text(); return NextResponse.next(); } } as unknown as ReturnType<typeof getAuth>);
+    await proxy(new NextRequest("http://localhost/panel", { method: "POST", body: "a=1" }));
+    expect(body).toBe("a=1");
+  });
+});
