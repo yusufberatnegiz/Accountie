@@ -19,7 +19,7 @@ const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".")
 /** Receipt list screen body; the page and the dev preview both render it. */
 export function HomeView({ receipts, tab, base = "/" }: { receipts: Awaited<ReturnType<typeof listReceipts>>; tab: (typeof TABS)[number]; base?: string }) {
   return (
-    <main className="page page-home">
+    <main id="icerik" tabIndex={-1} className="page page-home">
       <div className="page-head">
         <div>
           <h1>Fişler</h1>

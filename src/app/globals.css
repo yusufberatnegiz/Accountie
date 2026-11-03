@@ -155,7 +155,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .read-values { display: grid; gap: var(--s3); margin: var(--s3) 0 var(--s4); }
 .read-values dt { font-size: 13px; color: var(--muted); }
 .read-values dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
-.lines td { padding: var(--s2) var(--s1); }
+.lines td { padding: var(--s2) var(--s1); vertical-align: top; /* a "Kontrol edin" note must not push its field above the row */ }
 .lines td:first-child, .lines th:first-child { padding-left: var(--s4); }
 .lines td:last-child, .lines th:last-child { padding-right: var(--s4); }
 .col-code { width: 140px; }
@@ -243,3 +243,6 @@ tbody tr:last-child td { border-bottom: 0; }
 .guide { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .btn:active { transform: none; } }
+.skip-link { position: absolute; left: var(--s4); top: -100px; z-index: 10; padding: var(--s2) var(--s3); background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: var(--radius); }
+.skip-link:focus { top: var(--s2); }
+main:focus, main:focus-visible { outline: none; }

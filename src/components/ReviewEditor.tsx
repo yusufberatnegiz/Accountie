@@ -238,7 +238,7 @@ export function ReviewEditor({ receipt, rules }: { receipt: ReceiptDetail; rules
                     {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} />{checkNote(debitFlag)}</td>
                   <td data-label="Alacak (TL)"><input autoComplete="off" className="field num" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
                     {...flag(creditFlag)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} />{checkNote(creditFlag)}</td>
-                  {editable ? <td className="col-del"><button className="btn btn-quiet" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>Sil</button></td> : null}
+                  {editable ? <td className="col-del"><button className="btn btn-quiet" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => ((!l.debit && !l.credit) || confirm(`Satır ${i + 1} (${l.accountCode || "hesap kodu yok"}) silinsin mi?`)) && setLines((ls) => ls.filter((x) => x.key !== l.key))}>Sil</button></td> : null}
                 </tr>
                 );
               })}

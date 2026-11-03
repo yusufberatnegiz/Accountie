@@ -19,7 +19,7 @@ export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey }: { hata?: 
   const error = hata ? ERRORS[hata] : undefined;
   const message = mesaj ? MESSAGES[mesaj] : undefined;
   return (
-    <main className="auth">
+    <main id="icerik" tabIndex={-1} className="auth">
       <section className="panel auth-card">
         <div>
           <p className="brand">Accountie</p>
