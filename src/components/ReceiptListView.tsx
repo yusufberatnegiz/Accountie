@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { ViewTransition } from "react";
 import type { listReceipts, ReceiptStatus } from "@/db/queries";
 import { CaptureButton } from "@/components/CaptureButton";
 import { ExportButton } from "@/components/ExportButton";
 import { InstallHint } from "@/components/InstallHint";
+import { ListTabs } from "@/components/ListTabs";
+import { RowPending } from "@/components/RowPending";
+import { LucaMeter } from "@/components/LucaMeter";
 import { CATEGORIES } from "@/lib/default-rules";
 import { MAX_LINES_PER_FILE, MAX_RECEIPTS_PER_FILE } from "@/lib/luca/export";
 import { formatTrAmount } from "@/lib/money";
@@ -24,16 +28,6 @@ const SCOPES: Record<string, string> = { taslak: "Taslak fişler", onayli: "Onay
 type Row = Awaited<ReturnType<typeof listReceipts>>[number];
 
 const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : null);
-
-/** Luca takes one file of at most 50 receipts and 400 lines; the meter shows how full the next file is. */
-function LucaMeter({ label, value, max }: { label: string; value: number; max: number }) {
-  return (
-    <div className="meter">
-      <p className="meter-head"><span>{label}</span><span className="num"><span className="meter-value">{value}</span> / {max}</span></p>
-      <span className="meter-track" aria-hidden="true"><span className="meter-fill" style={{ transform: `scaleX(${Math.min(1, value / max)})` }} /></span>
-    </div>
-  );
-}
 
 /** Receipt list screen; the page and the dev preview both render it. Rows hold every status, the table shows `tab`. */
 export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { receipts: Row[]; tab: (typeof TABS)[number]; base?: string }) {
@@ -64,13 +58,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
 
       <section className="panel list-panel" aria-labelledby="liste-baslik">
         <h2 id="liste-baslik" className="visually-hidden">Fiş listesi</h2>
-        <nav className="tabs" aria-label="Fiş durumu">
-          {TABS.map((t) => (
-            <Link key={t.slug} href={t.slug ? `${base}?durum=${t.slug}` : base} aria-current={t === tab ? "page" : undefined}>
-              {t.label} <span className="tab-count">{count(t.status)}</span>
-            </Link>
-          ))}
-        </nav>
+        <ListTabs active={tab.slug} tabs={TABS.map((t) => ({ slug: t.slug, label: t.label, href: t.slug ? `${base}?durum=${t.slug}` : base, count: count(t.status) }))} />
         {receipts.length === 0 ? (
           <div className="empty-row">
             {all.length ? <p>{tab.label} durumunda fiş yok.</p> : (
@@ -97,9 +85,16 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
               {receipts.map((r) => {
                 const notes = r.status === "draft" ? r.warnings.length : 0;
                 return (
-                  <tr key={r.id}>
+                  // A new receipt rises in at the top; a downloaded one slides out toward the Aktarıldı tab.
+                  <ViewTransition key={r.id} enter={{ "fis-eklendi": "row-rise", default: "none" }} exit={{ aktarim: "row-out", default: "none" }}
+                    update={{ "fis-eklendi": "row-move", aktarim: "row-move", default: "none" }} default="none">
+                  <tr>
                     <td className="r-vendor">
-                      <Link className="row-link" href={`${base}/fis/${r.id}`} title={r.vendorName ?? undefined}>{r.vendorName ?? "Okunamayan fiş"}</Link>
+                      <Link className="row-link" href={`${base}/fis/${r.id}`} title={r.vendorName ?? undefined}>
+                        {/* The vendor name becomes the review screen's title (ReviewEditor). */}
+                        <ViewTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{r.vendorName ?? "Okunamayan fiş"}</span></ViewTransition>
+                        <RowPending />
+                      </Link>
                       {notes ? <span className="r-notes">{notes} uyarı</span> : null}
                     </td>
                     <td className="r-no num" translate="no">{r.receiptNo ?? <span className="dash">-</span>}</td>
@@ -108,6 +103,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
                     <td className="r-total num">{r.totalKurus === null ? <span className="dash">-</span> : <>{formatTrAmount(r.totalKurus)}<span className="unit">&nbsp;TL</span></>}</td>
                     <td className="r-status"><span className={`status status-${r.status}`}>{STATUS_LABELS[r.status]}</span></td>
                   </tr>
+                  </ViewTransition>
                 );
               })}
             </tbody>

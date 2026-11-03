@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as q from "@/db/queries";
 import * as session from "@/lib/auth/session";
-import PanelPage from "./page";
+import PanelPage from "./(liste)/page";
 import ReceiptPage from "./fis/[id]/page";
 import RulesPage from "./kurallar/page";
 

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore, ViewTransition } from "react";
 import type { ReceiptDetail } from "@/db/queries";
 import { ACCOUNT_CODE_PATTERN, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type Account, type PaymentMethod, type Rules } from "@/lib/default-rules";
 import { approvalProblem, type JournalLine } from "@/lib/journal";
@@ -57,11 +57,12 @@ export function problemTarget(problem: string): { id: string; action: string } {
   return { id: "satir-1-borc", action: problem.startsWith("Borç ile alacak") ? "Tutarları düzeltin" : "Tutar biçimini düzeltin" };
 }
 
-/** Scrolls the field into view, clear of the sticky bar, and focuses it. */
-function goTo(id: string) {
-  const el = document.getElementById(id);
-  el?.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+/** Scrolls the field into view, clear of the sticky bar, focuses it and gives it one small pulse once the scroll lands. */
+function goTo(el: HTMLElement | null) {
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el?.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
   el?.focus({ preventScroll: true });
+  if (!still) el?.animate([{ transform: "none" }, { transform: "scale(1.04)" }, { transform: "none" }], { duration: 280, delay: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
 }
 
 export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: ReceiptDetail; rules: Rules; base?: string }) {
@@ -75,6 +76,13 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
   const [trace, setTrace] = useState<Source | null>(null);
+  // The approval stamp plays only when this screen sees the status turn to approved, never on load.
+  const [shownStatus, setShownStatus] = useState(receipt.status);
+  const [stamped, setStamped] = useState(false);
+  if (receipt.status !== shownStatus) {
+    setShownStatus(receipt.status);
+    setStamped(receipt.status === "approved");
+  }
   // Photo exists only in this tab; server render has none.
   const photo = useSyncExternalStore(noSubscribe, () => getPhoto(receipt.id), () => undefined);
 
@@ -168,8 +176,8 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
   // With an invalid amount the first flagged field is the one to fix, wherever it is.
   const fix = () => {
     const bad = invalid ? document.querySelector<HTMLInputElement>('.journal [aria-invalid="true"]') : null;
-    if (bad) { bad.scrollIntoView({ block: "center" }); bad.focus({ preventScroll: true }); }
-    else if (target) goTo(target.id);
+    if (bad) goTo(bad);
+    else if (target) goTo(document.getElementById(target.id));
   };
   const traced = (s: Source) => (trace === s ? { "data-traced": "" } : {});
   const deleteQuestion = receipt.receiptNo ? `${receipt.receiptNo} numaralı fişi silmek istiyor musunuz?` : "Bu taslak fişi silmek istiyor musunuz?";
@@ -181,8 +189,11 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
         <div className="title-text">
           <p className="crumb"><Link href={base}>Fişler</Link><span aria-hidden="true"> / </span><span translate="no">Fiş {receipt.receiptNo ?? "numarasız"}</span></p>
           <div className="title-line">
-            <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
-            <span className={`status status-${receipt.status}`}>{STATUS_LABELS[receipt.status]}</span>
+            {/* The list row's vendor name morphs into this title (ReceiptListView). */}
+            <ViewTransition name={`fis-${receipt.id}`} share="title-morph" default="none">
+              <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
+            </ViewTransition>
+            <span key={receipt.status} className={`status status-${receipt.status}`} data-stamp={stamped || undefined}>{STATUS_LABELS[receipt.status]}</span>
           </div>
           <p className={findingOff ? "finding finding-off" : "finding"}>
             {target ? <button className="link-button" type="button" onClick={fix}>{finding}</button> : finding}
@@ -268,11 +279,13 @@ export function ReviewEditor({ receipt, rules, base = "/panel" }: { receipt: Rec
               </tbody>
             </table>
             {editable ? <div className="journal-add"><button id="satir-ekle" className="btn btn-sm" type="button" disabled={busy} onClick={addLine}>Satır ekle</button></div> : null}
-            <dl className="balance-strip">
+            <dl className="balance-strip" data-balanced={!gap && !invalid ? "" : undefined}>
               <div><dt>Borç toplamı</dt><dd className="num to-luca">{formatTrAmount(debit)}</dd></div>
               <div><dt>Alacak toplamı</dt><dd className="num to-luca">{formatTrAmount(credit)}</dd></div>
               <div><dt>KDV (191)</dt><dd className="num to-luca">{formatTrAmount(vat)}</dd></div>
-              <div className="balance-answer"><dt>{gap ? "Fark" : "Fark yok, dengede"}</dt><dd className={gap ? "num balance-off" : "num balance-ok"}>{formatTrAmount(gap)}</dd></div>
+              <div className="balance-answer"><dt>{gap ? "Fark" : "Fark yok, dengede"}</dt><dd className={gap ? "num balance-off" : "num balance-ok"}>{formatTrAmount(gap)}
+                {/* Shown when debit meets credit; a CSS transition, so it never plays on load. */}
+                <svg className="balance-check" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8.5l3.25 3.25L13 5" /></svg></dd></div>
             </dl>
           </section>
 

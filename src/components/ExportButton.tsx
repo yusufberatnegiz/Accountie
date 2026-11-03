@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { addTransitionType, startTransition, useState } from "react";
 
 export function ExportButton({ receiptIds, label = "Luca için indir", primary = false }: { receiptIds?: string[]; label?: string; primary?: boolean }) {
   const router = useRouter();
@@ -25,7 +25,8 @@ export function ExportButton({ receiptIds, label = "Luca için indir", primary =
     URL.revokeObjectURL(url);
     const remaining = Number(res.headers.get("x-remaining-receipts") ?? 0);
     setMessage(remaining > 0 ? `Luca bir dosyada en fazla 50 fiş alır. ${remaining} fiş kaldı, bir sonraki dosya için tekrar indirin.` : "");
-    router.refresh();
+    // Downloaded receipts become Aktarıldı: the type moves their rows out toward that tab and rolls the tab counts.
+    startTransition(() => { addTransitionType("aktarim"); router.refresh(); });
   }
 
   return (

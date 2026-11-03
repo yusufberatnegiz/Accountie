@@ -74,9 +74,11 @@
 /* A full list card reaches the foot of the Luca column beside it; an empty one keeps its own height. */
 .canvas-list > .list-panel:not(:has(.empty-row)) { align-self: stretch; }
 .tabs { display: flex; gap: var(--s1); padding: 0 var(--s4); border-bottom: 1px solid var(--border); overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
-.tabs a { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--touch); padding: 0 var(--s2); margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--muted); font-size: var(--fs-body); font-weight: 500; text-decoration: none; white-space: nowrap; transition: color var(--t-hover) ease, border-color var(--t-hover) ease; }
+.tabs a { position: relative; display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--touch); padding: 0 var(--s2); margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--muted); font-size: var(--fs-body); font-weight: 500; text-decoration: none; white-space: nowrap; transition: color var(--t-hover) ease, border-color var(--t-hover) ease; }
 @media (hover: hover) and (pointer: fine) { .tabs a:hover { color: var(--ink); border-color: var(--border); } }
-.tabs a[aria-current="page"] { color: var(--ink); border-color: var(--ink); }
+.tabs a[aria-current="page"] { color: var(--ink); }
+/* The chosen tab's underline: its own element so it can slide between tabs (ListTabs). */
+.tab-line { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--ink); }
 .tab-count { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
 .receipts { table-layout: fixed; }
 .receipts th, .receipts td { padding: 0 var(--s3); height: 56px; }
@@ -115,7 +117,7 @@ details.side-block:not([open]) { gap: 0; }
 .meter-head { display: flex; justify-content: space-between; font-size: var(--fs-body); color: var(--muted); }
 .meter-head .meter-value { color: var(--ink); font-weight: 600; }
 .meter-track { display: block; height: 8px; border-radius: 999px; background: var(--active); overflow: hidden; }
-.meter-fill { display: block; height: 100%; background: var(--accent); transform-origin: left center; transition: transform var(--t-ui) var(--ease-out); }
+.meter-fill { display: block; height: 100%; background: var(--accent); transform-origin: left center; }
 .guide { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); font-size: var(--fs-body); }
 .phone-only-inline { display: none; }
 @media (max-width: 720px) { .phone-only-inline { display: inline; } }
@@ -162,7 +164,13 @@ details.side-block:not([open]) { gap: 0; }
 .balance-strip > div + div { border-left: 1px solid var(--rule); }
 .balance-strip dt { font-size: var(--fs-small); color: var(--muted); }
 .balance-strip dd { margin: 0; font-size: var(--fs-section); font-weight: 600; text-align: left; font-variant-numeric: tabular-nums; }
-.balance-answer dd { font-size: var(--fs-figure); line-height: 1.1; letter-spacing: -0.01em; }
+.balance-answer { position: relative; }
+.balance-answer dd { display: flex; align-items: center; gap: var(--s2); font-size: var(--fs-figure); line-height: 1.1; letter-spacing: -0.01em; }
+/* Balance mark: a line along the answer cell and a check beside the figure, there only while debit equals credit. */
+.balance-answer::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 2px; background: var(--positive); transform: scaleX(0); transform-origin: left center; }
+.balance-check { width: 0.7em; height: 0.7em; flex: none; fill: none; stroke: var(--positive); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transform: scale(0.6); }
+[data-balanced] .balance-answer::before { transform: none; }
+[data-balanced] .balance-check { opacity: 1; transform: none; }
 .form-grid { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: var(--s4); }
 .span-all { grid-column: 1 / -1; }
 .review-main > .actions > p { flex: 1; }
@@ -364,3 +372,54 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 /* Locked (approved) lines read as plain text on the column edges, and what goes to Luca stays ledger blue. */
 .journal .field:disabled, .form-grid .field:disabled { padding-left: 0; padding-right: 0; }
 .journal .field.to-luca:disabled { color: var(--accent); }
+
+/* ---------- Motion (docs/design/YON.md 15): feedback 120-200ms, stamp and view transitions at most 320ms ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .balance-answer::before { transition: transform 200ms var(--ease-out); }
+  .balance-check { transition: opacity 160ms ease, transform 200ms var(--ease-out); }
+  /* Onaylandı lands like a rubber stamp: from slightly above and turned, into place. */
+  .status[data-stamp] { animation: stamp 320ms var(--ease-exit) both; }
+  @keyframes stamp { from { opacity: 0; transform: scale(1.6) rotate(-8deg); } 70% { opacity: 1; } to { transform: none; } }
+  /* Reading a receipt: paper feeds down out of the printer slot, its printed rows arriving one by one. */
+  .feed-paper { animation: feed 1400ms var(--ease-in-out) infinite; }
+  .feed-paper i { animation: feed-row 1400ms ease infinite; animation-delay: calc(var(--i) * 140ms); }
+  @keyframes feed { from { transform: translateY(-70%); } 70%, to { transform: none; } }
+  @keyframes feed-row { 0%, 20% { opacity: 0; } 40%, 100% { opacity: 1; } }
+  .row-pending { animation: row-pending 900ms var(--ease-in-out) infinite; }
+  @keyframes row-pending { from { transform: scaleX(0); } 60% { transform: scaleX(1); opacity: 1; } to { transform: scaleX(1); opacity: 0; } }
+  .stages li:last-child { animation: stage-in 180ms var(--ease-out) both; }
+  @keyframes stage-in { from { opacity: 0; transform: translateY(6px); } }
+}
+/* Row opening: a thin ledger-blue bar along the row's foot while the review loads. */
+.row-pending { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--accent); transform-origin: left center; }
+.reading:has(.feed) { gap: var(--s3); padding: var(--s3) var(--s4); }
+.feed { flex: none; display: block; width: 28px; height: 40px; overflow: hidden; border-top: 2px solid var(--ink); border-radius: 2px; }
+.feed-paper { display: grid; align-content: start; gap: 4px; height: 100%; padding: 5px 4px; background: var(--paper); }
+.feed-paper i { display: block; height: 2px; background: var(--paper-ink); }
+.feed-paper i:nth-child(1) { --i: 0; width: 70%; } .feed-paper i:nth-child(2) { --i: 1; } .feed-paper i:nth-child(3) { --i: 2; width: 55%; } .feed-paper i:nth-child(4) { --i: 3; width: 80%; }
+.reading-text { display: grid; gap: 2px; min-width: 0; }
+.stages { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.stages li[data-done] { color: var(--muted); font-weight: 400; }
+.stages li[data-done]::before { content: "\2713\00a0"; color: var(--positive); }
+.reading-text .small { font-weight: 400; color: var(--muted); }
+
+/* View transitions. Root cross-fades quickly; named parts carry the meaning. */
+::view-transition-group(*) { animation-duration: 240ms; animation-timing-function: var(--ease-out); }
+::view-transition-group(root) { animation-duration: 200ms; }
+/* List row title into review title, without scaling the text raster. */
+::view-transition-group(.title-morph) { animation-duration: 280ms; }
+::view-transition-old(.title-morph) { display: none; }
+::view-transition-new(.title-morph) { animation: none; object-fit: none; object-position: left top; }
+::view-transition-group(.tab-slide) { animation-duration: 200ms; }
+::view-transition-new(.row-rise) { animation: vt-rise 240ms var(--ease-out) both; }
+::view-transition-old(.row-out) { animation: vt-out-right 200ms var(--ease-exit) both; }
+::view-transition-group(.row-move) { animation-duration: 240ms; }
+::view-transition-old(.count-out) { animation: vt-count-out 140ms var(--ease-exit) both; }
+::view-transition-new(.count-in) { animation: vt-count-in 180ms var(--ease-out) both; }
+@keyframes vt-rise { from { opacity: 0; transform: translateY(16px); } }
+@keyframes vt-out-right { to { opacity: 0; transform: translateX(32px); } }
+@keyframes vt-count-out { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes vt-count-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 0s !important; animation-delay: 0s !important; }
+}
