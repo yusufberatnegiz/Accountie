@@ -101,6 +101,12 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
   .cookie-note { animation: site-rise 320ms var(--ease-out) backwards; animation-delay: 600ms; }
 }
 @keyframes site-rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* Tablets and small laptops: the same compact strip at the bottom left, one line and one button, so it stays inside the hero's
+   text column and never reaches the live counter or its "Satırları kopyala" (YON.md 16.1). */
+@media (min-width: 641px) and (max-width: 1180px) {
+  .cookie-note { width: auto; max-width: calc(100% - 2 * var(--page-margin)); }
+  .cookie-more, .cookie-note > .cookie-actions .btn + .btn { display: none; }
+}
 /* Phones: the same strip, edge to edge, one line beside two 44px buttons (about 60px), so the hero receipt's total stays in view. */
 @media (max-width: 640px) {
   .cookie-note { left: var(--s2); right: var(--s2); bottom: max(var(--s2), env(safe-area-inset-bottom)); width: auto; column-gap: var(--s2); padding: var(--s2) var(--s2) var(--s2) var(--s3); }

@@ -14,6 +14,7 @@ const PRINTED: Record<Payment["id"], string> = { partner: "KREDİ KARTI", compan
  * buildJournalLines with the default chart of accounts, and "Satırları kopyala" writes them in Luca Fiş Detayı order.
  * First paint only: the strip prints, the lines arrive one by one and "Dengede" lights last. After a choice (YON.md 16.2) a view
  * transition cross-fades the old state into the new one in 180ms; amounts change straight to their new values, never counting.
+ * A new sample keeps the chosen payment (the strip prints that payment), so one choice never silently changes another.
  * Pointing at a line marks the strip rows it came from (a pointer extra only: the rows are not focus stops). Server-rendered with sample A, so without script the table is there.
  */
 export function Counter() {
@@ -47,7 +48,7 @@ export function Counter() {
           {SAMPLES.map((s) => (
             <label key={s.id}>
               <input type="radio" name="ornek-fis" value={s.id} checked={s.id === sampleId}
-                onChange={() => crossFade(() => { setSampleId(s.id); setPayment(defaultPayment(s)); setCopy(""); setHot(null); setFirst(false); })} />
+                onChange={() => crossFade(() => { setSampleId(s.id); setCopy(""); setHot(null); setFirst(false); })} />
               <span>{s.label}</span>
             </label>
           ))}

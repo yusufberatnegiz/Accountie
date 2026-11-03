@@ -54,18 +54,30 @@ export function AuthForm({ isSignup, initialError, turnstileSiteKey, next }: { i
   const [checked, setChecked] = useState<{ result: AuthState; after: AuthState } | null>(null);
   const state = checked && checked.after === served ? checked.result : served;
   const alertRef = useAfterAttempt(state);
+  // Fields corrected since this attempt: their error goes as soon as the same check passes (an error is never added while typing).
+  const [fixed, setFixed] = useState<{ of: AuthState; fields: AuthField[] }>({ of: undefined, fields: [] });
+  const fixedNow = fixed.of === state ? fixed.fields : [];
+  const values = (form: HTMLFormElement) => {
+    const f = new FormData(form);
+    return { name: isSignup ? f.get("name") : undefined, email: f.get("email"), password: f.get("password") };
+  };
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
-    const f = new FormData(e.currentTarget);
-    const result = checkAuthForm(isSignup, { name: isSignup ? f.get("name") : undefined, email: f.get("email"), password: f.get("password") });
+    const result = checkAuthForm(isSignup, values(e.currentTarget));
     if (result) e.preventDefault();
     setChecked(result ? { result, after: served } : null);
   };
   const text = state ? ERRORS[state.error] : undefined;
   // Every invalid field shows its own message; focus still goes to the first one.
-  const at = (f: AuthField) => (state?.fields?.includes(f) ? ERRORS[CODE_OF[f]] : state?.field === f ? text : undefined);
+  const fieldError = (f: AuthField) => (state?.fields?.includes(f) ? ERRORS[CODE_OF[f]] : state?.field === f ? text : undefined);
+  const at = (f: AuthField) => (fixedNow.includes(f) ? undefined : fieldError(f));
+  const onEdit = (e: FormEvent<HTMLFormElement>) => {
+    const f = (e.target as HTMLInputElement).name as AuthField;
+    if (!fieldError(f) || fixedNow.includes(f)) return;
+    if (!checkAuthForm(isSignup, values(e.currentTarget))?.fields?.includes(f)) setFixed({ of: state, fields: [...fixedNow, f] });
+  };
 
   return (
-    <form action={action} onSubmit={onSubmit} className="auth-fields" noValidate>
+    <form action={action} onSubmit={onSubmit} onInput={onEdit} onBlur={onEdit} className="auth-fields" noValidate>
       {text && !state?.field ? <p className="alert alert-error" role="alert" tabIndex={-1} ref={alertRef}>{text}</p> : null}
       {next ? <input type="hidden" name="sonra" value={next} /> : null}
       {isSignup ? <NameField error={at("name")} defaultValue={state?.name} /> : null}

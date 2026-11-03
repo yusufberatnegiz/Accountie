@@ -38,7 +38,7 @@ function Stage() {
             </tbody>
           </table>
           <p className="auth-balance">Borç <span className="to-luca">{formatTrAmount(total)}</span> = Alacak <span className="to-luca">{formatTrAmount(total)}</span> · <span className="balance-ok">Dengede</span></p>
-          <p className="auth-file"><span>luca-fisler-2026-09-1.xlsx</span><span className="auth-sheet-meta">1 fiş, 3 satır</span></p>
+          <p className="auth-file"><span>luca-fisler-20260905.xlsx</span><span className="auth-sheet-meta">1 fiş, 3 satır</span></p>
         </div>
       </div>
       <p className="auth-stage-note">Fişten okunan rakam gri, Luca’ya giden rakam mavi.</p>

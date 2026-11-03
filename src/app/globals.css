@@ -67,8 +67,10 @@
   --field-4: var(--accent-field); --on-field-4: var(--on-accent-field);
   /* The homepage hero and the auth screens: a clear second field beside the ground (1.3:1), and the hero's unselected choices on it. */
   --split: #ccd6e2; --choice: #ffffff;
-  /* Homepage: the showcase field and the archive pictures. Dark lowers the pictures white point (opacity over --raised) and sinks the field below the ground, so the product card is the lighter step. */
-  --show-field: var(--deep); --picture-opacity: 1;
+  /* Homepage: the showcase field and the archive pictures. The field is one clear step off the ground and the product card a step
+     lighter again, in both themes (YON.md 16.5); dark lowers the pictures' white point (opacity over --raised). */
+  --show-field: #dbe2eb; --show-card: var(--surface); --show-card-edge: var(--border); --show-tabs: #ccd6e2; --show-raised: var(--raised); --show-ink: var(--ink);
+  --picture-opacity: 1;
   /* Thermal paper: white in light; a dimmed cool grey in dark (still paper, no longer the brightest surface on the screen). */
   --paper: #ffffff; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #dce6f3;
 
@@ -111,7 +113,7 @@
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
     --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
-    --split: #1d2229; --choice: #2a3139; --show-field: #0a0d10; --picture-opacity: 0.86;
+    --split: #1d2229; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
     --paper: #d8dadc; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #bfcde0;
     color-scheme: dark;
   }
@@ -130,7 +132,7 @@
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
   --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
-  --split: #1d2229; --choice: #2a3139; --show-field: #0a0d10; --picture-opacity: 0.86;
+  --split: #1d2229; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
   --paper: #d8dadc; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #bfcde0;
   color-scheme: dark;
 }
