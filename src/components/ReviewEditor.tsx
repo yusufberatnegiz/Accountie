@@ -138,7 +138,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
     const res = await fetch(url, init).catch(() => null);
     if (res?.ok) return true;
     const body = res ? await res.json().catch(() => null) : null;
-    setError(body?.error ?? "Bağlantı kurulamadı. Tekrar deneyin.");
+    setError(body?.error ?? (res ? "Sunucu isteği işleyemedi. Tekrar deneyin." : "Bağlantı kurulamadı. Tekrar deneyin."));
     return false;
   }
 
@@ -206,7 +206,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
       </div>
 
       <div className="review">
-        <aside className="source" aria-label="Fiş">
+        <div className="source">
           {photo ? (
             <figure className="photo">
               {/* A fixed 3:4 box (the photo is shrunk to a 1600px long edge) so the lines beside it never move when it decodes. */}
@@ -228,7 +228,35 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             </dl>
             <p className="muted small">{photo ? "Fotoğraf yalnızca bu cihazda, bu oturumda görünür." : "Fotoğraf bu cihazda değil; sunucu fotoğrafı saklamaz. Satırları kâğıt fişle karşılaştırın."}</p>
           </section>
-        </aside>
+          {/* Header fields that every line carries: beside what the receipt said, under the same eye. */}
+          <section className="panel panel-pad info" aria-labelledby="bilgi-baslik">
+            <h2 id="bilgi-baslik">Fiş bilgileri</h2>
+            <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>
+            <div className="form-grid">
+              <label>
+                <span>Evrak No {checkNote(headFlags.documentNo)}</span>
+                <input id="evrak-no" className="field tnum" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40} required autoComplete="off" spellCheck={false}
+                  {...flag(headFlags.documentNo)}
+                  onChange={(e) => updateAll("documentNo", e.target.value)} />
+              </label>
+              <label>
+                <span>Evrak tarihi {checkNote(headFlags.documentDate)}</span>
+                <input id="evrak-tarihi" className="field tnum" type="date" value={head?.documentDate ?? ""} disabled={!editable} required
+                  {...flag(headFlags.documentDate)}
+                  onChange={(e) => updateAll("documentDate", e.target.value || null)} />
+              </label>
+              <label>Belge türü (BT)
+                <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} autoComplete="off" onChange={(e) => updateAll("documentType", e.target.value)} />
+              </label>
+              <label className="span-all">
+                <span>Açıklama {checkNote(headFlags.description)}</span>
+                <input className="field" value={head?.description ?? ""} disabled={!editable} maxLength={200} autoComplete="off"
+                  {...flag(headFlags.description)}
+                  onChange={(e) => updateAll("description", e.target.value)} />
+              </label>
+            </div>
+          </section>
+        </div>
 
         <div className="review-main">
           {warnings.length ? (
@@ -254,7 +282,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             <table className="journal">
               <thead>
                 <tr>
-                  <th className="col-code">Hesap Kodu</th><th>Hesap Adı</th><th className="col-amount num">Borç (TL)</th><th className="col-amount num">Alacak (TL)</th>
+                  <th className="col-code">Hesap kodu</th><th>Hesap adı</th><th className="col-amount num">Borç (TL)</th><th className="col-amount num">Alacak (TL)</th>
                   {editable ? <th className="col-del"><span className="visually-hidden">Sil</span></th> : null}
                 </tr>
               </thead>
@@ -268,10 +296,10 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
                   return (
                   <tr key={l.key} {...traced(src)} onMouseEnter={() => setTrace(src)} onMouseLeave={() => setTrace(null)} onFocus={() => setTrace(src)} onBlur={() => setTrace(null)}>
                     {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
-                    <td data-label="Hesap Kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
+                    <td data-label="Hesap kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
                       autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder="770.08…" aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
                       {...flag(codeFlag)} onChange={(e) => { touch(`code-${l.key}`); setCode(l.key, e.target.value); }} />{checkNote(codeFlag)}</td>
-                    <td data-label="Hesap Adı"><input autoComplete="off" className="field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable} onChange={(e) => update(l.key, { accountName: e.target.value })} /></td>
+                    <td data-label="Hesap adı"><input autoComplete="off" className="field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable} onChange={(e) => update(l.key, { accountName: e.target.value })} /></td>
                     <td data-label="Borç (TL)" className="col-amount"><input id={`satir-${i + 1}-borc`} autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} borç${unsure(debitFlag)}`} value={l.debit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.debit))}
                       {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} />{checkNote(debitFlag)}</td>
                     <td data-label="Alacak (TL)" className="col-amount"><input autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
@@ -293,33 +321,6 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             </dl>
           </section>
 
-          <section className="panel panel-pad" aria-labelledby="bilgi-baslik">
-            <h2 id="bilgi-baslik">Fiş bilgileri</h2>
-            <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>
-            <div className="form-grid">
-              <label>
-                <span>Evrak No {checkNote(headFlags.documentNo)}</span>
-                <input id="evrak-no" className="field tnum" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40} required autoComplete="off" spellCheck={false}
-                  {...flag(headFlags.documentNo)}
-                  onChange={(e) => updateAll("documentNo", e.target.value)} />
-              </label>
-              <label>
-                <span>Evrak Tarihi {checkNote(headFlags.documentDate)}</span>
-                <input id="evrak-tarihi" className="field tnum" type="date" value={head?.documentDate ?? ""} disabled={!editable} required
-                  {...flag(headFlags.documentDate)}
-                  onChange={(e) => updateAll("documentDate", e.target.value || null)} />
-              </label>
-              <label>Belge türü (BT)
-                <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} autoComplete="off" onChange={(e) => updateAll("documentType", e.target.value)} />
-              </label>
-              <label className="span-all">
-                <span>Açıklama {checkNote(headFlags.description)}</span>
-                <input className="field" value={head?.description ?? ""} disabled={!editable} maxLength={200} autoComplete="off"
-                  {...flag(headFlags.description)}
-                  onChange={(e) => updateAll("description", e.target.value)} />
-              </label>
-            </div>
-          </section>
 
           <div className="actions">
             {editable ? (
@@ -353,7 +354,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             {/* The way back sits under the thumb on the phone, where this screen hides the bottom bar. */}
             <Link className="btn btn-lg bar-back" href={base}>Fişler</Link>
             {/* After approval the phone user goes on with the bag of receipts: the next draft, or the camera when none is left. */}
-            {!editable ? <div className="bar-next phone-only"><CaptureButton pickers={["camera"]} variant="bar" primary={!next} /></div> : null}
+            {!editable ? <div className="bar-next phone-only"><CaptureButton pickers={["camera"]} variant="bar" primary={!next} base={base} /></div> : null}
             {!editable && next ? (
               <Link className="btn btn-lg bar-next-draft" href={`${base}/fis/${next.id}`}>Sıradaki taslak ({next.left})</Link>
             ) : null}

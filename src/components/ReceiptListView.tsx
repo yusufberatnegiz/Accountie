@@ -52,7 +52,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
           {/* Excel and the extension are desktop tasks; on the phone the finding says where the file is downloaded. */}
           <p className="finding">{listFinding(drafts, ready.length)}{ready.length ? <span className="phone-only-inline"> Dosyayı bilgisayardan indirin.</span> : null}</p>
         </div>
-        {all.length ? <CaptureButton /> : null}
+        {all.length ? <CaptureButton base={base} /> : null}
       </div>
 
       <section className="panel list-panel" aria-labelledby="liste-baslik">
@@ -64,7 +64,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
               <>
                 <h3>Henüz fiş yok</h3>
                 <p>İlk fişin fotoğrafını çekin. Satırlar hesap kurallarınıza göre hazırlanır ve burada kontrolünüzü bekler.</p>
-                <CaptureButton />
+                <CaptureButton base={base} />
                 {/* First run: the whole way to Luca, in the order it happens. */}
                 <ol className="first-run">
                   <li><strong>Hesap kodlarını kontrol edin.</strong> Varsayılan plan kopyalandı; <Link href={`${base}/kurallar`}>hesap kurallarında</Link> kendi kodlarınızı yazın.</li>

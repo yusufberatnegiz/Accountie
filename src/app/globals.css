@@ -235,7 +235,8 @@ textarea.field { padding: var(--s2) var(--s3); min-height: 88px; }
 /* Locked (approved) fields read as plain text, not as inputs. */
 .field:disabled { background: transparent; color: var(--ink); opacity: 1; border-color: transparent; cursor: default; }
 .field[aria-invalid="true"] { border-color: var(--negative); background: var(--negative-soft); }
-.field[data-check] { border-color: var(--warn-ink); background: var(--warn-bg); }
+/* Edge only: the cream fill made status the loudest colour on the review screen, above the blue Luca figures. */
+.field[data-check] { border-color: var(--warn-ink); }
 @media (pointer: coarse) { .field { min-height: var(--touch); font-size: 16px; } }
 label { display: grid; gap: var(--s2); font-weight: 500; font-size: var(--fs-body); }
 label .field { font-weight: 400; }
@@ -274,7 +275,7 @@ label .field { font-weight: 400; }
 
 /* ---------- Plain pages (error, not found). The panel shell lives in src/components/panel/panel.css. ---------- */
 .page { max-width: 1200px; margin: 0 auto; padding: var(--s6) var(--s5) var(--s8); display: grid; gap: var(--s5); }
-.flagged { background: var(--warn-bg); color: var(--warn-ink); padding: 0 var(--s1); border-radius: var(--radius-chip); }
+.flagged { color: var(--warn-ink); }
 
 /* ---------- Tables and status: shared by the panel (src/components/panel/panel.css) and the homepage's interface fragments ---------- */
 table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }

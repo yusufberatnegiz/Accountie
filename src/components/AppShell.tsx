@@ -30,7 +30,7 @@ export function AppShell({ current, base = "/panel", email, children }: { curren
       <nav className="rail" aria-label="Panel">
         <Link className="rail-mark" href={base} translate="no"><BrandMark /><span className="visually-hidden">Accountie, fiş listesi</span></Link>
         {item(base, "Fişler", "receipt", current !== "kurallar")}
-        <CaptureButton pickers={["camera"]} variant="rail" />
+        <CaptureButton pickers={["camera"]} variant="rail" base={base} />
         {item(`${base}/kurallar`, "Kurallar", "table", current === "kurallar")}
         <div className="rail-end"><AccountMenu email={email} /></div>
       </nav>
