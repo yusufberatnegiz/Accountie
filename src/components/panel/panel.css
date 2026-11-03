@@ -22,7 +22,9 @@
   transition: background-color var(--t-hover) ease, color var(--t-hover) ease, transform var(--t-press) var(--ease-out);
 }
 .rail-item:active { transform: scale(0.96); }
-.rail-item[aria-current="page"] { background: var(--active); color: var(--ink); }
+/* The current screen: a band one clear step off the rail's ground in both themes (--active is 1.08:1 there), label in ink at 600. */
+.rail-item[aria-current="page"] { background: color-mix(in srgb, var(--ink) 10%, var(--ground)); color: var(--ink); }
+.rail-item[aria-current="page"] .rail-label { font-weight: 600; }
 .rail-item:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
 .rail-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 /* The label is always shown under the icon, on desktop and phone alike: nothing to hover for, nothing to dismiss. */
@@ -68,14 +70,18 @@
 .small { font-size: var(--fs-body); }
 .panel-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s4); padding: var(--s4) var(--s5); }
 .capture { position: relative; display: grid; gap: var(--s2); }
-/* While a receipt is read the card lies over the buttons' own slot (they keep their space, hidden), anchored to the slot's foot
-   and growing up into the free right side of the title row: the header and the list below never move. */
+/* While a receipt is read the card lies over the buttons' own slot (they keep their space, hidden), centred on it:
+   72px tall over a 40-52px slot, it stays inside the title row's gaps, so it never reaches the screen edge or the tabs. */
 .capture:has(.reading) .capture-buttons { visibility: hidden; }
-.capture-head .reading { position: absolute; right: 0; bottom: 0; z-index: 2; width: max(100%, 440px); padding-block: 10px; }
-/* Stages run on one line here so the card stays one feed tall and never rises past the top of the screen. */
-.capture-head .stages { display: flex; flex-wrap: wrap; gap: 0 var(--s3); }
-/* In the empty state text sits above the buttons, so the card grows down over the first-run steps instead. */
-.empty-row .capture-head .reading { top: 0; bottom: auto; right: auto; left: 0; }
+@media (min-width: 721px) {
+  .capture-head .reading, .capture-head .reading:has(.feed) { position: absolute; right: 0; top: 50%; z-index: 2; translate: 0 -50%; width: max-content; min-width: max(100%, 440px); padding: var(--s2) var(--s4); }
+  .capture-head .feed { width: 40px; height: 56px; }
+  .capture-head .feed-paper { gap: 6px; padding: 8px 6px; }
+  /* On a desktop slot the stages run on one line, never wrapping; on the phone (the card floats over the bottom bar) they stack. */
+  .capture-head .stages { display: flex; gap: 0 var(--s3); white-space: nowrap; }
+  /* In the empty state text sits above the buttons, so the card grows down over the first-run steps instead. */
+  .empty-row .capture-head .reading { top: 0; bottom: auto; right: auto; left: 0; translate: none; }
+}
 .capture-buttons { display: flex; gap: var(--s2); }
 
 /* ---------- List screen ---------- */
@@ -124,6 +130,8 @@
 .side { display: grid; gap: var(--s4); align-content: start; min-width: 0; }
 .side-block { padding: var(--s5); display: grid; gap: var(--s4); }
 .side-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
+/* A long heading keeps one line; its scope note goes under it. */
+.side-head-stack { display: grid; gap: var(--s1); }
 .side-block > summary { cursor: pointer; list-style-position: inside; border-radius: var(--radius-chip); }
 .side-block > summary h2 { display: inline; }
 details.side-block:not([open]) { gap: 0; }
@@ -149,6 +157,8 @@ details.side-block:not([open]) { gap: 0; }
   .review > :not(.source) { grid-column: 2; min-width: 0; }
   .review > :not(.source):not(:first-child) { margin-top: var(--s4); }
   .source .form-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+  /* Fişi sil sits in the 1fr row, on the receipt column's base: both columns end on one line, the destructive step set apart. */
+  .review > .danger-zone { grid-row: -2; align-self: end; }
 }
 /* The receipt column travels beside the lines, but only where all of it fits the screen; with the photo it would hide its own foot. */
 @media (min-width: 1100px) and (min-height: 820px) { .source:not(:has(.photo)) { position: sticky; top: var(--s4); } }
@@ -167,6 +177,12 @@ details.side-block:not([open]) { gap: 0; }
 .read-sum dd { color: var(--thermal-ink); font-variant-numeric: tabular-nums; }
 .read-values > .read-sum:nth-child(5) { margin-top: var(--s2); }
 .read-total dd { color: var(--ink); font-weight: 600; }
+/* A locked receipt's header fields: one strip under the lines' heading, small label over value like the balance strip below. */
+.head-strip { display: grid; grid-template-columns: repeat(3, auto) minmax(0, 1fr); gap: var(--s3) var(--s6); margin: 0; padding: 0 var(--s5) var(--s4); }
+.head-strip > div { display: grid; gap: 2px; align-content: start; min-width: 0; }
+.head-strip dt { font-size: var(--fs-small); color: var(--muted); }
+.head-strip dd { margin: 0; font-size: var(--fs-body); font-weight: 500; overflow-wrap: anywhere; }
+@media (max-width: 720px) { .head-strip { grid-template-columns: 1fr 1fr; padding: 0 var(--s4) var(--s3); } }
 .formula { display: block; font-size: var(--fs-small); font-weight: 400; color: var(--muted); }
 /* Fiş izi: the receipt figure behind the journal line in focus. A full row tone, never a coloured edge. */
 .read-values > [data-traced] { background: var(--accent-soft); }
@@ -216,6 +232,8 @@ details.side-block:not([open]) { gap: 0; }
 .action-bar .actions { justify-content: flex-end; }
 .action-bar .balance { flex: 1; min-width: 0; }
 .action-bar .bar-back { display: none; }
+/* On the tray's --stage ground the secondary fill vanishes; the next draft reads as a button on a surface step. */
+.action-bar .bar-next-draft { background: var(--surface); border-color: var(--border); }
 /* Saving or approved-and-refreshing: the primary keeps its fill and its label reads at full contrast; only the cursor says wait. */
 .action-bar .btn-primary[data-busy]:disabled { background: var(--primary); color: var(--on-primary); cursor: progress; }
 /* A focused field is never under the sticky bar. */
@@ -231,7 +249,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .setting-label { display: grid; gap: var(--s1); align-content: start; align-self: start; padding-top: var(--s2); position: sticky; top: var(--s4); }
 .setting-label h2 { font-weight: 500; }
 /* What the group produces: the sample receipt's Luca lines, this group's line lit (the same row tone as the fiş izi). */
-.setting-preview { display: grid; gap: var(--s2); margin: var(--s3) 0 0; padding: var(--s3) var(--s2); border-radius: var(--radius-card); background: var(--stage); font-size: var(--fs-body); }
+.setting-preview { display: grid; gap: var(--s2); margin: var(--s3) 0 0; padding: var(--s3) var(--s2); border-radius: var(--radius-card); background: var(--surface); font-size: var(--fs-body); }
 .setting-preview figcaption { display: flex; justify-content: space-between; gap: var(--s3); padding: 0 var(--s2); font-weight: 500; }
 .preview-lines td { padding: 6px var(--s2); border: 0; vertical-align: baseline; }
 .preview-lines td:first-child { overflow-wrap: anywhere; }
@@ -401,12 +419,13 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   /* One rule per block: its name and code on one line, the account name at full width under them, never clipped. */
   .rules-table, .rules-table tbody { display: block; }
   .rules-table thead { display: none; }
-  /* The name field's underline is the only line between rules; a row divider under it would draw two. */
-  .rules-table tr { display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem; align-items: center; gap: 0 var(--s2); padding: var(--s2) 0 var(--s3); }
+  /* Rules are split by space alone; the boxed name field closes each one. */
+  .rules-table tr { display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem; align-items: center; gap: var(--s2); padding: var(--s2) 0 var(--s4); }
   .rules-table td, .rules-table th { padding: 0; }
   .rules-table .rule-label { width: auto; font-size: 16px; }
   .rules-table .rule-name { grid-column: 1 / -1; }
-  .rules-table .field-quiet { padding-left: 0; color: var(--ink); }
+  /* No hover to reveal the box on a phone: the name field is boxed at rest, so it reads as a field, not a divider. */
+  .rules-table .field-quiet:not(:focus-visible):not([aria-invalid="true"]) { border-color: var(--control-edge); border-radius: var(--radius-control); color: var(--ink); }
   /* One example per screen: after the first group each card keeps only the line its group writes. */
   .setting-row + .setting-row .preview-lines tr:not([data-traced]) { display: none; }
   .rules-table .field { min-height: var(--touch); font-size: 16px; }
@@ -475,6 +494,12 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 ::view-transition-group(.title-morph) { animation-duration: 240ms; }
 ::view-transition-old(.title-morph) { display: none; }
 ::view-transition-new(.title-morph) { animation: none; object-fit: none; object-position: left top; }
+/* Row into review (Link transitionTypes "fis-ac"). React leaves the root uncaptured, so the new screen is the live page under the
+   fading old one; while the transition runs everything but the travelling title waits and comes in as the 240ms morph lands,
+   so the title crosses only empty ground, never drawn text. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(fis-ac) .app[data-screen="fis"] :is(.crumb, .title-line > .status, .finding, .review) { animation: vt-fade-in 90ms 150ms var(--ease-out) both; }
+}
 ::view-transition-group(.tab-slide) { animation-duration: 200ms; }
 ::view-transition-new(.row-rise) { animation: vt-rise 240ms var(--ease-out) both; }
 ::view-transition-old(.row-out) { animation: vt-out-up 200ms var(--ease-exit) both; }
