@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { PREFILL_KEY } from "@/components/home/SignupDialog";
+import { PREFILL_KEY, PREFILL_NAME_KEY } from "@/components/home/SignupDialog";
 
 /** Password with a show/hide toggle and its rule tied by aria-describedby. */
 export function PasswordField({ label, name, autoComplete, hint }: { label: string; name: string; autoComplete: string; hint?: string }) {
@@ -27,17 +27,33 @@ export function PasswordField({ label, name, autoComplete, hint }: { label: stri
   );
 }
 
-/** E-mail field; on the signup page it takes the address typed into the homepage window (sessionStorage, never the URL). */
-export function EmailField({ prefill }: { prefill?: boolean }) {
+/** Takes a value typed into the homepage window (sessionStorage, never the URL), once. */
+function usePrefill(key: string, on?: boolean) {
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (!prefill || !ref.current) return;
+    if (!on || !ref.current) return;
     try {
-      const v = sessionStorage.getItem(PREFILL_KEY);
+      const v = sessionStorage.getItem(key);
       if (v && !ref.current.value) ref.current.value = v;
-      sessionStorage.removeItem(PREFILL_KEY);
+      sessionStorage.removeItem(key);
     } catch { /* storage blocked */ }
-  }, [prefill]);
+  }, [key, on]);
+  return ref;
+}
+
+export function NameField() {
+  const ref = usePrefill(PREFILL_NAME_KEY, true);
+  return (
+    <div className="auth-field">
+      <label htmlFor="auth-name">Ad soyad</label>
+      <input ref={ref} className="field" id="auth-name" name="name" autoComplete="name" minLength={2} maxLength={100} required />
+    </div>
+  );
+}
+
+/** E-mail field; on the signup page it takes the address typed into the homepage window. */
+export function EmailField({ prefill }: { prefill?: boolean }) {
+  const ref = usePrefill(PREFILL_KEY, prefill);
   return (
     <div className="auth-field">
       <label htmlFor="auth-email">E-posta</label>

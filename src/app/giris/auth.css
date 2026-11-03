@@ -20,16 +20,19 @@
 .auth-reveal:focus-visible { outline-offset: -2px; }
 .auth-fields .btn { margin-top: var(--s2); min-height: var(--touch); }
 .auth-switch { font-size: var(--fs-body); color: var(--muted); }
-.auth-stage { margin: 0; background: var(--stage); display: grid; align-content: center; justify-items: center; gap: var(--s4); padding: var(--s8) var(--page-margin); }
-.auth-stage img { width: min(100%, 640px); height: auto; }
-.auth-stage figcaption { font-size: var(--fs-body); color: var(--muted); }
+/* The picture fills the half to the edges, square corners; the caption sits under it on the stage tone. */
+.auth-stage { margin: 0; background: var(--stage); display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 100dvh; position: sticky; top: 0; height: 100dvh; }
+.auth-photo { position: relative; overflow: hidden; }
+.auth-photo img { object-fit: cover; object-position: 50% 30%; }
+.auth-stage figcaption { font-size: var(--fs-body); color: var(--muted); padding: var(--s4) var(--page-margin) max(var(--s4), env(safe-area-inset-bottom)); }
 
 @media (prefers-reduced-motion: no-preference) {
+  /* Travel only: the form and the LCP picture are painted from the first frame, never from opacity 0. */
   .auth-form { animation: auth-rise 500ms var(--ease-out) both; }
-  .auth-stage img { animation: auth-settle 1200ms var(--ease-expo) both; }
+  .auth-photo img { animation: auth-settle 1600ms var(--ease-expo) both; }
 }
-@keyframes auth-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@keyframes auth-settle { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: none; } }
+@keyframes auth-rise { from { transform: translateY(12px); } to { transform: none; } }
+@keyframes auth-settle { from { transform: scale(1.06); } to { transform: none; } }
 
 @media (max-width: 900px) {
   .auth { grid-template-columns: 1fr; }

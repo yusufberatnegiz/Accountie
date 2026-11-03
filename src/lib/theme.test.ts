@@ -28,6 +28,23 @@ describe("theme init script", () => {
     expect(run("purple").theme).toBeUndefined();
     expect(run(null).meta.media).toBe("(prefers-color-scheme: light)");
   });
+  it("switches transitions off for the frame an OS theme change lands in", () => {
+    const classes = new Set<string>();
+    let onChange: (() => void) | undefined;
+    const frames: (() => void)[] = [];
+    const document = {
+      documentElement: { dataset: {}, classList: { add: (c: string) => classes.add(c), remove: (c: string) => classes.delete(c) } },
+      addEventListener: () => {},
+      querySelectorAll: () => [],
+    };
+    const matchMedia = () => ({ addEventListener: (_: string, fn: () => void) => { onChange = fn; } });
+    new Function("localStorage", "document", "matchMedia", "getComputedStyle", "requestAnimationFrame", THEME_INIT_SCRIPT)(
+      { getItem: () => null }, document, matchMedia, () => ({}), (fn: () => void) => frames.push(fn));
+    onChange?.();
+    expect(classes.has("tema-degisiyor")).toBe(true);
+    while (frames.length) frames.shift()!();
+    expect(classes.size).toBe(0);
+  });
   it("survives blocked storage", () => {
     expect(run(null, true).theme).toBeUndefined();
   });

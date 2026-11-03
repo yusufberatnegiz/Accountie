@@ -235,7 +235,7 @@ Openverse bazı sorgularda 30 sn içinde cevap vermedi; Wikimedia Commons sonuç
 |---|---|---|---|---|
 | Ana sayfa dinlenme resmi, 16:9 kırpım | `roman-harbour-of-antalya-2014-10-panoramio.jpg` | Roman Harbour of Antalya, rheins | CC BY 3.0, kredi zorunlu | https://commons.wikimedia.org/wiki/File:Roman_Harbour_of_Antalya_-_2014.10_-_panoramio_(1).jpg |
 | Ana sayfa list bölümü, sağ yarı, dik | `pittsboro-merchant-business-ledger.jpg` | Pittsboro Merchant Business Ledger, 1833 | Kamu malı | https://commons.wikimedia.org/wiki/File:Pittsboro_Merchant_Business_Ledger_-_DPLA_-_4cbfce8f8f08c14f851ab74af046c082_(page_258).jpg |
-| Giriş ve kayıt ekranları, sağ sahne (masaüstü) | `ledger.png` | Ledger, RaphaelQS | CC0 | https://commons.wikimedia.org/wiki/File:Ledger.png |
+| Giriş ve kayıt ekranları, sağ yarı tam kırpım (masaüstü) | `yevmiye-defteri-1833.jpg` (ana sayfadaki ile aynı) | Pittsboro Merchant Business Ledger, 1833 | Kamu malı | yukarıdaki satır. Önceki dekupe `ledger.png` tek görsel dili bozduğu için kaldırıldı (tur 1 jüri). |
 | Yedek: list resmi veya 404 | `camp-chesterfield-general-account-ledger-1910-1916.jpg` | Camp Chesterfield general account ledger, 1910-1916 | Kamu malı | https://commons.wikimedia.org/wiki/File:Camp_Chesterfield_general_account_ledger,_1910-1916_-_DPLA_-_206e8c73ecb9419118717c75562a2497_(page_173).jpg |
 | Yedek: dinlenme resmi | `antalya-kaleici.jpg` | Antalya Kaleiçi, Qubated | CC BY-SA 4.0 (değiştirilmeden kullanılır) | https://commons.wikimedia.org/wiki/File:Antalya_Kalei%C3%A7i.jpg |
 | İsteğe bağlı hareketli resim (henüz izlenmedi, kullanmadan önce izlenmeli) | `commons:56935978` | Keystrokes in a vintage mechanical calculator | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Keystrokes_in_a_vintage_mechanical_calculator.webm |
@@ -376,7 +376,7 @@ Kurallar: degrade yok, cam yok, parlama yok; dinlenen öğede gölge yok (yalnı
 - Üç seçenek: Sistem (varsayılan), Açık, Koyu. Radiogroup, her seçenekte `aria-label`; ana sayfa ve giriş sağ üstte, panelde ray altında ve Kurallar > Görünüm'de.
 - Seçim `localStorage` anahtarı `tema` (`light`/`dark`, sistem için anahtar silinir). Okuma ve yazma try/catch içinde.
 - `<head>` içinde boyamadan önce çalışan tek satırlık satır içi script `data-theme`'i `<html>`'e yazar (CSP'de `script-src 'unsafe-inline'` zaten var). `<html suppressHydrationWarning>`. Sistem seçiliyken `matchMedia` değişimi izlenir.
-- Tema değişiminde geçiş animasyonu yok (renk sıçraması kabul, yanıp sönme değil).
+- Tema değişiminde geçiş animasyonu yok (renk sıçraması kabul, yanıp sönme değil). Uygulama: değişimin olduğu kare boyunca `<html>` üstünde `tema-degisiyor` sınıfı her `transition`'ı kapatır; elle seçimde `applyTheme`, sistem teması değişince baş script'i koyar.
 
 ### 6.3 Yazı sistemi
 

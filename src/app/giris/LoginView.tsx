@@ -2,11 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import { login, signup } from "./actions";
-import { EmailField, PasswordField } from "./AuthFields";
+import { EmailField, NameField, PasswordField } from "./AuthFields";
 import { SubmitButton } from "./SubmitButton";
 import { Brand } from "@/components/BrandMark";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
-import ledger from "../../../public/gorseller/acik-defter.png";
+import ledger from "../../../public/gorseller/yevmiye-defteri-1833.jpg";
 import "./auth.css";
 
 const ERRORS: Record<string, string> = {
@@ -22,7 +22,7 @@ const MESSAGES: Record<string, string> = { "kayit-tamam": "Hesabınız oluşturu
 
 /**
  * Login (/giris) and signup (/kayit) as two separate screens (docs/design/YON.md 5.4); the pages and the dev previews render it.
- * Form left, an old open ledger on the stage tone right; phones get the form alone.
+ * Form left, the 1833 ledger page full-bleed right (same archival picture and square crop as the homepage); phones get the form alone.
  */
 export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey }: { hata?: string; mesaj?: string; isSignup: boolean; turnstileSiteKey?: string }) {
   const error = hata ? ERRORS[hata] : undefined;
@@ -42,12 +42,7 @@ export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey }: { hata?: 
           {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
           {message ? <p className="alert alert-ok" role="status">{message}</p> : null}
           <form action={isSignup ? signup : login} className="auth-fields">
-            {isSignup ? (
-              <div className="auth-field">
-                <label htmlFor="auth-name">Ad soyad</label>
-                <input className="field" id="auth-name" name="name" autoComplete="name" minLength={2} maxLength={100} required />
-              </div>
-            ) : null}
+            {isSignup ? <NameField /> : null}
             <EmailField prefill={isSignup} />
             <PasswordField label="Şifre" name="password" autoComplete={isSignup ? "new-password" : "current-password"} hint={isSignup ? "En az 8 karakter" : undefined} />
             {isSignup ? <PasswordField label="Şifre tekrar" name="passwordAgain" autoComplete="new-password" /> : null}
@@ -66,8 +61,8 @@ export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey }: { hata?: 
         </section>
       </div>
       <figure className="auth-stage">
-        <Image src={ledger} alt="Açık duran eski bir hesap defteri, el yazısıyla tutulmuş tutar sütunları" sizes="50vw" priority />
-        <figcaption>Elle tutulmuş eski bir hesap defteri.</figcaption>
+        <div className="auth-photo"><Image src={ledger} alt="Elle tutulmuş 1833 tarihli bir tüccar hesap defterinden bir sayfa, mürekkeple yazılmış tutar sütunları" fill sizes="50vw" priority /></div>
+        <figcaption>Bir tüccarın hesap defterinden bir sayfa, 1833.</figcaption>
       </figure>
     </main>
   );

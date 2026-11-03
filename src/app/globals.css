@@ -298,6 +298,8 @@ tbody tr:last-child td { border-bottom: 0; }
 main:focus, main:focus-visible { outline: none; }
 
 /* ---------- Motion ---------- */
+/* A theme change is a jump, never a fade (YON 6.2): theme.ts sets this class for one frame around the switch. */
+html.tema-degisiyor *, html.tema-degisiyor *::before, html.tema-degisiyor *::after { transition: none !important; }
 /* Reduced motion: fewer and gentler, not none. Travel and scale go, colour and opacity stay;
    animations jump to their end state. Recipes should still be written inside no-preference blocks. */
 @media (prefers-reduced-motion: reduce) {

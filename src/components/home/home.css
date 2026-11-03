@@ -345,7 +345,6 @@
 
 /* ---------- Motion (YON.md 6.6). Content is in the HTML and painted; motion only adds arrival. ---------- */
 @keyframes home-line { to { transform: none; } }
-@keyframes home-rise { to { opacity: 1; transform: none; } }
 @keyframes home-row { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes home-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes home-settle { from { transform: scale(1.08); } to { transform: none; } }
@@ -353,7 +352,8 @@
 @media (prefers-reduced-motion: no-preference) {
   /* Signature: masked headline, then sentence, action and the counter. Done by 1.2s. */
   .js .hero [data-line] { transform: translateY(105%); animation: home-line var(--t-reveal) var(--ease-expo) forwards; animation-delay: calc(100ms + var(--i) * 110ms); }
-  .js .hero [data-load] { opacity: 0; transform: translateY(12px); animation: home-rise 500ms var(--ease-out) forwards; animation-delay: var(--d); }
+  /* Travel only, no opacity: the sentence and the action are readable even where the animation never ticks (a background tab). */
+  .js .hero [data-load] { transform: translateY(12px); animation: home-line 500ms var(--ease-out) forwards; animation-delay: var(--d); }
 
   /* Counter: a changed sample brings its rows in one by one. */
   .counter-row { animation: home-row var(--t-ui) var(--ease-out) both; animation-delay: calc(var(--i) * var(--stagger-item)); }
