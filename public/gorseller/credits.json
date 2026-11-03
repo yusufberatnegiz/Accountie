@@ -21,7 +21,8 @@
   "bytes": 3296449,
   "credit": "\"Keystrokes in a vintage mechanical calculator\" by Subhashish Panigrahi, CC BY-SA 4.0, via Wikimedia Commons",
   "notes": [
-   "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence."
+   "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence.",
+   "Altered: converted to monochrome (poster and both encodings)."
   ],
   "saved": "2026-11-03T06:11:45.362Z",
   "alt": "public/gorseller/hesap-makinesi.mp4"
@@ -45,7 +46,9 @@
   "height": 1503,
   "bytes": 687756,
   "credit": "\"Intérieur du Gran Bazar, by Sébah & Joaillier, c. 1889-1900, from the Digital Commonwealt…\" by Sébah & Joaillier, public domain, via Wikimedia Commons",
-  "notes": [],
+  "notes": [
+   "Altered: converted to monochrome, contrast adjusted, resized to at most 1600px."
+  ],
   "saved": "2026-11-03T10:44:24.855Z"
  },
  {
@@ -68,7 +71,8 @@
   "bytes": 126545,
   "credit": "\"Ottoman Bank, Safe Rooms (12965331153)\" by SALTOnline, no known copyright restrictions, via Wikimedia Commons",
   "notes": [
-   "Not a formal licence: the archive that published it states it knows of no copyright restrictions."
+   "Not a formal licence: the archive that published it states it knows of no copyright restrictions.",
+   "Altered: converted to monochrome, contrast adjusted, resized to at most 1600px."
   ],
   "saved": "2026-11-03T11:03:30.128Z"
  },
@@ -92,7 +96,8 @@
   "bytes": 148788,
   "credit": "\"Act of concession of the Imperial Ottoman Bank, February 4, 1863. (22175414171)\" by SALTOnline, no known copyright restrictions, via Wikimedia Commons",
   "notes": [
-   "Not a formal licence: the archive that published it states it knows of no copyright restrictions."
+   "Not a formal licence: the archive that published it states it knows of no copyright restrictions.",
+   "Altered: converted to monochrome, contrast adjusted, resized to at most 1600px."
   ],
   "saved": "2026-11-03T11:03:31.457Z"
  },
@@ -116,32 +121,33 @@
   "bytes": 1043308,
   "credit": "\"Louis-Nicolas de Lespinasse, Deferdar's office\" by Gmihail at Serbian Wikipedia, CC BY-SA 3.0, via Wikimedia Commons",
   "notes": [
-   "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence."
+   "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence.",
+   "Altered: converted to monochrome, contrast adjusted, resized to at most 1600px."
   ],
   "saved": "2026-11-03T11:03:34.437Z"
  },
  {
-  "file": "public/gorseller/osmanli-bankasi-samsun-1930.jpg",
+  "file": "public/gorseller/dedo-defteri-1876.jpg",
   "media": "image",
-  "ref": "commons:41514599",
-  "title": "Osmanlı Bankası, 1930",
-  "creator": "SALTOnline",
+  "ref": "commons:12645055",
+  "title": "Ledger of the fur trader Dedo from Leipzig, 1876-1885 003",
+  "creator": "Dedo",
   "creatorUrl": null,
-  "date": "2014-08-15",
-  "license": "no known copyright restrictions",
+  "date": "1876",
+  "license": "public domain",
   "licenseCode": "pd",
-  "licenseUrl": "https://www.flickr.com/commons/usage/",
+  "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
   "creditRequired": false,
-  "page": "https://commons.wikimedia.org/wiki/File:Osmanl%C4%B1_Bankas%C4%B1,_1930.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Ledger_of_the_fur_trader_Dedo_from_Leipzig,_1876-1885_003.jpg",
   "via": "Wikimedia Commons",
-  "image": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Osmanl%C4%B1_Bankas%C4%B1%2C_1930.jpg",
-  "width": 1919,
-  "height": 1398,
-  "bytes": 646598,
-  "credit": "\"Osmanlı Bankası, 1930\" by SALTOnline, no known copyright restrictions, via Wikimedia Commons",
+  "image": "https://upload.wikimedia.org/wikipedia/commons/e/e8/Ledger_of_the_fur_trader_Dedo_from_Leipzig%2C_1876-1885_003.jpg",
+  "width": 1669,
+  "height": 1335,
+  "bytes": 1713831,
+  "credit": "\"Ledger of the fur trader Dedo from Leipzig, 1876-1885 003\" by Dedo, public domain, via Wikimedia Commons",
   "notes": [
-   "Not a formal licence: the archive that published it states it knows of no copyright restrictions."
+   "Altered: converted to monochrome, contrast adjusted, resized to at most 1600px."
   ],
-  "saved": "2026-11-03T15:34:21.789Z"
+  "saved": "2026-11-03T17:12:07.518Z"
  }
 ]

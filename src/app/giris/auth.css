@@ -3,10 +3,11 @@
   Desktop: the form column left, the product's own piece (fiş strip and its three Luca lines) on the stage tone right.
   Below 900px the form is centred and the piece becomes a band under it, so no half of the screen is left empty.
 */
-.auth { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+/* Form and piece share one top line (--auth-top), so the two halves read as one composition. */
+.auth { --auth-top: calc(72px + var(--s9) + var(--s5)); min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
 .auth > .site-dock { grid-column: 1 / -1; grid-row: 1; }
-.auth-main { grid-column: 1; display: grid; padding: calc(56px + var(--s9)) var(--page-margin) var(--s8); }
-.auth-form { align-self: center; justify-self: center; width: 100%; max-width: 420px; display: grid; gap: var(--s5); }
+.auth-main { grid-column: 1; grid-row: 1 / span 2; display: grid; padding: var(--auth-top) var(--page-margin) var(--s8); }
+.auth-form { align-self: start; justify-self: center; width: 100%; max-width: 420px; display: grid; gap: var(--s5); }
 .auth-head { display: grid; gap: var(--s2); }
 .auth-head p { margin: 0; font-size: var(--fs-section); color: var(--muted); max-width: 36ch; }
 .auth-head h1 { font-family: var(--font-head); font-weight: 300; font-size: clamp(1.5rem, 1rem + 1vw, 2rem); letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
@@ -30,12 +31,14 @@
 .auth-fields .btn { margin-top: var(--s2); min-height: var(--touch); }
 .auth-switch, .auth-consent { margin: 0; font-size: var(--fs-body); color: var(--muted); }
 .auth-consent a, .auth-switch a { color: var(--accent); }
+/* After the form the thumb goes here: a 44px target, not an 18px line. */
+.auth-switch a { display: inline-flex; align-items: center; min-height: var(--touch); padding-inline: var(--s1); margin-inline: calc(var(--s1) * -1); font-weight: 500; }
 
 /* ---------- The stage: the product piece, sticky beside the form ---------- */
-.auth-stage { grid-column: 2; grid-row: 1 / span 2; background: var(--stage); display: grid; place-content: center; justify-items: center; gap: var(--s5); padding: calc(56px + var(--s8)) var(--page-margin) var(--s8); position: sticky; top: 0; height: 100dvh; box-sizing: border-box; }
-.auth-piece { display: grid; grid-template-columns: 300px minmax(0, 340px); gap: var(--s5); align-items: start; }
+.auth-stage { grid-column: 2; grid-row: 1 / span 2; background: var(--split); display: grid; align-content: start; justify-content: center; justify-items: start; gap: var(--s5); padding: var(--auth-top) var(--page-margin) var(--s8); position: sticky; top: 0; height: 100dvh; box-sizing: border-box; }
+.auth-piece { display: grid; grid-template-columns: 280px minmax(0, 380px); gap: var(--s5); align-items: start; }
 .auth-strip { overflow: clip; padding-bottom: var(--s2); }
-.auth-sheet { background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s5); display: grid; gap: var(--s4); margin-top: var(--s7); }
+.auth-sheet { background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s5); display: grid; gap: var(--s4); }
 .auth-sheet p { margin: 0; }
 .auth-sheet-head { display: grid; gap: var(--s1); font-weight: 600; font-size: var(--fs-section); }
 .auth-sheet-meta { font-size: var(--fs-small); font-weight: 400; color: var(--muted); }
@@ -44,6 +47,7 @@
 .auth-sheet th.num, .auth-sheet td.num { text-align: right; }
 .auth-sheet td { padding: var(--s2); vertical-align: top; }
 .auth-sheet td.num { white-space: nowrap; font-weight: 500; }
+.auth-sheet .num { width: 1%; }
 .auth-code { display: block; font-weight: 500; font-variant-numeric: tabular-nums; }
 .auth-code-name { display: block; font-size: var(--fs-small); color: var(--muted); }
 .auth-balance { font-size: var(--fs-body); font-weight: 500; font-variant-numeric: tabular-nums; }
@@ -62,7 +66,8 @@
 @keyframes auth-row { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 @media (max-width: 1180px) and (min-width: 901px) {
-  .auth-piece { grid-template-columns: minmax(0, 300px); }
+  .auth { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .auth-piece { grid-template-columns: minmax(0, 340px); }
   .auth-sheet { margin-top: 0; }
   .auth-strip .thermal-items { display: none; }
 }
@@ -70,9 +75,9 @@
 /* ---------- Tablet and phone: centred form, the piece as a band underneath ---------- */
 @media (max-width: 900px) {
   .auth { grid-template-columns: minmax(0, 1fr); }
-  .auth-main { padding: calc(56px + var(--s8)) var(--page-margin) var(--s8); }
+  .auth-main { padding: calc(72px + var(--s8)) var(--page-margin) var(--s8); }
   .auth-form { align-self: start; max-width: 440px; }
-  .auth-stage { grid-column: 1; grid-row: auto; position: static; height: auto; padding: var(--s8) var(--page-margin) max(var(--s8), env(safe-area-inset-bottom)); }
+  .auth-stage { grid-column: 1; grid-row: auto; position: static; height: auto; justify-items: center; padding: var(--s8) var(--page-margin) max(var(--s8), env(safe-area-inset-bottom)); }
 }
 @media (max-width: 640px) {
   .auth-main { padding: calc(56px + var(--s7)) var(--page-margin) var(--s7); }
@@ -80,5 +85,7 @@
   .auth-stage { padding-block: var(--s7); }
   .auth-piece { grid-template-columns: minmax(0, 1fr); gap: var(--s4); width: 100%; }
   .auth-strip { width: 100%; max-width: 280px; justify-self: center; }
+  /* The item lines repeat the sheet below them; the strip keeps its head and totals, so the piece stays a fragment. */
+  .auth-strip .thermal-items { display: none; }
   .auth-sheet { margin-top: 0; padding: var(--s4); gap: var(--s3); }
 }

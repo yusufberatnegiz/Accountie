@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * A silent loop that plays only while on screen and never by itself under reduced motion; otherwise the poster stays.
+ * The poster is also the video's background, so the frame is never black while the first frame loads.
  * The button stops or starts it (WCAG 2.2.2: motion longer than 5 s next to other content can be paused).
  */
 export function LoopVideo({ src, poster, width, height }: { src: { mp4: string; webm: string }; poster: string; width: number; height: number }) {
@@ -33,6 +34,7 @@ export function LoopVideo({ src, poster, width, height }: { src: { mp4: string; 
   return (
     <div className="loop-video">
       <video ref={ref} muted loop playsInline preload="none" poster={poster} width={width} height={height} aria-hidden="true"
+        style={{ backgroundImage: `url(${poster})` }}
         onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}>
         <source src={src.mp4} type="video/mp4" />
         <source src={src.webm} type="video/webm" />

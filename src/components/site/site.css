@@ -1,10 +1,17 @@
 /* Public top bar and cookie notice (docs/design/YON.md 14). Tokens only. The bar rests on a tone step and a 1px edge, no shadow. */
 
 .site-dock { position: sticky; top: 0; z-index: 20; height: 0; }
+/* Once the page scrolls, the gap above the bar is filled with the ground, so headings pass cleanly behind the bar instead of
+   showing as a sliver above it. At the top it is absent, so the hero's two tones still run to the top edge. */
+.site-dock::before { content: ""; position: absolute; inset-inline: 0; top: 0; height: calc(var(--s4) + 56px); background: var(--ground); opacity: 0; pointer-events: none; }
+@supports (animation-timeline: scroll()) {
+  .site-dock::before { animation: site-fill linear both; animation-timeline: scroll(root); animation-range: 0px 1px; }
+}
+@keyframes site-fill { to { opacity: 1; } }
 /* Keyboard focus and in-page jumps stop below the bar (16px offset + 56px bar + a gap), never under it. */
 html:has(.site-dock) { scroll-padding-top: 88px; }
 .site-bar {
-  position: absolute; top: var(--s4); inset-inline: max(var(--page-margin), calc((100% - 1150px) / 2));
+  position: absolute; top: var(--s4); inset-inline: var(--page-margin);
   display: flex; align-items: center; gap: var(--s5); height: 56px; padding: 0 var(--s2) 0 var(--s4);
   background: var(--surface); color: var(--ink); border: 1px solid var(--border); /* taste-skill-ignore: data-ui bar edge (YON 14.1) */
   border-radius: var(--radius-card);
@@ -52,13 +59,16 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
 }
 @media (max-width: 767px) {
   .site-bar { top: max(var(--s2), env(safe-area-inset-top)); padding: 0 var(--s1) 0 var(--s3); gap: var(--s3); }
+  .site-dock::before { height: calc(max(var(--s2), env(safe-area-inset-top)) + 56px); }
   .site-actions { gap: var(--s1); }
   .site-actions .btn, .site-actions .theme-cycle { min-height: var(--touch); height: var(--touch); }
   .site-actions .theme-cycle { width: var(--touch); }
 }
 /* Phones: the hero carries Hesap oluştur, so the bar keeps the returning visitor's Giriş yap (and the name); the menu has the rest. */
 @media (max-width: 640px) {
-  .site-actions:has(.site-login) .site-cta { display: none; }
+  /* Hesap oluştur lives in the hero and in the menu; without it the bar fits down to 320px on every public page. */
+  .site-cta { display: none; }
+  .site-brand, .site-actions { min-width: 0; }
   .site-login, .site-cta { padding-inline: var(--s3); }
 }
 
@@ -91,10 +101,12 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
   .cookie-note { animation: site-rise 320ms var(--ease-out) backwards; animation-delay: 600ms; }
 }
 @keyframes site-rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
-/* Phones: the same strip, edge to edge; at most 72px at 360 (three 14px lines beside 44px buttons), under the hero's choices rather than over them. */
+/* Phones: the same strip, edge to edge, one line beside two 44px buttons (about 60px), so the hero receipt's total stays in view. */
 @media (max-width: 640px) {
   .cookie-note { left: var(--s2); right: var(--s2); bottom: max(var(--s2), env(safe-area-inset-bottom)); width: auto; column-gap: var(--s2); padding: var(--s2) var(--s2) var(--s2) var(--s3); }
   .cookie-note p { font-size: 14px; line-height: 1.25; }
+  /* One line and one button; the preferences only restate the Gizlilik page, which the link opens. */
+  .cookie-more, .cookie-note > .cookie-actions .btn + .btn { display: none; }
   .cookie-note > .cookie-actions { gap: var(--s1); }
   .cookie-note > .cookie-actions .btn { padding-inline: var(--s3); }
 }

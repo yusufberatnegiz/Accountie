@@ -38,7 +38,7 @@ export function CookieNote() {
   return (
     <section className="cookie-note" aria-labelledby="cookie-title" data-away={away || undefined}>
       <h2 id="cookie-title">Çerezler</h2>
-      <p>Yalnız oturum çerezi. Analitik ve reklam yok. <Link href="/gizlilik">Gizlilik</Link></p>
+      <p>Yalnız oturum çerezi.<span className="cookie-more"> Analitik ve reklam yok.</span> <Link href="/gizlilik">Gizlilik</Link></p>
       <div className="cookie-actions">
         <button type="button" className="btn" onClick={done}>Tamam</button>
         <button type="button" className="btn" onClick={() => dialog.current?.showModal()}>Tercihler</button>

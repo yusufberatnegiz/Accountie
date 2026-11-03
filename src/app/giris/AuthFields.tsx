@@ -1,8 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { PREFILL_KEY, PREFILL_NAME_KEY } from "@/components/home/SignupDialog";
+import { useState, type ReactNode } from "react";
 
 type Err = { error?: string };
 
@@ -52,41 +51,25 @@ export function PasswordField({ label, name, autoComplete, hint, error, aside }:
   );
 }
 
-/** Takes a value typed into the homepage window (sessionStorage, never the URL), once. */
-function usePrefill(key: string, on?: boolean) {
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (!on || !ref.current) return;
-    try {
-      const v = sessionStorage.getItem(key);
-      if (v && !ref.current.value) ref.current.value = v;
-      sessionStorage.removeItem(key);
-    } catch { /* storage blocked */ }
-  }, [key, on]);
-  return ref;
-}
-
 export function NameField({ error, defaultValue }: Err & { defaultValue?: string }) {
-  const ref = usePrefill(PREFILL_NAME_KEY, true);
   const id = "auth-name";
   return (
     <div className="auth-field">
       <label htmlFor={id}>Ad soyad</label>
-      <input ref={ref} className="field" id={id} name="name" autoComplete="name" autoCapitalize="words" minLength={2} maxLength={100} required
+      <input className="field" id={id} name="name" autoComplete="name" autoCapitalize="words" minLength={2} maxLength={100} required
         defaultValue={defaultValue} aria-invalid={error ? true : undefined} aria-describedby={described(id, undefined, error)} />
       <FieldError id={id} error={error} />
     </div>
   );
 }
 
-/** E-mail field; on the signup page it takes the address typed into the homepage window. */
-export function EmailField({ prefill, error, defaultValue }: { prefill?: boolean; defaultValue?: string } & Err) {
-  const ref = usePrefill(PREFILL_KEY, prefill);
+/** E-mail field. */
+export function EmailField({ error, defaultValue }: { defaultValue?: string } & Err) {
   const id = "auth-email";
   return (
     <div className="auth-field">
       <label htmlFor={id}>E-posta</label>
-      <input ref={ref} className="field" id={id} name="email" type="email" autoComplete="email" spellCheck={false}
+      <input className="field" id={id} name="email" type="email" autoComplete="email" spellCheck={false}
         maxLength={200} required defaultValue={defaultValue}
         aria-invalid={error ? true : undefined} aria-describedby={described(id, undefined, error)} />
       <FieldError id={id} error={error} />
