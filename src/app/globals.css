@@ -94,6 +94,8 @@
   --t-press: 140ms; --t-hover: 180ms; --t-ui: 240ms; --t-reveal: 800ms; --t-open: 1200ms;
   --stagger-line: 90ms; --stagger-item: 70ms;
 
+  --w-medium: 500; --w-strong: 600;
+
   color-scheme: light;
 }
 
@@ -115,6 +117,7 @@
     --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
     --split: #1d2229; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
     --paper: #d8dadc; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #bfcde0;
+    --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
     color-scheme: dark;
   }
 }
@@ -134,6 +137,7 @@
   --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
   --split: #1d2229; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
   --paper: #d8dadc; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #bfcde0;
+  --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
   color-scheme: dark;
 }
 
@@ -164,14 +168,14 @@ button, input, select, textarea, a, label, summary { touch-action: manipulation;
 /* ---------- Type ---------- */
 h1, h2, h3 { margin: 0; line-height: 1.2; text-wrap: balance; }
 /* App type: noun title at 24/600, section 16/600. */
-h1 { font-size: var(--fs-title); font-weight: 600; letter-spacing: -0.01em; }
-h2 { font-size: var(--fs-section); font-weight: 600; }
-h3 { font-size: var(--fs-body); font-weight: 600; }
+h1 { font-size: var(--fs-title); font-weight: var(--w-strong); letter-spacing: -0.01em; }
+h2 { font-size: var(--fs-section); font-weight: var(--w-strong); }
+h3 { font-size: var(--fs-body); font-weight: var(--w-strong); }
 /* Page type (homepage): the headline face is only for these. */
 .t-display, .t-head { font-family: var(--font-head); font-weight: 300; letter-spacing: -0.022em; line-height: 1.05; }
 .t-display { font-size: var(--step-display); }
 .t-head { font-size: var(--step-head); }
-.t-lead { font-size: var(--step-lead); font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; }
+.t-lead { font-size: var(--step-lead); font-weight: var(--w-medium); letter-spacing: -0.01em; line-height: 1.2; }
 .t-body { font-size: var(--step-body); line-height: 1.5; }
 .t-small { font-size: var(--step-small); }
 .num, .num-font, .tnum { font-variant-numeric: tabular-nums; }
@@ -191,7 +195,7 @@ details.stack > summary h2 { display: inline; }
 /* ---------- Components ---------- */
 
 /* Brand: the receipt strip mark + wordmark */
-.brand { justify-self: start; display: inline-flex; align-items: center; gap: var(--s2); font-weight: 600; font-size: var(--fs-section); color: var(--ink); text-decoration: none; letter-spacing: -0.01em; }
+.brand { justify-self: start; display: inline-flex; align-items: center; gap: var(--s2); font-weight: var(--w-strong); font-size: var(--fs-section); color: var(--ink); text-decoration: none; letter-spacing: -0.01em; }
 @media (hover: hover) and (pointer: fine) { .brand:hover { color: var(--ink); } }
 .mark { flex: none; width: 24px; height: 24px; }
 .mark-strip { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
@@ -204,7 +208,7 @@ details.stack > summary h2 { display: inline; }
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
   min-height: var(--control); padding: 0 var(--s4); border-radius: var(--radius-control);
   border: 1px solid transparent; background: var(--secondary); color: var(--ink);
-  font-weight: 500; font-size: var(--fs-body); line-height: 1.2; cursor: pointer; text-decoration: none; white-space: nowrap;
+  font-weight: var(--w-medium); font-size: var(--fs-body); line-height: 1.2; cursor: pointer; text-decoration: none; white-space: nowrap;
   transition: transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease, border-color var(--t-hover) ease, color var(--t-hover) ease;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -242,15 +246,15 @@ textarea.field { padding: var(--s2) var(--s3); min-height: 88px; }
 /* Edge only: the cream fill made status the loudest colour on the review screen, above the blue Luca figures. */
 .field[data-check] { border-color: var(--warn-ink); }
 @media (pointer: coarse) { .field { min-height: var(--touch); font-size: 16px; } }
-label { display: grid; gap: var(--s2); font-weight: 500; font-size: var(--fs-body); }
+label { display: grid; gap: var(--s2); font-weight: var(--w-medium); font-size: var(--fs-body); }
 label .field { font-weight: 400; }
 .hint { font-size: var(--fs-small); color: var(--muted); font-weight: 400; }
-.field-error { font-size: var(--fs-small); color: var(--negative); font-weight: 500; }
+.field-error { font-size: var(--fs-small); color: var(--negative); font-weight: var(--w-medium); }
 .form-grid { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-top: var(--s3); }
 .span-all { grid-column: 1 / -1; }
 
 /* Pills: pale tint with dark ink of the same hue, only inside rows and beside values. */
-.pill { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--s2); border-radius: var(--radius-chip); font-size: var(--fs-small); font-weight: 500; line-height: 1; white-space: nowrap; background: var(--active); color: var(--ink); }
+.pill { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--s2); border-radius: var(--radius-chip); font-size: var(--fs-small); font-weight: var(--w-medium); line-height: 1; white-space: nowrap; background: var(--active); color: var(--ink); }
 .pill-accent { background: var(--accent-soft); color: var(--accent); }
 .pill-positive { background: var(--positive-soft); color: var(--positive); }
 .pill-negative { background: var(--negative-soft); color: var(--negative); }
@@ -289,11 +293,11 @@ label .field { font-weight: 400; }
 /* ---------- Tables and status: shared by the panel (src/components/panel/panel.css) and the homepage's interface fragments ---------- */
 table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
 th, td { padding: var(--s3); border-bottom: 1px solid var(--rule); text-align: left; vertical-align: middle; }
-th { font-size: var(--fs-small); font-weight: 500; color: var(--muted); white-space: nowrap; border-bottom-color: var(--border); }
+th { font-size: var(--fs-small); font-weight: var(--w-medium); color: var(--muted); white-space: nowrap; border-bottom-color: var(--border); }
 th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:last-child td { border-bottom: 0; }
 /* Status marks: Taslak neutral, Onaylandı ledger blue, Aktarıldı green. Pale tint, dark ink. */
-.status { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--s2); border-radius: var(--radius-chip); font-size: var(--fs-small); font-weight: 500; white-space: nowrap; flex: none; background: var(--active); color: var(--ink); }
+.status { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--s2); border-radius: var(--radius-chip); font-size: var(--fs-small); font-weight: var(--w-medium); white-space: nowrap; flex: none; background: var(--active); color: var(--ink); }
 .status-approved { background: var(--accent-soft); color: var(--accent); }
 .status-exported { background: var(--positive-soft); color: var(--positive); }
 
@@ -301,13 +305,13 @@ tbody tr:last-child td { border-bottom: 0; }
 .alert { padding: var(--s3) var(--s4); border-radius: var(--radius-control); background: var(--raised); color: var(--ink); }
 .alert-error { background: var(--negative-soft); color: var(--negative); }
 .alert-warn { background: var(--warn-bg); color: var(--warn-ink); }
-.alert-title { font-weight: 600; margin-bottom: var(--s1); }
+.alert-title { font-weight: var(--w-strong); margin-bottom: var(--s1); }
 .notes { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); }
-.reading { display: flex; align-items: center; min-height: 52px; padding: 0 var(--s4); border-radius: var(--radius-control); background: var(--accent-soft); color: var(--ink); font-weight: 500; }
+.reading { display: flex; align-items: center; min-height: 52px; padding: 0 var(--s4); border-radius: var(--radius-control); background: var(--accent-soft); color: var(--ink); font-weight: var(--w-medium); }
 
 /* ---------- Shared bits the panel and the plain pages (error, not found) use ---------- */
 .actions { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
-.balance { font-weight: 600; font-variant-numeric: tabular-nums; }
+.balance { font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
 .balance-ok { color: var(--positive); }
 .balance-off { color: var(--negative); }
 .phone-only { display: none; }
@@ -318,17 +322,16 @@ tbody tr:last-child td { border-bottom: 0; }
   .phone-only { display: block; }
 }
 
-/* Error and not found (components/StatusPage.tsx): the auth layout. Message on the wordmark's edge, centred in the height; the stage on the right carries the mark large. */
-.status-page { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.status-side { display: grid; grid-template-rows: auto 1fr; padding: var(--s6) var(--page-margin); padding-top: max(var(--s6), env(safe-area-inset-top)); padding-bottom: max(var(--s6), env(safe-area-inset-bottom)); }
-.status-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); }
-.status-body { align-self: center; display: grid; padding-block: var(--s8); }
+/* Error and not found (components/StatusPage.tsx): the auth layout. SiteBar on top, message on the bar's left edge and centred in the height; the split tone on the right carries the mark large. */
+.status-page { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: auto 1fr; }
+.status-page > .site-dock { grid-column: 1 / -1; grid-row: 1; }
+.status-body { grid-column: 1; grid-row: 1 / span 2; align-self: center; display: grid; padding: calc(72px + var(--s8)) var(--page-margin) var(--s8); padding-bottom: max(var(--s8), env(safe-area-inset-bottom)); }
 .status-message { display: grid; gap: var(--s4); max-width: 440px; }
-.status-message h1 { margin: 0; font-size: 32px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.15; }
+.status-message h1 { margin: 0; font-size: 32px; font-weight: var(--w-strong); letter-spacing: -0.015em; line-height: 1.15; }
 .status-message p { margin: 0; font-size: var(--fs-section); color: var(--muted); max-width: 46ch; }
 .status-message .actions { margin-top: var(--s2); }
 .status-message .btn { min-height: var(--touch); }
-.status-stage { background: var(--stage); display: grid; place-items: center; position: sticky; top: 0; height: 100dvh; overflow: hidden; }
+.status-stage { grid-column: 2; grid-row: 1 / span 2; background: var(--split); display: grid; place-items: center; position: sticky; top: 0; height: 100dvh; overflow: hidden; }
 .status-mark { width: min(56%, 360px); height: auto; }
 .status-mark .mark-strip { stroke-width: 0.6; }
 .status-mark .mark-thermal { stroke-width: 0.9; }
@@ -336,10 +339,10 @@ tbody tr:last-child td { border-bottom: 0; }
 @media (max-width: 900px) {
   .status-page { grid-template-columns: 1fr; }
   .status-stage { display: none; }
-  .status-side { padding: var(--s4) var(--page-margin); padding-top: max(var(--s4), env(safe-area-inset-top)); }
-  .status-body { align-self: start; padding-block: var(--s9) var(--s7); }
+  .status-body { align-self: start; padding-top: calc(72px + var(--s9)); }
   .status-message h1 { font-size: 24px; }
 }
+
 @media (prefers-reduced-motion: no-preference) {
   .status-message { animation: status-rise 500ms var(--ease-out) both; }
   /* The blue Luca line draws across the strip once: the product's one idea, even on a failed page. */
