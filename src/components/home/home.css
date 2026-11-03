@@ -60,11 +60,11 @@
 @media (hover: hover) and (pointer: fine) { .segmented label:hover:not(:has(input:checked)) { background: var(--secondary-hover); color: var(--ink); } }
 @media (pointer: coarse) { .segmented label { min-height: var(--touch); } }
 
-.counter-body { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--s5); align-items: start; }
+.counter-body { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--s5); align-items: start; }
 .counter-sheet { background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s5); display: grid; gap: var(--s4); min-width: 0; }
 
 /* The strip itself is in thermal.css. It is fed out of this slot from the top. */
-.counter-slot { overflow: clip; padding-bottom: var(--s2); }
+.counter-slot { overflow: clip; padding-bottom: var(--s2); min-width: 0; }
 
 .counter-lines { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
 .counter-lines th { padding: 0 var(--s2) var(--s2); text-align: left; font-size: var(--fs-small); font-weight: 500; color: var(--muted); }
@@ -77,6 +77,7 @@
 .counter-foot { display: grid; gap: var(--s2); }
 .counter-foot p { margin: 0; }
 .counter-balance { font-weight: 500; font-variant-numeric: tabular-nums; }
+.counter-sum { display: inline-block; }
 .counter-formula { font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; }
 .counter-warn { font-size: var(--fs-small); background: var(--warn-bg); color: var(--warn-ink); padding: var(--s2) var(--s3); border-radius: var(--radius-control); }
 .counter-copy { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); margin-top: var(--s2); }
@@ -91,7 +92,7 @@
 .path-field-4 { background: var(--accent-field); color: var(--on-accent-field); }
 .path-title { grid-row: 1; align-self: start; min-height: 1px; } /* taste-skill-ignore: keeps the empty title cell, not a rule */
 /* Same card, same top line and the same height in every field: it fills its row. */
-.path-card { grid-row: 2; align-self: stretch; width: min(300px, 100%); transition: transform var(--t-hover) var(--ease-out); }
+.path-card { grid-row: 2; align-self: start; width: min(300px, 100%); transition: transform var(--t-hover) var(--ease-out); }
 @media (hover: hover) and (pointer: fine) { .path-field:hover .path-card { transform: translateY(-6px); } }
 .path-clause { grid-row: 3; align-self: start; margin: 0; font-size: var(--step-lead); font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; max-width: 12ch; }
 .path-strip { margin-inline: calc(var(--s2) * -1); }
@@ -102,43 +103,33 @@
 .rule-copy { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: end; }
 .rule-copy h2 { grid-column: 1 / 7; }
 .rule-sub { grid-column: 7 / 13; font-size: var(--step-body); max-width: 44ch; margin: 0; }
-.rule-figure, .routes-figure { display: grid; gap: var(--s3); align-content: start; }
+.rule-figure, .routes-figure { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); align-content: start; min-width: 0; }
 .rule-figure figcaption, .routes-figure figcaption { font-size: var(--step-small); color: var(--muted); }
-.rule-figure-bazaar { grid-column: 1 / 8; }
-.rule-figure-clip { grid-column: 8 / 13; }
+/* Top row: two halves, one ratio, so both pictures and both captions share a line. */
+.rule-figure-bazaar { grid-column: 1 / 7; }
+.rule-figure-clip { grid-column: 7 / 13; }
 .rule-figure-third { grid-column: span 4; }
-.frame-45 { aspect-ratio: 4 / 5; }
-.frame.frame-45 img { width: 100%; height: 100%; object-fit: cover; object-position: 62% 50%; }
 .frame { position: relative; overflow: clip; background: var(--raised); }
 .frame img, .frame video { display: block; width: 100%; height: auto; }
 .frame-43 { aspect-ratio: 4 / 3; }
 .frame-43 img, .frame-43 video, .frame-43 .loop-video { width: 100%; height: 100%; object-fit: cover; }
-.rule-figure-clip .frame-43 { aspect-ratio: auto; height: 100%; }
-/* Both pictures end on one line: the clip's frame takes the bazaar's height. */
-.rule { align-items: stretch; }
-.rule-figure { grid-template-rows: minmax(0, 1fr) auto; }
+.rule { align-items: start; }
 .loop-video { position: relative; height: 100%; }
 .loop-video video { width: 100%; height: 100%; object-fit: cover; }
 .loop-video-btn { position: absolute; left: var(--s3); bottom: var(--s3); background: var(--surface); color: var(--ink); min-height: var(--touch); }
 @media (hover: hover) and (pointer: fine) { .loop-video-btn:hover { background: var(--active); } }
-/* The two public-domain photographs are dimmed on the dark page so they do not glare (CC BY-SA media are left untouched). */
-:root[data-theme="dark"] .pd-photo { filter: brightness(0.82); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pd-photo { filter: brightness(0.82); } }
 
 /* ---------- showcase: lit panel, dark row ---------- */
-.show { background: var(--deep); color: var(--ink-on-deep); margin-top: var(--section-gap); padding-block: var(--s10); }
+.show { background: var(--deep); color: var(--ink-on-deep); margin-top: var(--section-gap); padding-block: var(--s9); }
 .show-inner { display: grid; gap: var(--s7); }
 .show-title { color: var(--ink-on-deep); }
 .show-stage { display: grid; grid-template-columns: minmax(0, 1fr) 24ch; gap: var(--s8); align-items: center; }
-.show-row {
-  display: flex; gap: var(--s6); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none;
-  padding: var(--s5) calc(50% - 240px); scroll-padding-inline: calc(50% - 240px); min-height: 460px; align-items: center;
-}
-.show-row::-webkit-scrollbar { display: none; }
-.show-row:focus-visible { outline: 2px solid var(--ink-on-deep); outline-offset: 4px; }
-.show-piece { position: relative; flex: 0 0 480px; scroll-snap-align: center; display: grid; gap: var(--s4); }
-.show-ui { opacity: 0.28; transform: scale(0.92); transition: opacity 500ms var(--ease-out), transform 500ms var(--ease-out); }
-.show-piece[data-lit] .show-ui { opacity: 1; transform: none; }
+/* Every piece sits in the same cell, so the stage is as tall as the tallest and nothing shifts; only the chosen one is shown. */
+.show-row { display: grid; align-items: center; min-width: 0; }
+.show-piece { position: relative; grid-area: 1 / 1; width: min(620px, 100%); display: grid; gap: var(--s4); visibility: hidden; opacity: 0; }
+.show-piece[data-lit] { visibility: visible; opacity: 1; }
+.show-ui { transform: translateY(10px); }
+.show-piece[data-lit] .show-ui { transform: none; }
 .show-piece .ui-card { padding: var(--s5); min-height: 280px; }
 .show-cap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .show-side { display: grid; gap: var(--s7); align-content: center; }
@@ -182,7 +173,7 @@
 
 /* ---------- features: panel with margin notes (the panel's fields are static text drawn like fields) ---------- */
 .feat { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); margin-top: var(--section-gap); }
-.feat-title { grid-column: 5 / 13; grid-row: 1; margin-bottom: var(--s7); }
+.feat-title { grid-column: 1 / 5; grid-row: 2 / 4; align-self: start; padding-right: var(--s5); }
 .feat-panel { grid-column: 5 / 9; grid-row: 2 / 9; display: grid; grid-template-rows: subgrid; background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); font-size: var(--fs-body); }
 .ui-panel-head { grid-row: 1; padding: var(--s4); font-weight: 600; font-size: var(--fs-section); border-bottom: 1px solid var(--border); } /* taste-skill-ignore: data-ui fragment */
 .feat-part { padding: var(--s4); display: grid; gap: var(--s2); align-content: start; border-bottom: 1px solid var(--rule); transition: opacity var(--t-hover) ease; } /* taste-skill-ignore: data-ui fragment */
@@ -220,7 +211,8 @@
 .routes-value { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; max-width: 24ch; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); align-self: start; margin-top: calc(0.75em - 4px); }
 .routes-tip { font-size: var(--step-body); max-width: 44ch; margin: 0; }
-.routes-figure { grid-column: 8 / 13; }
+/* The engraving travels beside the long list instead of leaving the right half empty under it. */
+.routes-figure { grid-column: 8 / 13; position: sticky; top: calc(56px + var(--s7)); }
 
 /* ---------- faq: question index, one answer pane as tall as the list ---------- */
 .faq { margin-top: var(--section-gap); }
@@ -290,7 +282,7 @@
 }
 @media (max-width: 1100px) and (min-width: 641px) {
   .feat { row-gap: var(--s6); }
-  .feat-title { grid-column: 1 / 13; grid-row: 1; margin-bottom: 0; }
+  .feat-title { grid-column: 1 / 13; grid-row: 1; margin-bottom: 0; padding-right: 0; }
   .feat-panel { grid-column: 1 / 8; grid-row: 2 / 9; }
   .feat-note, .feat-note-l, .feat-note-r { grid-column: 8 / 13; text-align: left; justify-items: start; padding-top: var(--s3); }
 }
@@ -300,8 +292,8 @@
   .rule-figure-bazaar, .rule-figure-clip { grid-column: 1 / -1; }
   .rule-figure-third { grid-column: span 6; }
   .rule-figure-third:last-child { grid-column: 1 / -1; }
-  .rule-figure-clip .frame-43 { aspect-ratio: 4 / 3; height: auto; }
   .routes-list, .routes-figure { grid-column: 1 / 13; }
+  .routes-figure { position: static; }
   .faq-list, .faq-title { grid-column: 1 / -1; }
   .faq-pane { display: none; }
 }
@@ -312,24 +304,16 @@
   .hero-sub { font-size: var(--fs-section); }
   .hero-stage { padding: var(--s4) var(--page-margin) var(--s6); place-items: stretch; }
   .counter { gap: var(--s4); }
-  .counter-controls { order: 2; display: grid; gap: var(--s3); }
+  .counter-controls { display: grid; gap: var(--s3); }
   /* One line per choice, scrolled sideways by the thumb instead of three stacked bars. */
   .segmented { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--page-margin) * -1); padding-inline: var(--page-margin); }
   .segmented::-webkit-scrollbar { display: none; }
   .segmented legend { float: none; position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .segmented label { flex: none; min-height: var(--touch); }
-  .counter-body { grid-template-columns: minmax(0, 10fr) minmax(0, 14fr); gap: var(--s2); }
-  .thermal { font-size: 10.5px; line-height: 1.4; }
-  .thermal-paper { padding: var(--s3) var(--s2) var(--s5); }
-  .thermal-row > span:last-child { font-size: 10px; }
-  .counter-sheet { padding: var(--s2); gap: var(--s3); }
-  .counter-lines { font-size: 12px; }
-  .counter-lines th, .counter-lines td { padding: 2px; }
-  .counter-lines .code-name { display: none; }
-  .counter-lines thead th:first-child { width: 42%; }
-  .counter-balance { font-size: 12px; }
-  .counter-formula { display: none; }
-  .counter-warn { font-size: 11px; padding: var(--s1) var(--s2); }
+  /* The strip at full width, the Luca lines under it: every figure on the receipt is read whole. */
+  .counter-body { grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+  .counter-sheet { padding: var(--s4); gap: var(--s3); }
+  .counter-lines th, .counter-lines td { padding: var(--s1) var(--s2); }
   .counter-copy .btn { min-height: var(--touch); }
 
 
@@ -338,13 +322,13 @@
   .path-field > span.path-title { display: none; }
   .path-title { grid-row: auto; }
   .path-clause { grid-row: auto; order: 1; max-width: none; }
-  .path-card { grid-row: auto; order: 2; }
+  .path-card { grid-row: auto; order: 2; width: 100%; }
 
   .show { padding-block: var(--s9); }
-  .show-row { padding: 0; margin: 0; overflow: visible; display: block; min-height: 0; }
-  .show-piece { display: none; }
+  /* Phones: only the chosen piece takes space, so a short piece leaves no gap under it. */
+  .show-row { display: block; }
+  .show-piece { display: none; width: 100%; }
   .show-piece[data-lit] { display: grid; }
-  .show-ui { opacity: 1; transform: none; }
   .show-cap { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; display: grid; gap: var(--s1); }
   .show-cap-name { font-weight: 600; font-size: var(--fs-section); }
   .show-cap-text { color: var(--muted-on-deep); font-size: var(--fs-body); }
@@ -356,7 +340,7 @@
 
   /* Phones: the panel and its six notes would repeat each other; the notes alone carry the rules, the panel shows its first two parts. */
   .feat { grid-template-columns: minmax(0, 1fr); row-gap: var(--s4); }
-  .feat-title { grid-column: 1; order: 0; margin-bottom: 0; }
+  .feat-title { grid-column: 1; grid-row: auto; order: 0; margin-bottom: 0; padding-right: 0; }
   .feat-panel { grid-column: 1; grid-row: auto; display: grid; grid-template-rows: none; order: 1; }
   .feat-part[data-part="4"], .feat-part[data-part="5"], .feat-part[data-part="6"] { display: none; }
   .feat-part[data-part="3"] { border-bottom: 0; }
@@ -390,18 +374,27 @@
   /* Travel only, no opacity: the sentence and the action are readable even where the animation never ticks (a background tab). */
   .js .hero [data-load] { transform: translateY(12px); animation: home-line 500ms var(--ease-out) forwards; animation-delay: var(--d); }
 
-  /* Signature: the receipt is printed, fed down out of its slot; each Luca line then arrives with its amount; the totals count
-     (Counter.tsx) and "Dengede" lights last. Replays on every sample change (the slot and rows are keyed). */
-  .js .counter-slot .thermal-paper { animation: home-print 900ms var(--ease-out) both; animation-delay: 250ms; }
-  .js .counter-row { animation: home-row 360ms var(--ease-out) both; animation-delay: calc(700ms + var(--i) * 140ms); }
-  .js .counter-state { display: inline-block; animation: home-light 320ms var(--ease-out) both; animation-delay: calc(760ms + var(--rows, 3) * 140ms); }
+  /* Signature, first paint only: the receipt is printed, fed down out of its slot; each Luca line then arrives with its amount
+     and "Dengede" lights last. After a choice only what changed moves: new lines rise in (rows are keyed by account and amount),
+     the strip and the totals cross-fade to their new values, never through numbers in between (YON.md 15). */
+  .js .counter[data-first] .counter-slot .thermal-paper { animation: home-print 900ms var(--ease-out) both; animation-delay: 250ms; }
+  .js .counter[data-first] .counter-row { animation: home-row 360ms var(--ease-out) both; animation-delay: calc(700ms + var(--i) * 140ms); }
+  .js .counter-state { display: inline-block; }
+  .js .counter[data-first] .counter-state { animation: home-light 320ms var(--ease-out) both; animation-delay: calc(760ms + var(--rows, 3) * 140ms); }
+  .counter:not([data-first]) .counter-row { animation: home-row 240ms var(--ease-out) both; }
+  .counter:not([data-first]) :is(.thermal-paper, .counter-sum, .counter-state) { animation: home-fade 180ms ease both; }
+
+  /* Showcase: the chosen piece cross-fades in and rises a little. */
+  .show-piece { transition: opacity 240ms var(--ease-out), visibility 0s linear 240ms; }
+  .show-piece[data-lit] { transition: opacity 240ms var(--ease-out), visibility 0s; }
+  .show-ui { transition: transform 320ms var(--ease-out); }
 
   /* Section entrances, once, part by part (heading, text, picture: --r steps of 80ms). Travel only (INSTRUCTIONS.md: content is visible immediately). */
   .motion [data-reveal] { transform: translateY(24px); transition: transform 800ms var(--ease-out); transition-delay: calc(var(--r, 0) * 80ms); }
   .motion [data-reveal].is-in { transform: none; }
   /* Pictures open like a shutter: a ground-toned cover above the already loaded picture scales away from the top (compositor only). */
   .motion [data-reveal="shutter"] { transform: none; }
-  .motion [data-reveal="shutter"] .frame::after { content: ""; position: absolute; inset: 0; z-index: 1; background: var(--ground); transform-origin: 50% 100%; transition: transform 900ms var(--ease-in-out); transition-delay: calc(var(--r, 0) * 90ms); pointer-events: none; }
+  .motion [data-reveal="shutter"] .frame::after { content: ""; position: absolute; inset: 0; z-index: 1; background: var(--ground); transform-origin: 50% 100%; transition: transform 480ms var(--ease-out); transition-delay: calc(var(--r, 0) * 50ms); pointer-events: none; }
   .motion [data-reveal="shutter"].is-in .frame::after { transform: scaleY(0); }
   .motion .rule-figure img { transform: scale(1.08); transition: transform 1600ms var(--ease-soft); }
   .motion .rule-figure.is-in img { transform: none; }
@@ -428,5 +421,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .path-card, .show-ui { transition: none; }
+  .show-ui { transform: none; }
   .path-card { transform: none !important; }
 }

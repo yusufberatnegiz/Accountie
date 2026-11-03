@@ -37,9 +37,9 @@ export function CookieNote() {
   return (
     <section className="cookie-note" aria-labelledby="cookie-title" data-away={away || undefined}>
       <h2 id="cookie-title">Çerezler</h2>
-      <p>Yalnız giriş yaptığınızda oturumunuzu açık tutan zorunlu çerez kullanılır. Tema seçiminiz bu tarayıcıda saklanır. Analitik ya da reklam çerezi yok. <Link href="/gizlilik">Gizlilik ve aydınlatma</Link></p>
+      <p>Yalnız oturum için zorunlu çerez var; analitik ya da reklam çerezi yok. <Link href="/gizlilik">Gizlilik</Link></p>
       <div className="cookie-actions">
-        <button type="button" className="btn btn-primary" onClick={done}>Tamam</button>
+        <button type="button" className="btn" onClick={done}>Tamam</button>
         <button type="button" className="btn" onClick={() => dialog.current?.showModal()}>Tercihler</button>
       </div>
       <dialog className="cookie-dialog floating" ref={dialog} aria-labelledby="cookie-dialog-title">

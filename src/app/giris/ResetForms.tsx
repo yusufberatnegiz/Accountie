@@ -20,7 +20,7 @@ export function RequestResetForm({ turnstileSiteKey }: { turnstileSiteKey?: stri
   }
   const text = state?.error ? ERRORS[state.error] : undefined;
   return (
-    <form action={action} className="auth-fields">
+    <form action={action} className="auth-fields" noValidate>
       {text && !state?.field ? <p className="alert alert-error" role="alert" tabIndex={-1} ref={alertRef}>{text}</p> : null}
       <EmailField error={state?.field === "email" ? text : undefined} defaultValue={state?.email} />
       <TurnstileWidget siteKey={turnstileSiteKey} />
@@ -35,7 +35,7 @@ export function NewPasswordForm({ token }: { token: string }) {
   const alertRef = useAfterAttempt(state);
   const text = state?.error ? ERRORS[state.error] : undefined;
   return (
-    <form action={action} className="auth-fields">
+    <form action={action} className="auth-fields" noValidate>
       {text && !state?.field ? (
         <p className="alert alert-error" role="alert" tabIndex={-1} ref={alertRef}>
           {text} <Link href="/giris/sifre">Yeni bağlantı isteyin</Link>

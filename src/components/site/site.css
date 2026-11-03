@@ -45,31 +45,38 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
 }
 @keyframes site-drop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
-@media (max-width: 767px) {
-  .site-links, .site-login { display: none; }
+/* The full row (brand, three links, theme, two buttons) needs about 880px; below 960 the links go into the menu. */
+@media (max-width: 959px) {
+  .site-links { display: none; }
   .site-menu { display: block; }
+}
+@media (max-width: 767px) {
   .site-bar { top: max(var(--s2), env(safe-area-inset-top)); padding: 0 var(--s1) 0 var(--s3); gap: var(--s3); }
   .site-actions { gap: var(--s1); }
   .site-actions .btn, .site-actions .theme-cycle { min-height: var(--touch); height: var(--touch); }
   .site-actions .theme-cycle { width: var(--touch); }
 }
-/* Smallest phones: the mark carries the brand, the name stays for screen readers. */
-@media (max-width: 400px) {
-  .site-bar:has(.site-cta) .site-brand { font-size: 0; gap: 0; }
-  .site-cta { padding-inline: var(--s3); }
+/* Phones: the hero carries Hesap oluştur, so the bar keeps the returning visitor's Giriş yap (and the name); the menu has the rest. */
+@media (max-width: 640px) {
+  .site-actions:has(.site-login) .site-cta { display: none; }
+  .site-login, .site-cta { padding-inline: var(--s3); }
 }
 
 /* ---------- Cookie notice: bottom right on desktop, a short sheet on phones, never over the first screen's headline ---------- */
+/* A low strip at every width: one sentence beside two quiet buttons, on a tone step and a 1px edge (no heavy shadow). */
 .cookie-note {
-  position: fixed; z-index: 30; right: var(--page-margin); bottom: var(--s5); width: min(26rem, calc(100% - 2 * var(--page-margin)));
-  display: grid; gap: var(--s3); padding: var(--s5); background: var(--surface); color: var(--ink); border-radius: var(--radius-card);
-  box-shadow: var(--shadow-float); /* taste-skill-ignore: floats over the page */
+  position: fixed; z-index: 30; right: var(--page-margin); bottom: var(--s4); width: min(44rem, calc(100% - 2 * var(--page-margin)));
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--s4);
+  padding: var(--s3) var(--s3) var(--s3) var(--s4); background: var(--surface); color: var(--ink); border-radius: var(--radius-card);
+  border: 1px solid var(--border); /* taste-skill-ignore: floating strip edge */
 }
-.cookie-note h2, .cookie-dialog h2 { margin: 0; font-size: var(--fs-section); font-weight: 600; }
-.cookie-note p { margin: 0; font-size: var(--fs-body); line-height: 1.5; }
+.cookie-note > h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.cookie-dialog h2 { margin: 0; font-size: var(--fs-section); font-weight: 600; }
+.cookie-note p { margin: 0; font-size: var(--fs-body); line-height: 1.45; }
 .cookie-note a { color: var(--accent); }
 .cookie-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .cookie-actions .btn { min-height: var(--touch); flex: 1 1 auto; }
+.cookie-note > .cookie-actions { flex-wrap: nowrap; }
 .cookie-dialog { width: min(26rem, calc(100% - 2 * var(--s4))); border: 0; padding: var(--s5); color: var(--ink); }
 .cookie-dialog[open] { display: grid; gap: var(--s3); }
 .cookie-dialog::backdrop { background: var(--scrim); }
@@ -84,14 +91,10 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
   .cookie-note { animation: site-rise 320ms var(--ease-out) backwards; animation-delay: 600ms; }
 }
 @keyframes site-rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
-/* Wide screens: a low strip (text beside the two buttons) so it stays under the first screen's content instead of over it. */
-@media (min-width: 1024px) {
-  .cookie-note { width: min(44rem, calc(100% - 2 * var(--page-margin))); grid-template-columns: 1fr auto; column-gap: var(--s5); row-gap: var(--s2); padding: var(--s4) var(--s5); }
-  .cookie-note > :not(.cookie-actions, dialog) { grid-column: 1; }
-  .cookie-note > .cookie-actions { grid-column: 2; grid-row: 1 / span 2; align-self: center; flex-direction: column; }
-  .cookie-note > .cookie-actions .btn { min-width: 9rem; }
-}
+/* Phones: the same strip, edge to edge; about 76px, under the hero's choices rather than over them. */
 @media (max-width: 640px) {
-  .cookie-note { left: var(--s2); right: var(--s2); bottom: max(var(--s2), env(safe-area-inset-bottom)); width: auto; max-height: 33svh; overflow: auto; overscroll-behavior: contain; padding: var(--s3) var(--s4); gap: var(--s2); }
-  .cookie-note p { font-size: 13px; line-height: 1.4; }
+  .cookie-note { left: var(--s2); right: var(--s2); bottom: max(var(--s2), env(safe-area-inset-bottom)); width: auto; column-gap: var(--s2); padding: var(--s2) var(--s2) var(--s2) var(--s3); }
+  .cookie-note p { font-size: 13px; line-height: 1.35; }
+  .cookie-note > .cookie-actions { gap: var(--s1); }
+  .cookie-note > .cookie-actions .btn { padding-inline: var(--s3); }
 }

@@ -9,8 +9,9 @@
 .thermal-vendor { font-weight: 600; text-align: center; color: var(--paper-strong); margin-bottom: var(--s3) !important; }
 .thermal-items { display: grid; gap: 2px; margin: var(--s3) 0; }
 .thermal-row { display: flex; justify-content: space-between; gap: var(--s3); padding: 1px var(--s1); margin-inline: calc(var(--s1) * -1); border-radius: 2px; transition: background-color var(--t-hover) ease, color var(--t-hover) ease; }
-.thermal-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.thermal-row > span:last-child { flex: none; }
+/* A long item name wraps under itself, as an ÖKC prints it; the amount column is never cut. */
+.thermal-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.thermal-row > span:last-child { flex: none; white-space: nowrap; }
 .thermal-sep { margin-top: var(--s2) !important; }
 .thermal-total { font-weight: 600; color: var(--paper-strong); }
 /* Fiş izi: the rows a pointed-at journal line came from. */
