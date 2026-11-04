@@ -102,3 +102,41 @@ Sırayla yapın; ayrıntılı hali `README.md` içinde "Canlıya alma" bölümü
 6. **Uçtan uca deneme (telefonda).** accountie.vercel.app'e girin, bir fiş çekin, kontrol ekranında satırları kağıt fişle karşılaştırıp onaylayın.
 7. **İlk gerçek Luca denemesi (tek fiş, Excel).** Fiş sayfasında "Luca için Excel indir". Luca'da Muhasebe > Fiş İşlemleri > Excel veri aktarımı ekranından yükleyin, önizlemeyi kağıt fişle karşılaştırın. Reddederse hata mesajını ve aynı ekrandaki "Şablon indir" dosyasını saklayın, bana iletin; kolonlar buna göre kilitlenir. Kabul ederse Fiş Kes ile fişi kesin.
 8. **Eklenti denemesi (isteğe bağlı).** `chrome://extensions` > Geliştirici modu > Paketlenmemiş öğe yükle > `extension/` klasörü. Accountie Fişler sayfasında eklenti anahtarı oluşturun, Luca'da Fiş Detayı ekranını açıp eklentiden fişi yazdırın. "Alan bulunamadı" çıkarsa Luca hücresinde sağ tık > İncele ile seçiciyi alıp iletin; Kaydet'e her zaman siz basın.
+
+## Arayüz yenilemesi (2026-11-03/04 gecesi)
+
+8 jüri (sanat, açık tema, koyu tema, mobil, erişilebilirlik, hareket-görsel, ürün-metin, işlev-güvenlik) her turda 0-10 puan verdi. Her turdan sonra bir sonraki turun düzeltme planı yazıldı.
+
+| Jüri | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| sanat | 6.7 | 7 | 7 | 7 | 7.4 | 7.5 | 7.8 | 8 |
+| açık tema | 6.4 | 7.1 | 6.5 | 7.2 | 7 | 8.5 | 9 | 8.5 |
+| koyu tema | 6 | 6.5 | 6.5 | 7 | 7.5 | 7.8 | 8 | 8.8 |
+| mobil | 6 | 7 | 7 | 7.5 | 8 | 8.5 | 8.5 | 9 |
+| erişilebilirlik | 7 | 6.5 | 7.3 | 8 | 7.5 | 8.5 | 9 | 7.5 |
+| hareket-görsel | 5.5 | 6.5 | 6.8 | 7 | 7.5 | 7.6 | 8.5 | 8 |
+| ürün-metin | 6 | 7 | 7 | 7.5 | 7.5 | 9 | 8.5 | 8 |
+| işlev-güvenlik | 8 | 7 | 8 | 8 | 8 | 8.5 | 9 | 9 |
+| **ortalama** | 6.45 | 6.83 | 7.01 | 7.40 | 7.55 | 8.36 | 8.54 | 8.35 |
+
+**Neden durdu:**
+- Puanlar 7. turdan sonra yükselmedi (8.54'ten 8.35'e indi). Bulgular kapanmıyor, yer değiştiriyor: bir jürinin kapattığı sorunu başka bir jüri yeni bir ayrıntıyla açıyor.
+- Saat 04:20'de oturum kullanım limiti doldu. 8. turun sonunda ana sayfa ve panel düzelticileri yarıda kaldı. Sistem düzelticisinin değişikliği (d9bd6fd) ve giriş formu düzeltmesi (yarım kalan iş; tamamlanıp test edildi, commit'lendi) duruyor.
+
+**Son kontrol (04:23):**
+- `npm test`: 206 geçti, 1 atlandı.
+- `npm run typecheck`, `npm run lint`, `npm run build`: hatasız.
+- Hiçbir şey push edilmedi. origin/main'in önünde 38 commit var.
+
+**8. turdan açık kalanlar (yüksek ve orta):**
+- Ürün metninde Excel ve pano yolu Luca'da doğrulanmış gibi anlatılıyor. Gerçek Luca'da denenmeden "çalışır" dili kullanılmamalı (yüksek, dürüstlük).
+- Açık temada CTA bandında odak halkası görünmüyordu (yüksek). d9bd6fd mavi alanlarda halkayı alanın yazı rengine çekti, ama jüri bunu yeniden denetlemedi.
+- Çerez şeridinin Tab sırası ve telefonda formu örtmesi. d9bd6fd şeridi DOM'da sona aldı, yeniden denetlenmedi.
+- Hero'da seçim değişince sayfa bir an çapraz geçiyor. 8d1927e seçicileri geçişten çıkardı, ama başlık ve menü hâlâ bir an soluklaşıyor.
+- Masaüstünde SSS ve Hesap planı bölümlerinde yarım ekran boşluk var.
+- Aynı örnek fiş ve aynı üç Luca satırı sayfada 6-7 kez tekrar ediyor.
+- Arşiv resmi şeridi ürünün iddiasına bağlanmıyor; yazar kasa resmi tekrar ediyor.
+- Koyu temada en parlak kontrol birincil eylem değil; "Satırları kopyala" silik.
+- Okuma kartında "Satırlar hazır" ile "Hâlâ okunuyor" aynı anda görünüyor.
+- 768'de kontrol ekranında hesap adı alanı kesik. Açık temada engelli Onayla düğmesi tepside kayboluyor.
+- Bölüm giriş animasyonları ekranın kenarında bitiyor.
