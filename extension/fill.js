@@ -1,5 +1,5 @@
 // Fills Luca "Fiş Detayı" rows. Pure apart from the DOM it is handed; tested in src/lib/luca/extension-fill.test.ts.
-// Never presses Kaydet: the user reviews and saves.
+// Never presses Kaydet itself; popup.js does, in the auto mode only, after checkGrid finds the grid matching.
 (function (root) {
   const FIELDS = ["accountCode", "documentNo", "documentDate", "documentType", "description", "debit", "credit"];
   const FIELD_LABELS = {
@@ -62,5 +62,45 @@
     return { ok: !extra, gridFound: true, message: `${rowCount} satır dolduruldu.${extra} Luca'da kontrol edip Kaydet'e siz basın, sonra eklentiyi yeniden açıp Luca'da kaydettim'e basın.` };
   }
 
-  root.AccountieFill = { FIELDS, FIELD_LABELS, fillReceipt, summarize };
+  // "7.931,82", "7931,82" and "7931.82" (how a grid may echo it back) are the same kuruş.
+  function kurus(text) {
+    const t = String(text || "").replace(/\s|TL/g, "");
+    if (!t) return 0;
+    const normal = t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t;
+    const n = Number(normal);
+    return Number.isFinite(n) ? Math.round(n * 100) : NaN;
+  }
+
+  /** What the grid holds now: every row with a value in any of our cells, top to bottom. */
+  function readGrid(doc, sel) {
+    const grid = Array.from(doc.querySelectorAll(sel.row));
+    if (grid.length === 0) return null;
+    return grid.map((row) => Object.fromEntries(FIELDS.map((f) => {
+      const el = sel.cells[f] ? row.querySelector(sel.cells[f]) : null;
+      return [f, el ? String(el.value || "").trim() : ""];
+    }))).filter((r) => FIELDS.some((f) => r[f]));
+  }
+
+  /** Differences between what was sent and what the grid shows, in Turkish; empty when Kaydet is safe. */
+  function checkGrid(expected, actual) {
+    if (!actual) return ["Fiş Detayı tablosu okunamadı."];
+    const problems = [];
+    if (actual.length !== expected.length) problems.push(`Ekranda ${actual.length} satır var, ${expected.length} satır bekleniyordu.`);
+    expected.forEach((want, i) => {
+      const got = actual[i];
+      if (!got) return;
+      if (got.accountCode !== want.accountCode) problems.push(`${i + 1}. satır hesap kodu ${got.accountCode || "boş"}, ${want.accountCode} bekleniyordu.`);
+      for (const f of ["debit", "credit"]) {
+        if (kurus(got[f]) !== kurus(want[f])) problems.push(`${i + 1}. satır ${FIELD_LABELS[f]} ${got[f] || "boş"}, ${want[f] || "boş"} bekleniyordu.`);
+      }
+    });
+    const sum = (rows, f) => rows.reduce((s, r) => s + kurus(r[f]), 0);
+    const debit = sum(actual, "debit");
+    const credit = sum(actual, "credit");
+    if (Number.isNaN(debit) || Number.isNaN(credit) || debit !== credit) problems.push("Ekrandaki borç ve alacak toplamları eşit değil.");
+    else if (debit !== sum(expected, "debit")) problems.push("Ekrandaki toplam Accountie'deki fişin toplamıyla aynı değil.");
+    return problems;
+  }
+
+  root.AccountieFill = { FIELDS, FIELD_LABELS, fillReceipt, summarize, readGrid, checkGrid };
 })(globalThis);

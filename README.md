@@ -3,7 +3,7 @@
 Yazar kasa fişinin fotoğrafından Luca için yevmiye kaydı hazırlar. Muhasebeci satırları kontrol edip onaylar, onaylı kayıt Luca'ya iki yoldan biriyle aktarılır:
 
 1. **Excel dosyası (birincil).** Fişler sayfasında "Luca için indir". Dosya Luca'da Muhasebe, Fiş İşlemleri, Excel veri aktarımı ekranından yüklenir. Kolon düzeni Luca'nın resmi şablonuyla henüz doğrulanmadı; kolon adları yalnızca `src/lib/luca/export.ts` içindeki `LUCA_EXPORT_COLUMNS` sabitinde.
-2. **Chrome eklentisi (yedek).** Onaylı fişin satırlarını Luca'da açık olan Fiş Detayı ekranına yazar. Kaydet'e eklenti basmaz, siz basarsınız.
+2. **Chrome eklentisi (yedek).** Onaylı fişin satırlarını Luca'da açık olan Fiş Detayı ekranına yazar ve ekrandaki satır sayısını, hesap kodlarını ve tutarları geri okuyup fişle karşılaştırır. "Hepsini sırayla kaydet" her fişi doldurur, karşılaştırır, aynıysa kaydeder ve yeni fiş açar; fark çıkarsa durur, son fişi siz kaydedersiniz. Bu düğme `extension/selectors.js` içindeki `save`, `saved` ve `newEntry` seçicileri Luca'nın gerçek ekranından yazılınca görünür; o zamana kadar eklenti yalnız doldurur, Kaydet'e siz basarsınız.
 
 Ayrıntılar: `docs/PRD.md`, `docs/TECH_DESIGN.md`, `docs/research/luca-aktarim.md`.
 
