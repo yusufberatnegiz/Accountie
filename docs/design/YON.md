@@ -973,3 +973,11 @@ Jüri her alanı 10 üzerinden ayrı puanlar ve her puanı ekran görüntüsü y
 | İki ve daha fazla gölgeli katman var | Renk | 7 |
 | inspect FAIL veriyor | Genel | 6 |
 | Uydurma müşteri ya da istatistik var | Genel | 4 |
+
+### 23.6 Uygulama notları (ana sayfa, giriş ve kayıt; 2026-11-05)
+
+- "Bir fişin yolu" yapışkan sahnesinde dördüncü durumun zemini `--field-4` (mavi) değil `--deep`: sayfanın tek mavi alanı CTA olarak kalır (23.1 vurgu oranı). 1100 altında dört alan eskisi gibi `--field-1..4`.
+- Etkin olmayan cümlelerin opaklığı 0.45 değil 0.56: 0.45 açık temada 2.7:1 ölçüldü, 0.56 büyük metin için 3:1'i geçer.
+- Plaka taşması komşusu olan kenarda kolon boşluğu kadardır (24px), dış kenarda 48px (`--pl`, `--pr`); 48px her iki yanda komşu metnin üstüne biniyordu.
+- Giriş ve kayıtta öne binen katman fiştir (`drop-shadow`, yırtık kenarı izler); kart plakasının üstünde.
+- inspect WARN savunmaları: fotoğraf ve video yok (23.2: koşulları tutan fotoğraf bulunmadı, varsayılan telefon çerçevesi); 1440'ta sağ kenar 69px (hero penceresi durgun halde `scale(0.96)` eğik, kaydırmayla düzleşir ve görünüm kenarına taşar).

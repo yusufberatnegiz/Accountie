@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
@@ -7,18 +6,14 @@ import { CookieNote } from "@/components/site/CookieNote";
 import { SiteBar } from "@/components/site/SiteBar";
 import { Counter } from "@/components/home/Counter";
 import { Faq, type Qa } from "@/components/home/Faq";
+import { AppWindow, Phone } from "@/components/home/Frames";
 import { HomeMotion } from "@/components/home/HomeMotion";
 import { ShowRow, type Piece } from "@/components/home/ShowRow";
 import { SAMPLES } from "@/components/home/samples";
+import { Spotlight } from "@/components/home/Spotlight";
 import { Thermal } from "@/components/home/Thermal";
 import { WARNING_MESSAGES } from "@/lib/journal";
 import { PAYMENT_ALTERNATIVES } from "@/lib/default-rules";
-import fisLight from "../../public/gorseller/urun-fis-acik.jpg";
-import fisDark from "../../public/gorseller/urun-fis-koyu.jpg";
-import listLight from "../../public/gorseller/urun-liste-acik.jpg";
-import listDark from "../../public/gorseller/urun-liste-koyu.jpg";
-import phoneLight from "../../public/gorseller/urun-telefon-acik.jpg";
-import phoneDark from "../../public/gorseller/urun-telefon-koyu.jpg";
 import "@/components/home/home.css";
 
 // Public and static: no session, no user data (docs/design/YON.md 5.5).
@@ -56,24 +51,46 @@ function MiniLines({ credit, mark, lit }: { credit?: string; mark?: { code: stri
 }
 
 
+/** Where each of fiş 0047's three amounts is printed on the strip (Thermal data-amt): base, TOPKDV, TOPLAM. */
+const FLY_FROM = ["base", "vat", "total"];
+
+/** A Luca cell in the signature scene: the real figure, a dash that holds its place, and the aria-hidden copy that flies in. */
+function FlyCell({ value, from }: { value: string; from: string }) {
+  return (
+    <span className="fly-cell">
+      <span className="fly-dash" aria-hidden="true" />
+      <span className="fly-val">{value}</span>
+      <span className="fly-copy" aria-hidden="true" data-fly={from}><span className="fly-y">{value}</span></span>
+    </span>
+  );
+}
+const Dash = () => <span className="fly-cell"><span className="fly-dash fly-dash-empty" aria-hidden="true" /></span>;
+
+/** The Fişler window's rows: invented sample vendors in the ÖRNEK form, statuses mixed as a real list is. */
+const LIST = [
+  ["0047", "ÖRNEK BALIK LOKANTASI", "05.09.2026", "8.725,00", "Onaylı"],
+  ["2214", "ÖRNEK MARKET", "04.09.2026", "598,50", "Onaylı"],
+  ["0768", "ÖRNEK OTOPARK", "06.09.2026", "120,00", "Taslak"],
+  ["1185", "ÖRNEK AKARYAKIT", "03.09.2026", "2.150,00", "Taslak"],
+  ["0912", "ÖRNEK KIRTASİYE", "02.09.2026", "480,00", "Aktarıldı"],
+  ["0331", "ÖRNEK KAFE", "01.09.2026", "265,00", "Aktarıldı"],
+];
+
 const PIECES: Piece[] = [
   {
     name: "Fiş ve satırlar",
     text: "Fişten okunan alanlar ve Luca satırları aynı ekranda. Hesap kodu, tutar, Evrak No ve BT orada düzeltilir.",
     body: (
-      <div className="ui-card ui-review">
-        <dl className="ui-read">
-          <div><dt>Satıcı</dt><dd translate="no">ÖRNEK BALIK LOKANTASI</dd></div>
-          <div><dt>Evrak No</dt><dd>0047</dd></div>
-          <div><dt>Tarih</dt><dd>05.09.2026</dd></div>
-          <div><dt>KDV %10</dt><dd>793,18</dd></div>
-          <div><dt>Toplam</dt><dd>8.725,00</dd></div>
-        </dl>
-        <div className="ui-review-lines">
-          <MiniLines />
-          <p className="ui-meta">Evrak No 0047, 05.09.2026, BT ÖK</p>
-        </div>
-      </div>
+      <Spotlight meta="Evrak No 0047, 05.09.2026, BT ÖK"
+        read={[
+          { id: "satici", label: "Satıcı", value: "ÖRNEK BALIK LOKANTASI" },
+          { id: "evrak", label: "Evrak No", value: "0047" },
+          { id: "tarih", label: "Tarih", value: "05.09.2026" },
+          { id: "kdv", label: "KDV %10", value: "793,18" },
+          { id: "toplam", label: "Toplam", value: "8.725,00" },
+          { id: "odeme", label: "Ödeme", value: "KREDİ KARTI" },
+        ]}
+        lines={LINES_0047.map((l, i) => ({ ...l, from: [["toplam", "kdv"], ["kdv"], ["toplam", "odeme"]][i] }))} />
     ),
   },
   {
@@ -210,17 +227,6 @@ const FAQ: Qa[] = [
   { q: "Telefonda uygulama gibi açılır mı?", a: "Evet. Ana ekrana eklediğinizde ayrı bir uygulama gibi açılır, Fiş çek tek dokunuştur." },
 ];
 
-type Pic = typeof fisLight;
-/** A screenshot of the panel itself (the dev preview with sample receipts), in the theme the visitor sees. */
-function Shot({ light, dark, alt, sizes }: { light: Pic; dark: Pic; alt: string; sizes: string }) {
-  return (
-    <>
-      <Image className="shot-light" src={light} alt={alt} sizes={sizes} />
-      <Image className="shot-dark" src={dark} alt={alt} sizes={sizes} />
-    </>
-  );
-}
-
 const PATH = [
   { clause: "Önce telefonla çekilir.", card: (
     <>
@@ -285,62 +291,104 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="hero-stage">
-            <div className="hero-counter" data-load style={cssVars({ "--d": "200ms" })}><Counter /></div>
+            <div className="hero-counter"><Counter /></div>
           </div>
         </section>
 
-        {/* how-it-works: one card, four fields; the four acts play once, in order (YON.md 15) */}
-        <section className="path" aria-labelledby="path-title">
+        {/* how-it-works: on desktop a sticky split story (four clauses, one card through four states, the field wiped in from
+            below, YON.md 23.3.4); without script, below 1100px and with reduced motion the four cards stand in their own fields. */}
+        <section className="path" aria-labelledby="path-title" data-active="1">
           <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2>
           {PATH.map((f, i) => (
-            <div className={`path-field path-field-${i + 1}`} key={f.clause} data-reveal style={cssVars({ "--r": i })}>
+            <div className={`path-field path-field-${i + 1}`} key={f.clause} data-n={i + 1}>
               <p className="path-clause">{f.clause}</p>
-              <div className="ui-card path-card" data-ui>{f.card}</div>
+              <div className="path-plate"><div className="ui-card path-card" data-ui>{f.card}</div></div>
             </div>
           ))}
+          <div className="path-stage" aria-hidden="true">
+            {[1, 2, 3, 4].map((n) => <span key={n} className={`path-bg path-bg-${n}`} />)}
+          </div>
         </section>
 
-        {/* The rule, proven: the product's own unbalanced fiş, large, beside a ledger kept by the same rule */}
-        <section className="rule wrap" aria-labelledby="rule-title">
-          <div className="rule-copy">
-            <h2 className="t-head" id="rule-title" data-reveal>Borç alacağa eşit olmadan onay yok</h2>
-            <p className="rule-sub" data-reveal style={cssVars({ "--r": 1 })}>
-              Accountie’de borç alacağa eşit olmadan Onayla açılmaz; fark kuruşu kuruşuna görünür. Tutarı fişe göre düzeltince onay açılır.
-            </p>
+        {/* The signature (YON.md 23.3.1): in the control window the receipt's base, VAT and total lift off the paper and land in
+            their Luca cells, codes come in, the balance closes and Onayla opens. Server output is the end state. */}
+        <section className="rule" aria-labelledby="rule-title" data-scene="rule">
+          <div className="rule-track">
+            <div className="rule-stick wrap">
+              <h2 className="t-head rule-title" id="rule-title">Borç alacağa eşit olmadan onay yok</h2>
+              <div className="rule-copy">
+                <p className="rule-sub">Fişten okunan matrah, KDV ve toplam kendi hesap satırına iner. Borç alacağa eşit olunca Onayla açılır.</p>
+                <ul className="rule-map">
+                  <li><span>Matrah</span><span translate="no">770.08 borç</span></li>
+                  <li><span>TOPKDV</span><span translate="no">191.03.10 borç</span></li>
+                  <li><span>TOPLAM</span><span translate="no">331.01 alacak</span></li>
+                </ul>
+              </div>
+              <AppWindow title="Fiş 0047, kontrol" className="rule-win">
+                <div className="rule-body">
+                  <div className="rule-receipt"><Thermal sample={SAMPLES[0]} printedPayment="KREDİ KARTI" base /></div>
+                  <div className="rule-ledger">
+                    <table className="ui-table rule-table">
+                      <caption className="visually-hidden">Fiş 0047 için Luca satırları</caption>
+                      <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
+                      <tbody>
+                        {LINES_0047.map((l, i) => (
+                          <tr key={l.code} style={cssVars({ "--n": i })}>
+                            <td><span className="code rule-code" translate="no">{l.code}</span><span className="code-name">{l.name}</span></td>
+                            <td className="num to-luca">{l.debit ? <FlyCell value={l.debit} from={FLY_FROM[i]} /> : <Dash />}</td>
+                            <td className="num to-luca">{l.credit ? <FlyCell value={l.credit} from={FLY_FROM[i]} /> : <Dash />}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="rule-close">
+                      <dl className="ui-totals">
+                        <div><dt>Borç</dt><dd>8.725,00</dd></div>
+                        <div><dt>Alacak</dt><dd>8.725,00</dd></div>
+                        <div><dt>Fark</dt><dd>0,00</dd></div>
+                      </dl>
+                      <div className="ui-approve">
+                        <span className="rule-btn"><span className="btn" aria-hidden="true">Onayla</span><span className="btn btn-primary">Onayla</span></span>
+                        <span className="ui-reason balance-ok">Dengede</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </AppWindow>
+            </div>
           </div>
-          <div className="rule-proof" data-ui data-reveal style={cssVars({ "--r": 1 })}>
-            <div className="ui-card rule-card">
-              <p className="ui-card-head"><span translate="no">ÖRNEK BALIK LOKANTASI</span><span className="status">Taslak</span></p>
-              <MiniLines credit="8.752,00" />
-              <dl className="ui-totals">
-                <div><dt>Borç</dt><dd>8.725,00</dd></div>
-                <div><dt>Alacak</dt><dd>8.752,00</dd></div>
-                <div><dt>Fark</dt><dd className="balance-off">27,00</dd></div>
-              </dl>
-              <div className="ui-approve">
-                <span className="btn btn-primary" aria-disabled="true">Onayla</span>
-                <span className="ui-reason">Fişte toplam 8.725,00. Alacak satırını düzeltin.</span>
+          <div className="rule-after wrap">
+            <p className="rule-note">Fişte toplam 8.725,00 iken alacak 8.752,00 okunursa fark 27,00 olarak görünür ve Onayla kapalı kalır. Tutarı fişe göre düzeltince onay açılır.</p>
+            <div className="rule-proof" data-ui>
+              <div className="ui-card rule-card">
+                <p className="ui-card-head"><span translate="no">ÖRNEK BALIK LOKANTASI</span><span className="status">Taslak</span></p>
+                <MiniLines credit="8.752,00" />
+                <dl className="ui-totals">
+                  <div><dt>Borç</dt><dd>8.725,00</dd></div>
+                  <div><dt>Alacak</dt><dd>8.752,00</dd></div>
+                  <div><dt>Fark</dt><dd className="balance-off">27,00</dd></div>
+                </dl>
+                <div className="ui-approve">
+                  <span className="btn btn-primary" aria-disabled="true">Onayla</span>
+                  <span className="ui-reason">Fişte toplam 8.725,00. Alacak satırını düzeltin.</span>
+                </div>
               </div>
             </div>
           </div>
-          <figure className="rule-figure rule-figure-shot" data-reveal style={cssVars({ "--r": 2 })}>
-            <div className="frame frame-shot"><Shot light={fisLight} dark={fisDark} sizes="(max-width: 900px) 100vw, 58vw"
-              alt="Accountie fiş kontrol ekranı: solda fişten okunan satıcı, tarih, KDV ve toplam; sağda 770.08, 191.03.10 ve 331.01 yevmiye satırları, altta fark 0,00 ve Onayla" /></div>
-            <figcaption>Kontrol ekranı: fişten okunan alanlar solda, Luca satırları sağda. Fark 0,00 olunca Onayla açılır.</figcaption>
-          </figure>
         </section>
 
         {/* showcase: lit panel, dark row */}
         <section className="show" aria-labelledby="show-title">
           <div className="show-inner wrap">
-            <h2 className="t-head show-title" id="show-title" data-reveal>Kontrol ekranından Luca’ya</h2>
+            <h2 className="t-head show-title" id="show-title">Kontrol ekranından Luca’ya</h2>
             <ShowRow pieces={PIECES} />
           </div>
         </section>
 
         {/* features: panel with margin notes, each note on the row of the part it explains; nothing in the panel is editable */}
         <section className="feat wrap" aria-labelledby="feat-title">
-          <h2 className="t-head feat-title" id="feat-title" data-reveal>Sizin hesap planınız</h2>
+          <h2 className="t-head feat-title" id="feat-title">Sizin hesap planınız</h2>
+          <div className="feat-plate" aria-hidden="true" />
           <div className="feat-panel" data-ui aria-label="Örnek hesap kuralları paneli" role="group">
             <p className="ui-panel-head">Hesap kuralları</p>
             {PART_TITLES.map((t, i) => (
@@ -351,37 +399,57 @@ export default function LandingPage() {
             ))}
           </div>
           {NOTES.map((n, i) => (
-            <div className="feat-note" data-note={i + 1} key={n.name} style={{ gridRow: i + 3, ...cssVars({ "--r": i + 1 }) }} data-reveal>
+            <div className="feat-note" data-note={i + 1} key={n.name} style={{ gridRow: i + 3 }}>
               <h3 className="feat-note-name">{n.name}</h3>
               <p className="feat-note-text">{n.text}</p>
             </div>
           ))}
         </section>
 
-        {/* list: two-ended rows, and a real ledger page beside them */}
+        {/* list: two-ended rows, and the Fişler window the file comes out of */}
         <section className="routes wrap" aria-labelledby="routes-title">
           <div className="routes-list">
-            <h2 className="t-head" id="routes-title" data-reveal>Excel ya da pano ile Luca’ya</h2>
-            {ROUTES.map((g, gi) => (
+            <h2 className="t-head" id="routes-title">Excel ya da pano ile Luca’ya</h2>
+            {ROUTES.map((g) => (
               <div className="routes-group" key={g.group}>
-                <h3 className="routes-group-name" data-reveal style={cssVars({ "--r": gi + 1 })}>{g.group}</h3>
+                <h3 className="routes-group-name">{g.group}</h3>
                 <ul>
-                  {g.rows.map(([name, value], ri) => (
-                    <li key={name} data-reveal style={cssVars({ "--r": gi + ri + 2 })}><span className="routes-name">{name}</span><span className="routes-value">{value}</span></li>
+                  {g.rows.map(([name, value]) => (
+                    <li key={name}><span className="routes-name">{name}</span><span className="routes-value">{value}</span></li>
                   ))}
                 </ul>
               </div>
             ))}
-            <p className="routes-tip" data-reveal style={cssVars({ "--r": 5 })}>İlk aktarımı tek fişle deneyin: Luca’nın önizlemesinde satırları kontrol edip Fiş Kes’e basın.</p>
+            <p className="routes-tip">İlk aktarımı tek fişle deneyin: Luca’nın önizlemesinde satırları kontrol edip Fiş Kes’e basın.</p>
           </div>
           <div className="routes-aside">
-            <figure className="routes-figure" data-reveal style={cssVars({ "--r": 1 })}>
-              <div className="frame frame-shot"><Shot light={listLight} dark={listDark} sizes="(max-width: 900px) 100vw, 50vw"
-                alt="Accountie Fişler ekranı: taslak, onaylı ve aktarılan fişlerin listesi, yanda Luca dosyası kartı ve gider hesaplarına göre matrahlar" /></div>
-              <figcaption>Fişler ekranı: onaylanan fişler Luca dosyası kartında birikir, Luca için indir tek dosya verir.</figcaption>
-            </figure>
-            {/* The file Luca reads: the export's own columns (src/lib/luca/export.ts) for fiş 0047. */}
-            <div className="ui-card routes-file" data-ui data-reveal style={cssVars({ "--r": 2 })}>
+            <AppWindow title="Fişler" className="routes-win">
+              <div className="routes-app">
+                <table className="ui-table routes-table">
+                  <caption className="visually-hidden">Örnek fiş listesi</caption>
+                  <thead><tr><th scope="col">Fiş</th><th scope="col">Satıcı</th><th scope="col" className="num">Tutar</th><th scope="col">Durum</th></tr></thead>
+                  <tbody>
+                    {LIST.map(([no, vendor, date, amount, state]) => (
+                      <tr key={no}>
+                        <td>{no}</td>
+                        <td><span className="routes-vendor" translate="no">{vendor}</span><span className="code-name">{date}</span></td>
+                        <td className="num">{amount}</td>
+                        <td><span className={`status${state === "Onaylı" ? " status-approved" : state === "Aktarıldı" ? " status-exported" : ""}`}>{state}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="routes-luca">
+                  <p className="ui-file-head"><span>Luca dosyası</span></p>
+                  <p className="ui-meta">2 onaylı fiş</p>
+                  <div className="ui-meter"><span>Fiş</span><span className="ui-track"><span style={{ transform: "scaleX(0.04)" }} /></span><span className="num">2 / 50</span></div>
+                  <div className="ui-meter"><span>Satır</span><span className="ui-track"><span style={{ transform: "scaleX(0.02)" }} /></span><span className="num">8 / 400</span></div>
+                  <span className="btn btn-sm">Luca için indir</span>
+                </div>
+              </div>
+            </AppWindow>
+            {/* The file Luca reads: the export's own columns (src/lib/luca/export.ts) for fiş 0047, leaving the window. */}
+            <div className="ui-card routes-file" data-ui>
               <p className="ui-card-head"><span className="ui-file-name">luca-fisler-20260905.xlsx</span><span className="ui-meta">Fişler sayfası</span></p>
               {/* On a phone the identifier columns step aside so the amounts stay whole; a narrower screen still scrolls, so the region is a keyboard stop (WCAG 2.1.1). */}
               <div className="routes-file-scroll" tabIndex={0} role="region" aria-label="Luca Excel dosyasının ilk satırları">
@@ -406,7 +474,7 @@ export default function LandingPage() {
         {/* cta: one action, beside the machine the receipt comes from */}
         <section className="cta" aria-labelledby="cta-title">
           <div className="cta-inner wrap">
-            <div className="cta-copy" data-reveal>
+            <div className="cta-copy">
               <h2 className="t-display cta-title" id="cta-title"><span>İlk fişinizi</span> <span>çekin</span></h2>
               <p className="cta-sub">Hesabı açtığınızda varsayılan hesap planı kural tablonuza kopyalanır. İlk fişi telefonla çekip kontrol ekranında görürsünüz.</p>
               <div className="cta-actions">
@@ -414,10 +482,17 @@ export default function LandingPage() {
                 <p>Hesabınız var mı? <Link href="/giris">Giriş yapın</Link></p>
               </div>
             </div>
-            <figure className="cta-figure" data-reveal style={cssVars({ "--r": 1 })}>
-              <div className="frame frame-phone"><Shot light={phoneLight} dark={phoneDark} sizes="340px"
-                alt="Telefonda Accountie Fişler ekranı: fiş listesi, tutarlar ve durumlar, altta Fiş çek düğmesi" /></div>
-              <figcaption>Telefonda Fiş çek alt çubukta durur; çekilen fiş listeye taslak olarak düşer.</figcaption>
+            <figure className="cta-figure">
+              <Phone className="cta-phone">
+                <p className="phone-head"><span>Fiş çek</span><span>Fişi çerçeveye sığdırın</span></p>
+                <div className="cam">
+                  <span className="cam-c cam-c1" /><span className="cam-c cam-c2" /><span className="cam-c cam-c3" /><span className="cam-c cam-c4" />
+                  <Thermal sample={SAMPLES[1]} printedPayment="NAKİT" compact />
+                </div>
+                <span className="btn btn-primary cam-shoot">Fiş çek</span>
+                <p className="cam-last"><span><span className="cam-last-no">Fiş 0047</span><span className="code-name">8.725,00</span></span><span className="status">Taslak</span></p>
+              </Phone>
+              <figcaption>Telefonda Fiş çek tek dokunuştur; çekilen fiş listeye taslak olarak düşer.</figcaption>
             </figure>
           </div>
         </section>
