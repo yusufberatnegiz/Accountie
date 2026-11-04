@@ -48,6 +48,9 @@
   --on-primary: #ffffff;
   --secondary: #e5e8ec;
   --secondary-hover: #d8dde3;
+  /* A chosen chip (hero pickers, showcase tabs), and a secondary button on a lifted card (--lift). */
+  --chip-on: var(--primary); --on-chip-on: var(--on-primary);
+  --lift-control: var(--secondary); --lift-control-hover: var(--secondary-hover);
   --deep: #111821;
   --deep-raised: #1f2833;
   --ink-on-deep: #eef1f4;
@@ -111,6 +114,7 @@
     --accent-field: #23406a; --on-accent-field: #eef1f4;
     --primary: #eef1f4; --primary-hover: #d5dbe2; --on-primary: #0e1114;
     --secondary: #232931; --secondary-hover: #2d343e;
+    --chip-on: #98a2ad; --on-chip-on: #0e1114; --lift-control: #39414b; --lift-control-hover: #434b56; /* chips stay below the blue action; controls a step over --lift */
     --deep: #171c22; --deep-raised: #222931;
     --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
     --warn-ink: #e8c477; --warn-bg: #2a2412;
@@ -132,6 +136,7 @@
   --accent-field: #23406a; --on-accent-field: #eef1f4;
   --primary: #eef1f4; --primary-hover: #d5dbe2; --on-primary: #0e1114;
   --secondary: #232931; --secondary-hover: #2d343e;
+    --chip-on: #98a2ad; --on-chip-on: #0e1114; --lift-control: #39414b; --lift-control-hover: #434b56; /* chips stay below the blue action; controls a step over --lift */
   --deep: #171c22; --deep-raised: #222931;
   --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
   --warn-ink: #e8c477; --warn-bg: #2a2412;
@@ -223,7 +228,8 @@ details.stack > summary h2 { display: inline; }
   .btn-quiet:hover { background: var(--active); color: var(--ink); }
 }
 .btn:active { transform: scale(0.98); }
-.btn:disabled, .btn[aria-disabled="true"] { background: var(--active); color: var(--muted); border-color: transparent; cursor: not-allowed; transform: none; }
+/* Disabled keeps its shape as an edge on any tray or card tone (an --active fill vanished on --stage). */
+.btn:disabled, .btn[aria-disabled="true"] { background: transparent; color: var(--muted); border-color: var(--control-edge); cursor: not-allowed; transform: none; }
 .btn:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
 .btn-primary { background: var(--primary); color: var(--on-primary); }
 .btn-accent { background: var(--accent); color: var(--on-accent); }

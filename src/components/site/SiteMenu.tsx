@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
-/** The bar's links on narrow screens: a native disclosure, closed by Esc (focus back on the button), an outside click or a chosen link. */
+/** The bar's links on narrow screens: a native disclosure, closed by Esc (focus back on the button), an outside click, focus leaving it or a chosen link. */
 export function SiteMenu({ links }: { links: { href: string; label: string }[] }) {
   const ref = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
@@ -21,7 +21,9 @@ export function SiteMenu({ links }: { links: { href: string; label: string }[] }
     return () => { document.removeEventListener("keydown", close); document.removeEventListener("pointerdown", close); };
   }, []);
   return (
-    <details className="site-menu" ref={ref}>
+    <details className="site-menu" ref={ref}
+      // No relatedTarget is a click on the panel itself or a window switch; the outside-click handler covers clicks.
+      onBlur={(e) => { if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) e.currentTarget.open = false; }}>
       <summary aria-label="Menü">
         <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" /></svg>
       </summary>
