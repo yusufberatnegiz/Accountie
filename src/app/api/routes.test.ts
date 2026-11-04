@@ -11,7 +11,7 @@ vi.mock("@/db/queries", () => ({
   replaceLines: vi.fn(), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
 }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), clientIp: () => "203.0.113.9" }));
-vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn() }));
+vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(async () => []) }));
 vi.mock("@/lib/image", async (original) => ({ ...(await original<typeof import("@/lib/image")>()), normalizeImage: vi.fn(async () => Buffer.from("jpeg")) }));
 
 const session = await import("@/lib/auth/session");

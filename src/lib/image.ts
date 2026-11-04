@@ -13,6 +13,19 @@ export async function normalizeImage(input: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
+/** One receipt cut from the full-size upload (EXIF-rotated, as the model saw it), with a margin, normalized like a single photo. */
+export async function cropReceipt(input: Buffer, box: { left: number; top: number; right: number; bottom: number }): Promise<Buffer> {
+  const rotated = await sharp(input, { limitInputPixels: 40_000_000 }).rotate().toBuffer({ resolveWithObject: true });
+  const { width, height } = rotated.info;
+  const pad = 15; // thousandths: the model's edges are approximate
+  const x0 = Math.floor((Math.max(0, box.left - pad) / 1000) * width);
+  const y0 = Math.floor((Math.max(0, box.top - pad) / 1000) * height);
+  const x1 = Math.ceil((Math.min(1000, box.right + pad) / 1000) * width);
+  const y1 = Math.ceil((Math.min(1000, box.bottom + pad) / 1000) * height);
+  const crop = await sharp(rotated.data).extract({ left: x0, top: y0, width: Math.max(1, x1 - x0), height: Math.max(1, y1 - y0) }).toBuffer();
+  return normalizeImage(crop);
+}
+
 // Magic-byte check before the decoder sees the file: sharp also opens SVG, GIF, TIFF, PDF..., which we never want.
 const HEIF_BRANDS = new Set(["heic", "heix", "hevc", "hevx", "heim", "heis", "mif1", "msf1"]);
 

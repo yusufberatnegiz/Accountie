@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ViewTransition } from "react";
 import type { listReceipts, ReceiptStatus } from "@/db/queries";
+import { BulkApproveButton } from "@/components/BulkApproveButton";
 import { CaptureButton } from "@/components/CaptureButton";
 import { ExportButton } from "@/components/ExportButton";
 import { InstallHint } from "@/components/InstallHint";
@@ -37,6 +38,8 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
   const readyLines = ready.reduce((n, r) => n + r.lineCount, 0);
   const files = Math.max(Math.ceil(ready.length / MAX_RECEIPTS_PER_FILE), Math.ceil(readyLines / MAX_LINES_PER_FILE));
   const drafts = count("draft");
+  // Only drafts without a single warning; the rest still need a look on their own screen.
+  const clean = tab.status === "draft" || !tab.status ? receipts.filter((r) => r.status === "draft" && r.warnings.length === 0) : [];
   // Matrah per expense account in the current view, most first: the debits Luca books on 770, VAT apart on 191.
   // shortcut: a receipt's whole expense side is booked to its first expense code; split per line if users start mixing 770 codes on one receipt.
   const sums = new Map<string, number>();
@@ -109,6 +112,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
             </tbody>
           </table>
         )}
+        {clean.length > 1 ? <div className="list-foot"><BulkApproveButton receiptIds={clean.map((r) => r.id)} /></div> : null}
         {tab.status === "exported" && receipts.length > 0 ? (
           <div className="list-foot desktop-only">
             {/* shortcut: re-downloads only the newest 50 (one Luca file); older ones are re-downloaded one by one from the receipt page. */}
