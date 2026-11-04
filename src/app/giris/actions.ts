@@ -20,7 +20,7 @@ const back = (params: Record<string, string>) => redirect(`/giris?${new URLSearc
 export async function login(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const raw = { email: formData.get("email"), password: formData.get("password") };
   const input = loginSchema.safeParse(raw);
-  if (!input.success) return invalid(input.error.issues, raw);
+  if (!input.success) return invalid(input.error.issues, raw, false);
   const typed = typedBack(raw);
   const ip = clientIp(await headers());
   // Turnstile first: otherwise anyone could fill a victim's per-e-mail limit without solving a challenge and lock them out.
@@ -37,7 +37,7 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
 export async function signup(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const raw = { name: formData.get("name"), email: formData.get("email"), password: formData.get("password") };
   const input = signupSchema.safeParse(raw);
-  if (!input.success) return invalid(input.error.issues, raw);
+  if (!input.success) return invalid(input.error.issues, raw, true);
   const typed = typedBack(raw);
   const ip = clientIp(await headers());
   // Turnstile first, as for login: without a challenge token nobody can spend a network's sign-up limit.

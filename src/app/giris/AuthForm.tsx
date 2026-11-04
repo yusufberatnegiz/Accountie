@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import { login, signup } from "./actions";
-import { checkAuthForm, type AuthField, type AuthState } from "./validation";
+import { checkAuthForm, fieldCode, type AuthField, type AuthState } from "./validation";
 import { EmailField, NameField, PasswordField, TurnstileWidget } from "./AuthFields";
 import { SubmitButton } from "./SubmitButton";
 
@@ -12,6 +12,7 @@ export const ERRORS: Record<string, string> = {
   "bicim-ad": "Ad soyad en az 2 karakter olmalı.",
   "bicim-eposta": "Geçerli bir e-posta adresi yazın, örneğin ornek@buro.com.tr.",
   "bicim-sifre": "Şifre en az 8 karakter olmalı.",
+  "bos-sifre": "Şifrenizi yazın.",
   bicim: "E-posta ve şifreyi kontrol edin.",
   "kayit-bicim": "Ad soyad, e-posta ve şifreyi kontrol edin.",
   kimlik: "E-posta veya şifre hatalı. Şifreyi göster düğmesiyle yazdığınızı kontrol edin ya da Şifremi unuttum bağlantısıyla yeni şifre alın.",
@@ -25,8 +26,7 @@ export const ERRORS: Record<string, string> = {
 };
 
 // An old ?hata= link that names a field marks that field, as a failed attempt does.
-const FIELD_OF: Record<string, AuthField> = { "bicim-ad": "name", "bicim-eposta": "email", "bicim-sifre": "password" };
-const CODE_OF = Object.fromEntries(Object.entries(FIELD_OF).map(([code, field]) => [field, code])) as Record<AuthField, string>;
+const FIELD_OF: Record<string, AuthField> = { "bicim-ad": "name", "bicim-eposta": "email", "bicim-sifre": "password", "bos-sifre": "password" };
 export const initialState = (code?: string): AuthState =>
   // kimlik marks the password field, as the login action does.
   code && ERRORS[code] ? { error: code, field: FIELD_OF[code] ?? (code === "kimlik" ? "password" : undefined) } : undefined;
@@ -69,7 +69,7 @@ export function AuthForm({ isSignup, initialError, turnstileSiteKey, next }: { i
   };
   const text = state ? ERRORS[state.error] : undefined;
   // Every invalid field shows its own message; focus still goes to the first one.
-  const fieldError = (f: AuthField) => (state?.fields?.includes(f) ? ERRORS[CODE_OF[f]] : state?.field === f ? text : undefined);
+  const fieldError = (f: AuthField) => (state?.fields?.includes(f) ? ERRORS[fieldCode(f, isSignup)] : state?.field === f ? text : undefined);
   const at = (f: AuthField) => (fixedNow.includes(f) ? undefined : fieldError(f));
   const onEdit = (e: FormEvent<HTMLFormElement>) => {
     const f = (e.target as HTMLInputElement).name as AuthField;
