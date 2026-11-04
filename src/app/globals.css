@@ -1,5 +1,5 @@
 /*
-  Accountie design system. Source of truth: docs/design/YON.md section 6.
+  Accountie design system. Source of truth: docs/design/YON.md section 6, palette and depth from section 23.1.
   Order: tokens (light) > tokens (dark, system and manual) > base > type > components > shell > screens > phone > motion.
   Rule of the product: a value read from the receipt is ink or grey, a value going to Luca is ledger blue (--accent).
   Everything references tokens; no raw colours below the token blocks.
@@ -25,7 +25,7 @@
   --control-sm: 32px; --control: 40px; --touch: 44px; --row: 44px;
 
   /* Colour roles */
-  --ground: #f2f4f7;
+  --ground: #f4f6f8;
   --surface: #ffffff;
   --raised: #f7f8fa;
   --stage: #e4e9f0;
@@ -33,9 +33,9 @@
   --border: #e3e7ec;
   --rule: #eef1f4;
   --control-edge: #7d8896; /* 3.6:1 on white, WCAG 1.4.11 */
-  --ink: #141a22;
-  --muted: #4f5a67;
-  --faint: #5f6a77;
+  --ink: #0f141b;
+  --muted: #4b5563;
+  --faint: #5b6573;
   --thermal-ink: #4f5a67;
   --accent: #2b5a9a;
   --accent-strong: #234b82;
@@ -64,6 +64,11 @@
   --focus: var(--accent);
   --scrim: rgb(14 17 20 / 0.5);
   --shadow-float: 0 8px 24px rgb(20 26 34 / 0.12), 0 1px 3px rgb(20 26 34 / 0.08);  /* taste-skill-ignore: only for floating menus, dialogs, skip link */
+  /* Depth (YON 23.1): ground > plate > surface > raised, one tone step each. --plate is the slab a product window sits on;
+     --bezel the phone frame (dark in both themes); --edge-hi a 1px top inner light on raised dark surfaces (none in light). */
+  --plate: #e9edf2; --bezel: #161c24; --edge-hi: transparent;
+  /* Only for the one layer per screen that overlaps another (YON 23.1); everything else separates by tone. */
+  --shadow-lift: 0 24px 48px -12px rgb(15 20 27 / 0.18), 0 2px 6px rgb(15 20 27 / 0.06); /* taste-skill-ignore: lift layer, YON 23.1 */
 
   /* how-it-works fields, light to dark, last one is the accent field */
   --field-1: #dbe2eb; --field-2: #ccd6e2; --field-3: #b9c7d9;
@@ -98,6 +103,8 @@
   --ease-exit: cubic-bezier(0.55, 0.055, 0.675, 0.19);
   --t-press: 140ms; --t-hover: 180ms; --t-ui: 240ms; --t-reveal: 800ms; --t-open: 1200ms;
   --stagger-line: 90ms; --stagger-item: 70ms;
+  /* YON 23.3: the figure flight, the odometer digit, the path field wipe. */
+  --t-flight: 640ms; --t-digit: 420ms; --t-wipe: 900ms;
 
   --w-medium: 500; --w-strong: 600;
 
@@ -107,7 +114,7 @@
 /* ---------- Tokens: dark. Same block twice: system preference without JS, and data-look (set by the theme script, src/lib/theme.ts). ---------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not([data-look]) {
-    --ground: #0e1114; --surface: #161a1f; --raised: #1d2228; --stage: #1b2027; --active: #232931;
+    --ground: #0b0d10; --surface: #14171c; --raised: #1b1f25; --stage: #1b2027; --active: #232931;
     --border: #262c34; --rule: #1f242b; --control-edge: #66717e;
     --ink: #eef1f4; --muted: #a9b2bd; --faint: #949eaa; --thermal-ink: #a9b2bd;
     --accent: #8db0e0; --accent-strong: #a9c4e9; --on-accent: #0e1114; --accent-soft: #1d2a3a;
@@ -120,6 +127,8 @@
     --warn-ink: #e8c477; --warn-bg: #2a2412;
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
+    --plate: #111418; --bezel: #2a3038; --edge-hi: rgb(255 255 255 / 0.06);
+    --shadow-lift: 0 24px 48px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 var(--edge-hi);
     --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
     --split: #1d2229; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
     --lift: #252b33; --lift-edge: #2f363f; --path-card-1: #1c2026; --path-card-2: #22272e; --path-card-3: #2a3038; --path-card-4: #323943; --foot-name: #b9c1ca;
@@ -129,7 +138,7 @@
   }
 }
 :root[data-theme="dark"], :root[data-look="dark"]:not([data-theme="light"]) {
-  --ground: #0e1114; --surface: #161a1f; --raised: #1d2228; --stage: #1b2027; --active: #232931;
+  --ground: #0b0d10; --surface: #14171c; --raised: #1b1f25; --stage: #1b2027; --active: #232931;
   --border: #262c34; --rule: #1f242b; --control-edge: #66717e;
   --ink: #eef1f4; --muted: #a9b2bd; --faint: #949eaa; --thermal-ink: #a9b2bd;
   --accent: #8db0e0; --accent-strong: #a9c4e9; --on-accent: #0e1114; --accent-soft: #1d2a3a;
@@ -142,6 +151,8 @@
   --warn-ink: #e8c477; --warn-bg: #2a2412;
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
+  --plate: #111418; --bezel: #2a3038; --edge-hi: rgb(255 255 255 / 0.06);
+  --shadow-lift: 0 24px 48px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 var(--edge-hi);
   --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
   --split: #1d2229; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
   --lift: #252b33; --lift-edge: #2f363f; --path-card-1: #1c2026; --path-card-2: #22272e; --path-card-3: #2a3038; --path-card-4: #323943; --foot-name: #b9c1ca;
