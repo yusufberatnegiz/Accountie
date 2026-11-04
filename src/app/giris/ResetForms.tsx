@@ -22,7 +22,7 @@ export function RequestResetForm({ turnstileSiteKey }: { turnstileSiteKey?: stri
   return (
     <form action={action} className="auth-fields" noValidate>
       {text && !state?.field ? <p className="alert alert-error" role="alert" tabIndex={-1} ref={alertRef}>{text}</p> : null}
-      <EmailField error={state?.field === "email" ? text : undefined} defaultValue={state?.email} />
+      <EmailField error={state?.field === "email" ? text : undefined} defaultValue={state?.email} last />
       <TurnstileWidget siteKey={turnstileSiteKey} />
       <SubmitButton label="Bağlantı gönder" pendingLabel="Gönderiliyor…" />
     </form>

@@ -148,17 +148,31 @@ details.side-block:not([open]) { gap: 0; }
 
 /* ---------- Review screen ---------- */
 /* The DOM is the one-column order (warnings, lines, receipt, actions, delete), so Tab follows the eye at every width.
-   From 1100px the receipt column takes the left track across every row; the last row is 1fr, so a taller receipt column
+   From 1100px the receipt column takes the left track down to the bar's row; that row is 1fr, so a taller receipt column
    never spreads gaps between the items on the right. */
 .review { display: grid; gap: var(--s4); align-items: start; }
 @media (min-width: 1100px) {
-  .review { grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: repeat(5, auto) 1fr; row-gap: 0; }
-  .review > .source { grid-column: 1; grid-row: 1 / -1; }
+  /* Rows: warnings, lines (1fr), the tray's two rows, Fişi sil. The receipt column runs down to the tray's foot. */
+  .review { grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto 1fr auto auto auto; row-gap: 0; }
+  .review > .source { grid-column: 1; grid-row: 1 / 5; }
   .review > :not(.source) { grid-column: 2; min-width: 0; }
   .review > :not(.source):not(:first-child) { margin-top: var(--s4); }
-  .source .form-grid { grid-template-columns: 1fr 1fr; align-items: start; }
-  /* Fişi sil sits in the 1fr row, on the receipt column's base: both columns end on one line, the destructive step set apart. */
-  .review > .danger-zone { grid-row: -2; align-self: end; }
+  /* When the receipt column is the taller one the lines panel takes the slack and its totals sit on its foot (app-screens 4.2):
+     both columns end on one line and no band of ground opens beside the receipt. */
+  .review > section.panel { grid-row: 2; align-self: stretch; display: flex; flex-direction: column; }
+  .review > section.panel > .balance-strip { margin-top: auto; }
+  /* The secondary actions are the tray's upper row and Onayla's row closes it: one block under the lines. */
+  .review > .actions { grid-row: 3; padding: var(--s5) var(--s4); background: var(--stage); border: 1px solid var(--control); border-bottom: 0; border-radius: var(--radius-card) var(--radius-card) 0 0; }
+  .review > .actions + .action-bar { margin-top: 0; }
+  /* On the tray's --stage ground the secondary fill vanishes; the buttons sit on a surface step, like Sıradaki taslak. */
+  .review > .actions .btn:enabled:not(:hover) { background: var(--surface); border-color: var(--border); }
+  .review > .action-bar { grid-row: 4; padding: var(--s4); border-top-color: var(--rule); border-radius: 0 0 var(--radius-card) var(--radius-card); }
+  .review > .danger-zone { grid-row: 5; }
+  /* Evrak No beside the date, BT beside Açıklama: four fields in two rows. */
+  .source .form-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: start; }
+  .source .form-grid > label { grid-column: span 3; }
+  .source .form-grid > .bt-field { grid-column: span 2; }
+  .source .form-grid > .span-all { grid-column: span 4; }
 }
 /* The receipt column travels beside the lines, but only where all of it fits the screen; with the photo it would hide its own foot. */
 @media (min-width: 1100px) and (min-height: 820px) { .source:not(:has(.photo)) { position: sticky; top: var(--s4); } }
@@ -326,6 +340,15 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .receipts .r-status { grid-column: 4; grid-row: 2; text-align: right; }
   .r-notes { display: block; margin: 0; }
   .side { grid-template-columns: minmax(0, 1fr); }
+  /* The tablet keeps the journal a table (one line per row), so the balance strip is on the first screen above the tray. */
+  .journal .col-code { width: 8rem; }
+  .journal .col-amount { width: 7rem; }
+  .journal .col-del { width: 56px; }
+}
+@media (max-width: 900px) { .setting-row { grid-template-columns: minmax(0, 1fr); gap: var(--s4); } .setting-label { position: static; } .jump { display: none; } .canvas { padding: var(--s5) var(--s5) var(--s8); } }
+
+/* ---------- Phone: the rail becomes a bottom bar ---------- */
+@media (max-width: 720px) {
   /* Journal lines become small cards: code and name, then debit, credit and delete. */
   .journal thead { display: none; }
   .journal, .journal tbody { display: block; }
@@ -335,11 +358,6 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .journal td:nth-child(2) { grid-column: 2 / -1; }
   .journal td.col-del { grid-column: 3; grid-row: 2; align-self: end; width: auto; }
   .journal .col-code, .journal .col-amount { width: auto; }
-}
-@media (max-width: 900px) { .setting-row { grid-template-columns: minmax(0, 1fr); gap: var(--s4); } .setting-label { position: static; } .jump { display: none; } .canvas { padding: var(--s5) var(--s5) var(--s8); } }
-
-/* ---------- Phone: the rail becomes a bottom bar ---------- */
-@media (max-width: 720px) {
   .app { grid-template-columns: minmax(0, 1fr); }
   .rail {
     position: fixed; inset: auto 0 0 0; height: auto; flex-direction: row; justify-content: space-around; gap: 0;
@@ -412,7 +430,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .action-bar:not(:has(.bar-next-draft)) .bar-next .btn { width: 100%; }
   .capture-bar .reading, .capture-bar .alert { position: fixed; left: var(--s4); right: var(--s4); bottom: calc(128px + env(safe-area-inset-bottom)); z-index: 4; }
   /* While the keyboard is up the bar drops its sentence and keeps one row of buttons. */
-  .app[data-screen="fis"]:has(.review :is(input, select):focus) .action-bar .balance { display: none; }
+  .app[data-screen="fis"]:has(.review :is(input, select):focus) .action-bar:not([data-pointed]) .balance { display: none; }
+  /* A locked amount reads under its label, on the label's edge, not floating at the right of its half. */
+  .journal .field.num:disabled { text-align: left; }
   .journal td.col-del { justify-self: end; margin-left: var(--s3); }
 
   .setting-row { padding: var(--s5) 0; }
@@ -437,6 +457,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .howto { display: grid; gap: var(--s3); font-size: var(--fs-body); }
 .howto > summary { cursor: pointer; font-weight: var(--w-medium); border-radius: var(--radius-chip); }
 .howto[open] > summary { margin-bottom: var(--s3); }
+/* The note under the steps: the panel's 16px beat above it, on the steps' text edge. */
+.howto .guide + p { margin: var(--s4) 0 0; padding-left: var(--s5); }
 /* Spend by expense account: a ranked list with thin grey bars, the top account in ink. */
 .by-account { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
 .by-account li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s1) var(--s3); font-size: var(--fs-body); }
@@ -495,10 +517,10 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 ::view-transition-old(.title-morph) { display: none; }
 ::view-transition-new(.title-morph) { animation: none; object-fit: none; object-position: left top; }
 /* Row into review (Link transitionTypes "fis-ac"). React leaves the root uncaptured, so the new screen is the live page under the
-   fading old one; while the transition runs everything but the travelling title waits and comes in as the 240ms morph lands,
-   so the title crosses only empty ground, never drawn text. */
+   fading old one; everything but the travelling title comes in 60ms later, overlapping the old screen's fade so no frame is
+   blank, and the title travels on its own layer above it. */
 @media (prefers-reduced-motion: no-preference) {
-  :root:active-view-transition-type(fis-ac) .app[data-screen="fis"] :is(.crumb, .title-line > .status, .finding, .review) { animation: vt-fade-in 90ms 150ms var(--ease-out) both; }
+  :root:active-view-transition-type(fis-ac) .app[data-screen="fis"] :is(.crumb, .title-line > .status, .finding, .review) { animation: vt-fade-in 140ms 60ms var(--ease-out) both; }
 }
 ::view-transition-group(.tab-slide) { animation-duration: 200ms; }
 ::view-transition-new(.row-rise) { animation: vt-rise 240ms var(--ease-out) both; }
