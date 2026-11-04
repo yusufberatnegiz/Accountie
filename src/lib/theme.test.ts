@@ -22,16 +22,16 @@ describe("theme init script", () => {
     const r = run("dark");
     expect(r.theme).toBe("dark");
     expect(r.look).toBe("dark");
-    expect(r.head).toEqual([{ name: "theme-color", content: "#0e1114" }]);
+    expect(r.head).toEqual([{ name: "theme-color", content: "#0b0d10" }]);
   });
   it("a saved choice wins over the system look, in one meta", () => {
     const r = run("light", false, true);
-    expect(r.head).toEqual([{ name: "theme-color", content: "#f2f4f7" }]);
+    expect(r.head).toEqual([{ name: "theme-color", content: "#f4f6f8" }]);
   });
   it("leaves system preference alone when nothing or junk is saved", () => {
     expect(run(null).theme).toBeUndefined();
     expect(run("purple").theme).toBeUndefined();
-    expect(run(null, false, true).head).toEqual([{ name: "theme-color", content: "#0e1114" }]);
+    expect(run(null, false, true).head).toEqual([{ name: "theme-color", content: "#0b0d10" }]);
   });
   it("switches transitions off for the frame an OS theme change lands in", () => {
     const classes = new Set<string>();
