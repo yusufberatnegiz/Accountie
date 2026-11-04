@@ -76,7 +76,6 @@
 @media (min-width: 721px) {
   .capture-head .reading, .capture-head .reading:has(.feed) { position: absolute; right: 0; top: 50%; z-index: 2; translate: 0 -50%; width: max-content; min-width: max(100%, 440px); padding: var(--s2) var(--s4); }
   .capture-head .feed { width: 40px; height: 56px; }
-  .capture-head .feed-paper { gap: 6px; padding: 8px 6px; }
   /* On a desktop slot the stages run on one line, never wrapping; on the phone (the card floats over the bottom bar) they stack. */
   .capture-head .stages { display: flex; gap: 0 var(--s3); white-space: nowrap; }
   /* In the empty state text sits above the buttons, so the card grows down over the first-run steps instead. */
@@ -477,14 +476,12 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .balance-check { transition: opacity 160ms ease, transform 200ms var(--ease-out); }
   /* A downloaded receipt that stays in view (Tümü) changes its pill by a short tone step, not a jump. */
   .receipts .status { transition: background-color 180ms ease, color 180ms ease; }
-  /* Onaylandı lands like a rubber stamp: from slightly above and turned, into place. */
-  .status[data-stamp] { animation: stamp 320ms var(--ease-exit) both; }
-  @keyframes stamp { from { opacity: 0; transform: scale(1.6) rotate(-8deg); } 70% { opacity: 1; } to { transform: none; } }
-  /* Reading a receipt: paper feeds down out of the printer slot, its printed rows arriving one by one. */
-  .feed-paper { animation: feed 1400ms var(--ease-in-out) infinite; }
-  .feed-paper i { animation: feed-row 1400ms ease infinite; animation-delay: calc(var(--i) * 140ms); }
-  @keyframes feed { from { transform: translateY(-70%); } 70%, to { transform: none; } }
-  @keyframes feed-row { 0%, 20% { opacity: 0; } 40%, 100% { opacity: 1; } }
+  /* Onaylandı: the pill settles into its new tone, a short step, no stamp. */
+  .status[data-stamp] { animation: stamp 220ms var(--ease-out) both; }
+  @keyframes stamp { from { opacity: 0.4; transform: scale(0.94); } to { transform: none; } }
+  /* Reading a receipt: a ledger-blue line passes down the photo, the same motif as the landing page's counter. */
+  .feed::after { animation: feed-scan 1400ms var(--ease-in-out) infinite; }
+  @keyframes feed-scan { 0% { top: 0; opacity: 1; } 80% { opacity: 1; } 100% { top: calc(100% - 2px); opacity: 0; } }
   .row-pending { animation: row-pending 900ms var(--ease-in-out) infinite; }
   @keyframes row-pending { from { transform: scaleX(0); } 60% { transform: scaleX(1); opacity: 1; } to { transform: scaleX(1); opacity: 0; } }
   .stages li:last-child { animation: stage-in 180ms var(--ease-out) both; }
@@ -495,10 +492,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .row-pending { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--accent); transform-origin: left center; }
 .reading:has(.feed) { gap: var(--s3); padding: var(--s3) var(--s4); }
 /* Big enough to catch the eye during a 1.5-3 s read; the stages at section size beside it. */
-.feed { flex: none; display: block; width: 56px; height: 80px; overflow: hidden; border-top: 2px solid var(--ink); border-radius: 2px; }
-.feed-paper { display: grid; align-content: start; gap: 8px; height: 100%; padding: 10px 8px; background: var(--paper); }
-.feed-paper i { display: block; height: 3px; background: var(--paper-ink); }
-.feed-paper i:nth-child(1) { --i: 0; width: 70%; } .feed-paper i:nth-child(2) { --i: 1; } .feed-paper i:nth-child(3) { --i: 2; width: 55%; } .feed-paper i:nth-child(4) { --i: 3; width: 80%; }
+.feed { flex: none; position: relative; display: block; width: 56px; height: 80px; overflow: hidden; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); }
+.feed img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.feed::after { content: ""; position: absolute; inset-inline: 0; top: 50%; height: 2px; background: var(--accent); }
 .reading-text { display: grid; gap: 2px; min-width: 0; }
 .stages { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: var(--fs-section); }
 .stages li[data-done] { color: var(--muted); font-weight: 400; }

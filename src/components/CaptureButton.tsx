@@ -38,6 +38,9 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
   const [stage, setStage] = useState(0);
   const [slow, setSlow] = useState(false);
   const [notice, setNotice] = useState("");
+  // The photo being read, shown small in the reading card; its object URL is released when the next one replaces it.
+  const [thumb, setThumb] = useState("");
+  useEffect(() => () => { if (thumb) URL.revokeObjectURL(thumb); }, [thumb]);
 
   // Timer restarts per photo (status changes per file); setSlow(false) happens in upload().
   useEffect(() => {
@@ -59,6 +62,7 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       setStage(0);
       setStatus(list.length > 1 ? `Fiş okunuyor (${i + 1}/${list.length})` : "Fiş okunuyor");
       const blob = await shrink(file);
+      setThumb(URL.createObjectURL(blob));
       setStage(1);
       const form = new FormData();
       form.set("image", blob, "fis.jpg");
@@ -116,8 +120,11 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       <div role="status" className={busy ? "reading" : notice ? "" : "visually-hidden"}>
         {busy ? (
           <>
-            {/* Paper feeding out of a printer while the server reads; it means "working", not a percentage. */}
-            <span className="feed" aria-hidden="true"><span className="feed-paper"><i /><i /><i /><i /></span></span>
+            {/* The photo itself, a scan line passing over it while the server reads; it means "working", not a percentage. */}
+            <span className="feed" aria-hidden="true">
+              {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
+              {thumb ? <img src={thumb} alt="" /> : null}
+            </span>
             <div className="reading-text">
               <ol className="stages">
                 {STAGES.slice(0, stage + 1).map((s, i) => <li key={i} data-done={i < stage || undefined}>{s || status}{i === stage && i < 2 ? "…" : ""}</li>)}

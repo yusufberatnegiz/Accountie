@@ -4,7 +4,6 @@ import { useState, type CSSProperties } from "react";
 import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount } from "@/lib/money";
 import { defaultPayment, journalFor, PAYMENTS, SAMPLES, shownAccountName, sourcesFor, type Payment, type Source } from "./samples";
-import { crossFade } from "./crossFade";
 import { Thermal } from "./Thermal";
 
 const PRINTED: Record<Payment["id"], string> = { partner: "KREDİ KARTI", company: "KREDİ KARTI", cash: "NAKİT" };
@@ -22,7 +21,6 @@ export function Counter() {
   const [payment, setPayment] = useState<Payment["id"]>(defaultPayment(SAMPLES[0]));
   const [copy, setCopy] = useState<"" | "ok" | "fail">("");
   const [hot, setHot] = useState<Source | null>(null);
-  const [first, setFirst] = useState(true);
   const sample = SAMPLES.find((s) => s.id === sampleId) ?? SAMPLES[0];
   const { lines, warnings, balanced } = journalFor(sample, payment);
   const sources = sourcesFor(sample);
@@ -41,14 +39,14 @@ export function Counter() {
   }
 
   return (
-    <div className="counter" data-ui data-first={first || undefined} style={{ "--rows": lines.length } as CSSProperties}>
+    <div className="counter" data-ui style={{ "--rows": lines.length } as CSSProperties}>
       <div className="counter-controls">
         <fieldset className="segmented">
           <legend>Örnek fiş</legend>
           {SAMPLES.map((s) => (
             <label key={s.id}>
               <input type="radio" name="ornek-fis" value={s.id} checked={s.id === sampleId}
-                onChange={() => crossFade(() => { setSampleId(s.id); setCopy(""); setHot(null); setFirst(false); })} />
+                onChange={() => { setSampleId(s.id); setCopy(""); setHot(null); }} />
               <span>{s.label}</span>
             </label>
           ))}
@@ -57,7 +55,7 @@ export function Counter() {
           <legend>Ödeme</legend>
           {PAYMENTS.map((p) => (
             <label key={p.id}>
-              <input type="radio" name="odeme" value={p.id} checked={p.id === payment} onChange={() => crossFade(() => { setPayment(p.id); setCopy(""); setFirst(false); })} />
+              <input type="radio" name="odeme" value={p.id} checked={p.id === payment} onChange={() => { setPayment(p.id); setCopy(""); }} />
               <span>{p.label}</span>
             </label>
           ))}
