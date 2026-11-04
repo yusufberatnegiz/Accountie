@@ -8,7 +8,10 @@ describe("checkAuthForm (the form's pre-send check, same schema as the server)",
   });
   it("marks every invalid field and focuses the first in form order", () => {
     expect(checkAuthForm(true, { name: "", email: "abc", password: "kısa" })).toMatchObject({ field: "name", fields: ["name", "email", "password"], email: "abc", name: "" });
-    expect(checkAuthForm(false, { email: "a@b.co", password: "" })).toMatchObject({ error: "bicim-sifre", field: "password", fields: ["password"] });
+    expect(checkAuthForm(false, { email: "a@b.co", password: "" })).toMatchObject({ error: "bos-sifre", field: "password", fields: ["password"] });
+    // The length rule is the signup's: a login only needs a password typed.
+    expect(checkAuthForm(false, { email: "a@b.co", password: "kısa" })).toBeUndefined();
+    expect(checkAuthForm(true, { name: "Ay Su", email: "a@b.co", password: "kısa" })).toMatchObject({ error: "bicim-sifre", fields: ["password"] });
   });
   it("never hands the password back", () => {
     expect(JSON.stringify(checkAuthForm(false, { email: "x", password: "gizli" }))).not.toContain("gizli");
