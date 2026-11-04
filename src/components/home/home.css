@@ -56,7 +56,7 @@
 .hero { --stage-top: calc(72px + var(--s9)); }
 /* The counter sits on a fixed top line, never re-centred: a choice changes only what is under the pickers, the pickers stay put. */
 .hero-stage { background: var(--split); display: grid; align-items: start; justify-items: center; padding: var(--stage-top) var(--page-margin) var(--s7) var(--s5); }
-.hero-counter { width: min(860px, 100%); }
+.hero-counter { width: 100%; container-type: inline-size; }
 
 /* Masked headline: each line rises from behind its own baseline (motion.md "Masked line reveal"). */
 .lines .line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
@@ -78,16 +78,12 @@
 @media (hover: hover) and (pointer: fine) { .segmented label:hover:not(:has(input:checked)) { background: var(--surface); box-shadow: inset 0 0 0 1px var(--control-edge); } } /* taste-skill-ignore: data-ui hover edge */
 @media (pointer: coarse) { .segmented label { min-height: var(--touch); } }
 
-.counter-body { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: var(--s3); align-items: start; }
 .counter-sheet .btn { background: var(--lift-control); }
 @media (hover: hover) and (pointer: fine) { .counter-sheet .btn:hover { background: var(--lift-control-hover); } }
-.counter-sheet { background: var(--lift); border: 1px solid var(--lift-edge); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s4) var(--s5); display: grid; gap: var(--s3); min-width: 0; }
+.counter-sheet { display: grid; gap: var(--s3); min-width: 0; align-content: start; }
 .counter-slot .thermal { font-size: 12px; }
 .counter-slot .thermal-paper { padding-inline: var(--s3); }
-/* A choice in the counter or the showcase cross-fades the old state into the new one (crossFade.ts). */
-/* The pickers and the showcase tabs are their own snapshot that never fades: only the receipt, the lines and the piece cross-fade. */
-
-/* The strip itself is in thermal.css. It is fed out of this slot from the top. */
+/* The strip itself is in thermal.css. */
 .counter-slot { overflow: clip; padding-bottom: var(--s2); min-width: 0; }
 
 .counter-lines { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
@@ -112,8 +108,6 @@
   /* The counter is the hero's picture: receipt and lines at reading size (16px lines, 14px paper), about 60% of a 900px screen. */
   .hero { grid-template-columns: minmax(0, 4.5fr) minmax(0, 7.5fr); }
   .counter { --fs-body: 16px; --fs-small: 14px; }
-  .counter-body { grid-template-columns: 256px minmax(0, 1fr); }
-  .counter-slot .thermal { font-size: 14px; }
   .counter-lines td { padding-block: var(--s3); }
 }
 
@@ -130,7 +124,8 @@
 .path-clause { grid-row: 1; align-self: end; margin: 0; font-size: var(--step-lead); font-weight: var(--w-medium); letter-spacing: -0.01em; line-height: 1.2; max-width: 14ch; }
 .path-field-1 { --card: var(--path-card-1); } .path-field-2 { --card: var(--path-card-2); } .path-field-3 { --card: var(--path-card-3); } .path-field-4 { --card: var(--path-card-4); }
 .path .ui-card { background: var(--card); border-color: var(--lift-edge); }
-.path-card { grid-row: 2; align-self: stretch; width: min(320px, 100%); display: flex; flex-direction: column; transition: transform var(--t-hover) var(--ease-out); }
+.path-plate { grid-row: 2; align-self: stretch; display: grid; min-width: 0; }
+.path-card { width: min(320px, 100%); display: flex; flex-direction: column; transition: transform var(--t-hover) var(--ease-out); }
 /* The card's last line sits on the shared base, so the four cards end level. */
 .path-card > :last-child { margin-top: auto; }
 .path-card .ui-kv > span:last-child { white-space: normal; overflow: visible; }
@@ -140,36 +135,6 @@
 .path-strip .thermal-items { display: none; }
 .path-card .ui-sheet { margin-top: var(--s1); }
 .path-file { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) var(--s3); background: color-mix(in srgb, var(--card), var(--ink) 6%); border-radius: var(--radius-control); font-size: var(--fs-small); }
-
-/* ---------- the rule, proven: the product's unbalanced fiş large, a ledger kept by the same rule beside it, its world under them ---------- */
-.rule { margin-top: var(--section-gap); display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s7); align-items: start; }
-.rule-copy { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: end; }
-.rule-copy h2 { grid-column: 1 / 8; }
-.rule-sub { grid-column: 8 / 13; font-size: var(--step-body); max-width: 44ch; margin: 0; }
-.rule-proof { grid-column: 1 / 6; }
-.rule-card { --fs-ui: 15px; --fs-body: 16px; --fs-small: 13px; padding: var(--s6); gap: var(--s5); font-size: var(--fs-body); }
-.rule-card .ui-totals dd { font-size: var(--fs-figure); }
-.rule-card .ui-card-head { font-size: var(--fs-section); }
-.rule-figure-shot { grid-column: 6 / 13; }
-.rule-figure, .routes-figure, .cta-figure { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); align-content: start; min-width: 0; }
-.rule-figure figcaption, .routes-figure figcaption { font-size: var(--step-small); color: var(--muted); }
-.frame { position: relative; overflow: clip; background: var(--raised); }
-.frame img, .frame video { display: block; width: 100%; height: auto; }
-.frame img { opacity: var(--picture-opacity); }
-.frame-43 { aspect-ratio: 4 / 3; }
-/* Panel screenshots: the panel's own edge, top-left anchored so a crop keeps the title and the first rows. */
-.frame-shot { aspect-ratio: 1440 / 900; border: 1px solid var(--rule); border-radius: var(--radius-panel, 8px); background: var(--surface); }
-.frame-phone { aspect-ratio: 390 / 844; width: min(100%, 340px); justify-self: center; border: 1px solid var(--rule); border-radius: 28px; background: var(--surface); }
-.frame-shot img, .frame-phone img { width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 1; }
-.frame .shot-dark { display: none; }
-:root[data-theme="dark"] .shot-dark, :root[data-look="dark"]:not([data-theme="light"]) .shot-dark { display: block; }
-:root[data-theme="dark"] .shot-light, :root[data-look="dark"]:not([data-theme="light"]) .shot-light { display: none; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]):not([data-look]) .shot-dark { display: block; }
-  :root:not([data-theme="light"]):not([data-look]) .shot-light { display: none; }
-}
-.frame-43 img { width: 100%; height: 100%; object-fit: cover; }
-/* The poster is the frame's own background; the video stays transparent until its first frame plays, so the box is never black. */
 
 /* ---------- showcase: lit panel, dark row ---------- */
 .show { background: var(--show-field); color: var(--show-ink); margin-top: var(--section-gap); padding-block: var(--s9); }
@@ -268,8 +233,7 @@
 .routes-name { min-width: 0; }
 .routes-value { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 0; }
 .routes-tip { font-size: var(--step-body); max-width: 44ch; margin: 0; }
-/* The engraving travels beside the long list instead of leaving the right half empty under it. */
-.routes-aside { grid-column: 7 / 13; display: grid; gap: var(--s6); align-content: start; position: sticky; top: calc(56px + var(--s7)); }
+.routes-aside { grid-column: 7 / 13; display: grid; justify-items: end; align-content: start; position: sticky; top: calc(56px + var(--s7)); }
 .routes-file { --fs-small: 13px; padding: var(--s5); }
 .routes-file-scroll { overflow-x: auto; }
 .routes-file .ui-sheet th { white-space: nowrap; }
@@ -314,7 +278,6 @@
 .cta-inner { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s7); padding-block: var(--s10); align-items: end; }
 .cta-copy { grid-column: 1 / 7; display: grid; gap: var(--s5); }
 .cta-title { color: var(--on-accent-field); line-height: 0.95; font-size: var(--display); font-family: var(--font-head); font-weight: 300; letter-spacing: -0.035em; }
-.cta-figure .frame { background: var(--deep); }
 .cta-title span { display: block; }
 .cta-sub { font-size: var(--step-body); max-width: 40ch; margin: 0; }
 .cta-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s5); margin-top: var(--s3); }
@@ -323,7 +286,7 @@
 /* On the blue field the one action is the light fill. */
 .cta-btn { background: var(--on-accent-field); color: var(--accent-field); }
 @media (hover: hover) and (pointer: fine) { .cta-btn:hover { background: var(--surface); color: var(--ink); } }
-.cta-figure { grid-column: 7 / 13; }
+.cta-figure { grid-column: 8 / 13; margin: 0; display: grid; gap: var(--s3); justify-items: center; }
 .cta-figure figcaption { font-size: var(--step-small); color: var(--on-accent-field); }
 
 /* ---------- footer: the name returns at full width ---------- */
@@ -341,18 +304,13 @@
   .hero { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
   .hero-copy { padding-right: var(--s5); }
   .hero-stage { padding-left: var(--s4); }
-  .counter-body { grid-template-columns: 208px minmax(0, 1fr); }
 }
 /* ---------- Tablet and below: the hero stacks, the counter takes the full width ---------- */
 @media (max-width: 960px) {
   .hero { grid-template-columns: minmax(0, 1fr); min-height: 0; }
   .hero-copy { padding: calc(72px + var(--s7)) var(--page-margin) var(--s7); }
   .hero-stage { padding: var(--s7) var(--page-margin); }
-  .hero-counter { width: min(700px, 100%); min-height: 0; }
-  .counter-body { grid-template-columns: 300px minmax(0, 1fr); }
 }
-/* A narrow tablet: the strip gives the Luca lines room for their two amount columns. */
-@media (min-width: 641px) and (max-width: 760px) { .counter-body { grid-template-columns: 236px minmax(0, 1fr); } }
 /* Tablet: the title on the left, the sentence and the action beside it, so "Satırları kopyala" stays on the first screen above the cookie strip. */
 @media (min-width: 641px) and (max-width: 960px) {
   .home { --display: clamp(2.375rem, 0.25rem + 6.6vw, 4.75rem); }
@@ -375,8 +333,6 @@
   .foot-links { grid-column: 7 / 13; }
 }
 @media (max-width: 900px) {
-  .rule-copy h2, .rule-sub, .rule-proof, .rule-figure-shot { grid-column: 1 / -1; }
-  .rule-copy { row-gap: var(--s4); }
   .routes-list, .routes-aside { grid-column: 1 / 13; }
   .routes-aside { position: static; }
   .faq-list, .faq-title { grid-column: 1 / -1; }
@@ -399,15 +355,12 @@
   .segmented::-webkit-scrollbar { display: none; }
   .segmented legend { float: none; width: auto; margin-bottom: var(--s2); line-height: 1.3; }
   .segmented label { flex: none; min-height: var(--touch); }
-  /* The strip at full width, the Luca lines under it: every figure on the receipt is read whole. */
-  .counter-body { grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
-  .counter-sheet { padding: var(--s4); gap: var(--s3); }
   .counter-lines th, .counter-lines td { padding: var(--s1) var(--s2); }
   .counter-copy .btn { min-height: var(--touch); }
 
   .path { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
   .path-field, .path-field-3, .path-field-4 { grid-row: auto; grid-template-rows: none; row-gap: var(--s5); padding: var(--s7) var(--page-margin); }
-  .path-title, .path-clause, .path-card { grid-row: auto; }
+  .path-title, .path-clause, .path-plate { grid-row: auto; }
   .path-title { padding-block: var(--s8) var(--s5); }
   .path-clause { max-width: none; }
   .path-card { width: 100%; }
@@ -453,51 +406,317 @@
   .foot-what, .foot-links { grid-column: 1; }
 }
 
-/* ---------- Motion (YON.md 6.6, 14 and 15). Content is in the HTML and painted; motion only adds arrival. ---------- */
-@keyframes home-line { from { transform: translateY(16%); } }
-@keyframes home-load { from { transform: translateY(12px); } }
-/* Every arrival starts from a visible state (YON.md 16.3): content is never blank first and painted later. */
-@keyframes home-row { from { transform: translateY(6px); } }
-@keyframes home-scan { 0% { top: 0; opacity: 1; } 85% { opacity: 1; } 100% { top: calc(100% - 2px); opacity: 0; } }
-@keyframes home-fade { from { opacity: 0.6; } to { opacity: 1; } }
+/* =====================================================================================================================
+   YON.md 23: the product as the picture. Live HTML in an app window on its plate, or in a CSS phone; one signature move
+   (the figures fly from the receipt to the Luca lines) and four supports. Only transform, opacity and clip-path move.
+   ===================================================================================================================== */
+.home { overflow-x: clip; }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* Masked headline, line by line, then sentence and action. The resting state is in place: the offset exists only while
-     the animation runs (backwards fill), so a page whose animations never start still shows its title. */
-  .js .hero [data-line] { animation: home-line var(--t-reveal) var(--ease-expo) backwards; animation-delay: calc(60ms + var(--i) * 110ms); }
-  .js .hero [data-load] { animation: home-load 500ms var(--ease-out) backwards; animation-delay: var(--d); }
+/* ---------- Frames (Frames.tsx, YON.md 23.2) ---------- */
+/* The plate is the surface the window sits on: 24px lower, 48px wider each side, one tone step over the ground. */
+.plated { position: relative; isolation: isolate; min-width: 0; }
+/* --pl/--pr: how far it runs past each side; a side with a neighbour keeps to the column gap. */
+.plated::before { content: ""; position: absolute; z-index: -1; inset: 24px calc(var(--pr, 48px) * -1) -24px calc(var(--pl, 48px) * -1); border-radius: 12px; background: var(--plate); }
+.win { height: 100%; display: grid; grid-template-rows: 36px minmax(0, 1fr); background: var(--surface); color: var(--ink); border: 1px solid var(--border); /* taste-skill-ignore: data-ui window edge */ border-top-color: color-mix(in srgb, var(--border), var(--ink) 14%); border-radius: var(--radius-card); overflow: clip; }
+.win-bar { margin: 0; display: flex; align-items: center; gap: var(--s2); padding: 0 var(--s4); background: var(--raised); border-bottom: 1px solid var(--border); /* taste-skill-ignore: data-ui window bar */ font-size: 13px; font-weight: var(--w-medium); color: var(--muted); white-space: nowrap; }
+.win-bar .mark { width: 16px; height: 16px; }
+.win-body { min-width: 0; min-height: 0; }
+/* The phone: a 10px bezel, outer radius 44, screen radius 34, a pill-shaped camera cut. No brand, no buttons. */
+.phone { box-sizing: border-box; aspect-ratio: 260 / 540; padding: 10px; border-radius: 44px; background: var(--bezel); color: var(--on-accent-field); }
+.phone-screen { position: relative; height: 100%; display: flex; flex-direction: column; gap: var(--s3); padding: 46px var(--s3) var(--s4); border-radius: 34px; background: var(--deep); overflow: clip; }
+.phone-screen::before { content: ""; position: absolute; top: 10px; left: 50%; width: 88px; height: 24px; margin-left: -44px; border-radius: 12px; background: var(--bezel); }
+.phone-head, .phone-foot { margin: 0; display: flex; justify-content: space-between; gap: var(--s2); padding-inline: var(--s1); font-size: 12px; font-weight: var(--w-medium); }
+.phone-head > span:last-child, .phone-foot > span:first-child { opacity: 0.72; }
+.phone-foot { margin-top: auto; }
 
-  /* One motif for "the receipt is read": a ledger-blue line passes down the thermal strip once, when it appears or changes,
-     then the Luca lines it produced come in under it. Rows are keyed by account and amount, so after a choice only what
-     changed moves. The strip and every row stay visible throughout: the line and a short offset are all that animate. */
-  .js .thermal-paper { position: relative; }
-  .js .counter-slot .thermal-paper::after, .js.motion .path-field.is-in .path-strip .thermal-paper::after {
-    content: ""; position: absolute; inset-inline: 0; top: 0; height: 2px; background: var(--accent); opacity: 0;
-    animation: home-scan 560ms var(--ease-in-out) both; animation-delay: var(--act, 120ms);
-  }
-  .js .counter-row { animation: home-row 240ms var(--ease-out) backwards; animation-delay: calc(420ms + var(--i) * 60ms); }
-  .js .counter-sum, .js .counter-state { display: inline-block; animation: home-fade 200ms ease backwards; animation-delay: 560ms; }
+/* ---------- Odometer (Odometer.tsx, YON.md 23.3.3): two slots per digit, the box clips them ---------- */
+.odo { display: inline-block; white-space: nowrap; }
+.odo.code { display: block; }
+.odo-digits { display: inline-flex; user-select: none; }
+.odo-d { position: relative; display: inline-block; clip-path: inset(0 -0.1em); }
+.odo-d > span { display: inline-block; }
+.odo-d[data-old]::before { content: attr(data-old); position: absolute; left: 0; top: 0; }
 
-  /* Section entrances, once, part by part (heading, text, picture: --r steps of 80ms). Travel only (INSTRUCTIONS.md: content is visible immediately). */
-  .motion [data-reveal] { transform: translateY(12px); transition: transform 600ms var(--ease-out); transition-delay: calc(var(--r, 0) * 70ms); }
-  .motion [data-reveal].is-in { transform: none; }
-
-  /* "Bir fişin yolu", once, left to right 300ms apart: the strip is read (the same scan line), the fields and lines come in
-     under it. No stamps: the status pill is part of the card from the start. On a phone each field starts as it arrives. */
-  .path-field { --act: 0ms; }
-  @media (min-width: 1101px) { .path-field { --act: calc(var(--r, 0) * 300ms); } }
-  @media (min-width: 641px) and (max-width: 1100px) { :is(.path-field-2, .path-field-4) { --act: 300ms; } }
-  .motion .path-field[data-reveal] { transform: none; }
-  .path-card > :nth-child(2) { --k: 1; } .path-card > :nth-child(3) { --k: 2; } .path-card > :nth-child(4) { --k: 3; }
-  .path-card > :nth-child(5) { --k: 4; } .path-card > :nth-child(6) { --k: 5; } .path-card > :nth-child(7) { --k: 6; }
-  .js.motion .path-field.is-in [data-step]:not(.status) { animation: home-row 240ms var(--ease-out) backwards; animation-delay: calc(var(--act) + 200ms + var(--k, 0) * 60ms); }
-
-  /* FAQ answer crossfade, and the lit piece's name. */
-  .faq-a, .show-name { animation: home-fade 180ms ease both; }
+/* ---------- Hero: the window holds the Luca lines, the phone with the receipt rides over its bottom-left corner ---------- */
+.hero { overflow-x: clip; }
+.hero-stage { padding-right: 0; justify-items: stretch; }
+/* --ph: phone width, --ov: how far it reaches into the window. The window takes what is left plus a bleed past the screen edge. */
+.counter-body { --ph: 260px; --ov: 120px; position: relative; display: flex; padding: 0 0 48px calc(var(--ph) - var(--ov)); }
+.counter-win { flex: none; width: min(780px, calc(100cqi - var(--ph) + var(--ov) + 48px)); min-height: 500px; }
+/* Content keeps clear of the phone on the left and of the 48px bleed on the right. */
+.counter-win .win-body { padding: var(--s5) calc(48px + var(--s5)) var(--s5) calc(var(--ov) + var(--s5)); }
+.counter-win .win-bar { padding-left: calc(var(--ov) + var(--s5)); }
+.counter-phone { position: absolute; left: 0; bottom: 0; z-index: 1; width: var(--ph); box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the phone truly stands on the window) */
+.counter-phone .thermal-paper { padding-inline: var(--s3); }
+.counter-phone .thermal { font-size: 11.5px; }
+.counter-sheet .counter-lines td { padding-block: var(--s2); }
+@media (min-width: 961px) and (max-width: 1180px) { .counter-body { --ph: 220px; --ov: 96px; } }
+@media (max-width: 960px) {
+  .hero-stage { padding-right: 0; }
+  .counter-body { --ph: 220px; --ov: 96px; }
+  .counter-win { min-height: 456px; }
+}
+/* Phone: no window. The phone on the left, the Luca lines as a card under it that rides 40px over its foot (the one lift layer). */
+@media (max-width: 640px) {
+  .hero-stage { padding-right: var(--page-margin); }
+  .counter-body { flex-direction: column; padding: 0; }
+  .counter-phone { position: relative; order: -1; width: min(280px, 100%); box-shadow: none; } /* taste-skill-ignore: removes the lift */
+  .counter-win { position: relative; z-index: 2; width: 100%; min-height: 0; margin-top: -40px; }
+  .counter-win::before { content: none; }
+  .counter-win .win { grid-template-rows: minmax(0, 1fr); box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the card truly rides over the phone) */
+  .counter-win .win-bar { display: none; }
+  .counter-win .win-body { padding: var(--s4); }
+  .counter-phone .thermal { font-size: 12px; }
 }
 
+/* ---------- Bir fişin yolu: four fields below 1100px; on desktop a sticky split story ---------- */
+.path-stage { display: none; }
+@media (min-width: 1100px) and (prefers-reduced-motion: no-preference) {
+  .js .path { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto repeat(4, 70vh); column-gap: var(--s5); padding: 0 var(--page-margin) 10vh; }
+  .js .path-title { grid-column: 1 / -1; grid-row: 1; padding: var(--s8) 0 var(--s6); }
+  .js .path-field { display: contents; }
+  .js .path-clause { grid-column: 1 / 6; align-self: center; max-width: 14ch; font-family: var(--font-head); font-weight: 300; font-size: var(--step-head); letter-spacing: -0.022em; line-height: 1.05; color: var(--ink); transition: opacity var(--t-ui) var(--ease-out); }
+  .js .path-field-1 .path-clause { grid-row: 2; } .js .path-field-2 .path-clause { grid-row: 3; }
+  .js .path-field-3 .path-clause { grid-row: 4; } .js .path-field-4 .path-clause { grid-row: 5; }
+  /* The stage runs from column 6 to the screen edge; the four card states share one sticky spot in front of it. */
+  .js .path-stage { display: block; position: sticky; top: 56px; z-index: 0; grid-column: 6 / 13; grid-row: 2 / 6; align-self: start; height: calc(100vh - 56px); margin-right: calc(var(--page-margin) * -1); border-radius: 12px 0 0 12px; overflow: clip; }
+  .path-bg { position: absolute; inset: 0; clip-path: inset(100% 0 0 0); transition: clip-path var(--t-wipe) var(--ease-in-out); }
+  .path-bg-1 { background: var(--field-1); clip-path: inset(0); }
+  .path-bg-2 { background: var(--field-2); }
+  .path-bg-3 { background: var(--field-3); }
+  /* The last state is the deep field, not the blue one: the page keeps a single blue field, the call to action (YON 23.1). */
+  .path-bg-4 { background: var(--deep); }
+  .js .path-plate { position: sticky; top: calc(56px + (100vh - 56px - 400px) / 2); z-index: 1; grid-column: 6 / 13; grid-row: 2 / 6; align-self: start; justify-self: center; width: 440px; opacity: 0; transition: opacity var(--t-ui) var(--ease-out); }
+  .js .path-card { width: 100%; min-height: 400px; }
+  .js .path-strip .thermal-items { display: grid; }
+  .js .path[data-active="1"] .path-field-1, .js .path[data-active="2"] .path-field-2, .js .path[data-active="3"] .path-field-3, .js .path[data-active="4"] .path-field-4 { --on: 1; }
+  .js .path-field .path-clause { opacity: calc(0.56 + var(--on, 0) * 0.44); }
+  .js .path-field .path-plate { opacity: var(--on, 0); }
+  .js .path[data-active="1"] .path-field-1 .path-plate, .js .path[data-active="2"] .path-field-2 .path-plate,
+  .js .path[data-active="3"] .path-field-3 .path-plate, .js .path[data-active="4"] .path-field-4 .path-plate { animation: path-lift 480ms var(--ease-out); }
+  .js .path[data-active="2"] .path-bg-2, .js .path[data-active="3"] :is(.path-bg-2, .path-bg-3), .js .path[data-active="4"] :is(.path-bg-2, .path-bg-3, .path-bg-4) { clip-path: inset(0); }
+  .js .path-field:hover .path-card { transform: none; }
+}
+@keyframes path-lift { 50% { transform: translateY(-8px); } }
 
+/* ---------- The rule: the signature scene (YON.md 23.3.1) ---------- */
+.rule { margin-top: var(--section-gap); }
+.rule-stick { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s7); align-items: center; }
+.rule-title { grid-column: 1 / -1; margin: 0; }
+.rule-copy { grid-column: 1 / 5; display: grid; gap: var(--s6); align-content: center; padding-right: var(--s5); }
+.rule-sub { font-size: var(--step-body); max-width: 34ch; margin: 0; }
+.rule-map { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); font-size: var(--step-body); font-variant-numeric: tabular-nums; }
+.rule-map li { display: flex; justify-content: space-between; gap: var(--s3); padding: var(--s3) var(--s4); background: var(--plate); border-radius: var(--radius-control); }
+.rule-map li > span:first-child { color: var(--muted); }
+.rule-map li > span:last-child { font-weight: var(--w-medium); }
+.rule-win { grid-column: 5 / 13; --pl: 24px; }
+.rule-win .win { height: 560px; }
+.rule-body { height: 100%; display: grid; grid-template-columns: 296px minmax(0, 1fr); gap: var(--s7); padding: var(--s7) var(--s6); align-items: start; }
+.rule-receipt .thermal { font-size: 14px; }
+.rule-ledger { --fs-ui: 16px; --fs-small: 13px; display: grid; gap: var(--s6); min-width: 0; }
+.rule-table td { padding-block: var(--s4); vertical-align: top; }
+.rule-code { display: block; }
+.rule-close { display: grid; gap: var(--s4); padding-top: var(--s4); border-top: 1px solid var(--border); } /* taste-skill-ignore: data-ui fragment */
+.rule-close .ui-totals dd { font-size: var(--fs-title); }
+.rule-close .ui-reason { color: var(--positive); font-weight: var(--w-medium); }
+.rule-btn { display: inline-grid; }
+.rule-btn > .btn { grid-area: 1 / 1; }
+.rule-btn > .btn:first-child { opacity: 0; }
+/* The three source figures and their cells stay marked as a pair: the end state, and the whole story without motion. */
+.rule [data-amt] { position: relative; }
+.rule [data-amt]::before { content: ""; position: absolute; z-index: -1; inset: 0; border-radius: 2px; background: var(--paper-lit); }
+.rule [data-amt="base"] { --n: 0; } .rule [data-amt="vat"] { --n: 1; } .rule [data-amt="total"] { --n: 2; }
+.fly-cell { position: relative; display: inline-block; min-width: 5.5em; margin-right: calc(var(--s1) * -1); text-align: right; }
+.fly-dash { position: absolute; right: var(--s1); top: 50%; width: 2.5em; height: 2px; margin-top: -1px; border-radius: 1px; background: var(--border); opacity: 0; }
+.fly-dash-empty { display: none; }
+.fly-val, .fly-y { display: inline-block; transform-origin: 100% 50%; }
+.fly-val { padding: 0 var(--s1); border-radius: 2px; background: var(--accent-soft); }
+.fly-copy { position: absolute; top: 0; right: var(--s1); opacity: 0; pointer-events: none; color: var(--accent); white-space: nowrap; }
+/* After the scene: the same fiş read wrong, riding over the window's bottom-right corner. */
+.rule-after { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); align-items: end; }
+.rule-note { grid-column: 1 / 5; grid-row: 1; margin: 0; font-size: var(--step-body); max-width: 34ch; }
+.rule-proof { grid-column: 8 / 13; grid-row: 1; position: relative; z-index: 1; margin-top: -64px; }
+.rule-card { --fs-ui: 15px; --fs-body: 16px; --fs-small: 13px; padding: var(--s6); gap: var(--s5); font-size: var(--fs-body); box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the card truly stands on the window) */
+.rule-card .ui-totals dd { font-size: var(--fs-figure); }
+.rule-card .ui-card-head { font-size: var(--fs-section); }
+@media (max-width: 1100px) {
+  .rule-copy, .rule-win { grid-column: 1 / -1; }
+  .rule-copy { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .rule-win .win { height: 520px; }
+  .rule-body { grid-template-columns: 232px minmax(0, 1fr); gap: var(--s5); padding: var(--s5); }
+  .rule-note { grid-column: 1 / 7; }
+  .rule-proof { grid-column: 7 / 13; margin-top: -32px; }
+}
+@media (max-width: 760px) {
+  .rule-copy { grid-template-columns: minmax(0, 1fr); }
+  .rule-note, .rule-proof { grid-column: 1 / -1; grid-row: auto; }
+  .rule-after { row-gap: var(--s5); }
+  .rule-proof { margin-top: 0; }
+  .rule-card { box-shadow: none; } /* taste-skill-ignore: removes the lift */
+}
+/* Phone: no window, the receipt and the lines card one under the other. */
+@media (max-width: 640px) {
+  .rule-win::before { content: none; }
+  .rule-win .win { height: auto; display: block; border: 0; background: none; overflow: visible; }
+  .rule-win .win-bar { display: none; }
+  .rule-body { grid-template-columns: minmax(0, 1fr); padding: 0; gap: var(--s4); }
+  .rule-receipt { max-width: 300px; }
+  .rule-ledger { --fs-ui: 14px; background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s4); gap: var(--s4); }
+  .rule-close .ui-totals dd { font-size: var(--fs-section); }
+  .rule-card { padding: var(--s4); gap: var(--s4); }
+  .rule-card .ui-totals dd { font-size: var(--fs-title); }
+}
+
+/* ---------- Showcase: each piece in a window on the deep field, a plate under it ---------- */
+.show { --show-field: var(--deep); --show-ink: var(--on-accent-field); --show-soft: color-mix(in srgb, var(--on-accent-field) 74%, var(--deep)); }
+.show-text { color: var(--show-soft); }
+.show-index { background: var(--deep-raised); }
+.show-pick { color: var(--show-soft); }
+.show-pick[aria-pressed="true"] { background: var(--show-ink); color: var(--deep); }
+@media (hover: hover) and (pointer: fine) { .show-pick:hover:not([aria-pressed="true"]) { color: var(--show-ink); background: color-mix(in srgb, var(--deep-raised), var(--on-accent-field) 8%); } }
+.show-win { --pl: var(--page-margin); --pr: 24px; }
+.show-win::before { background: var(--deep-raised); }
+.show-win .win { height: 560px; background: var(--show-card); border-color: var(--show-card-edge); }
+.show-win .win-body { overflow: clip; }
+.show-win .win-body > .ui-card { height: 100%; border: 0; border-radius: 0; background: none; }
+.show .show-row { padding-bottom: 24px; }
+@media (max-width: 1180px) { .show-win .win { height: 520px; } }
+@media (max-width: 640px) {
+  .show-win::before { content: none; }
+  .show-win .win { height: auto; grid-template-rows: minmax(0, 1fr); }
+  .show-win .win-bar { display: none; }
+  .show .show-row { padding-bottom: 0; }
+}
+/* Spotlight link (Spotlight.tsx, YON.md 23.3.5). */
+.spot { position: relative; }
+.spot .ui-read > div { position: relative; isolation: isolate; transition: opacity var(--t-hover) ease; }
+.spot .ui-read > div::before { content: ""; position: absolute; z-index: -1; inset: -2px -6px; border-radius: var(--radius-chip); background: var(--accent-soft); opacity: 0; transition: opacity var(--t-hover) ease; }
+.spot .ui-read > div[data-lit]::before { opacity: 1; }
+.spot-row { cursor: default; transition: opacity var(--t-hover) ease; }
+.spot-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.spot[data-on] .spot-row:not([data-lit]), .spot[data-on] .ui-read > div:not([data-lit]) { opacity: 0.55; }
+.spot-row[data-lit] td { background: var(--accent-soft); }
+.spot-link { position: absolute; pointer-events: none; overflow: visible; fill: none; stroke: var(--accent); stroke-width: 1.5; transition: opacity 120ms ease; }
+.spot-link circle { fill: var(--accent); stroke: none; }
+.spot:not([data-on]) .spot-link { opacity: 0; }
+
+/* ---------- Features: the rules panel on its plate ---------- */
+.feat-plate { grid-column: 1 / 8; grid-row: 2 / 9; margin: 24px -24px -24px; border-radius: 12px; background: var(--plate); }
+@media (max-width: 640px) { .feat-plate { display: none; } }
+
+/* ---------- Routes: the Fişler window, the Excel file leaving it ---------- */
+.routes-win { width: min(640px, 100%); --pr: var(--page-margin); }
+.routes-win .win { height: 500px; }
+.routes-app { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 184px; gap: var(--s4); padding: var(--s4); align-items: start; }
+.routes-table { --fs-ui: 13px; }
+.routes-table td { padding-block: 6px; vertical-align: middle; font-variant-numeric: tabular-nums; }
+.routes-table td:first-child { color: var(--muted); }
+.routes-vendor { display: block; max-width: 13em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--w-medium); }
+.routes-luca { display: grid; gap: var(--s2); padding: var(--s3); border-radius: var(--radius-card); background: var(--raised); font-size: 13px; }
+.routes-luca p { margin: 0; }
+.routes-luca .ui-meter { grid-template-columns: 2.6em 1fr auto; gap: var(--s2); font-size: 12px; }
+.routes-luca .btn { justify-self: start; margin-top: var(--s1); }
+.ui-track > span { transform-origin: 0 50%; }
+.routes-file { justify-self: start; position: relative; z-index: 1; width: min(560px, 100%); margin-top: -56px; box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the file truly leaves the window) */
+@media (max-width: 900px) {
+  .routes-aside { justify-items: stretch; }
+  .routes-win { width: 100%; }
+  .routes-file { margin-top: -32px; justify-self: end; width: min(520px, calc(100% - var(--s6))); }
+}
+@media (max-width: 640px) {
+  .routes-win::before { content: none; }
+  .routes-win .win { height: auto; grid-template-rows: minmax(0, 1fr); }
+  .routes-win .win-bar { display: none; }
+  .routes-app { grid-template-columns: minmax(0, 1fr); }
+  .routes-table thead th:nth-child(1), .routes-table td:nth-child(1) { display: none; }
+  .routes-file { margin-top: var(--s4); width: 100%; box-shadow: none; } /* taste-skill-ignore: removes the lift */
+}
+
+/* ---------- CTA: the camera screen ---------- */
+.cta-phone { width: 300px; }
+.cam { position: relative; flex: 1; display: grid; place-items: center; padding: var(--s5) var(--s5); border-radius: 18px; background: color-mix(in srgb, var(--deep), #000 30%); }
+.cam .thermal { width: 100%; max-width: 196px; }
+.cam-c { position: absolute; width: 22px; height: 22px; border: 0 solid var(--on-accent-field); opacity: 0.85; }
+.cam-c1 { top: 10px; left: 10px; border-width: 2px 0 0 2px; border-top-left-radius: 8px; }
+.cam-c2 { top: 10px; right: 10px; border-width: 2px 2px 0 0; border-top-right-radius: 8px; }
+.cam-c3 { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; border-bottom-left-radius: 8px; }
+.cam-c4 { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; border-bottom-right-radius: 8px; }
+.cam-shoot { min-height: var(--touch); width: 100%; background: var(--on-accent-field); color: var(--deep); }
+.cam-last { margin: 0; display: flex; justify-content: space-between; align-items: center; gap: var(--s2); padding: var(--s2) var(--s3); border-radius: 12px; background: var(--surface); color: var(--ink); font-size: 13px; }
+.cam-last-no { display: block; font-weight: var(--w-medium); }
+@media (max-width: 960px) { .cta-figure { grid-column: 1 / -1; } .cta-phone { width: 280px; } }
+@media (max-width: 640px) { .cta-phone { width: 260px; } }
+
+/* ---------- Motion ---------- */
+@keyframes home-line { from { transform: translateY(16%); } }
+@keyframes home-load { from { transform: translateY(12px); } }
+@keyframes home-fade { from { opacity: 0.6; } to { opacity: 1; } }
+@keyframes hero-tilt { from { transform: perspective(1600px) rotateX(8deg) scale(0.96); } to { transform: none; } }
+@keyframes hero-phone { from { transform: translate(-16px, 32px); } }
+@keyframes odo-in { from { transform: translateY(100%); opacity: 0; } }
+@keyframes odo-out { to { transform: translateY(-100%); opacity: 0; } }
+@keyframes pop { from { transform: scale(0.96); opacity: 0; } }
+@keyframes spot-open { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes rule-lit { from { opacity: 0; } }
+@keyframes fly-x { from { transform: translateX(var(--dx, 0)); } to { transform: none; } }
+@keyframes fly-y { from { transform: translateY(var(--dy, 0)) scale(var(--sc, 1)); } to { transform: none; } }
+@keyframes fly-fade { 0% { opacity: 0; } 8%, 86% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fly-land { 0%, 84% { opacity: 0; transform: none; } 92% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: none; } }
+@keyframes fly-dash { 0%, 84% { opacity: 1; } 92%, 100% { opacity: 0; } }
+@keyframes code-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes close-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes recede { to { opacity: 0.72; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Masked headline, line by line, then sentence and action. The offset exists only while the animation runs (backwards fill). */
+  .js .hero [data-line] { animation: home-line var(--t-reveal) var(--ease-expo) backwards; animation-delay: calc(60ms + var(--i) * 110ms); }
+  .js .hero [data-load] { animation: home-load 500ms var(--ease-out) backwards; animation-delay: var(--d); }
+  /* The phone settles onto the window after the window is painted; it is opaque from the first frame. */
+  .js .counter-phone { animation: hero-phone var(--t-reveal) var(--ease-expo) 200ms backwards; }
+
+  .odo-d[data-old] > span { animation: odo-in var(--t-digit) var(--ease-out) backwards; animation-delay: calc(var(--k) * 24ms); }
+  .odo-d[data-old]::before { animation: odo-out var(--t-digit) var(--ease-out) forwards; animation-delay: calc(var(--k) * 24ms); }
+  .odo-code .odo-d[data-old] > span, .odo-code .odo-d[data-old]::before { animation-duration: 240ms; }
+  .counter[data-touched] .counter-state { display: inline-block; animation: pop 160ms var(--ease-out); }
+  .spot-link { animation: spot-open 360ms var(--ease-out) both; }
+
+  .faq-a, .show-name { animation: home-fade 180ms ease both; }
+
+  /* Rule scene. Every part names its keyframes once; the mode below says what drives them: the scroll or the clock. */
+  .rule[data-mode] [data-amt]::before { animation-name: rule-lit; --a: calc(14% + var(--n) * 10%); --b: calc(20% + var(--n) * 10%); --t0: calc(150ms + var(--n) * 180ms); --tl: 200ms; }
+  .rule[data-mode] .fly-copy { animation-name: fly-x, fly-fade; animation-timing-function: var(--ease-out), linear; }
+  .rule[data-mode] .fly-y { animation-name: fly-y; animation-timing-function: var(--ease-in-out); }
+  .rule[data-mode] .fly-val { animation-name: fly-land; }
+  .rule[data-mode] .fly-dash { animation-name: fly-dash; }
+  .rule[data-mode] :is(.fly-copy, .fly-y, .fly-val, .fly-dash) { --a: calc(20% + var(--n) * 10%); --b: calc(45% + var(--n) * 10%); --t0: calc(300ms + var(--n) * 180ms); --tl: var(--t-flight); }
+  .rule[data-mode] .rule-code { animation-name: code-in; animation-timing-function: var(--ease-out); --a: calc(65% + var(--n) * 5%); --b: calc(75% + var(--n) * 5%); --t0: calc(1300ms + var(--n) * var(--stagger-item)); --tl: 280ms; }
+  .rule[data-mode] .rule-close { animation-name: close-in; animation-timing-function: var(--ease-out); --a: 85%; --b: 95%; --t0: 1700ms; --tl: 240ms; }
+  .rule[data-mode] .rule-btn > .btn:last-child { animation-name: fade-in; --a: 88%; --b: 96%; --t0: 1800ms; --tl: 240ms; }
+  .rule[data-mode] .rule-btn > .btn:first-child { animation-name: fade-out; --a: 88%; --b: 96%; --t0: 1800ms; --tl: 240ms; }
+  .rule[data-mode] .rule-receipt { animation-name: recede; --a: 85%; --b: 100%; --t0: 1700ms; --tl: 240ms; }
+  .rule[data-mode] :is(.fly-copy, .fly-y, .fly-val, .fly-dash, .rule-code, .rule-close, .rule-btn > .btn, .rule-receipt) { animation-fill-mode: both; }
+  .rule[data-mode] [data-amt]::before { animation-fill-mode: both; }
+
+  /* Clock: once, when a third of the window is on screen (HomeMotion adds .is-playing); until then it waits at its start. */
+  .rule[data-mode="timed"] :is(.fly-copy, .fly-y, .fly-val, .fly-dash, .rule-code, .rule-close, .rule-btn > .btn, .rule-receipt),
+  .rule[data-mode="timed"] [data-amt]::before { animation-duration: var(--tl); animation-delay: var(--t0); animation-play-state: paused; }
+  .rule[data-mode="timed"].is-playing :is(.fly-copy, .fly-y, .fly-val, .fly-dash, .rule-code, .rule-close, .rule-btn > .btn, .rule-receipt),
+  .rule[data-mode="timed"].is-playing [data-amt]::before { animation-play-state: running; }
+}
+/* Scroll: from 1100px, the window holds still in a 220vh track and the scroll plays the scene forward and back. */
+@supports (animation-timeline: view()) {
+  @media (min-width: 1100px) and (prefers-reduced-motion: no-preference) {
+    .rule[data-mode="scroll"] .rule-track { height: 220vh; view-timeline: --rule block; }
+    .rule[data-mode="scroll"] .rule-stick { position: sticky; top: max(72px, calc((100vh - 760px) / 2 + 28px)); }
+    .rule[data-mode="scroll"] :is(.fly-copy, .fly-y, .fly-val, .fly-dash, .rule-code, .rule-close, .rule-btn > .btn, .rule-receipt),
+    .rule[data-mode="scroll"] [data-amt]::before { animation-duration: auto; animation-timeline: --rule; animation-range: contain var(--a) contain var(--b); }
+    /* The hero window lies back and comes flat over the first 400px of scroll; the phone in front stays flat. */
+    .js .counter-win { transform-origin: 50% 0; animation: hero-tilt linear both; animation-timing-function: var(--ease-out); animation-timeline: scroll(root); animation-range: 0 400px; }
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  .path-card { transition: none; }
-  .path-card { transform: none !important; }
+  .path-card { transition: none; transform: none !important; }
+  .odo-d[data-old]::before { content: none; }
 }

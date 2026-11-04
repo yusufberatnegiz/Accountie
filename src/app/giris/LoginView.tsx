@@ -17,13 +17,13 @@ const SAMPLE = SAMPLES[0];
 const { lines } = journalFor(SAMPLE, defaultPayment(SAMPLE));
 const total = lines.reduce((s, l) => s + l.debitKurus, 0);
 
-/** The product's own face beside the form: the thermal strip and the three Luca lines made from it (no photo, no user data). */
+/** The product's own face beside the form: the Luca lines card on its plate, the thermal strip riding over its top-left corner (YON.md 23.2; no photo, no user data). */
 function Stage() {
   return (
     <aside className="auth-stage" aria-label="Örnek: bir fiş ve Luca satırları">
       <div className="auth-piece" data-ui>
         <div className="auth-strip"><Thermal sample={SAMPLE} printedPayment="KREDİ KARTI" /></div>
-        <div className="auth-sheet">
+        <div className="auth-plate"><div className="auth-sheet">
           <p className="auth-sheet-head"><span>Luca Fiş Detayı</span><span className="status status-approved">Onaylandı</span><span className="auth-sheet-meta">Evrak No {SAMPLE.receipt.receiptNo}, BT ÖK</span></p>
           <table>
             <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
@@ -39,7 +39,7 @@ function Stage() {
           </table>
           <p className="auth-balance">Borç <span className="to-luca">{formatTrAmount(total)}</span> = Alacak <span className="to-luca">{formatTrAmount(total)}</span> · <span className="balance-ok">Dengede</span></p>
           <p className="auth-file"><span>luca-fisler-20260905.xlsx</span><span className="auth-sheet-meta">1 fiş, 3 satır</span></p>
-        </div>
+        </div></div>
       </div>
       <p className="auth-stage-note">Fişten okunan rakam gri, Luca’ya giden rakam mavi.</p>
     </aside>

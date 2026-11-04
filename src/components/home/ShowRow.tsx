@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { AppWindow } from "./Frames";
 
 export type Piece = { name: string; text: string; body: ReactNode };
 
 /**
- * Showcase "Lit panel, dark row" (YON.md 3.4.3): five product pieces in one place; only the chosen one is shown and takes space,
+ * Showcase "Lit panel, dark row" (YON.md 3.4.3, 23.2): five product pieces in one place, each in an app window on the dark field; only the chosen one is shown and takes space,
  * and a change swaps it in place (its name fades in), never a neighbour cut at an edge. The picker is a column of tabs on the right (a filled tab is the shown piece), the piece's name and sentence under it.
  * Without script the first piece shows; every piece carries its own caption (shown on phones, read by screen readers).
  */
@@ -16,7 +17,7 @@ export function ShowRow({ pieces }: { pieces: Piece[] }) {
       <div className="show-row">
         {pieces.map((p, i) => (
           <figure className="show-piece" key={p.name} data-lit={i === active || undefined}>
-            <div className="show-ui" data-ui inert={i !== active}>{p.body}</div>
+            <div className="show-ui" inert={i !== active}><AppWindow title={p.name} className="show-win">{p.body}</AppWindow></div>
             <figcaption className="show-cap">
               <span className="show-cap-name">{p.name}</span> <span className="show-cap-text">{p.text}</span>
             </figcaption>

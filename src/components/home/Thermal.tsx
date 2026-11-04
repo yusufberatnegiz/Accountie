@@ -12,16 +12,17 @@ const lit = (hot: Source | null | undefined, row: Source) =>
 /**
  * The thermal strip, drawn in code (never a photo): items with their rate, TOPKDV, TOPLAM, payment.
  * A single-rate receipt prints TOPKDV once; a multi-rate one prints KDV per rate, as an ÖKC does.
- * `hot` marks the rows a journal line was made from (the panel's fiş izi). Server and client safe: no hooks.
+ * `hot` marks the rows a journal line was made from (the panel's fiş izi). `base` also prints the single-rate KDV base (MATRAH),
+ * the figure the homepage's signature scene lifts off the paper; base, TOPKDV and TOPLAM rows carry data-amt for it. Server and client safe: no hooks.
  */
-export function Thermal({ sample, printedPayment, hot, compact }: { sample: Sample; printedPayment: string; hot?: Source | null; compact?: boolean }) {
+export function Thermal({ sample, printedPayment, hot, compact, base }: { sample: Sample; printedPayment: string; hot?: Source | null; compact?: boolean; base?: boolean }) {
   const r = sample.receipt;
   const total = r.totalKurus ?? 0;
   const vatTotal = r.vatLines.reduce((s, v) => s + (v.vatKurus ?? 0), 0);
   const multi = r.vatLines.length > 1;
   let n = 0;
-  const row = (key: string, cls: string, src: Source | null, a: string, b: string) => (
-    <p key={key} className={`thermal-row ${cls}`} data-lit={(src && lit(hot, src)) || undefined} style={{ "--p": n++ } as CSSProperties}>
+  const row = (key: string, cls: string, src: Source | null, a: string, b: string, amt?: string) => (
+    <p key={key} className={`thermal-row ${cls}`} data-lit={(src && lit(hot, src)) || undefined} data-amt={amt} style={{ "--p": n++ } as CSSProperties}>
       <span>{a}</span><span>{b}</span>
     </p>
   );
@@ -39,8 +40,9 @@ export function Thermal({ sample, printedPayment, hot, compact }: { sample: Samp
           ))}
         </div>
         {multi ? r.vatLines.map((v) => row(`vat-${v.rate}`, "", { kind: "vat", rate: v.rate }, `KDV %${v.rate}`, `*${formatTrAmount(v.vatKurus ?? 0)}`)) : null}
-        {row("topkdv", "thermal-sep", multi ? null : { kind: "vat", rate: r.vatLines[0]?.rate ?? 0 }, "TOPKDV", `*${formatTrAmount(vatTotal)}`)}
-        {row("total", "thermal-total", { kind: "total" }, "TOPLAM", `*${formatTrAmount(total)}`)}
+        {base && !multi ? row("base", "thermal-sep", null, `MATRAH %${r.vatLines[0]?.rate ?? 0}`, `*${formatTrAmount(total - vatTotal)}`, "base") : null}
+        {row("topkdv", base && !multi ? "" : "thermal-sep", multi ? null : { kind: "vat", rate: r.vatLines[0]?.rate ?? 0 }, "TOPKDV", `*${formatTrAmount(vatTotal)}`, "vat")}
+        {row("total", "thermal-total", { kind: "total" }, "TOPLAM", `*${formatTrAmount(total)}`, "total")}
         {row("pay", "", { kind: "total" }, printedPayment, `*${formatTrAmount(total)}`)}
       </div>
     </div>
