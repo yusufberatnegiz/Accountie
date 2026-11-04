@@ -33,7 +33,7 @@ export function PasswordField({ label, name, autoComplete, hint, error, aside }:
       <label htmlFor={id}>{label}</label>
       <div className="auth-password">
         <input className="field" id={id} name={name} type={shown ? "text" : "password"} autoComplete={autoComplete}
-          minLength={8} maxLength={128} required spellCheck={false} aria-invalid={error ? true : undefined} aria-describedby={described(id, hint, error)} />
+          minLength={8} maxLength={128} required spellCheck={false} enterKeyHint="go" aria-invalid={error ? true : undefined} aria-describedby={described(id, error ? undefined : hint, error)} />
         <button type="button" className="auth-reveal" onClick={() => setShown((s) => !s)}
           aria-label={shown ? `${label} gizle` : `${label} göster`}>
           <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
@@ -43,7 +43,8 @@ export function PasswordField({ label, name, autoComplete, hint, error, aside }:
           </svg>
         </button>
       </div>
-      {hint ? <p className="hint" id={`${id}-hint`}>{hint}</p> : null}
+      {/* The error restates the rule, so the hint steps aside while it shows. */}
+      {hint && !error ? <p className="hint" id={`${id}-hint`}>{hint}</p> : null}
       <FieldError id={id} error={error} />
       {/* After the field and its toggle in tab order; drawn at the end of the label row. */}
       {aside ? <div className="auth-aside">{aside}</div> : null}
@@ -56,20 +57,20 @@ export function NameField({ error, defaultValue }: Err & { defaultValue?: string
   return (
     <div className="auth-field">
       <label htmlFor={id}>Ad soyad</label>
-      <input className="field" id={id} name="name" autoComplete="name" autoCapitalize="words" minLength={2} maxLength={100} required
+      <input className="field" id={id} name="name" autoComplete="name" autoCapitalize="words" enterKeyHint="next" minLength={2} maxLength={100} required
         defaultValue={defaultValue} aria-invalid={error ? true : undefined} aria-describedby={described(id, undefined, error)} />
       <FieldError id={id} error={error} />
     </div>
   );
 }
 
-/** E-mail field. */
-export function EmailField({ error, defaultValue }: { defaultValue?: string } & Err) {
+/** E-mail field; `last` when it is the form's only field: the keyboard key then submits. */
+export function EmailField({ error, defaultValue, last }: { defaultValue?: string; last?: boolean } & Err) {
   const id = "auth-email";
   return (
     <div className="auth-field">
       <label htmlFor={id}>E-posta</label>
-      <input className="field" id={id} name="email" type="email" autoComplete="email" spellCheck={false}
+      <input className="field" id={id} name="email" type="email" autoComplete="email" spellCheck={false} enterKeyHint={last ? "go" : "next"}
         maxLength={200} required defaultValue={defaultValue}
         aria-invalid={error ? true : undefined} aria-describedby={described(id, undefined, error)} />
       <FieldError id={id} error={error} />

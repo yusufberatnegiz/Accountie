@@ -110,9 +110,9 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
                   {groupRows.map((r) => (
                     <tr key={r.key} onMouseEnter={() => setActive(r)} onFocus={() => setActive(r)}>
                       <td className="rule-label">{r.label}</td>
-                      <td className="rule-code"><input autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={invalid(r)} value={r.accountCode} onChange={(e) => update(r, { accountCode: e.target.value.trim() })} /></td>
+                      <td className="rule-code"><input name={`kod-${r.kind}-${r.key}`} autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={invalid(r)} value={r.accountCode} onChange={(e) => update(r, { accountCode: e.target.value.trim() })} /></td>
                       {/* The name is for people only (Luca matches the code), so it reads as text until pointed at or focused. */}
-                      {setting ? null : <td className="rule-name"><input autoComplete="off" className="field field-quiet" aria-label={`${r.label} hesap adı`} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
+                      {setting ? null : <td className="rule-name"><input name={`ad-${r.kind}-${r.key}`} autoComplete="off" className="field field-quiet" aria-label={`${r.label} hesap adı`} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
                     </tr>
                   ))}
                 </tbody>

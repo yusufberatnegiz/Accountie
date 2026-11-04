@@ -201,10 +201,14 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   const findingOff = invalid || (editable && !!problem);
   const target = editable && problem ? problemTarget(problem, parsed, receipt.totalKurus) : null;
   // With an invalid amount the first flagged field is the one to fix, wherever it is.
+  // The bar keeps its sentence while the field it pointed to has focus: the reason must stay in view as the keyboard opens.
+  const [pointed, setPointed] = useState(false);
   const fix = () => {
-    const bad = invalid ? document.querySelector<HTMLInputElement>('.journal [aria-invalid="true"]') : null;
-    if (bad) goTo(bad);
-    else if (target) goTo(document.getElementById(target.id));
+    const el = (invalid ? document.querySelector<HTMLInputElement>('.journal [aria-invalid="true"]') : null) ?? (target ? document.getElementById(target.id) : null);
+    if (!el) return;
+    setPointed(true);
+    el.addEventListener("blur", () => setPointed(false), { once: true });
+    goTo(el);
   };
   const traced = (s: Source) => (trace === s ? { "data-traced": "" } : {});
   const deleteQuestion = receipt.receiptNo ? `${receipt.receiptNo} numaralı fişi silmek istiyor musunuz?` : "Bu taslak fişi silmek istiyor musunuz?";
@@ -343,7 +347,8 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
                   {...flag(headFlags.documentDate)}
                   onChange={(e) => updateAll("documentDate", e.target.value || null)} />{checkNote(headFlags.documentDate)}
               </label>
-              <label>Belge türü (BT)
+              <label className="bt-field">
+                <span>Belge türü</span>
                 <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} autoComplete="off" onChange={(e) => updateAll("documentType", e.target.value)} />
               </label>
               <label className="span-all">
@@ -377,7 +382,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
           <p role="status" className="muted small">{info}</p>
         </div>
 
-        <div className="action-bar">
+        <div className="action-bar" data-pointed={pointed || undefined}>
           {/* Errors show here, next to the button that caused them; a box higher up is off screen on the phone. */}
           <p ref={statusLine} tabIndex={-1} className={error || (editable && problem) ? "balance balance-off" : "balance balance-ok"} aria-live="polite">
             {error ? error

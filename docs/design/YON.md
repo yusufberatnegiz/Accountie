@@ -667,3 +667,12 @@ Bu kararlar 3-5. turlarda birden çok jürinin tekrar tekrar bulduğu sorunları
 - **Görseller:** klip 8 sn, 640x360 (mp4 236 KB, webm 199 KB); Dedo defteri kenarları kırpıldı. Kural bölümü altyazıları resmin ürünle bağını söyler. BY-SA işlerde "değiştirilmiş hali aynı lisansla paylaşılır" notu.
 - **Metin:** "Accountie fotoğrafı saklamaz."; kayıtta "Anthropic'e (ABD) gönderilir; Accountie fotoğrafı sunucuda ve veritabanında saklamaz."; sayfa ve bağlantı adı "Gizlilik"; çerez penceresinde "Kapat".
 - **Giriş ve kayıt:** başlık 36px (uygulama ekranı kuralı 32px üstünü uyarır; iki tonlu alanın yanında ölçek için bilinçli). Odak alan uyarı kutusu halka çizmez. Çerez şeridi açıkken 900px altında forma alt boşluk ve `scroll-padding-bottom`. E-posta doğrulamalı kayıttan sonra `?sonra=` girişe taşınır.
+
+## 22. Tur 8 kararları: panel (bölüm 20'nin üstündedir)
+
+- **Kontrol ekranı, masaüstü:** satırlar: uyarılar, yevmiye satırları (1fr), tepsi, Fişi sil. İkincil eylemler (Taslağı kaydet, Satırları kopyala) tepsinin üst satırı, Onayla satırı altı; tek blok, `--stage` zemin, ikincil düğmeler `--surface`. Fiş kolonu daha uzunsa yevmiye paneli uzar ve toplam şeridi panelin dibine iner; iki kolon tepsinin tabanında aynı çizgide biter, Fişi sil tepsinin altında. Fiş bilgileri iki satır: Evrak No ile tarih, BT ("Belge türü") ile Açıklama.
+- **Tablet (721-900):** yevmiye satırları tablo kalır (kod 8rem, tutarlar 7rem), denge şeridi ilk ekranda tepsinin üstünde. Kart satırları yalnız telefonda.
+- **Engelli Onayla:** düğme alanı odaklarken tepsinin cümlesi klavye açıkken de görünür kalır (`data-pointed`, alan odaktan çıkınca biter).
+- **Telefonda onaylı fiş:** tutar etiketinin altında, sola hizalı.
+- **Geçiş:** liste satırından kontrol ekranına yeni ekran 60ms sonra 140ms'de gelir (eski kökle örtüşür, boş kare yok).
+- **Formlar:** hata görünürken şifre kuralı ipucu gizlenir; e-posta `enterkeyhint=next`, son alan `go`; kurallar alanlarının `name`'i var.
