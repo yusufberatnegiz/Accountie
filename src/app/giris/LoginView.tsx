@@ -51,7 +51,6 @@ export function AuthShell({ title, lead, current, children }: { title: string; l
   return (
     <div className="auth">
       <SiteBar current={current} />
-      <CookieNote />
       <main id="icerik" tabIndex={-1} className="auth-main">
         <section className="auth-form" aria-labelledby="auth-title">
           <div className="auth-head">
@@ -62,6 +61,7 @@ export function AuthShell({ title, lead, current, children }: { title: string; l
         </section>
       </main>
       <Stage />
+      <CookieNote />
     </div>
   );
 }

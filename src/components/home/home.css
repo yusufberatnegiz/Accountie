@@ -71,7 +71,7 @@
 .segmented legend { font-size: var(--fs-small); color: var(--muted); font-weight: var(--w-medium); padding: 0; float: left; width: 6.5em; margin: 0; }
 .segmented label { position: relative; display: grid; place-items: center; min-height: var(--control); padding: 0 var(--s4); gap: 0; background: var(--choice); color: var(--ink); font-weight: var(--w-medium); font-size: var(--fs-body); cursor: pointer; white-space: nowrap; border-radius: var(--radius-control); transition: background-color var(--t-hover) ease, color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
 /* The chosen option is filled with the ink colour: on the split field it reads as pressed in both themes. */
-.segmented label:has(input:checked) { background: var(--primary); color: var(--on-primary); }
+.segmented label:has(input:checked) { background: var(--chip-on); color: var(--on-chip-on); }
 .segmented input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 .segmented label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; z-index: 1; }
 .segmented label:active { transform: scale(0.98); }
@@ -79,6 +79,8 @@
 @media (pointer: coarse) { .segmented label { min-height: var(--touch); } }
 
 .counter-body { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: var(--s3); align-items: start; }
+.counter-sheet .btn { background: var(--lift-control); }
+@media (hover: hover) and (pointer: fine) { .counter-sheet .btn:hover { background: var(--lift-control-hover); } }
 .counter-sheet { background: var(--lift); border: 1px solid var(--lift-edge); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s4) var(--s5); display: grid; gap: var(--s3); min-width: 0; }
 .counter-slot .thermal { font-size: 12px; }
 .counter-slot .thermal-paper { padding-inline: var(--s3); }
@@ -128,7 +130,7 @@ html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-n
 .path-field-1 { background: var(--field-1); }
 .path-field-2 { background: var(--field-2); }
 .path-field-3 { background: var(--field-3); }
-.path-field-4 { background: var(--field-4); color: var(--on-field-4); }
+.path-field-4 { --focus: var(--on-field-4); background: var(--field-4); color: var(--on-field-4); }
 /* The sentence sits on one line across the four fields, each card right under its own sentence. */
 .path-clause { grid-row: 1; align-self: end; margin: 0; font-size: var(--step-lead); font-weight: var(--w-medium); letter-spacing: -0.01em; line-height: 1.2; max-width: 14ch; }
 .path-field-1 { --card: var(--path-card-1); } .path-field-2 { --card: var(--path-card-2); } .path-field-3 { --card: var(--path-card-3); } .path-field-4 { --card: var(--path-card-4); }
@@ -192,7 +194,7 @@ html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-n
 /* Tabs: a filled tab is the shown piece. */
 .show-index { list-style: none; margin: 0; padding: var(--s1); display: grid; gap: 2px; background: var(--show-tabs); border-radius: var(--radius-card); }
 .show-pick { display: flex; align-items: center; width: 100%; min-height: var(--touch); padding: 0 var(--s4); border: 0; border-radius: var(--radius-control); background: none; color: var(--muted); font-size: var(--step-body); font-weight: var(--w-medium); text-align: left; cursor: pointer; transition: color var(--t-hover) ease, background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
-.show-pick[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.show-pick[aria-pressed="true"] { background: var(--chip-on); color: var(--on-chip-on); }
 .show-pick:active { transform: scale(0.98); }
 @media (hover: hover) and (pointer: fine) { .show-pick:hover:not([aria-pressed="true"]) { color: var(--ink); background: var(--show-card); } }
 .ui-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: var(--s5); }
@@ -212,7 +214,7 @@ html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-n
 .ui-totals dt { font-size: var(--fs-small); color: var(--muted); }
 .ui-totals dd { margin: 0; font-size: var(--fs-title); font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
 .ui-approve { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
-.ui-approve .btn[aria-disabled="true"] { background: var(--active); color: var(--muted); cursor: default; }
+.ui-approve .btn[aria-disabled="true"] { cursor: default; }
 .ui-reason { font-size: var(--fs-small); color: var(--ink); }
 .ui-notes p { font-size: var(--fs-ui, 13px); line-height: 1.45; }
 .ui-file-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); font-weight: var(--w-strong); }
@@ -307,7 +309,8 @@ html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-n
 }
 
 /* ---------- cta: first step, already open ---------- */
-.cta { background: var(--accent-field); color: var(--on-accent-field); margin-top: var(--section-gap); }
+/* On the blue fields the ring takes the field's text colour: --accent on --accent-field shows no ring. */
+.cta { --focus: var(--on-accent-field); background: var(--accent-field); color: var(--on-accent-field); margin-top: var(--section-gap); }
 .cta-inner { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s7); padding-block: var(--s10); align-items: end; }
 .cta-copy { grid-column: 1 / 7; display: grid; gap: var(--s5); }
 .cta-title { color: var(--on-accent-field); line-height: 0.95; font-size: var(--display); font-family: var(--font-head); font-weight: 300; letter-spacing: -0.035em; }
