@@ -683,3 +683,293 @@ Bu kararlar 3-5. turlarda birden çok jürinin tekrar tekrar bulduğu sorunları
 - Footer'daki görsel kaynakları listesi, üçüncü taraf görsel kalmadığı için kaldırıldı.
 - Fiş hareketi tek motif: "fiş okunuyor" = fişin üzerinden geçen defter mavisi tarama çizgisi. Hero tezgâhında fiş değişince bir kez, Bir fişin yolu'nun ilk kartında bir kez, panelde okuma sırasında çekilen fotoğrafın küçük görüntüsünün üzerinde sürekli. Altındaki Luca satırları kısa bir kaymayla gelir; içerik hiçbir anda gizli değildir.
 - Kaldırılanlar: termal fişin yazıcıdan inmesi, Bir fişin yolu'ndaki damgalar ve inen Excel dosyası, resimlerin perde açılışı ve yakınlaşması, tezgâhtaki view-transition çapraz geçişi. Panelde Onaylandı damgası yerine 220 ms'lik kısa bir ton geçişi.
+
+## 23. Premium görsel ve hareket dili (2026-11-05, kullanıcı kararı; 21'deki görsel ve hareket kararlarının üstündedir)
+
+Kullanıcı: "fotolar ve animasyonlar hâlâ çok kötü". İstek: premium, akıllı, minimal, ama efektli; ölü, düz bir sayfa değil. Kaynak: `.taste-skill/arastirma/NOTLAR.md` (13 site ölçüldü: Mercury, Ramp, Linear, Stripe, Brex, Pennylane, Qonto, Dext, Expensify, Vic.ai, Paraşüt, Moto Card, Possible). Bu bölümde çağrılan skill'ler: `taste-skill:design-taste-frontend` ve `web-design-guidelines` (Vercel `command.md` güncel sürümü, Animation/Images/Performance).
+
+Bu bölüm şunların yerine geçer: 21'deki ürün ekran görüntüleri (`public/gorseller/urun-*.jpg`) ve "tarama çizgisi" motifi; 7'deki "tarayıcı ya da laptop çerçevesi yok" satırı (yalnız aşağıda tanımlanan uygulama penceresi ve telefon çerçevesi için); 16.2'deki "tutarlar 180 ms çapraz geçişle değişir" satırı (yerine odometre, 23.3.3). Geçerli kalanlar: `INSTRUCTIONS.md` (her bölüme fade-in yok, içerik hemen görünür), 16.3 boş kutu yasağı, mavi = Luca'ya giden rakam, Stack Sans iki aile, radius 6/8/4, degrade/cam/parlama yasağı.
+
+**Tek cümle:** Ürünün kendisi, canlı HTML olarak, derinlikli bir çerçevenin içinde çalışır; fişteki rakam kalkar ve Luca satırına iner. Fotoğraf değil, ürün resimdir.
+
+### 23.1 Palet: aynı mavi, daha derin nötrler
+
+Mavi kimlik değişmez (`--accent` #2b5a9a / #8db0e0). Premium his renkten değil, nötrlerin derinliğinden ve yüzeyler arasındaki ton adımlarından gelir. Değişen tokenlar (geri kalanı bölüm 6.1, 19 ve 21'deki gibi):
+
+| Token | Açık (eski → yeni) | Koyu (eski → yeni) | Not |
+|---|---|---|---|
+| `--ground` | #f2f4f7 → **#f4f6f8** | #0e1114 → **#0b0d10** | Koyu temada Linear'ın rgb(8,9,10) düzeyine yakın, nötr; lacivert değil |
+| `--surface` | #ffffff | #161a1f → **#14171c** | |
+| `--raised` | #f7f8fa | #1d2228 → **#1b1f25** | |
+| `--ink` | #141a22 → **#0f141b** | #eef1f4 | |
+| `--muted` | #4f5a67 → **#4b5563** | #a9b2bd | |
+| `--faint` | #5f6a77 → **#5b6573** | #949eaa | |
+| `--plate` (yeni) | **#e9edf2** | **#111418** | Çerçevenin oturduğu yüzey plakası (23.2) |
+| `--bezel` (yeni) | **#161c24** | **#2a3038** | Telefon çerçevesi; iki temada da koyu, ekranı öne çıkarır |
+| `--edge-hi` (yeni) | yok | **rgb(255 255 255 / 0.06)** | Koyu temada yükseltilmiş yüzeyin üst kenarında 1px iç ışık (`inset 0 1px 0`) |
+| `--shadow-lift` (yeni) | `0 24px 48px -12px rgb(15 20 27 / 0.18), 0 2px 6px rgb(15 20 27 / 0.06)` | `0 24px 48px -12px rgb(0 0 0 / 0.55)` ve `--edge-hi` | Yalnız 23.1'deki "öne binen katman" |
+
+Ölçülen kontrast (WCAG, bu bölüm için hesaplandı): açık `--ink`/`--ground` 17.1, `--muted`/`--ground` 7.0, `--faint`/beyaz 5.9 ve `--plate` üstünde 5.0, `--accent`/beyaz 6.9 ve `--ground` üstünde 6.4, `--accent`/`--accent-soft` 5.8, `--ink`/`--paper-lit` 14.7; koyu `--ink`/`--ground` 17.2, `--muted`/`--surface` 8.4, `--faint`/`--raised` 6.1, `--accent`/`--ground` 8.7 ve `--surface` üstünde 8.1. Yüzey adımları bilerek küçüktür (`--plate`/`--ground` 1.09, koyu `--surface`/`--ground` 1.08): ayrım çizgiyle değil tonla. Geliştirici bölüm 6.1'deki diğer çiftleri (`--stage`, `--split`, `--field-*`, `--lift`) yeni zeminle yeniden ölçer; `theme-color` yeni zeminle eşleşir.
+
+**Vurgu oranı:** her masaüstü ekranında defter mavisi piksellerin %5'inden azı (ölçülen sitelerde %1-5). Mavi yalnız şunlarda: birincil düğme, Luca'ya giden rakamlar (`to-luca`), odak halkası, imza sahnesindeki uçan rakamlar ve spotlight bağ çizgisi. Tek istisna CTA'nın `--accent-field` alanı (sayfanın tek renk alanı, bir kez).
+
+**Derinlik dili (üç katman, gölge son çare):**
+1. **Ton adımı:** zemin → plaka → yüzey → yükseltilmiş; her biri bir adım. Çizgi değil.
+2. **Çerçeve:** ürün parçaları bir uygulama penceresi ya da telefon çerçevesi içinde ve bir plakanın üstünde durur (23.2).
+3. **Örtüşme:** girdi (fiş) çıktının (Luca satırları) üstüne kısmen biner. Öne binen katman, gerçekten başka bir yüzeyin üstünde yüzdüğü için `--shadow-lift` taşır. **Her ekranda en çok bir** gölgeli katman. inspect bunu WARN verir; savunma cümlesi: "öne binen katman gerçekten alttaki pencerenin üstünde duruyor, ayrım başka türlü okunmuyor." CSS'te `/* taste-skill-ignore: lift layer, YON 23.1 */`.
+
+Yasak kalır: degrade, cam/blur, parlama, nokta ızgara zemin, renkli gölge, iki ve daha fazla gölgeli katman, kart ızgarası.
+
+### 23.2 Görseller: her yuva için ne konacak
+
+Ortak kurallar:
+- **Ürün parçaları canlı HTML,** `data-ui` köklü, panelin gerçek token ve bileşen stilleriyle; her DPR'de keskin. Ana sayfada raster ekran görüntüsü **kullanılmaz**: `public/gorseller/urun-*.jpg` ve `page.tsx`'teki `Shot` kaldırılır (artık kullanılmayan importlarla birlikte).
+- **Uygulama penceresi çerçevesi:**
+  - radius 8, `--surface`, 1px `--border`;
+  - 36px üst şerit `--raised` tonunda, içinde yalnız ekranın adı (ör. "Fiş 0047, kontrol") ve solda küçük Accountie işareti;
+  - trafik ışığı noktaları, adres çubuğu ve sahte sekme yok;
+  - Luca'nın logosu, rengi ya da arayüzü taklit edilmez. Luca'ya giden kolonlar (Hesap Kodu, Evrak No, Tarih, Açıklama, Borç, Alacak, BT) Accountie'nin kendi tablosu olarak çizilir.
+- **Plaka:** pencerenin arkasında, 24px aşağı ve iki yana 48px taşan, radius 12, `--plate` tonunda dikdörtgen: ekranın "oturduğu yüzey" (Linear'ın taban plakası). Telefonun plakası yok.
+- **Telefon çerçevesi:** CSS ile, `--bezel` 10px çerçeve, dış radius 44, ekran radius 34, üstte 88x24 hap biçiminde kamera kesiği. Marka düğmesi, logo, gerçek cihaz silüeti yok.
+- **Termal fiş:** mevcut `Thermal.tsx` (fikstür fiş 0047 ve örnekler); kâğıt `--paper`, yazı `--paper-ink`. Gerçek fiş fotoğrafı yok.
+- Satırlar `buildJournalLines`/`journalFor` ile gerçek kurallardan; rakamlar `formatTrAmount`; uydurma müşteri, istatistik, logo yok.
+- CLS 0: her çerçeve sabit `aspect-ratio` ya da sabit yükseklikle; LCP h1 metnidir.
+
+| Yuva | Ne konacak | 1440 | 768 | 390 |
+|---|---|---|---|---|
+| **Hero sahnesi** (`.hero-stage`, mevcut tezgâh) | Arkada uygulama penceresi içinde canlı "Luca'ya gidecek satırlar" tablosu (tezgâhın Luca kartı, toplamlar ve Satırları kopyala dahil). Önde, pencerenin sol alt köşesine binen telefon çerçevesi, ekranında termal fiş (`Thermal`). Pencere sağda sayfa kenar boşluğunu geçip görünüm kenarına kadar taşar (hero'da `overflow-x: clip`). Telefon öne binen tek gölgeli katman. Seçiciler pencerenin üstünde, sabit üst çizgide (21). | Pencere 780x500, plakasıyla görünüm kenarına taşar; tablo kartı en az 568 geniş (16.1); telefon 260x540 (ekran 240), pencerenin solundan 120px içeri biner, tabanı pencere tabanından 48px aşağıda | Tek kolon: pencere tam genişlik, sağdan 48px taşar; telefon 220x456, sol altta 96px biner | Pencere yok. Telefon 280x580 solda; Luca satırları kartı altında, tam genişlik, telefonun alt kenarına 40px biner (öndeki katman). Eğim yok |
+| **Kural bölümü** (`.rule`, eski `urun-fis` ekran görüntüsü) | İmza sahnesi (23.3.1): uygulama penceresi "Fiş 0047, kontrol", solda termal fiş, sağda Luca satırları ve denge şeridi. Sahne bitince mevcut dengesiz fiş kartı (8.752,00, fark 27,00) pencerenin sağ alt köşesine binen katman olarak durur: "eşitse açılır, değilse kapalı" tek karede | Sahne 12 kolonun 5-12'si, pencere 880x560; dengesiz kart 400 geniş, 64px biner | Pencere tam genişlik, 520 yükseklik; dengesiz kart altında, 32px biner | Pencere yok; fiş kartı ve satırlar kartı alt alta; dengesiz kart ayrı, tam genişlik |
+| **Bir fişin yolu** (`.path`) | Masaüstünde yapışkan bölünmüş anlatı (23.3.4): solda dört cümle, sağda tek bir fiş kartı dört durumdan geçer, zemin dört alan tonu arasında perdeyle değişir. Kart uygulama penceresi değil, panelin kendi kartı (`ui-card`) ve plakası | Sahne 12 kolonun 6-12'si, `100vh - 96px` yapışkan, kart 480 geniş | 1100 altında bugünkü gibi dört kart alt alta, her biri kendi alan tonunda | Aynı, tek kolon |
+| **Kontrol ekranından Luca'ya** (`.show`, koyu alan, `ShowRow` beş parça) | Her parça uygulama penceresi içinde, `--deep` alan üstünde `--deep-raised` plaka; parça adı pencerenin üst şeridinde. "Kontrol ekranı" parçasında spotlight bağ (23.3.5) | Pencere 12 kolonun 8'i (yaklaşık 880), sabit 560 yükseklik (parçalar arası CLS yok) | Tam genişlik, 520 | Üst şerit yok, yalnız kart; sekmeler üstte (21) |
+| **Sizin hesap planınız** (`.feat`) | Değişmez (zaten canlı HTML panel); yalnız arkasına `--plate` plakası ve koyu temada `--edge-hi` | aynı | aynı | aynı |
+| **Excel ya da pano ile Luca'ya** (`.routes`, eski `urun-liste` ekran görüntüsü) | Uygulama penceresi "Fişler": canlı HTML liste (6 satır: fiş no, satıcı, tarih, tutar, durum pill'i; Taslak, Onaylı, Aktarıldı karışık) ve yanında Luca dosyası kartı (21'deki gerçek kart). Mevcut `luca-fisler-20260905.xlsx` kartı pencerenin sol alt köşesinden dışarı binen katman: dosya uygulamadan çıkıyor. Satıcı adları örnek ("ÖRNEK BALIK LOKANTASI" biçiminde, gerçek işletme adı değil) | Pencere 12 kolonun 7-12'si, 640x440; Excel kartı 520 geniş, 56px biner | Pencere tam genişlik; Excel kartı altında, 32px biner | Pencere yerine liste kartı; Excel kartı ayrı, yatay kaydırma bölgesi kalır (WCAG 2.1.1) |
+| **CTA** (`.cta`, eski `urun-telefon`) | Varsayılan: telefon çerçevesi, ekranında Accountie'nin kamera ekranı (vizörde CSS termal fiş, dört köşe kılavuzu, "Fiş çek" düğmesi, altında son çekilen fişin taslak satırı). İsteğe bağlı fotoğraf: aşağıda | Telefon 300x620 | 280x580 | 260x540 |
+
+**İsteğe bağlı tek fotoğraf (CTA yuvası, varsayılanın yerine).** Yalnız şu beş koşulun hepsi tutarsa kullanılır:
+1. Ticari kullanıma izinli lisans: Unsplash License, Pexels License, CC0 ya da CC BY.
+2. Konu birebir: telefonla termal yazar kasa fişi çekilen masa ya da elde tutulan termal fiş, arkada muhasebe masası.
+3. Fişin yazıları okunmuyor (unvan, VKN, kart numarası yok); marka logosu yok; yüz yok ya da odak dışında.
+4. Kaynak en az 2000px ve keskin.
+5. Hesap açmadan ve çerez kabul etmeden indirilebiliyor.
+
+Arama sorguları: `phone photographing receipt`, `thermal receipt paper close up`, `hand holding receipt smartphone`, `cash register receipt desk`, `bookkeeping desk receipts`, `fiş fotoğrafı telefon`. Önce `assets.mjs` ile Openverse/Commons, sonra Unsplash ve Pexels sitelerinde aranır.
+
+Fotoğrafın üstünde keskin HTML çipler durur: "770.08  7.931,82", "191.03.10  793,18", "Dengede" (Pennylane/Qonto). Biçim: 4:5, 1440'ta 520x650, `next/image`, `sizes`, `loading="lazy"`, tek işlem (renk düzeltmesi yok), koyu temada `--picture-opacity`. Kredi gerekiyorsa footer'da tek satır "Görsel kaynakları" geri gelir.
+
+Koşullardan biri tutmuyorsa fotoğraf yok, varsayılan telefon çerçevesi kalır: alakasız ya da "idare eder" bir fotoğraf, hiç fotoğraf olmamasından kötüdür (21). Kullanıcının kendi fiş veya Luca fotoğrafları repoya girmez.
+
+**Giriş ve kayıt:** mevcut fiş ve Luca kartı parçası aynı dile geçer: kart plakanın üstünde, fiş kartın sol üstüne binen katman. Yeni hareket yok.
+
+### 23.3 Hareket: bir imza, dört destek
+
+Genel:
+- Yalnız `transform`, `opacity` ve `clip-path` canlandırılır. `transition: all` yok, `transform-origin` doğru verilir. SVG dönüşümleri `<g>` üstünde, `transform-box: fill-box` ile.
+- Hiçbir içerik JS'e bağlı olarak gizlenmez. SSR çıktısı her sahnenin **son durumudur**; hareket yalnız bu durumdan geriye kurulur (16.3).
+- Her hareket kesilebilir: yeni girdi gelince son değere atlar. 5 sn'den uzun kendiliğinden hareket yok.
+- Kütüphane yok (GSAP, Lenis, Framer eklenmez). CSS scroll-driven animations (`animation-timeline: view()/scroll()`, `@supports` içinde) ve küçük bir IntersectionObserver yedeği yeter.
+- Layout okuma render içinde yapılmaz; yalnız sahne görünür olunca ve yeniden boyutlandırmada, toplu yapılır.
+- Tokenlar 6.6'dakiler, ölçülen sitelerle uyumlu. Yeni tokenlar: `--t-flight: 640ms`, `--t-digit: 420ms`, `--t-wipe: 900ms`.
+
+`prefers-reduced-motion: reduce` altında her hareketin aşağıda yazan karşılığı geçerlidir. Yol, ölçek, eğim ve kaydırmaya bağlı hareket düşer; son durum hemen ve tam görünür; yapışkan sahneler normal akışa döner.
+
+#### 23.3.1 İmza: "rakam uçuşu" (kural bölümü)
+
+Fişteki rakam kalkar, Luca satırına iner. Tarama çizgisinin yerine geçer; sayfanın tek büyük anı.
+
+| Adım (ilerleme) | Ne olur | Süre/eğri (zamanlı modda) |
+|---|---|---|
+| 0 - 0,2 | Pencere açık, fiş solda tam okunur. Luca tablosunun Borç/Alacak hücreleri boş değil, `--rule` tonunda yer tutucu tire taşır | |
+| 0,2 - 0,65 | Fişte `*7.931,82` (matrah satırı), `*793,18` (TOPKDV) ve `*8.725,00` (TOPLAM) sırayla `--paper-lit` ile işaretlenir. Her rakamın `aria-hidden` kopyası fişten kalkıp hedef hücreye uçar (FLIP: başlangıç ve hedef kutusu bir kez ölçülür, kopya yalnız `translate` ve `scale` ile gider; hafif yay için X ve Y ayrı eğri). İnince hücredeki gerçek rakam görünür, kopya kaybolur, hücre bir kez `scale(1.04)` → 1 | Her uçuş `--t-flight` `--ease-expo`, aralarında 180ms |
+| 0,65 - 0,85 | Hesap kodları 770.08, 191.03.10, 331.01 satır başlarına gelir: kodun maskesi `clip-path: inset(0 100% 0 0)` → `inset(0)`, soldan sağa | 280ms `--ease-out`, satır başına `--stagger-item` |
+| 0,85 - 1 | Denge şeridi gelir: "Borç 8.725,00, Alacak 8.725,00, Fark 0,00" ve "Dengede". Onayla devre dışı tondan etkin tona geçer; fiş `opacity` 1 → 0.72 ile geri çekilir | 240ms `--ease-out` |
+
+- **Tetikleyici:**
+  - ≥1100px ve `animation-timeline` destekleniyorsa kaydırmaya bağlı: bölüm 220vh, sahne `position: sticky` (üst `--stage-top`), `animation-timeline: view()`, `animation-range: contain 0% contain 100%`. Geri kaydırınca geri oynar.
+  - Diğer durumlarda (telefon, tablet, desteklemeyen tarayıcı) sahne %35 görünür olunca **bir kez** zamanlı dizi oynar (toplam yaklaşık 2,4 sn); bölüm normal yükseklikte.
+- **Reduced motion ve JS yok:** son durum. Fiş ve dolu üç satır yan yana; fişteki üç kaynak rakam ve hedef hücreler `--accent-soft` işaretle eşleşik; denge şeridi görünür.
+- **Ekran okuyucu:** tablo baştan gerçek değerleriyle DOM'da; uçan kopyalar `aria-hidden`.
+
+#### 23.3.2 Destek 1: hero penceresi eğimden düzleşir
+
+- **Durgun hal:** pencere ve plaka `perspective(1600px) rotateX(8deg) scale(0.96)`, `transform-origin: 50% 0`. Telefon eğilmez; öndeki katman düz kalır, derinlik farkı buradan gelir.
+- **Tetikleyici:** sayfa kaydırması. `animation-timeline: scroll(root)`, `animation-range: 0 400px`, keyframe eğrisi `--ease-out`; 400px'te `rotateX(0) scale(1)`.
+- **Yükleme:** pencere boyandıktan sonra telefon 32px alttan ve 16px soldan yerine gelir, `--t-reveal` `--ease-expo`, 200ms gecikme. Baştan opaktır (görünür başlangıç).
+- **Kapsam:** yalnız ≥1100px ve `@supports (animation-timeline: scroll())`; aksi halde pencere baştan düz.
+- **Reduced:** düz, telefon yerinde.
+
+#### 23.3.3 Destek 2: tezgâhta odometre (hero, Luca satırları ve toplamlar)
+
+- **Tetikleyici:** örnek fiş ya da ödeme şekli değişince.
+- **Hareket:**
+  - Yalnız değişen basamaklar oynar: eski basamak yukarı çıkar (`translateY(-100%)`, `opacity` → 0), yeni basamak alttan gelir.
+  - İki yuva vardır, **ara basamak yok**; 16.2'deki "sayma yok" kuralı korunur.
+  - `--t-digit` `--ease-out`, basamaklar arası 24ms, soldan sağa. Nokta ve virgül sabit kalır.
+  - `font-variant-numeric: tabular-nums` zorunlu; basamak kutusu `overflow: clip`.
+- **Hesap kodu değişimi** (331.01 → 309.01 → 100.01): aynı iki yuvalı kayma, 240ms.
+- **"Dengede":** yalnız toplamlar eşitlenince `scale(0.96)` → 1 ve `opacity`, 160ms.
+- **Kesilebilirlik:** hızlı art arda seçimde süren geçiş son değere atlar.
+- **Ekran okuyucu:** gerçek değer görünmez metin olarak durur, toplamda `aria-live="polite"`; basamak yuvaları `aria-hidden`.
+- **Reduced:** değer anında değişir.
+- Panelde aynı bileşen kullanılır (23.4).
+
+#### 23.3.4 Destek 3: "Bir fişin yolu" yapışkan sahne ve perde
+
+- **Masaüstü (≥1100px, `html.js`):**
+  - Solda dört cümle (çekildi, okundu, onaylandı, aktarıldı), aralarında yaklaşık 70vh. Sağda yapışkan sahne.
+  - Etkin cümle IntersectionObserver ile seçilir (`rootMargin: -45% 0px -45% 0px`). Etkin olmayan cümleler `opacity` 0.45 alır; metin yine okunur, kontrastı ölçülür.
+- **Durum değişince:**
+  - Sahne zemini bir sonraki alan tonuyla alttan perdeyle örtülür: `clip-path: inset(100% 0 0 0)` → `inset(0)`, `--t-wipe` `--ease-in-out`. Tonlar mevcut `--field-1..4`: tek renk ailesi, gökkuşağı değil.
+  - Kartın içeriği 240ms çapraz geçer; durum pill'i odometre kaymasıyla değişir.
+  - Kart 8px yükselip iner (`--t-ui`).
+  - Geri kaydırınca ters yönde çalışır.
+- **JS yok, 1100 altı ve reduced:** bugünkü gibi dört kart alt alta, hepsi kendi son durumunda; yapışkanlık yok.
+
+#### 23.3.5 Destek 4: spotlight bağ (showcase "Kontrol ekranı" parçası, hero tezgâhı)
+
+- **Tetikleyici:** Luca satırının üstüne gelme, klavye odağı ya da dokunma.
+  - Showcase'te satırlar odak durağıdır (`tabindex="0"`) ve `aria-describedby` ile kaynak fiş satırının metnini okutur.
+  - Hero'da satırlar odak durağı değildir (21); orada yalnız işaretçi.
+- **Hareket:**
+  - Fişte kaynak satırlar `--accent-soft` zemin alır, 180ms.
+  - Luca satırı ile kaynak satır arasında tek bir SVG yol çizilir (1.5px, `--accent`, uçlarda 4px nokta). Yol `clip-path` ile soldan sağa açılır, 360ms `--ease-out`.
+  - Parçanın geri kalanı `opacity` 0.55'e iner, 180ms.
+  - Ayrılınca hepsi 120ms'de geri döner.
+- **Reduced:** işaret ve yol anında görünür, açılma yok.
+- Panelde "Fiş izi" ile aynı görsel dil (23.4).
+
+#### 23.3.6 Taban (efekt sayılmaz, her yerde)
+
+- **Basış:** `scale(0.98)`, `--t-press`.
+- **Hover:** zemin tonu değişir, `--t-hover`; yalnız solma değil.
+- **Odak:** `:focus-visible` 2px `--focus` halka.
+- **Menü ve pencere açılışı:** `opacity` ile `scale(0.98)` → 1, 160ms, `transform-origin` tetikleyiciden.
+- **Hero başlığı:** maskeli satır yükselişi kalır (6.6 madde 1).
+
+Başka giriş hareketi yok: bölümler kaydırmada solarak ya da yükselerek gelmez (`INSTRUCTIONS.md`). Mevcut `data-reveal` girişleri gözden geçirilir; yalnız bu bölümdeki sahnelere ait olanlar kalır.
+
+#### 23.3.7 Ucuz ve yasak efektler
+
+- Önceki turlarda reddedilenler:
+  - tarama çizgisi;
+  - yazıcıdan inen fiş;
+  - Onaylandı damgasının inişi ve sıçraması;
+  - inen Excel dosyası;
+  - resim perdesi, deklanşörü ve yakınlaşması.
+- Yükleme ve kaydırma:
+  - önyükleyici ya da açılış ekranı;
+  - JS bitene kadar boş kalan hero;
+  - yumuşak kaydırma (Lenis vb.) ve kaydırma kaçırma (scroll-jacking);
+  - zıplayan "aşağı kaydır" oku.
+- Giriş efektleri:
+  - her bölüme fade-in;
+  - harf harf ya da kelime kelime metin dökülmesi, daktilo efekti.
+- Sayılar:
+  - 0'dan sayan sayaç;
+  - ara değer gösteren rakam;
+  - sürekli artan sahte sayaç (Stripe GDP türü; gerçek verimiz yok).
+- Fare ve imleç:
+  - fareyi izleyen 3B kart eğimi;
+  - imleç ışığı ya da blob;
+  - manyetik düğme.
+- Görsel süs:
+  - parlama, dönen degrade kenar, kenar süpürme ışığı;
+  - parçacık, WebGL dalga, video arka plan;
+  - çok katmanlı paralaks (birden fazla hız).
+- Hareketin kendisi:
+  - 1.05'ten büyük aşmalı ya da elastik yaylar;
+  - `filter: blur` animasyonu;
+  - konfeti;
+  - pazarlama sayfasında iskelet parıltısı;
+  - 5 sn'den uzun sonsuz döngü;
+  - kayan logo bandı.
+- CSS:
+  - `width`, `height`, `top`, `left` ya da `background-position` animasyonu (mevcut `home-scan` `top` kullanıyor, kaldırılır);
+  - `transition: all`.
+
+### 23.4 Panel: mikro etkileşimler
+
+Panel çalışma ekranıdır: hareket yalnız geri bildirim ve durum değişimi içindir, 120-240ms sürer ve hiçbiri işi bekletmez. Bölüm 15, 17, 20 ve 22'deki hareketler geçerli; şunlar eklenir ya da değişir:
+
+1. **Odometre:** 23.3.3'teki bileşen panelde 240ms ile kullanılır. Yerleri:
+   - kontrol ekranında Borç, Alacak ve Fark toplamları;
+   - liste sekme sayaçları;
+   - Luca dosyası kartında "N / 50" ve "N / 400".
+
+   Yazarken her tuşta değil, alan değeri tamamlanınca oynar (blur ya da 300ms duraklama).
+2. **Fiş izi spotlight:** yevmiye satırı seçilince ya da odaklanınca fotoğrafta ve okunan alanlarda kaynak işaretlenir. İki kolon yan yanayken 23.3.5'teki bağ çizgisi de çizilir; tek kolonda yalnız işaret.
+3. **Okuma kartı:** sürekli tarama çizgisi kaldırılır. Yerine:
+   - küçük görüntü yerine geldiğinde bir kez `scale(0.98)` → 1;
+   - gerçek aşamalar (Fotoğraf hazırlanıyor, Fiş okunuyor, Satırlar hazır) iki yuvalı dikey kaymayla, 200ms;
+   - etkin aşamanın yanında 3 noktalı bekleme göstergesi: yalnız `opacity`, 1,2 sn döngü, reduced'da durur.
+
+   Sahte yüzde yok.
+4. **Denge:** borç alacağa eşitlenince onay işareti `clip-path` ile 200ms'de çizilir. Onayla `--secondary`'den `--primary` tonuna 180ms'de geçer; renk ile birlikte imleç ve `aria-disabled` de değişir.
+5. **Onay:** durum pill'i Taslak'tan Onaylı'ya iki yuvalı kaymayla geçer (220ms; 21'deki ton geçişinin yerine). Damga yok.
+6. **Satır ekleme ve silme:** yeni satır 8px yukarıdan `opacity` ile 180ms'de gelir. Silinen satır 140ms `--ease-exit` ile gider, alttakiler `transform` ile yukarı kayar (FLIP). Yükseklik animasyonu yok.
+7. **Luca dosyası çubukları:** dolum `scaleX` ile (`width` değil), 320ms.
+8. **Kopyala ve İndir geri bildirimi:** düğme etiketi iki yuvalı kaymayla "Kopyalandı" olur, 1,6 sn sonra geri döner; `aria-live` ile okunur.
+9. **Liste satırı hover:** `--active` zemin 120ms; satırın sağındaki "Aç" oku 4px sağa kayar.
+10. **Reduced:** hepsi anında son durumda; renk değişimi kalır.
+
+### 23.5 Jüri: 9 puan için ölçütler
+
+Jüri her alanı 10 üzerinden ayrı puanlar ve her puanı ekran görüntüsü ya da ölçümle gerekçelendirir. **Hedef: her alanda en az 9.** Bir alanın 9 alabilmesi için o alandaki bütün maddeler sağlanmalıdır. Tavanlar her şeyin üstündedir.
+
+**Animasyon (9 için):**
+- İmza sahnesi masaüstünde kaydırmaya bağlı, telefonda bir kez çalışıyor. Üç rakam doğru hücreye iniyor, "Dengede" en sonda geliyor. Geri kaydırınca bozulmuyor.
+- Dört destek efekti var ve beşinci bir efekt yok.
+- `getAnimations()` ve keyframe denetiminde canlandırılan özellikler yalnız `transform`, `opacity` ve `clip-path`.
+- Sahne kaydırılırken 4x CPU kısıtlamasında Performance izinde 50ms üstü uzun görev yok ve kare düşmesi görünmüyor.
+- Süreler ve eğriler bu bölümdeki değerlerde (±20%).
+- Hızlı art arda tıklamada odometre son değere atlıyor.
+- Reduced motion ile tekrar denendiğinde her sahne son durumunda ve eksiksiz.
+- Yasak listeden (23.3.7) hiçbir öğe yok.
+
+**Görseller (9 için):**
+- Ana sayfada raster ekran görüntüsü yok. Her ürün parçası canlı HTML ve 1440 ile 390'da 2x yakınlaştırmada keskin.
+- Hero'da pencere, plaka ve telefon katmanları okunuyor. Pencere kenardan taşıyor, telefon üstüne biniyor.
+- Her yuva 23.2 tablosundaki boyutta (±10%).
+- Hiçbir kutu boş ya da bulanık değil.
+- CLS ≤ 0.02 ve LCP metin.
+- Fotoğraf kullanıldıysa 23.2'deki beş koşulun hepsi sağlanıyor ve kredisi doğru.
+- Fiş fotoğrafı, alakasız stok fotoğraf ya da Luca taklidi yok.
+
+**Renk paleti (9 için):**
+- 23.1 tokenları uygulanmış.
+- İki temada da bütün metin çiftleri AA, ölçümü yazılmış.
+- Vurgu her masaüstü ekranında %5'in altında, mavi yalnız sayılan yerlerde.
+- Yüzeyler ton adımıyla ayrılıyor ve her ekranda en çok bir gölgeli katman var.
+- Koyu tema lacivert değil, nötr; yanıp sönme yok.
+
+**Kompozisyon ve tipografi (9 için):**
+- Komşu bölümler farklı.
+- Her ekranın bir baskın öğesi var, yarım ekrandan uzun boşluk yok.
+- Başlıklar iki satırı geçmiyor ve kenar boşlukları eşit.
+- Yazı boyları her genişlikte 6'yı geçmiyor.
+
+**Panel mikro etkileşimleri (9 için):**
+- 23.4'teki on madde çalışıyor.
+- Hiçbir hareket 240ms'yi geçmiyor (okuma kartındaki bekleme göstergesi hariç).
+- Hiçbiri işi bekletmiyor ve klavyeyle de tetikleniyor.
+
+**Erişilebilirlik ve sağlamlık (9 için):**
+- JS kapalıyken her bölüm tam içerikle görünüyor.
+- Uçan kopyalar ve basamak yuvaları `aria-hidden`, gerçek değerler okunuyor.
+- Spotlight klavyeyle çalışıyor.
+- `npm test`, typecheck, lint ve build geçiyor.
+- `inspect.mjs` 0 FAIL veriyor; her WARN tek cümleyle savunulmuş (gölge WARN'ı 23.1'deki cümleyle).
+
+**Tavanlar:**
+
+| Durum | Hangi puan | Tavan |
+|---|---|---|
+| Ana sayfada raster ekran görüntüsü var | Görseller | 6 |
+| Herhangi bir öğe bulanık | Görseller | 6 |
+| Tarama çizgisi ya da damga duruyor | Animasyon | 6 |
+| Reduced motion'da içerik eksik | Animasyon | 5 |
+| JS'e bağlı gizli içerik var | Genel | 5 |
+| `transform`, `opacity` ve `clip-path` dışında bir özellik canlandırılıyor | Animasyon | 7 |
+| CLS 0.05'in üstünde | Görseller | 7 |
+| İki ve daha fazla gölgeli katman var | Renk | 7 |
+| inspect FAIL veriyor | Genel | 6 |
+| Uydurma müşteri ya da istatistik var | Genel | 4 |
