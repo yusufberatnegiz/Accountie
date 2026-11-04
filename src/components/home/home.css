@@ -85,12 +85,7 @@
 .counter-slot .thermal { font-size: 12px; }
 .counter-slot .thermal-paper { padding-inline: var(--s3); }
 /* A choice in the counter or the showcase cross-fades the old state into the new one (crossFade.ts). */
-html.vt-home::view-transition-group(*), html.vt-home::view-transition-old(*), html.vt-home::view-transition-new(*) { animation-duration: 180ms; }
 /* The pickers and the showcase tabs are their own snapshot that never fades: only the receipt, the lines and the piece cross-fade. */
-html.vt-home .counter-controls { view-transition-name: home-pickers; }
-html.vt-home .show-index { view-transition-name: show-tabs; }
-html.vt-home::view-transition-old(home-pickers), html.vt-home::view-transition-old(show-tabs) { display: none; }
-html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-new(show-tabs), html.vt-home::view-transition-group(home-pickers), html.vt-home::view-transition-group(show-tabs) { animation: none; }
 
 /* The strip itself is in thermal.css. It is fed out of this slot from the top. */
 .counter-slot { overflow: clip; padding-bottom: var(--s2); min-width: 0; }
@@ -151,25 +146,30 @@ html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-n
 .rule-copy { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: end; }
 .rule-copy h2 { grid-column: 1 / 8; }
 .rule-sub { grid-column: 8 / 13; font-size: var(--step-body); max-width: 44ch; margin: 0; }
-.rule-proof { grid-column: 1 / 8; }
+.rule-proof { grid-column: 1 / 6; }
 .rule-card { --fs-ui: 15px; --fs-body: 16px; --fs-small: 13px; padding: var(--s6); gap: var(--s5); font-size: var(--fs-body); }
 .rule-card .ui-totals dd { font-size: var(--fs-figure); }
 .rule-card .ui-card-head { font-size: var(--fs-section); }
-.rule-figure-ledger { grid-column: 8 / 13; }
+.rule-figure-shot { grid-column: 6 / 13; }
 .rule-figure, .routes-figure, .cta-figure { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); align-content: start; min-width: 0; }
 .rule-figure figcaption, .routes-figure figcaption { font-size: var(--step-small); color: var(--muted); }
-.rule-figure-third { grid-column: span 4; }
 .frame { position: relative; overflow: clip; background: var(--raised); }
 .frame img, .frame video { display: block; width: 100%; height: auto; }
 .frame img { opacity: var(--picture-opacity); }
 .frame-43 { aspect-ratio: 4 / 3; }
-.frame-43 img, .frame-43 video, .frame-43 .loop-video { width: 100%; height: 100%; object-fit: cover; }
+/* Panel screenshots: the panel's own edge, top-left anchored so a crop keeps the title and the first rows. */
+.frame-shot { aspect-ratio: 1440 / 900; border: 1px solid var(--rule); border-radius: var(--radius-panel, 8px); background: var(--surface); }
+.frame-phone { aspect-ratio: 390 / 844; width: min(100%, 340px); justify-self: center; border: 1px solid var(--rule); border-radius: 28px; background: var(--surface); }
+.frame-shot img, .frame-phone img { width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 1; }
+.frame .shot-dark { display: none; }
+:root[data-theme="dark"] .shot-dark, :root[data-look="dark"]:not([data-theme="light"]) .shot-dark { display: block; }
+:root[data-theme="dark"] .shot-light, :root[data-look="dark"]:not([data-theme="light"]) .shot-light { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-look]) .shot-dark { display: block; }
+  :root:not([data-theme="light"]):not([data-look]) .shot-light { display: none; }
+}
+.frame-43 img { width: 100%; height: 100%; object-fit: cover; }
 /* The poster is the frame's own background; the video stays transparent until its first frame plays, so the box is never black. */
-.loop-video { position: relative; height: 100%; background: center / cover no-repeat var(--raised); }
-.loop-video video { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 240ms ease; }
-.loop-video[data-shown] video { opacity: var(--picture-opacity); }
-.loop-video-btn { position: absolute; left: var(--s3); bottom: var(--s3); background: var(--surface); color: var(--ink); min-height: var(--touch); }
-@media (hover: hover) and (pointer: fine) { .loop-video-btn:hover { background: var(--active); } }
 
 /* ---------- showcase: lit panel, dark row ---------- */
 .show { background: var(--show-field); color: var(--show-ink); margin-top: var(--section-gap); padding-block: var(--s9); }
@@ -333,10 +333,6 @@ html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-n
 .foot-links { grid-column: 5 / 8; display: grid; justify-items: start; font-size: var(--step-body); }
 .foot-links a { display: inline-flex; align-items: center; min-height: var(--touch); color: var(--ink); text-decoration: underline; text-decoration-color: transparent; transition: text-decoration-color var(--t-hover) ease; }
 @media (hover: hover) and (pointer: fine) { .foot-links a:hover { color: var(--ink); text-decoration-color: currentColor; } }
-.foot-credits { grid-column: 8 / 13; display: grid; gap: var(--s2); }
-.foot-credits-title { font-size: var(--step-body); font-weight: var(--w-strong); margin: 0; }
-.foot-credits ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); font-size: var(--step-small); color: var(--muted); }
-.foot-credits a { color: var(--ink); }
 /* Decorative wordmark: never over the credit links, and its glyph sidebearings are pulled back to the margins. */
 .foot-name { margin: 0 -0.035em; font-family: var(--font-head); font-weight: 300; font-size: 21.2vw; line-height: 0.8; letter-spacing: -0.045em; white-space: nowrap; color: var(--foot-name); pointer-events: none; user-select: none; }
 
@@ -377,10 +373,9 @@ html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-n
   .path-field-3, .path-field-4 { grid-row: 4 / span 2; }
   .foot-what { grid-column: 1 / 7; }
   .foot-links { grid-column: 7 / 13; }
-  .foot-credits { grid-column: 1 / 13; }
 }
 @media (max-width: 900px) {
-  .rule-copy h2, .rule-sub, .rule-proof, .rule-figure-ledger { grid-column: 1 / -1; }
+  .rule-copy h2, .rule-sub, .rule-proof, .rule-figure-shot { grid-column: 1 / -1; }
   .rule-copy { row-gap: var(--s4); }
   .routes-list, .routes-aside { grid-column: 1 / 13; }
   .routes-aside { position: static; }
@@ -419,7 +414,6 @@ html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-n
 
   .rule-card { padding: var(--s4); gap: var(--s4); }
   .rule-card .ui-totals dd { font-size: var(--fs-title); }
-  .rule-figure-third { grid-column: 1 / -1; }
 
   .show { padding-block: var(--s9); }
   /* Phones: only the chosen piece takes space, so a short piece leaves no gap under it. */
@@ -456,22 +450,16 @@ html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-n
   .cta-btn { width: 100%; }
 
   .foot-top { grid-template-columns: minmax(0, 1fr); }
-  .foot-what, .foot-links, .foot-credits { grid-column: 1; }
+  .foot-what, .foot-links { grid-column: 1; }
 }
 
 /* ---------- Motion (YON.md 6.6, 14 and 15). Content is in the HTML and painted; motion only adds arrival. ---------- */
 @keyframes home-line { from { transform: translateY(16%); } }
 @keyframes home-load { from { transform: translateY(12px); } }
 /* Every arrival starts from a visible state (YON.md 16.3): content is never blank first and painted later. */
-@keyframes home-row { from { opacity: 0.6; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes home-row { from { transform: translateY(6px); } }
+@keyframes home-scan { 0% { top: 0; opacity: 1; } 85% { opacity: 1; } 100% { top: calc(100% - 2px); opacity: 0; } }
 @keyframes home-fade { from { opacity: 0.6; } to { opacity: 1; } }
-@keyframes home-print { from { transform: translateY(-12%); } to { transform: none; } }
-@keyframes home-settle { from { transform: scale(1.08); } to { transform: none; } }
-@keyframes home-light { from { transform: scale(0.85); opacity: 0.6; } to { transform: none; opacity: 1; } }
-/* A waiting stamp rests in place at 0.6; in its own act it lifts and lands, inside the card's padding. */
-@keyframes home-stamp { 0% { opacity: 0.6; transform: none; } 45% { opacity: 0.8; transform: scale(1.2) rotate(-4deg); } 100% { opacity: 1; transform: none; } }
-@keyframes home-shutter { from { clip-path: inset(0 0 14% 0); } to { clip-path: inset(0); } }
-@keyframes home-drop { from { opacity: 0.6; transform: translateY(-16px); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: no-preference) {
   /* Masked headline, line by line, then sentence and action. The resting state is in place: the offset exists only while
@@ -479,54 +467,35 @@ html.vt-home::view-transition-new(home-pickers), html.vt-home::view-transition-n
   .js .hero [data-line] { animation: home-line var(--t-reveal) var(--ease-expo) backwards; animation-delay: calc(60ms + var(--i) * 110ms); }
   .js .hero [data-load] { animation: home-load 500ms var(--ease-out) backwards; animation-delay: var(--d); }
 
-  /* Signature, first paint only: the receipt is printed, fed down out of its slot; each Luca line then arrives with its amount
-     and "Dengede" lights last. After a choice only what changed moves: new lines rise in (rows are keyed by account and amount),
-     the strip and the totals cross-fade to their new values, never through numbers in between (YON.md 15). */
-  .js .counter[data-first] .counter-slot .thermal-paper { animation: home-print 900ms var(--ease-out) both; animation-delay: 250ms; }
-  .js .counter[data-first] .counter-row { animation: home-row 360ms var(--ease-out) both; animation-delay: calc(700ms + var(--i) * 140ms); }
-  .js .counter-state { display: inline-block; }
-  .js .counter[data-first] .counter-state { animation: home-light 320ms var(--ease-out) both; animation-delay: calc(760ms + var(--rows, 3) * 140ms); }
-
+  /* One motif for "the receipt is read": a ledger-blue line passes down the thermal strip once, when it appears or changes,
+     then the Luca lines it produced come in under it. Rows are keyed by account and amount, so after a choice only what
+     changed moves. The strip and every row stay visible throughout: the line and a short offset are all that animate. */
+  .js .thermal-paper { position: relative; }
+  .js .counter-slot .thermal-paper::after, .js.motion .path-field.is-in .path-strip .thermal-paper::after {
+    content: ""; position: absolute; inset-inline: 0; top: 0; height: 2px; background: var(--accent); opacity: 0;
+    animation: home-scan 560ms var(--ease-in-out) both; animation-delay: var(--act, 120ms);
+  }
+  .js .counter-row { animation: home-row 240ms var(--ease-out) backwards; animation-delay: calc(420ms + var(--i) * 60ms); }
+  .js .counter-sum, .js .counter-state { display: inline-block; animation: home-fade 200ms ease backwards; animation-delay: 560ms; }
 
   /* Section entrances, once, part by part (heading, text, picture: --r steps of 80ms). Travel only (INSTRUCTIONS.md: content is visible immediately). */
-  .motion [data-reveal] { transform: translateY(24px); transition: transform 800ms var(--ease-out); transition-delay: calc(var(--r, 0) * 80ms); }
+  .motion [data-reveal] { transform: translateY(12px); transition: transform 600ms var(--ease-out); transition-delay: calc(var(--r, 0) * 70ms); }
   .motion [data-reveal].is-in { transform: none; }
-  /* Pictures open the last strip of their frame once decoded (HomeMotion waits up to 600ms): 86% is open from the start,
-     so a fast scroller never meets an empty box. The clip exists only while its animation runs. */
-  .motion [data-reveal="shutter"] { transform: none; }
-  .js.motion [data-reveal="shutter"].is-in .frame { animation: home-shutter 480ms var(--ease-out) backwards; animation-delay: calc(var(--r, 0) * 50ms); }
-  .motion :is(.rule-figure, .cta-figure) img { transform: scale(1.08); transition: transform 1600ms var(--ease-soft); }
-  .motion :is(.rule-figure, .cta-figure).is-in img { transform: none; }
 
-  /* "Bir fişin yolu", played once in four acts 350ms apart (YON.md 15): the receipt prints, its fields are read one by one,
-     the Onaylandı stamp lands on the approved lines, the Excel file comes down into the last card. On a phone the fields
-     stack, so each act starts when its own field arrives; on a tablet the second of each pair follows the first. */
+  /* "Bir fişin yolu", once, left to right 300ms apart: the strip is read (the same scan line), the fields and lines come in
+     under it. No stamps: the status pill is part of the card from the start. On a phone each field starts as it arrives. */
   .path-field { --act: 0ms; }
-  @media (min-width: 1101px) { .path-field { --act: calc(var(--r, 0) * 350ms); } }
-  @media (min-width: 641px) and (max-width: 1100px) { :is(.path-field-2, .path-field-4) { --act: 350ms; } }
+  @media (min-width: 1101px) { .path-field { --act: calc(var(--r, 0) * 300ms); } }
+  @media (min-width: 641px) and (max-width: 1100px) { :is(.path-field-2, .path-field-4) { --act: 300ms; } }
   .motion .path-field[data-reveal] { transform: none; }
   .path-card > :nth-child(2) { --k: 1; } .path-card > :nth-child(3) { --k: 2; } .path-card > :nth-child(4) { --k: 3; }
   .path-card > :nth-child(5) { --k: 4; } .path-card > :nth-child(6) { --k: 5; } .path-card > :nth-child(7) { --k: 6; }
-  /* Nothing is hidden before the field arrives: each act's start state comes from its own animation (fill both). */
-  .js.motion .path-field.is-in .path-strip .thermal-paper { animation: home-print 800ms var(--ease-out) both; animation-delay: var(--act); }
-  .js.motion .path-field.is-in [data-step] { animation: home-row 300ms var(--ease-out) both; animation-delay: calc(var(--act) + 150ms + var(--k, 0) * 70ms); }
-  .js.motion .path-field-4.is-in :is(.ui-file-name, .ui-sheet)[data-step] { animation-name: home-drop; animation-duration: 360ms; }
-  .js.motion .path-field.is-in .status[data-step] { animation-name: home-stamp; animation-duration: 420ms; animation-delay: calc(var(--act) + var(--stamp-at, 600ms)); }
-  .path-field-1 { --stamp-at: 700ms; }
-  .path-field-2 { --stamp-at: 640ms; }
-  .path-field-3 { --stamp-at: 520ms; }
-  .path-field-4 { --stamp-at: 560ms; }
+  .js.motion .path-field.is-in [data-step]:not(.status) { animation: home-row 240ms var(--ease-out) backwards; animation-delay: calc(var(--act) + 200ms + var(--k, 0) * 60ms); }
 
   /* FAQ answer crossfade, and the lit piece's name. */
   .faq-a, .show-name { animation: home-fade 180ms ease both; }
 }
 
-/* The page's slow moving picture: the engraving settles as it scrolls through. */
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .routes-figure img { animation: home-settle linear both; animation-timeline: view(); animation-range: entry 0% cover 60%; }
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .path-card { transition: none; }

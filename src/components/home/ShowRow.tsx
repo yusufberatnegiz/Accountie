@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { crossFade } from "./crossFade";
 
 export type Piece = { name: string; text: string; body: ReactNode };
 
 /**
  * Showcase "Lit panel, dark row" (YON.md 3.4.3): five product pieces in one place; only the chosen one is shown and takes space,
- * and a change cross-fades (crossFade), never a neighbour cut at an edge. The picker is a column of tabs on the right (a filled tab is the shown piece), the piece's name and sentence under it.
+ * and a change swaps it in place (its name fades in), never a neighbour cut at an edge. The picker is a column of tabs on the right (a filled tab is the shown piece), the piece's name and sentence under it.
  * Without script the first piece shows; every piece carries its own caption (shown on phones, read by screen readers).
  */
 export function ShowRow({ pieces }: { pieces: Piece[] }) {
@@ -28,7 +27,7 @@ export function ShowRow({ pieces }: { pieces: Piece[] }) {
         <ul className="show-index" aria-label="Parçalar">
           {pieces.map((p, i) => (
             <li key={p.name}>
-              <button type="button" className="show-pick" aria-pressed={i === active} onClick={() => crossFade(() => setActive(i))}>{p.name}</button>
+              <button type="button" className="show-pick" aria-pressed={i === active} onClick={() => setActive(i)}>{p.name}</button>
             </li>
           ))}
         </ul>

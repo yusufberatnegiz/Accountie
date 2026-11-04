@@ -8,17 +8,17 @@ import { SiteBar } from "@/components/site/SiteBar";
 import { Counter } from "@/components/home/Counter";
 import { Faq, type Qa } from "@/components/home/Faq";
 import { HomeMotion } from "@/components/home/HomeMotion";
-import { LoopVideo } from "@/components/home/LoopVideo";
 import { ShowRow, type Piece } from "@/components/home/ShowRow";
 import { SAMPLES } from "@/components/home/samples";
 import { Thermal } from "@/components/home/Thermal";
 import { WARNING_MESSAGES } from "@/lib/journal";
 import { PAYMENT_ALTERNATIVES } from "@/lib/default-rules";
-import register from "../../public/gorseller/yazar-kasa-eski.jpg";
-import defterdar from "../../public/gorseller/defterdar-dairesi.jpg";
-import bankVault from "../../public/gorseller/osmanli-bankasi-kasa-dairesi.jpg";
-import krupanj from "../../public/gorseller/yazar-kasa-krupanj.jpg";
-import ledger from "../../public/gorseller/dedo-defteri-1876.jpg";
+import fisLight from "../../public/gorseller/urun-fis-acik.jpg";
+import fisDark from "../../public/gorseller/urun-fis-koyu.jpg";
+import listLight from "../../public/gorseller/urun-liste-acik.jpg";
+import listDark from "../../public/gorseller/urun-liste-koyu.jpg";
+import phoneLight from "../../public/gorseller/urun-telefon-acik.jpg";
+import phoneDark from "../../public/gorseller/urun-telefon-koyu.jpg";
 import "@/components/home/home.css";
 
 // Public and static: no session, no user data (docs/design/YON.md 5.5).
@@ -210,23 +210,16 @@ const FAQ: Qa[] = [
   { q: "Telefonda uygulama gibi açılır mı?", a: "Evet. Ana ekrana eklediğinizde ayrı bir uygulama gibi açılır, Fiş çek tek dokunuştur." },
 ];
 
-const PD = "https://creativecommons.org/publicdomain/mark/1.0/";
-const FLICKR_COMMONS = "https://www.flickr.com/commons/usage/";
-// lang: titles kept in their own language are read with that language's rules (WCAG 3.1.2). Every picture is shown in one monochrome grade, so each credit says so.
-const CREDITS: { title: string; lang: string; by: string; license: string; licenseUrl: string; page: string; note?: string }[] = [
-  { title: "Ledger of the fur trader Dedo from Leipzig, 1876-1885", lang: "en", by: "Dedo", license: "kamu malı", licenseUrl: PD, page: "https://commons.wikimedia.org/wiki/File:Ledger_of_the_fur_trader_Dedo_from_Leipzig,_1876-1885_003.jpg", note: "kırpıldı ve siyah beyaza çevrildi" },
-  { title: "Antique cash register", lang: "en", by: "Thomas Quine", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0/", page: "https://commons.wikimedia.org/wiki/File:Antique_cash_register_(43766820702).jpg" },
-  { title: "Old cash register in Serbia", lang: "en", by: "Pink Flojd", license: "CC0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/deed.en", page: "https://commons.wikimedia.org/wiki/File:Old_cash_register_in_Serbia.jpg", note: "kırpıldı ve siyah beyaza çevrildi" },
-  { title: "Keystrokes in a vintage mechanical calculator", lang: "en", by: "Subhashish Panigrahi", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", page: "https://commons.wikimedia.org/wiki/File:Keystrokes_in_a_vintage_mechanical_calculator.webm", note: "kısaltıldı ve siyah beyaza çevrildi; değiştirilmiş hali CC BY-SA 4.0 ile paylaşılır" },
-  { title: "Ottoman Bank, Safe Rooms", lang: "en", by: "SALT Araştırma", license: "bilinen telif kısıtlaması yok", licenseUrl: FLICKR_COMMONS, page: "https://commons.wikimedia.org/wiki/File:Ottoman_Bank,_Safe_Rooms_(12965331153).jpg" },
-  { title: "Louis-Nicolas de Lespinasse, Deferdar’s office", lang: "en", by: "Gmihail, Sırpça Vikipedi", license: "CC BY-SA 3.0 RS", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/rs/deed.en", page: "https://commons.wikimedia.org/wiki/File:Louis-Nicolas_de_Lespinasse,_Deferdar%27s_office.jpg", note: "siyah beyaza çevrildi; değiştirilmiş hali CC BY-SA 3.0 RS ile paylaşılır" },
-];
-
-// The rule's world, under its proof: one ratio (4:3), one caption line, one grade.
-const GALLERY = [
-  { src: krupanj, at: "50% 50%", alt: "Bir müze vitrininde eski bir yazar kasa: kavisli sıralarda tutar tuşları, üstte Cassa yazılı levha", caption: "Sırbistan’da bir müzede eski bir yazar kasa. Bugünkü ÖKC de tutarı böyle toplar ve fişin TOPLAM satırına basar." },
-  { src: bankVault, at: "30% 50%", alt: "Osmanlı Bankası’nın kasa dairesi: ahşap kasa kapakları ve raflarda ciltli hesap defterleri", caption: "Osmanlı Bankası’nın kasa dairesi, raflarda ciltli hesap defterleri. Onaylanan fişin satırları da Accountie’de durur, Aktarıldı sekmesinden yeniden indirilir." },
-];
+type Pic = typeof fisLight;
+/** A screenshot of the panel itself (the dev preview with sample receipts), in the theme the visitor sees. */
+function Shot({ light, dark, alt, sizes }: { light: Pic; dark: Pic; alt: string; sizes: string }) {
+  return (
+    <>
+      <Image className="shot-light" src={light} alt={alt} sizes={sizes} />
+      <Image className="shot-dark" src={dark} alt={alt} sizes={sizes} />
+    </>
+  );
+}
 
 const PATH = [
   { clause: "Önce telefonla çekilir.", card: (
@@ -330,19 +323,10 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-          <figure className="rule-figure rule-figure-ledger" data-reveal="shutter" style={cssVars({ "--r": 2 })}>
-            <div className="frame frame-43"><Image src={ledger} alt="El yazısı bir hesap defterinin açık iki sayfası: solda Debet, sağda Credit başlıklı kolonlar ve çift çizgiyle kapanmış toplamlar" sizes="(max-width: 900px) 100vw, 42vw" /></div>
-            <figcaption>Leipzigli kürk tüccarı Dedo’nun defteri, 1876: solda Debet, sağda Credit kolonları, Luca’daki Borç ve Alacak gibi.</figcaption>
-          </figure>
-          {GALLERY.map((g, i) => (
-            <figure className="rule-figure rule-figure-third" key={g.caption} data-reveal="shutter" style={cssVars({ "--r": i })}>
-              <div className="frame frame-43"><Image src={g.src} alt={g.alt} sizes="(max-width: 640px) 100vw, (max-width: 900px) 50vw, 33vw" style={{ objectPosition: g.at }} /></div>
-              <figcaption>{g.caption}</figcaption>
-            </figure>
-          ))}
-          <figure className="rule-figure rule-figure-third" data-reveal="shutter" style={cssVars({ "--r": 2 })}>
-            <div className="frame frame-43"><LoopVideo src={{ mp4: "/gorseller/hesap-makinesi.mp4", webm: "/gorseller/hesap-makinesi.webm" }} poster="/gorseller/hesap-makinesi-poster.jpg" width={640} height={360} /></div>
-            <figcaption>Eski bir mekanik toplama makinesinde tutar tuşlanıyor. Accountie de onaydan önce Borç ve Alacak toplamlarını karşılaştırır.</figcaption>
+          <figure className="rule-figure rule-figure-shot" data-reveal style={cssVars({ "--r": 2 })}>
+            <div className="frame frame-shot"><Shot light={fisLight} dark={fisDark} sizes="(max-width: 900px) 100vw, 58vw"
+              alt="Accountie fiş kontrol ekranı: solda fişten okunan satıcı, tarih, KDV ve toplam; sağda 770.08, 191.03.10 ve 331.01 yevmiye satırları, altta fark 0,00 ve Onayla" /></div>
+            <figcaption>Kontrol ekranı: fişten okunan alanlar solda, Luca satırları sağda. Fark 0,00 olunca Onayla açılır.</figcaption>
           </figure>
         </section>
 
@@ -391,9 +375,10 @@ export default function LandingPage() {
             <p className="routes-tip" data-reveal style={cssVars({ "--r": 5 })}>İlk aktarımı tek fişle deneyin: Luca’nın önizlemesinde satırları kontrol edip Fiş Kes’e basın.</p>
           </div>
           <div className="routes-aside">
-            <figure className="routes-figure" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
-              <div className="frame frame-43"><Image src={defterdar} alt="Gravür: Osmanlı defterdarlık dairesinde minderlere oturmuş kâtipler, önlerindeki rahlelerde defter tutuyor" sizes="(max-width: 900px) 100vw, 50vw" /></div>
-              <figcaption>Defterdarlık dairesinde kâtipler kaydı elle deftere geçirir. Lespinasse gravürü, İstanbul, 18. yüzyıl.</figcaption>
+            <figure className="routes-figure" data-reveal style={cssVars({ "--r": 1 })}>
+              <div className="frame frame-shot"><Shot light={listLight} dark={listDark} sizes="(max-width: 900px) 100vw, 50vw"
+                alt="Accountie Fişler ekranı: taslak, onaylı ve aktarılan fişlerin listesi, yanda Luca dosyası kartı ve gider hesaplarına göre matrahlar" /></div>
+              <figcaption>Fişler ekranı: onaylanan fişler Luca dosyası kartında birikir, Luca için indir tek dosya verir.</figcaption>
             </figure>
             {/* The file Luca reads: the export's own columns (src/lib/luca/export.ts) for fiş 0047. */}
             <div className="ui-card routes-file" data-ui data-reveal style={cssVars({ "--r": 2 })}>
@@ -429,9 +414,10 @@ export default function LandingPage() {
                 <p>Hesabınız var mı? <Link href="/giris">Giriş yapın</Link></p>
               </div>
             </div>
-            <figure className="cta-figure" data-reveal="shutter" style={cssVars({ "--r": 1 })}>
-              <div className="frame frame-43"><Image src={register} alt="Ahşap bir tezgâhta eski bir yazar kasa: tutar tuşları, yanında kol, önünde açık para çekmecesi" sizes="(max-width: 900px) 100vw, 47vw" /></div>
-              <figcaption>Eski bir yazar kasa, Heritage Acres müzesi, Kanada. Fişi tezgâhtaki kasa basar, siz telefonla çekersiniz.</figcaption>
+            <figure className="cta-figure" data-reveal style={cssVars({ "--r": 1 })}>
+              <div className="frame frame-phone"><Shot light={phoneLight} dark={phoneDark} sizes="340px"
+                alt="Telefonda Accountie Fişler ekranı: fiş listesi, tutarlar ve durumlar, altta Fiş çek düğmesi" /></div>
+              <figcaption>Telefonda Fiş çek alt çubukta durur; çekilen fiş listeye taslak olarak düşer.</figcaption>
             </figure>
           </div>
         </section>
@@ -446,16 +432,6 @@ export default function LandingPage() {
             <a href="#sss">Sık sorulanlar</a>
             <Link href="/gizlilik">Gizlilik</Link>
           </nav>
-          <div className="foot-credits">
-            <p className="foot-credits-title">Görsel kaynakları</p>
-            <ul>
-              {CREDITS.map((c) => (
-                <li key={c.page}>
-                  <a href={c.page} rel="noopener noreferrer">&ldquo;<span lang={c.lang}>{c.title}</span>&rdquo;</a>{c.by ? `, ${c.by}` : ""}, <a href={c.licenseUrl} rel="noopener noreferrer">{c.license}</a>, Wikimedia Commons, {c.note ?? "siyah beyaza çevrildi"}
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
         <p className="foot-name" translate="no" aria-hidden="true">Accountie</p>
       </footer>

@@ -676,3 +676,10 @@ Bu kararlar 3-5. turlarda birden çok jürinin tekrar tekrar bulduğu sorunları
 - **Telefonda onaylı fiş:** tutar etiketinin altında, sola hizalı.
 - **Geçiş:** liste satırından kontrol ekranına yeni ekran 60ms sonra 140ms'de gelir (eski kökle örtüşür, boş kare yok).
 - **Formlar:** hata görünürken şifre kuralı ipucu gizlenir; e-posta `enterkeyhint=next`, son alan `go`; kurallar alanlarının `name`'i var.
+
+## 21. Görseller ve fiş hareketi (2026-11-04, kullanıcı kararı; 15 ve 16'daki resim ve damga kurallarının yerine geçer)
+
+- Arşiv fotoğrafları, gravürler ve toplama makinesi klibi kaldırıldı: kullanıcı ürünle ilgisiz buldu. Sayfada yalnız ürünün kendi ekran görüntüleri var: fiş kontrol ekranı (Borç alacağa eşit bölümü), Fişler ekranı (Excel ya da pano bölümü) ve telefonda Fişler (CTA). Her biri açık ve koyu temada ayrı çekildi (`public/gorseller/urun-*`), ziyaretçinin temasına göre gösterilir. Kaynak: `/onizleme/panel` örnek fişleri, dev göstergesi çıkarılarak. Panel değişince yeniden çekilir.
+- Footer'daki görsel kaynakları listesi, üçüncü taraf görsel kalmadığı için kaldırıldı.
+- Fiş hareketi tek motif: "fiş okunuyor" = fişin üzerinden geçen defter mavisi tarama çizgisi. Hero tezgâhında fiş değişince bir kez, Bir fişin yolu'nun ilk kartında bir kez, panelde okuma sırasında çekilen fotoğrafın küçük görüntüsünün üzerinde sürekli. Altındaki Luca satırları kısa bir kaymayla gelir; içerik hiçbir anda gizli değildir.
+- Kaldırılanlar: termal fişin yazıcıdan inmesi, Bir fişin yolu'ndaki damgalar ve inen Excel dosyası, resimlerin perde açılışı ve yakınlaşması, tezgâhtaki view-transition çapraz geçişi. Panelde Onaylandı damgası yerine 220 ms'lik kısa bir ton geçişi.
