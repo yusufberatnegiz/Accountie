@@ -160,3 +160,24 @@ describe("extractReceipt", () => {
     log.mockRestore();
   });
 });
+
+describe("locateReceipts", () => {
+  const boxes = (...b: { left: number; top: number; right: number; bottom: number }[]) => ({ parsed_output: { receipts: b }, stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } });
+  it("returns the boxes only when the photo holds more than one receipt", async () => {
+    const { locateReceipts } = await import("./extract");
+    const two = mockClient(boxes({ left: 0, top: 0, right: 400, bottom: 1000 }, { left: 500, top: 0, right: 900, bottom: 1000 }));
+    expect(await locateReceipts(Buffer.from("x"), two.client)).toHaveLength(2);
+    const one = mockClient(boxes({ left: 0, top: 0, right: 1000, bottom: 1000 }));
+    expect(await locateReceipts(Buffer.from("x"), one.client)).toEqual([]);
+    // A sliver the model marks by mistake does not split the photo.
+    const sliver = mockClient(boxes({ left: 0, top: 0, right: 900, bottom: 1000 }, { left: 950, top: 0, right: 960, bottom: 1000 }));
+    expect(await locateReceipts(Buffer.from("x"), sliver.client)).toEqual([]);
+  });
+  it("reads the photo whole when the call fails", async () => {
+    const { locateReceipts } = await import("./extract");
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failed = mockClient(new Anthropic.APIConnectionError({ message: "down" }));
+    expect(await locateReceipts(Buffer.from("x"), failed.client)).toEqual([]);
+    log.mockRestore();
+  });
+});

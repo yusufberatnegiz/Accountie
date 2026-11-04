@@ -47,7 +47,12 @@ export function PreviewApi({ approved }: { approved: string[] }) {
       await wait(300);
       if (url === "/api/receipts" && method === "POST") {
         await wait(1500);
-        return json({ id: FIRST_DRAFT });
+        return json({ id: FIRST_DRAFT, ids: [FIRST_DRAFT] });
+      }
+      if (url === "/api/receipts/bulk-approve") {
+        const chosen: string[] = JSON.parse(String(init?.body ?? "{}")).ids ?? [];
+        setStatus(chosen, "approved");
+        return json({ approved: chosen.length, skipped: 0 });
       }
       const action = /^\/api\/receipts\/([^/]+)\/(approve|reopen|exported)$/.exec(url);
       if (action) setStatus([action[1]], { approve: "approved", reopen: "draft", exported: "exported" }[action[2]]!);

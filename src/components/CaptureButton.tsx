@@ -4,13 +4,14 @@ import { useRouter } from "next/navigation";
 import { addTransitionType, startTransition, useEffect, useState } from "react";
 import { setPhoto } from "@/lib/photo-store";
 
-const MAX_EDGE = 1600;
+// Large enough that each of several receipts in one photo is still readable once the server cuts it out.
+const MAX_EDGE = 3200;
 const TIMEOUT_MS = 60_000;
 const SLOW_MS = 10_000;
 // The real stages of one photo: shrunk on this device, read on the server, lines back.
 const STAGES = ["Fotoğraf hazırlanıyor", "", "Satırlar hazır"];
 
-/** Shrinks to ~1600px JPEG and applies EXIF orientation. Falls back to the original file if the browser cannot decode it. */
+/** Shrinks to ~3200px JPEG and applies EXIF orientation. Falls back to the original file if the browser cannot decode it. */
 async function shrink(file: File): Promise<Blob> {
   try {
     const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
@@ -51,6 +52,7 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
     setNotice("");
     let lastId = "";
     let added = 0;
+    let failed = false;
     // Each photo becomes its own receipt; files are copied out of the input first because iOS replaces them on the next capture.
     for (const [i, file] of list.entries()) {
       setSlow(false);
@@ -69,20 +71,22 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
         const body = res ? await res.json().catch(() => null) : null;
         // A response without a message means the connection worked and the server failed; only no response is a connection problem.
         const msg = body?.error ?? (res ? "Sunucu fişi işleyemedi. Tekrar deneyin." : failure);
-        setError(list.length > 1 ? `${added}/${list.length} fiş eklendi, kalanlar gönderilmedi. ${msg}` : msg);
+        setError(list.length > 1 ? `${added} fiş eklendi, kalan fotoğraflar gönderilmedi. ${msg}` : msg);
+        failed = true;
         break;
       }
-      const { id } = await res.json();
+      // One photo may hold several receipts side by side; each gets the photo for its review screen.
+      const { ids } = (await res.json()) as { ids: string[] };
       setStage(2);
-      setPhoto(id, blob);
-      lastId = id;
-      added++;
+      for (const id of ids) setPhoto(id, blob);
+      lastId = ids[0];
+      added += ids.length;
     }
     // One photo goes straight to its review; the reading card stays until that screen replaces it.
-    if (lastId && list.length === 1) return router.push(`${base}/fis/${lastId}`);
+    if (lastId && list.length === 1 && added === 1) return router.push(`${base}/fis/${lastId}`);
     setBusy(false);
     setStatus("");
-    if (list.length > 1 && added === list.length) setNotice(`${added} fiş eklendi.`);
+    if (added > 1 && !failed) setNotice(`${added} fiş eklendi.`);
     // The type lets the new rows rise in at the top of the list (ReceiptListView).
     startTransition(() => { addTransitionType("fis-eklendi"); router.refresh(); });
   }
