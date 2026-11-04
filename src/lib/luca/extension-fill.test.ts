@@ -10,8 +10,10 @@ type Fill = {
   FIELDS: string[];
   fillReceipt(doc: unknown, rows: unknown[], sel: Selectors): { gridFound: boolean; filled: number; missing: { row: number; field: string }[]; extraRows: number };
   summarize(results: unknown[], rowCount: number): { ok: boolean; gridFound: boolean; message: string };
+  readGrid(doc: unknown, sel: Selectors): Record<string, string>[] | null;
+  checkGrid(expected: unknown[], actual: Record<string, string>[] | null): string[];
 };
-type Selectors = { row: string; addRow: string | null; cells: Record<string, string> };
+type Selectors = { row: string; addRow: string | null; save?: string | null; saved?: string | null; newEntry?: string | null; cells: Record<string, string> };
 
 const { AccountieFill: fill, AccountieSelectors: realSelectors } = globalThis as unknown as { AccountieFill: Fill; AccountieSelectors: Selectors };
 
@@ -124,7 +126,51 @@ describe("çerçeve sonuçlarının özeti", () => {
   });
 });
 
+describe("kaydetmeden önce ekranı geri okuma", () => {
+  const filledDoc = () => { const doc = fakeDoc(4); fill.fillReceipt(doc, rows, SEL); return doc; };
+
+  it("doğru doldurulmuş ekranda fark bulmaz; boş satırları saymaz", () => {
+    const grid = fill.readGrid(filledDoc(), SEL);
+    expect(grid).toHaveLength(3);
+    expect(fill.checkGrid(rows, grid)).toEqual([]);
+  });
+
+  it("Luca tutarı noktasız ya da ondalık noktalı gösterse de aynı sayar", () => {
+    const doc = filledDoc();
+    doc.grid[0].cells[".debit"].value = "7931.82";
+    doc.grid[2].cells[".credit"].value = "8725,00";
+    expect(fill.checkGrid(rows, fill.readGrid(doc, SEL))).toEqual([]);
+  });
+
+  it("değişen tutarı, hesap kodunu ve dengesiz toplamı satırıyla söyler", () => {
+    const doc = filledDoc();
+    doc.grid[1].cells[".debit"].value = "79,31";
+    doc.grid[0].cells[".accountCode"].value = "770.01";
+    expect(fill.checkGrid(rows, fill.readGrid(doc, SEL))).toEqual([
+      "1. satır hesap kodu 770.01, 770.08 bekleniyordu.",
+      "2. satır Borç 79,31, 793,18 bekleniyordu.",
+      "Ekrandaki borç ve alacak toplamları eşit değil.",
+    ]);
+  });
+
+  it("fazla ya da eksik satırı sayar", () => {
+    const doc = filledDoc();
+    doc.grid[3].cells[".debit"].value = "100,00";
+    expect(fill.checkGrid(rows, fill.readGrid(doc, SEL))[0]).toBe("Ekranda 4 satır var, 3 satır bekleniyordu.");
+    expect(fill.checkGrid(rows, fill.readGrid(fakeDoc(3), SEL))[0]).toBe("Ekranda 0 satır var, 3 satır bekleniyordu.");
+  });
+
+  it("tablo okunamazsa kaydetmeye izin vermez", () => {
+    expect(fill.readGrid(fakeDoc(0), SEL)).toBeNull();
+    expect(fill.checkGrid(rows, null)).toEqual(["Fiş Detayı tablosu okunamadı."]);
+  });
+});
+
 describe("seçici yapılandırması", () => {
+  it("otomatik kayıt seçicileri Luca'da doğrulanana kadar boş: eklenti kendiliğinden Kaydet'e basmaz", () => {
+    expect([realSelectors.save, realSelectors.saved, realSelectors.newEntry]).toEqual([null, null, null]);
+  });
+
   it("her alan için tek yerde seçici tanımlı", () => {
     expect(Object.keys(realSelectors.cells).sort()).toEqual([...fill.FIELDS].sort());
     expect(realSelectors.row).toBeTruthy();

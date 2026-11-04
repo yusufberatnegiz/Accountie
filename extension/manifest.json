@@ -1,10 +1,21 @@
 {
   "manifest_version": 3,
   "name": "Accountie Luca Doldurucu",
-  "version": "0.1.0",
-  "description": "Accountie'de onaylanan fişin satırlarını açık Luca Fiş Detayı ekranına yazar. Kaydet'e siz basarsınız.",
-  "action": { "default_popup": "popup.html", "default_title": "Accountie" },
-  "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["https://accountie.vercel.app/*"],
-  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'none'" }
+  "version": "0.2.0",
+  "description": "Onaylı fişleri Luca Fiş Detayına yazar, ekranla karşılaştırır; son fişi siz kaydedersiniz.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Accountie"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://accountie.vercel.app/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'"
+  }
 }
