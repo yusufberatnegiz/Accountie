@@ -34,3 +34,19 @@ export function Odometer({ value, className }: { value: string; className?: stri
     </span>
   );
 }
+
+/**
+ * A label that changes by one two-slot roll (YON.md 23.4): the old words leave upward, the new ones come from below. Used for a
+ * status pill, a reading stage, a button's "Kopyalandı". Nothing rolls on first render; the words are plain text for screen readers.
+ */
+export function Roll({ value }: { value: string }) {
+  const [cur, setCur] = useState(value);
+  const [old, setOld] = useState<string | null>(null);
+  if (value !== cur) { setOld(cur); setCur(value); }
+  return (
+    <>
+      <span className="visually-hidden">{cur}</span>
+      <span key={cur} className="roll-slot" data-old={old ?? undefined} aria-hidden="true"><span>{cur}</span></span>
+    </>
+  );
+}

@@ -383,6 +383,21 @@ tbody tr:last-child td { border-bottom: 0; }
 main:focus, main:focus-visible { outline: none; }
 
 /* ---------- Motion ---------- */
+/* Odometer and Roll (components/home/Odometer.tsx, YON 23.3.3 and 23.4): the old glyph leaves upward, the new one comes from
+   below, two slots, the box clips them. Shared by the homepage and the panel; --odo-t sets the pace. */
+.odo { display: inline-block; white-space: nowrap; }
+.odo.code { display: block; }
+.odo-digits { display: inline-flex; user-select: none; }
+.odo-d, .roll-slot { position: relative; display: inline-block; clip-path: inset(0 -0.1em); }
+:is(.odo-d, .roll-slot) > span { display: inline-block; white-space: nowrap; }
+:is(.odo-d, .roll-slot)[data-old]::before { content: attr(data-old); position: absolute; left: 0; top: 0; white-space: nowrap; }
+@keyframes odo-in { from { transform: translateY(100%); opacity: 0; } }
+@keyframes odo-out { to { transform: translateY(-100%); opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  :is(.odo-d, .roll-slot)[data-old] > span { animation: odo-in var(--odo-t, var(--t-digit)) var(--ease-out) backwards; animation-delay: calc(var(--k, 0) * 24ms); }
+  :is(.odo-d, .roll-slot)[data-old]::before { animation: odo-out var(--odo-t, var(--t-digit)) var(--ease-out) forwards; animation-delay: calc(var(--k, 0) * 24ms); }
+}
+@media (prefers-reduced-motion: reduce) { :is(.odo-d, .roll-slot)[data-old]::before { content: none; } }
 /* A theme change is a jump, never a fade (YON 6.2): theme.ts sets this class for one frame around the switch. */
 html.tema-degisiyor *, html.tema-degisiyor *::before, html.tema-degisiyor *::after { transition: none !important; }
 /* Reduced motion: fewer and gentler, not none. Travel and scale go, colour and opacity stay;

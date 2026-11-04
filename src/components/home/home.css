@@ -429,14 +429,6 @@
 .phone-head > span:last-child, .phone-foot > span:first-child { opacity: 0.72; }
 .phone-foot { margin-top: auto; }
 
-/* ---------- Odometer (Odometer.tsx, YON.md 23.3.3): two slots per digit, the box clips them ---------- */
-.odo { display: inline-block; white-space: nowrap; }
-.odo.code { display: block; }
-.odo-digits { display: inline-flex; user-select: none; }
-.odo-d { position: relative; display: inline-block; clip-path: inset(0 -0.1em); }
-.odo-d > span { display: inline-block; }
-.odo-d[data-old]::before { content: attr(data-old); position: absolute; left: 0; top: 0; }
-
 /* ---------- Hero: the window holds the Luca lines, the phone with the receipt rides over its bottom-left corner ---------- */
 .hero { overflow-x: clip; }
 .hero-stage { padding-right: 0; justify-items: stretch; }
@@ -653,8 +645,6 @@
 @keyframes home-fade { from { opacity: 0.6; } to { opacity: 1; } }
 @keyframes hero-tilt { from { transform: perspective(1600px) rotateX(8deg) scale(0.96); } to { transform: none; } }
 @keyframes hero-phone { from { transform: translate(-16px, 32px); } }
-@keyframes odo-in { from { transform: translateY(100%); opacity: 0; } }
-@keyframes odo-out { to { transform: translateY(-100%); opacity: 0; } }
 @keyframes pop { from { transform: scale(0.96); opacity: 0; } }
 @keyframes spot-open { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
 @keyframes rule-lit { from { opacity: 0; } }
@@ -676,9 +666,7 @@
   /* The phone settles onto the window after the window is painted; it is opaque from the first frame. */
   .js .counter-phone { animation: hero-phone var(--t-reveal) var(--ease-expo) 200ms backwards; }
 
-  .odo-d[data-old] > span { animation: odo-in var(--t-digit) var(--ease-out) backwards; animation-delay: calc(var(--k) * 24ms); }
-  .odo-d[data-old]::before { animation: odo-out var(--t-digit) var(--ease-out) forwards; animation-delay: calc(var(--k) * 24ms); }
-  .odo-code .odo-d[data-old] > span, .odo-code .odo-d[data-old]::before { animation-duration: 240ms; }
+  .odo-code { --odo-t: 240ms; }
   .counter[data-touched] .counter-state { display: inline-block; animation: pop 160ms var(--ease-out); }
   .spot-link { animation: spot-open 360ms var(--ease-out) both; }
 
@@ -718,5 +706,4 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .path-card { transition: none; transform: none !important; }
-  .odo-d[data-old]::before { content: none; }
 }

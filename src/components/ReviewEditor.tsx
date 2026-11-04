@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useRef, useState, useSyncExternalStore, useTransition, ViewTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition, ViewTransition } from "react";
 import type { ReceiptDetail } from "@/db/queries";
 import { ACCOUNT_CODE_PATTERN, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type Account, type PaymentMethod, type Rules } from "@/lib/default-rules";
 import { approvalProblem, type JournalLine } from "@/lib/journal";
@@ -12,6 +12,7 @@ import { STATUS_LABELS } from "@/lib/status";
 import { getPhoto } from "@/lib/photo-store";
 import { CaptureButton } from "./CaptureButton";
 import { ExportButton } from "./ExportButton";
+import { Odometer, Roll } from "./home/Odometer";
 import { useLeaveGuard } from "./useLeaveGuard";
 
 type EditLine = Omit<JournalLine, "debitKurus" | "creditKurus"> & { key: number; debit: string; credit: string };
@@ -65,12 +66,15 @@ export function problemTarget(problem: string, lines: JournalLine[] = [], totalK
   return { id: "satir-1-borc", action: problem.startsWith("Borç ile alacak") ? "Tutarları düzeltin" : "Tutar biçimini düzeltin" };
 }
 
+const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
+
 /** Scrolls the field into view, clear of the sticky bar, focuses it and gives it one small pulse once the scroll lands. */
 function goTo(el: HTMLElement | null) {
-  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  el?.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
+  const reduced = still();
+  el?.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
   el?.focus({ preventScroll: true });
-  if (!still) el?.animate([{ transform: "none" }, { transform: "scale(1.04)" }, { transform: "none" }], { duration: 280, delay: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+  if (!reduced) el?.animate([{ transform: "none" }, { transform: "scale(1.04)" }, { transform: "none" }], { duration: 280, delay: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
 }
 
 /** The other draft to open once this one is done, and how many drafts wait besides this one. */
@@ -93,14 +97,54 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   const refresh = () => startRefresh(() => router.refresh());
   const [allWarnings, setAllWarnings] = useState(false);
   const [trace, setTrace] = useState<Source | null>(null);
-  // The approval stamp plays only when this screen sees the status turn to approved, never on load.
   const [shownStatus, setShownStatus] = useState(receipt.status);
-  const [stamped, setStamped] = useState(false);
   if (receipt.status !== shownStatus) {
     setShownStatus(receipt.status);
-    setStamped(receipt.status === "approved");
     setApproved(false);
   }
+  const [copied, setCopied] = useState(false);
+  // Lines on screen when it opened; a line added later comes in with a short drop (YON 23.4.6).
+  const [firstKeys] = useState(() => new Set(lines.map((l) => l.key)));
+  const tbody = useRef<HTMLTableSectionElement>(null);
+  const flip = useRef<Map<string, number> | null>(null);
+  // After a line is removed, the ones below slide up from where they were (FLIP), transform only.
+  useLayoutEffect(() => {
+    const before = flip.current;
+    flip.current = null;
+    if (!before || !tbody.current) return;
+    for (const row of tbody.current.rows) {
+      const dy = (before.get(row.dataset.key ?? "") ?? 0) - row.getBoundingClientRect().top;
+      if (dy) row.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 180, easing: EASE_OUT });
+    }
+  }, [lines]);
+  const removeLine = (key: number) => {
+    const rows = [...(tbody.current?.rows ?? [])];
+    const done = () => {
+      flip.current = new Map(rows.map((r) => [r.dataset.key ?? "", r.getBoundingClientRect().top]));
+      setLines((ls) => ls.filter((x) => x.key !== key));
+    };
+    const row = rows.find((r) => r.dataset.key === String(key));
+    if (!row || still()) return done();
+    row.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(-4px)" }], { duration: 140, easing: "cubic-bezier(0.55, 0.055, 0.675, 0.19)", fill: "forwards" }).finished.then(done, done);
+  };
+  // Fiş izi link: one curve from the journal line to the receipt figure it came from, only while the two columns sit side by side.
+  const reviewRef = useRef<HTMLDivElement>(null);
+  const [link, setLink] = useState<{ x: number; y: number; w: number; h: number; p: number; q: number; fromRight: boolean } | null>(null);
+  const traceOn = (src: Source, row: HTMLElement) => {
+    setTrace(src);
+    const root = reviewRef.current;
+    const to = root?.querySelector<HTMLElement>(`.read-values > [data-src="${src}"]`);
+    if (!root || !to || !matchMedia("(min-width: 1100px)").matches) return setLink(null);
+    const o = root.getBoundingClientRect(), a = row.getBoundingClientRect(), b = to.getBoundingClientRect();
+    // The receipt column sits left of the lines; the curve runs across the gutter between them and opens from the line's side.
+    const rowY = a.top + a.height / 2 - o.top, srcY = b.top + b.height / 2 - o.top;
+    const [x1, y1, x2, y2] = b.right <= a.left ? [b.right, srcY, a.left, rowY] : [a.right, rowY, b.left, srcY];
+    if (x2 - x1 < 8) return setLink(null);
+    // shortcut: measured on enter; a sticky receipt column scrolled under a hovered line leaves the curve stale until the next enter.
+    const y = Math.min(y1, y2) - 4;
+    setLink({ x: x1 - o.left - 4, y, w: x2 - x1 + 8, h: Math.abs(y2 - y1) + 8, p: y1 - y, q: y2 - y, fromRight: b.right <= a.left });
+  };
+  const traceOff = () => { setTrace(null); setLink(null); };
   // When the status changes the pressed button is gone: focus moves to the next draft, or to the sentence that says what happened.
   const statusLine = useRef<HTMLParagraphElement>(null);
   const lastStatus = useRef(receipt.status);
@@ -121,6 +165,15 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   const debit = sum((l) => l.debitKurus);
   const credit = sum((l) => l.creditKurus);
   const vat = sum((l) => (l.accountCode.startsWith("191") ? l.debitKurus : 0));
+  // The strip rolls its figures once a value is complete (a 300ms pause), not on every key.
+  const totals = [debit, credit, vat].join("|");
+  const [settled, setSettled] = useState(totals);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(totals), still() ? 0 : 300);
+    return () => clearTimeout(t);
+  }, [totals]);
+  const [shownDebit, shownCredit, shownVat] = settled.split("|").map(Number);
+  const shownGap = Math.abs(shownDebit - shownCredit);
   const problem = invalid ? "Tutar biçimi hatalı." : approvalProblem(parsed);
   const creditCode = parsed.find((l) => l.creditKurus > 0)?.accountCode ?? "";
   const head = lines[0];
@@ -186,7 +239,11 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
       });
   };
 
-  const copy = () => navigator.clipboard.writeText(clipboardText(parsed)).then(() => setInfo("Satırlar panoya kopyalandı."), () => setError("Panoya kopyalanamadı."));
+  const copy = () => navigator.clipboard.writeText(clipboardText(parsed)).then(() => {
+    setInfo("Satırlar panoya kopyalandı.");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  }, () => setError("Panoya kopyalanamadı."));
 
   // What the receipt said, from the lines as first built (the reader's values); the editor's lines may differ after edits.
   const readVat = receipt.lines.reduce((s, l) => s + (l.accountCode.startsWith("191") ? l.debitKurus : 0), 0);
@@ -224,7 +281,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             <ViewTransition name={`fis-${receipt.id}`} share="title-morph" default="none">
               <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
             </ViewTransition>
-            <span key={receipt.status} className={`status status-${receipt.status}`} data-stamp={stamped || undefined}>{STATUS_LABELS[receipt.status]}</span>
+            <span className={`status status-${receipt.status}`}><Roll value={STATUS_LABELS[receipt.status]} /></span>
           </div>
           <p className={findingOff ? "finding finding-off" : "finding"}>
             {target ? <button className="link-button" type="button" onClick={fix}>{finding}</button> : finding}
@@ -232,7 +289,13 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
         </div>
       </div>
 
-      <div className="review">
+      <div className="review" ref={reviewRef}>
+        {link ? (
+          <svg key={`${link.x} ${link.y} ${link.q}`} className="trace-link" data-from-right={link.fromRight || undefined} aria-hidden="true" focusable="false" width={link.w} height={link.h} style={{ left: link.x, top: link.y }}>
+            <path d={`M4 ${link.p}C${link.w / 2} ${link.p} ${link.w / 2} ${link.q} ${link.w - 4} ${link.q}`} />
+            <circle cx={4} cy={link.p} r={2.5} /><circle cx={link.w - 4} cy={link.q} r={2.5} />
+          </svg>
+        ) : null}
         {warnings.length ? (
           <div className="alert alert-warn" id="uyarilar">
             <p className="alert-title">Kontrol edilecekler</p>
@@ -271,7 +334,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
                 {editable ? <th className="col-del"><span className="visually-hidden">Sil</span></th> : null}
               </tr>
             </thead>
-            <tbody>
+            <tbody ref={tbody}>
               {lines.map((l, i) => {
                 const codeFlag = flagged(`code-${l.key}`, !l.accountCode);
                 const debitFlag = flagged(`debit-${l.key}`, amountsUnsure && !!l.debit);
@@ -279,7 +342,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
                 const unsure = (on: boolean) => (on ? ", kontrol edin" : "");
                 const src = sourceOf(l.accountCode, kurus(l.credit) || 0);
                 return (
-                <tr key={l.key} {...traced(src)} onMouseEnter={() => setTrace(src)} onMouseLeave={() => setTrace(null)} onFocus={() => setTrace(src)} onBlur={() => setTrace(null)}>
+                <tr key={l.key} data-key={l.key} data-new={firstKeys.has(l.key) ? undefined : ""} {...traced(src)} onMouseEnter={(e) => traceOn(src, e.currentTarget)} onMouseLeave={traceOff} onFocus={(e) => traceOn(src, e.currentTarget)} onBlur={traceOff}>
                   {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
                   <td data-label="Hesap kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
                     autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder="770.08…" aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
@@ -289,18 +352,18 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
                     {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} />{checkNote(debitFlag)}</td>
                   <td data-label="Alacak (TL)" className="col-amount"><input id={`satir-${i + 1}-alacak`} autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
                     {...flag(creditFlag)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} />{checkNote(creditFlag)}</td>
-                  {editable ? <td className="col-del"><button className="btn btn-quiet btn-sm" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => ((!l.debit && !l.credit) || confirm(`Satır ${i + 1} (${l.accountCode || "hesap kodu yok"}) silinsin mi?`)) && setLines((ls) => ls.filter((x) => x.key !== l.key))}>Sil</button></td> : null}
+                  {editable ? <td className="col-del"><button className="btn btn-quiet btn-sm" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => ((!l.debit && !l.credit) || confirm(`Satır ${i + 1} (${l.accountCode || "hesap kodu yok"}) silinsin mi?`)) && removeLine(l.key)}>Sil</button></td> : null}
                 </tr>
                 );
               })}
             </tbody>
           </table>
           {editable ? <div className="journal-add"><button id="satir-ekle" className="btn btn-sm" type="button" disabled={working} onClick={addLine}>Satır ekle</button></div> : null}
-          <dl className="balance-strip" data-balanced={!gap && !invalid ? "" : undefined}>
-            <div><dt>Borç toplamı</dt><dd className="num to-luca">{formatTrAmount(debit)}</dd></div>
-            <div><dt>Alacak toplamı</dt><dd className="num to-luca">{formatTrAmount(credit)}</dd></div>
-            <div><dt>KDV (191)</dt><dd className="num to-luca">{formatTrAmount(vat)}</dd></div>
-            <div className="balance-answer"><dt>{gap ? "Fark" : "Fark yok, dengede"}</dt><dd className={gap ? "num balance-off" : "num balance-ok"}>{formatTrAmount(gap)}
+          <dl className="balance-strip" data-balanced={!shownGap && !invalid ? "" : undefined}>
+            <div><dt>Borç toplamı</dt><dd className="num to-luca"><Odometer value={formatTrAmount(shownDebit)} /></dd></div>
+            <div><dt>Alacak toplamı</dt><dd className="num to-luca"><Odometer value={formatTrAmount(shownCredit)} /></dd></div>
+            <div><dt>KDV (191)</dt><dd className="num to-luca"><Odometer value={formatTrAmount(shownVat)} /></dd></div>
+            <div className="balance-answer"><dt>{shownGap ? "Fark" : "Fark yok, dengede"}</dt><dd className={shownGap ? "num balance-off" : "num balance-ok"}><Odometer value={formatTrAmount(shownGap)} />
               {/* Shown when debit meets credit; a CSS transition, so it never plays on load. */}
               <svg className="balance-check" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8.5l3.25 3.25L13 5" /></svg></dd></div>
           </dl>
@@ -323,9 +386,9 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
               <div><dt>VKN</dt><dd className="tnum">{receipt.taxNumber ? <span className={vknUnsure ? "flagged" : undefined}>{receipt.taxNumber}{vknUnsure ? " (kontrol edin)" : ""}</span> : read(null)}</dd></div>
               <div><dt>Fiş No</dt><dd className="tnum" translate="no">{read(receipt.receiptNo)}</dd></div>
               <div><dt>Tarih</dt><dd className="tnum">{read(trDate(receipt.receiptDate))}</dd></div>
-              <div className="read-sum" {...traced("base")}><dt>Matrah</dt><dd className="num">{readTotal !== null ? <>{formatTrAmount(readTotal - readVat)}<span className="formula">{formatTrAmount(readTotal)} - {formatTrAmount(readVat)}</span></> : read(null)}</dd></div>
-              <div className="read-sum" {...traced("vat")}><dt>KDV</dt><dd className="num">{formatTrAmount(readVat)}</dd></div>
-              <div className="read-sum read-total" {...traced("total")}><dt>Toplam</dt><dd className="num">{readTotal !== null ? <>{formatTrAmount(readTotal)}<span className="formula">{PAYMENT_LABELS[receipt.paymentMethod as PaymentMethod] ?? "Ödeme okunamadı"}</span></> : read(null)}</dd></div>
+              <div className="read-sum" data-src="base" {...traced("base")}><dt>Matrah</dt><dd className="num">{readTotal !== null ? <>{formatTrAmount(readTotal - readVat)}<span className="formula">{formatTrAmount(readTotal)} - {formatTrAmount(readVat)}</span></> : read(null)}</dd></div>
+              <div className="read-sum" data-src="vat" {...traced("vat")}><dt>KDV</dt><dd className="num">{formatTrAmount(readVat)}</dd></div>
+              <div className="read-sum read-total" data-src="total" {...traced("total")}><dt>Toplam</dt><dd className="num">{readTotal !== null ? <>{formatTrAmount(readTotal)}<span className="formula">{PAYMENT_LABELS[receipt.paymentMethod as PaymentMethod] ?? "Ödeme okunamadı"}</span></> : read(null)}</dd></div>
             </dl>
             <p className="muted small">{photo ? "Fotoğraf yalnızca bu cihazda, bu oturumda görünür." : "Fotoğraf bu cihazda değil; sunucu fotoğrafı saklamaz. Satırları kâğıt fişle karşılaştırın."}</p>
           </section>
@@ -378,7 +441,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
               </button>
             </>
           ) : null}
-          <button className="btn" type="button" disabled={invalid} onClick={copy}>Satırları kopyala</button>
+          <button className="btn" type="button" disabled={invalid} onClick={copy}><Roll value={copied ? "Kopyalandı" : "Satırları kopyala"} /></button>
           <p role="status" className="muted small">{info}</p>
         </div>
 

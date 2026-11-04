@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Odometer } from "./home/Odometer";
 
 /** Luca takes one file of at most 50 receipts and 400 lines; the meter shows how full the next file is. */
 export function LucaMeter({ label, value, max }: { label: string; value: number; max: number }) {
@@ -20,7 +21,7 @@ export function LucaMeter({ label, value, max }: { label: string; value: number;
   }, [label, ratio]);
   return (
     <div className="meter">
-      <p className="meter-head"><span>{label}</span><span className="num"><span className="meter-value">{value}</span> / {max}</span></p>
+      <p className="meter-head"><span>{label}</span><span className="num"><Odometer value={String(value)} className="meter-value" /> / {max}</span></p>
       <span className="meter-track" aria-hidden="true"><span ref={fill} className="meter-fill" style={{ transform: `scaleX(${ratio})` }} /></span>
     </div>
   );

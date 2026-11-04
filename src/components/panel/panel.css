@@ -106,7 +106,12 @@
 .receipts .col-code { width: 120px; }
 .receipts .col-total { width: 128px; }
 .receipts .col-status { width: 120px; }
-.receipts tbody tr { position: relative; transition: background-color var(--t-hover) ease; }
+.receipts tbody tr { position: relative; transition: background-color 120ms ease; }
+@media (hover: hover) and (pointer: fine) and (min-width: 901px) {
+  .r-status { position: relative; }
+  .r-status::after { content: ""; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border: solid var(--faint); border-width: 1.5px 1.5px 0 0; transform: rotate(45deg); transition: transform 120ms var(--ease-out), border-color 120ms ease; }
+  .receipts tbody tr:hover .r-status::after { border-color: var(--ink); transform: translateX(4px) rotate(45deg); }
+}
 .r-vendor { min-width: 0; }
 .row-link { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.3; overflow-wrap: anywhere; color: var(--ink); font-weight: var(--w-medium); text-decoration: none; }
 /* The whole row opens the receipt. */
@@ -228,9 +233,9 @@ details.side-block:not([open]) { gap: 0; }
 .balance-answer dd { display: flex; align-items: center; gap: var(--s2); font-size: var(--fs-figure); line-height: 1.1; letter-spacing: -0.01em; }
 /* Balance mark: a line along the answer cell and a check beside the figure, there only while debit equals credit. */
 .balance-answer::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 2px; background: var(--positive); transform: scaleX(0); transform-origin: left center; }
-.balance-check { width: 0.7em; height: 0.7em; flex: none; fill: none; stroke: var(--positive); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transform: scale(0.6); }
+.balance-check { width: 0.7em; height: 0.7em; flex: none; fill: none; stroke: var(--positive); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; clip-path: inset(0 100% 0 0); }
 [data-balanced] .balance-answer::before { transform: none; }
-[data-balanced] .balance-check { opacity: 1; transform: none; }
+[data-balanced] .balance-check { clip-path: inset(0); }
 .form-grid { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: var(--s4); }
 .span-all { grid-column: 1 / -1; }
 .review > .actions > p { flex: 1; }
@@ -473,32 +478,49 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 /* ---------- Motion (docs/design/YON.md 15): feedback 120-200ms, stamp and view transitions at most 320ms ---------- */
 @media (prefers-reduced-motion: no-preference) {
   .balance-answer::before { transition: transform 200ms var(--ease-out); }
-  .balance-check { transition: opacity 160ms ease, transform 200ms var(--ease-out); }
+  .balance-check { transition: clip-path 200ms var(--ease-out); }
   /* A downloaded receipt that stays in view (Tümü) changes its pill by a short tone step, not a jump. */
   .receipts .status { transition: background-color 180ms ease, color 180ms ease; }
-  /* Onaylandı: the pill settles into its new tone, a short step, no stamp. */
-  .status[data-stamp] { animation: stamp 220ms var(--ease-out) both; }
-  @keyframes stamp { from { opacity: 0.4; transform: scale(0.94); } to { transform: none; } }
-  /* Reading a receipt: a ledger-blue line passes down the photo, the same motif as the landing page's counter. */
-  .feed::after { animation: feed-scan 1400ms var(--ease-in-out) infinite; }
-  @keyframes feed-scan { 0% { top: 0; opacity: 1; } 80% { opacity: 1; } 100% { top: calc(100% - 2px); opacity: 0; } }
+  /* Onaylandı: the pill's words roll to the new status (Roll) while its tone steps over, no stamp. */
+  .title-line > .status { transition: background-color 180ms ease, color 180ms ease; }
+  /* Reading a receipt: the photo settles in once; the dots beside the stage are the only loop, opacity alone. */
+  .feed img { animation: feed-in 200ms var(--ease-out) both; }
+  @keyframes feed-in { from { transform: scale(0.98); opacity: 0; } }
+  .wait-dots i { animation: wait-dot 1200ms ease-in-out infinite; animation-delay: calc(var(--n, 0) * 200ms); }
+  @keyframes wait-dot { 0%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+  /* An added journal line drops in 8px; a removed one leaves in 140ms and the rest slide up (ReviewEditor, FLIP). */
+  .journal tbody tr[data-new] { animation: line-in 180ms var(--ease-out) both; }
+  @keyframes line-in { from { opacity: 0; transform: translateY(-8px); } }
+  .trace-link { animation: link-open 240ms var(--ease-out) both; }
+  @keyframes link-open { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+  .trace-link[data-from-right] { animation-name: link-open-r; }
+  @keyframes link-open-r { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
   .row-pending { animation: row-pending 900ms var(--ease-in-out) infinite; }
   @keyframes row-pending { from { transform: scaleX(0); } 60% { transform: scaleX(1); opacity: 1; } to { transform: scaleX(1); opacity: 0; } }
-  .stages li:last-child { animation: stage-in 180ms var(--ease-out) both; }
   .reading { animation: stage-in 180ms var(--ease-out) both; }
   @keyframes stage-in { from { opacity: 0; transform: translateY(6px); } }
 }
+/* Panel figures and labels roll at the panel's pace (YON 23.4): 240ms digits, 220ms status, 200ms stages. */
+.app { --odo-t: 240ms; }
+.title-line > .status { --odo-t: 220ms; }
+.stages { --odo-t: 200ms; }
+/* Fiş izi link: one ledger-blue curve across the gutter, from the journal line to the receipt figure. */
+.review { position: relative; }
+.review > .trace-link { grid-column: auto; grid-row: auto; }
+.trace-link { position: absolute; z-index: 1; overflow: visible; pointer-events: none; fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.trace-link circle { fill: var(--accent); stroke: none; }
 /* Row opening: a thin ledger-blue bar along the row's foot while the review loads. */
 .row-pending { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--accent); transform-origin: left center; }
 .reading:has(.feed) { gap: var(--s3); padding: var(--s3) var(--s4); }
 /* Big enough to catch the eye during a 1.5-3 s read; the stages at section size beside it. */
 .feed { flex: none; position: relative; display: block; width: 56px; height: 80px; overflow: hidden; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); }
 .feed img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.feed::after { content: ""; position: absolute; inset-inline: 0; top: 50%; height: 2px; background: var(--accent); }
 .reading-text { display: grid; gap: 2px; min-width: 0; }
-.stages { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: var(--fs-section); }
-.stages li[data-done] { color: var(--muted); font-weight: 400; }
-.stages li[data-done]::before { content: "\2713\00a0"; color: var(--positive); }
+.stages { display: flex; align-items: baseline; gap: var(--s2); margin: 0; font-size: var(--fs-section); }
+.wait-dots { display: inline-flex; gap: 3px; }
+.wait-dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.wait-dots i:nth-child(2) { --n: 1; }
+.wait-dots i:nth-child(3) { --n: 2; }
 .reading-text .small { font-weight: 400; color: var(--muted); }
 
 /* View transitions. Root cross-fades quickly; named parts carry the meaning. */
@@ -522,13 +544,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 ::view-transition-new(.row-rise) { animation: vt-rise 240ms var(--ease-out) both; }
 ::view-transition-old(.row-out) { animation: vt-out-up 200ms var(--ease-exit) both; }
 ::view-transition-group(.row-move) { animation-duration: 240ms; }
-::view-transition-old(.count-out) { animation: vt-count-out 140ms var(--ease-exit) both; }
-::view-transition-new(.count-in) { animation: vt-count-in 180ms var(--ease-out) both; }
 @keyframes vt-rise { from { opacity: 0; transform: translateY(16px); } }
 /* Up and to the left: toward the Aktarıldı tab at the top of the list. */
 @keyframes vt-out-up { to { opacity: 0; transform: translate(-8px, -12px); } }
-@keyframes vt-count-out { to { opacity: 0; transform: translateY(-6px); } }
-@keyframes vt-count-in { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 0s !important; animation-delay: 0s !important; }
 }
