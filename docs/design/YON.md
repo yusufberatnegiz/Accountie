@@ -981,3 +981,11 @@ Jüri her alanı 10 üzerinden ayrı puanlar ve her puanı ekran görüntüsü y
 - Plaka taşması komşusu olan kenarda kolon boşluğu kadardır (24px), dış kenarda 48px (`--pl`, `--pr`); 48px her iki yanda komşu metnin üstüne biniyordu.
 - Giriş ve kayıtta öne binen katman fiştir (`drop-shadow`, yırtık kenarı izler); kart plakasının üstünde.
 - inspect WARN savunmaları: fotoğraf ve video yok (23.2: koşulları tutan fotoğraf bulunmadı, varsayılan telefon çerçevesi); 1440'ta sağ kenar 69px (hero penceresi durgun halde `scale(0.96)` eğik, kaydırmayla düzleşir ve görünüm kenarına taşar).
+
+### 23.7 Uygulama notları (panel; 2026-11-05)
+
+- Odometre ve iki yuvalı kayma (`Roll`) tek bileşen ailesi (`components/home/Odometer.tsx`), stili `globals.css`te; panelde `--odo-t` 240ms (durum pill'i 220, okuma aşaması 200). Toplam şeridi yazarken değil, 300ms duraklamadan sonra oynar; reduced motion'da beklemez. Sekme sayaçlarındaki view-transition kaymasının yerine geçer.
+- Okuma kartı: tamamlanan aşamaların listesi yerine tek satır, yalnız etkin aşama kayar; yanında üç nokta (yalnız `opacity`). Tarama çizgisi ve `top` animasyonu kaldırıldı.
+- Fiş izi bağ çizgisi panelde 240ms açılır (23.3.5'teki 360 yerine; panel tavanı 240), satırın tarafından fişe doğru, yalnız 1100px ve üstünde. Ekranın geri kalanı sönükleşmez: çalışma ekranında yalnız işaret ve çizgi.
+- Liste satırı: sağ boşlukta küçük "Aç" oku (işaretçili masaüstü, 901px ve üstü).
+- Denge onayı `clip-path` ile çizilir. Onayla'nın ton geçişi zaten `--t-hover` (180ms) ile vardı, değişmedi. Luca dosyası çubukları zaten `scaleX` 320ms idi.

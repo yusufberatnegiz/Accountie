@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { addTransitionType, startTransition, useEffect, useState } from "react";
 import { setPhoto } from "@/lib/photo-store";
+import { Roll } from "./home/Odometer";
 
 // Large enough that each of several receipts in one photo is still readable once the server cuts it out.
 const MAX_EDGE = 3200;
@@ -120,15 +121,16 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       <div role="status" className={busy ? "reading" : notice ? "" : "visually-hidden"}>
         {busy ? (
           <>
-            {/* The photo itself, a scan line passing over it while the server reads; it means "working", not a percentage. */}
+            {/* The photo itself, settling in once when it arrives; the stage beside it rolls on as the real work moves (YON 23.4.3). */}
             <span className="feed" aria-hidden="true">
               {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
-              {thumb ? <img src={thumb} alt="" /> : null}
+              {thumb ? <img key={thumb} src={thumb} alt="" /> : null}
             </span>
             <div className="reading-text">
-              <ol className="stages">
-                {STAGES.slice(0, stage + 1).map((s, i) => <li key={i} data-done={i < stage || undefined}>{s || status}{i === stage && i < 2 ? "…" : ""}</li>)}
-              </ol>
+              <p className="stages">
+                <Roll value={STAGES[stage] || status} />
+                {stage < 2 ? <span className="wait-dots" aria-hidden="true"><i /><i /><i /></span> : null}
+              </p>
               <p className="small">Sayfadan ayrılmayın.{slow ? " Hâlâ okunuyor, fiş uzunsa biraz sürebilir." : ""}</p>
             </div>
           </>
