@@ -94,10 +94,10 @@
   .auth-file { display: none; }
   .auth-stage { grid-column: 1; grid-row: auto; position: static; height: auto; justify-items: center; padding: var(--s8) var(--page-margin) max(var(--s8), env(safe-area-inset-bottom)); }
 }
-/* While the cookie strip is up, the form can scroll clear of it and focus never lands under it (WIG: no overlay over the primary control). */
+/* While the cookie strip is shown (stepped aside too: tying this room to data-away changed the scroll range and flipped it back and forth), the form can scroll clear of it and focus never lands under it (WIG: no overlay over the primary control). */
 @media (max-width: 900px) {
-  html:has(.cookie-note:not([data-away])) { scroll-padding-bottom: 96px; }
-  .auth:has(.cookie-note:not([data-away])) .auth-main { padding-bottom: calc(var(--s8) + 72px); }
+  html:has(.cookie-note) { scroll-padding-bottom: 96px; }
+  .auth:has(.cookie-note) .auth-main { padding-bottom: calc(var(--s8) + 72px); }
 }
 @media (max-width: 640px) {
   .auth-main { padding: calc(56px + var(--s7)) var(--page-margin) var(--s7); }
