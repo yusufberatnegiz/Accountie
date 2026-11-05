@@ -60,12 +60,12 @@ export function HomeMotion() {
       const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(measure); };
       addEventListener("resize", onResize);
       // Timed mode starts when the balance strip is whole on screen, so Onayla and "Dengede" are seen on a phone, not cut at its foot.
-      // Re-measure once the section is rendered (content-visibility), then start a frame later: reads, writes and the start of
-      // the flight land in separate frames instead of one long one (YON 23.11).
+      // The idle and approach passes have measured; starting is play() on the paused CSS animations: no class on the scene root,
+      // so no style pass over its whole subtree in a scroll frame (4x CPU: an 85 ms frame at the start, YON 23.18).
       const io = new IntersectionObserver(([e]) => {
         if (!(e.intersectionRatio >= 0.9 || e.boundingClientRect.bottom < 0)) return;
         io.disconnect();
-        raf = requestAnimationFrame(() => { measure(); raf = requestAnimationFrame(() => rule.classList.add("is-playing")); });
+        if (rule.dataset.mode === "timed") raf = requestAnimationFrame(() => rule.getAnimations({ subtree: true }).forEach((a) => a.play()));
       }, { threshold: [0, 0.9] });
       io.observe(rule.querySelector(".rule-close") ?? rule);
       offs.push(() => { if (idle) cic(idle); near.disconnect(); cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
