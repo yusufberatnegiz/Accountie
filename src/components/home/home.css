@@ -620,8 +620,10 @@
 /* --ph: phone width, --ov: how far it reaches into the window. The window takes what is left plus a bleed past the screen edge. */
 .counter { --ph: 260px; --ov: 120px; }
 .counter-body { position: relative; display: flex; padding: 0 0 48px calc(var(--ph) - var(--ov)); }
-/* As tall as the longest sample (Market, five lines), so a choice never changes the window's height or the phone's place on it. */
-.counter-win { flex: none; width: min(780px, calc(100cqi - var(--ph) + var(--ov) + 48px)); min-height: var(--win-h, 600px); }
+/* The body keeps the longest sample's height (Market, five lines) and the phone hangs from a fixed top, so a choice never moves
+   the phone, the pickers or the page; the window is as tall as its own sample, so a short one leaves no empty band in it (jury tur 8). */
+.counter-body { min-height: calc(var(--win-h, 600px) + 48px); align-items: flex-start; }
+.counter-win { flex: none; width: min(780px, calc(100cqi - var(--ph) + var(--ov) + 48px)); }
 /* The window is an app (YON 23.15) with no rail (YON 23.32): a rail under the phone left a half-cut "Fişler" beside it. The sheet
    starts right of the strip the phone rides over and keeps clear of the 48px bleed on the right. */
 .counter-app { height: 100%; }
@@ -640,7 +642,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .counter-row-new { animation: line-in 180ms var(--ease-out); }
 }
-.counter-phone { position: absolute; left: 0; bottom: 0; z-index: 1; width: var(--ph); box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the phone truly stands on the window) */
+.counter-phone { position: absolute; left: 0; top: var(--ph-top, 140px); z-index: 1; width: var(--ph); box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the phone truly stands on the window) */
 .counter-phone .thermal-paper { padding-inline: var(--s2); }
 .counter-phone .thermal { font-size: 11.5px; letter-spacing: 0; }
 /* At 240 the strip steps down a size, so every item stays whole on one line. */
@@ -650,7 +652,7 @@
 @media (max-width: 960px) {
   .hero-stage { padding-right: 0; }
   .counter { --ph: 240px; --ov: 104px; }
-  .counter-win { min-height: 560px; }
+  .counter-body { --win-h: 560px; }
 }
 /* Phone: no window. Input before output (YON 23.2): the phone with the receipt first, so its top is on the first screen; the Luca
    lines card under it rides 40px over the phone's foot (the card is the one lift layer). The phone is as tall as its content. */
@@ -658,8 +660,8 @@
    with the pickers at its top, is on the same screen as the choice it answers (YON 23.15). */
 @media (max-width: 640px) {
   .hero-stage { padding-right: var(--page-margin); }
-  .counter-body { flex-direction: column; padding: 0; }
-  .counter-phone { position: relative; order: 0; align-self: center; width: min(280px, 100%); aspect-ratio: auto; box-shadow: none; } /* taste-skill-ignore: removes the lift */
+  .counter-body { flex-direction: column; padding: 0; min-height: 0; }
+  .counter-phone { position: relative; top: auto; order: 0; align-self: center; width: min(280px, 100%); aspect-ratio: auto; box-shadow: none; } /* taste-skill-ignore: removes the lift */
   .counter-phone .phone-screen { padding-bottom: calc(var(--s4) + 40px); }
   /* The item lines are in the card under it (as lines); the strip keeps its head and totals, so no shown sum disagrees with them. */
   .counter-phone .thermal-items { display: none; }
@@ -724,7 +726,7 @@
   /* The bodies: no card of their own, their head kept as space under the shell's head. The old one leaves in 120ms and the new
      one starts 60ms into that exit (YON 23.32, below). */
   /* As tall as the stage and stuck at the same line, so bodies and shell are released together at the section's end. */
-  .js .path-plate { position: sticky; top: var(--stage-top); height: var(--stage-h); margin-top: var(--s8); align-content: center; z-index: 1; grid-column: 6 / 13; grid-row: 1 / 7; align-self: start; justify-self: center; width: 640px; opacity: 0; transform: translateY(6px); transition: opacity 120ms var(--ease-exit), transform 0s linear 120ms; }
+  .js .path-plate { position: sticky; top: var(--stage-top); height: var(--stage-h); margin-top: var(--s8); align-content: center; z-index: 1; grid-column: 6 / 13; grid-row: 1 / 7; align-self: start; justify-self: center; width: 640px; opacity: 0; transform: translateY(6px); transition: opacity 100ms var(--ease-exit), transform 0s linear 100ms; }
   .js .path-card { --fs-body: 16px; --fs-ui: 15px; --fs-small: 14px; width: 100%; height: var(--path-h); min-height: 0; padding: var(--s6); gap: var(--s4); background: none; border-color: transparent; color: var(--ink); }
   .js .path-card > .ui-card-head { visibility: hidden; }
   .js .path-card { justify-content: center; }
@@ -735,9 +737,9 @@
   .js .path-card .path-read-fields .ui-kv { font-size: 20px; padding-block: var(--s3); }
   .js .path-strip .thermal { font-size: 14px; }
   .js .path-field[data-on] .path-clause > span { opacity: 1; }
-  /* The new body starts when the old one is down to about 40% (60ms into its 120ms exit, YON 23.32): no empty card frame, and the
-     two are never both legible. */
-  .js .path-field[data-on] .path-plate { opacity: 1; transform: none; transition: opacity 200ms var(--ease-out) 60ms, transform 260ms var(--ease-out) 60ms; }
+  /* The new body starts as the old one reaches 0 (its 100ms exit): the two are never both legible (jury tur 8: at 60ms they were),
+     and the shell stays, so the frame is never empty. */
+  .js .path-field[data-on] .path-plate { opacity: 1; transform: none; transition: opacity 220ms var(--ease-out) 100ms, transform 260ms var(--ease-out) 100ms; }
   .js .path-field:hover .path-card { transform: none; }
   /* Until the first state is known nothing transitions, so a fast entry never plays a wipe from the server's state. */
   .path:not([data-ready]) :is(.path-bg, .path-plate, .path-pill > .status, .path-clause > span) { transition: none; }
@@ -869,6 +871,8 @@
 .show-pick { color: var(--show-soft); }
 /* The shown tab is filled ledger blue (YON 23.31): the page's blue shows on the chosen tab as well as on the Luca figures. */
 .show-pick[aria-selected="true"], .show .show-hl { background: var(--chip-on); color: var(--on-chip-on); }
+/* State is never colour alone (1.86:1 against the navy tray): the chosen tab also carries a light inner edge. */
+.show-pick[aria-selected="true"] { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.55); }
 /* The copy is filled as one surface and clipped to the chosen tab, so the fill slides whole, never in pieces. */
 .show .show-hl .show-pick { background: none; color: var(--on-chip-on); }
 @media (hover: hover) and (pointer: fine) { .show-pick:hover:not([aria-selected="true"]) { color: var(--show-ink); background: color-mix(in srgb, var(--deep-raised), var(--on-accent-field) 8%); } }
@@ -1002,8 +1006,9 @@
 @keyframes file-out { from { transform: translateY(-24px); } }
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    /* All four are in place by cover 38%, while the section is still in the screen's middle (YON 23.28). */
-    .js .cta-chips li { animation: chip-in linear both; animation-timeline: view(); animation-range: cover calc(6% + var(--i, 0) * 6%) cover calc(20% + var(--i, 0) * 6%); }
+    /* All four are in place by cover 26%, while each chip is still in the screen's lower half: at 38% a reader who stopped on the
+       section saw the last ones faint (jury tur 8). */
+    .js .cta-chips li { animation: chip-in linear both; animation-timeline: view(); animation-range: cover calc(var(--i, 0) * 4%) cover calc(14% + var(--i, 0) * 4%); }
     /* The Excel file comes out of the Fişler window as the section passes: 24px, one layer, scroll-linked. */
     @media (min-width: 641px) { .js .routes-file { animation: file-out linear both; animation-timeline: view(); animation-range: entry 0% cover 45%; } }
   }

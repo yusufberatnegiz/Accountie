@@ -6,9 +6,9 @@ const rows = (id: string, payment: Payment["id"]) =>
 
 describe("ana sayfa fiş tezgâhı örnekleri", () => {
   it("lokanta fişi ortağın kartıyla 331.01, şirket kartıyla 309.01, nakitle 100.01 alacaklı olur", () => {
-    expect(rows("alabalik", "partner")).toEqual([["770.08", 793182, 0], ["191.03.10", 79318, 0], ["331.01", 0, 872500]]);
-    expect(rows("alabalik", "company")[2]).toEqual(["309.01", 0, 872500]);
-    expect(rows("alabalik", "cash")[2]).toEqual(["100.01", 0, 872500]);
+    expect(rows("lokanta", "partner")).toEqual([["770.08", 589091, 0], ["191.03.10", 58909, 0], ["331.01", 0, 648000]]);
+    expect(rows("lokanta", "company")[2]).toEqual(["309.01", 0, 648000]);
+    expect(rows("lokanta", "cash")[2]).toEqual(["100.01", 0, 648000]);
   });
 
   it("kırtasiye fişi matrahı brüt eksi KDV'dir", () => {

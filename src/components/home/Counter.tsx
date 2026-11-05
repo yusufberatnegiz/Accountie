@@ -139,7 +139,7 @@ export function Counter() {
 
         <Phone className="counter-phone">
           {/* "Fiş çekildi" turns to "Okundu" once in the load scenario (CSS, YON 23.28); the end state is the server's text. */}
-          <p className="phone-head"><span className="phone-state"><span>Fiş çekildi</span><span>Okundu</span></span><span>{sample.label}</span></p>
+          <p className="phone-head"><span className="phone-state"><span aria-hidden="true">Fiş çekildi</span><span>Okundu</span></span><span>{sample.label}</span></p>
           <div className="counter-slot" ref={slot}>
             <Thermal sample={sample} printedPayment={PRINTED[payment]} hot={hot} />
           </div>

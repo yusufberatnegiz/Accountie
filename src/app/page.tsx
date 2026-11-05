@@ -33,9 +33,9 @@ const linesOf = (s: Sample, pay: "partner" | "cash" = "partner"): Line[] => jour
   code: l.accountCode, name: shownAccountName(l.accountName),
   debit: l.debitKurus ? formatTrAmount(l.debitKurus) : "", credit: l.creditKurus ? formatTrAmount(l.creditKurus) : "",
 }));
-// Every slot reads its own receipt (YON 23.15): the hero counter 0047, the path a café 0331, the signature a fuel receipt 1185,
+// Every slot reads its own receipt (YON 23.15): the hero counter 0412, the path a café 0331, the signature a fuel receipt 1185,
 // the showcase Market 2214 and others, the Excel file the two approved fişler of the list.
-const LINES_0047 = linesOf(SAMPLES[0]);
+const LINES_0412 = linesOf(SAMPLES[0]);
 const LINES_KAFE = linesOf(KAFE);
 const LINES_FUEL = linesOf(AKARYAKIT);
 const LINES_KIRTASIYE = linesOf(SAMPLES[1], "cash");
@@ -95,7 +95,7 @@ const MARKET_LINES = journalFor(MARKET, "partner").lines.map((l, i) => ({
 
 /** The Fişler window's rows: invented sample vendors in the ÖRNEK form, statuses mixed as a real list is. */
 const LIST = [
-  ["0047", "ÖRNEK BALIK LOKANTASI", "05.09.2026", "8.725,00", "Onaylı"],
+  ["0412", "ÖRNEK BALIK LOKANTASI", "08.09.2026", "6.480,00", "Onaylı"],
   ["2214", "ÖRNEK MARKET", "04.09.2026", "598,50", "Onaylı"],
   ["0768", "ÖRNEK OTOPARK", "06.09.2026", "120,00", "Aktarıldı"],
   ["1185", "ÖRNEK AKARYAKIT", "03.09.2026", "2.150,00", "Taslak"],
@@ -132,11 +132,11 @@ const PIECES: Piece[] = [
     ),
   },
   {
-    name: "Uyarı notları", screen: "Fiş 0047, notlar",
+    name: "Uyarı notları", screen: "Fiş 0412, notlar",
     text: "Binek araç, ağırlama ve eski KDV oranı satırın yanında not olarak durur, onayı engellemez.",
     body: (
       <div className="ui-card ui-split">
-        <MiniLines lines={LINES_0047} mark={{ code: "770.08", node: <span className="pill pill-warn">Ağırlama</span> }} />
+        <MiniLines lines={LINES_0412} mark={{ code: "770.08", node: <span className="pill pill-warn">Ağırlama</span> }} />
         <div className="ui-notes">
           <p><span className="pill pill-warn">Ağırlama</span> {WARNING_MESSAGES.meal}</p>
           <p><span className="pill pill-warn">Binek araç</span> {WARNING_MESSAGES.vehicle}</p>
@@ -236,7 +236,7 @@ function RulePart({ n }: { n: number }) {
 const PART_TITLES = ["Gider hesapları", "KDV hesapları", "Ödeme ve alacak", "Belge türü", "Kod biçimi", "Kaydet"];
 
 const ROUTES: { group: string; rows: [string, string][] }[] = [
-  { group: "Excel veri aktarımı", rows: [["Onaylı fişler tek dosyada", ".xlsx"], ["Yeni dosyaya geçiş", "50 fiş ya da 400 satır"], ["Bir fiş", "İki dosyaya bölünmez"], ["Evrak No metin hücresi", "0047 korunur"], ["İndirilen fişler", "Aktarıldı olur"]] },
+  { group: "Excel veri aktarımı", rows: [["Onaylı fişler tek dosyada", ".xlsx"], ["Yeni dosyaya geçiş", "50 fiş ya da 400 satır"], ["Bir fiş", "İki dosyaya bölünmez"], ["Evrak No metin hücresi", "0412 korunur"], ["İndirilen fişler", "Aktarıldı olur"]] },
   { group: "Pano", rows: [["Tek fişin satırları", "Fiş Detayı sırasında"], ["Kolonlar", "Hesap, Evrak No, Tarih, BT, Açıklama, Borç, Alacak"]] },
   { group: "Chrome eklentisi, deneysel", rows: [["Açık Fiş Detayı ekranını doldurur", "Kaydet sizde"], ["Luca ekranıyla", "Henüz denenmedi"]] },
   { group: "Luca’da", rows: [["Muhasebe, Fiş İşlemleri", "Excel veri aktarımı"], ["Dosya, doğrulama kodu", "Yükle"], ["Önizleme", "Fiş Kes"]] },
@@ -314,9 +314,9 @@ const PATH = [
   ) },
 ];
 
-/** The Excel file of the routes section: the export's own columns for the list's two approved fişler, 0047 and 2214 (8 lines). */
+/** The Excel file of the routes section: the export's own columns for the list's two approved fişler, 0412 and 2214 (8 lines). */
 const SHEET = [
-  { no: "1", date: "05.09.2026", evrak: "0047", lines: LINES_0047 },
+  { no: "1", date: "08.09.2026", evrak: "0412", lines: LINES_0412 },
   { no: "2", date: "04.09.2026", evrak: "2214", lines: linesOf(SAMPLES[2]) },
 ].flatMap((f) => f.lines.map((l) => ({ ...f, l })));
 
@@ -586,7 +586,7 @@ export default function LandingPage() {
                   </div>
                   {/* The camera's shutter, not a page button: a ring, as the panel's capture screen draws it (YON 23.28). */}
                   <span className="cam-shoot" aria-hidden="true" />
-                  <p className="cam-last"><span><span className="cam-last-no">Önceki fiş 0047</span><span className="code-name">8.725,00</span></span><span className="status">Taslak</span></p>
+                  <p className="cam-last"><span><span className="cam-last-no">Önceki fiş 0412</span><span className="code-name">6.480,00</span></span><span className="status">Taslak</span></p>
                 </Phone>
                 <ul className="cta-chips" data-ui>
                   {LINES_KIRTASIYE.map((l, i) => (

@@ -1,6 +1,7 @@
 /* The thermal strip (Thermal.tsx), shared by the homepage and the auth screens. Tokens only. */
 /* Thermal strip drawn in code: paper in both themes, printed grey, torn bottom edge. */
-.thermal { color: var(--paper-ink); font-size: 13px; line-height: 1.45; letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
+/* Printed in a fixed-width face, as an ÖKC prints, not in the interface's type (jury tur 8: it read as UI set in capitals). */
+.thermal { color: var(--paper-ink); font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 13px; line-height: 1.45; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .thermal-paper {
   background: var(--paper); padding: var(--s5) var(--s4) var(--s7); display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px;
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), 92% 100%, 84% calc(100% - 8px), 76% 100%, 68% calc(100% - 8px), 60% 100%, 52% calc(100% - 8px), 44% 100%, 36% calc(100% - 8px), 28% 100%, 20% calc(100% - 8px), 12% 100%, 4% calc(100% - 8px), 0 100%);
@@ -19,3 +20,5 @@
 .thermal-compact { font-size: 12px; }
 .thermal-compact .thermal-paper { padding: var(--s4) var(--s3) var(--s6); }
 
+/* On a white window the paper needs its own edge (1.03:1 otherwise): a hairline and a short drop shadow that follow the torn edge. */
+.win .thermal { filter: drop-shadow(0 0 0.5px rgb(20 26 34 / 0.28)) drop-shadow(0 6px 10px rgb(20 26 34 / 0.08)); }

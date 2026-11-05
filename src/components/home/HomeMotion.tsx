@@ -83,14 +83,14 @@ export function HomeMotion() {
       let raf = 0;
       const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(measure); };
       addEventListener("resize", onResize);
-      // Timed mode starts with play() on the paused CSS animations once the ledger's rows are whole on screen (the receipt is then
+      // Timed mode starts with play() on the paused CSS animations once most of the ledger is on screen (the receipt is then
       // on screen above it on a phone): no class on the scene root, so no style pass over its subtree in a scroll frame (YON 23.18).
       const io = new IntersectionObserver(([e]) => {
-        if (!(e.intersectionRatio >= 0.99 || e.boundingClientRect.bottom < 0)) return;
+        if (!(e.intersectionRatio >= 0.6 || e.boundingClientRect.bottom < 0)) return;
         io.disconnect();
         if (rule.dataset.mode === "timed") raf = requestAnimationFrame(() => rule.getAnimations({ subtree: true }).forEach((a) => a.play()));
-      }, { threshold: [0, 1] });
-      // The table, not the balance strip under it: the scene starts as soon as the three rows are on screen (YON 23.28).
+      }, { threshold: [0, 0.6] });
+      // The table, not the balance strip under it: the scene starts when 60% of it is on screen, where a reader stops (YON 23.28).
       io.observe(rule.querySelector(".rule-table") ?? rule);
       offs.push(() => { if (idle) cic(idle); near.disconnect(); cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
     }

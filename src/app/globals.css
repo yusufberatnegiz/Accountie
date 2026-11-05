@@ -132,52 +132,52 @@
    Same block twice: the system preference without JS, and data-look, the one attribute the theme script sets (src/lib/theme.ts). ---------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-look]) {
-    --ground: #100f0d; --surface: #1e1c19; --raised: #282623; --stage: #181715; --active: #282623;
+    --ground: #0e0d0b; --surface: #272522; --raised: #312f2b; --stage: #1d1b18; --active: #282623;
     --border: #312f2c; --rule: #282623; --control-edge: #7f7c75;
     --ink: #eeede9; --muted: #b6b3ac; --faint: #aaa7a0; --thermal-ink: #b6b3ac;
     --accent: #92b6f6; --accent-strong: #b3cbf8; --accent-soft: #1a2742; --on-accent-field: #eeede9;
     --primary: #eeede9; --primary-hover: #d9d7d1; --on-primary: #100f0d;
-    --secondary: #312f2c; --secondary-hover: #3a3835; --bar-control: #34322e;
-    --chip-on: var(--accent); --on-chip-on: #100f0d; --lift-control: #36342f; --lift-control-hover: #403e3a; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
-    --deep: #1e1c19; --deep-raised: #2a2825;
+    --secondary: #34322e; --secondary-hover: #3d3a36; --bar-control: #3a3834;
+    --chip-on: var(--accent); --on-chip-on: #100f0d; --lift-control: #3d3a36; --lift-control-hover: #47443f; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
+    --deep: #1d1b18; --deep-raised: #272522;
     --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
     --warn-ink: #e8c477; --warn-bg: #2a2412; --warn-edge: #8f7440;
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-    --plate: #181715; --bezel: #2a2825; --edge-hi: rgb(255 255 255 / 0.07);
+    --plate: #1d1b18; --bezel: #2a2825; --edge-hi: rgb(255 255 255 / 0.07);
     --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
-    --path-1: #181715; --path-2: #1d1c19; --path-3: #23211e; --path-4: #172f63; --path-shell: #2c2a27;
-    --show-ground: #181715; --show-plate: #1f1e1b; --split: #181715;
-    --show-card: #1f1e1b; --show-card-edge: rgb(238 237 233 / 0.12); --show-tabs: #2a2825; --show-raised: #2a2825;
-    --lift: #1f1e1b; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #211f1c; --path-card-2: #262421; --path-card-3: #2c2a27; --path-card-4: #211f1c; --foot-name: #c2bfb8;
+    --path-1: #1d1b18; --path-2: #23211e; --path-3: #2a2825; --path-4: #142a5a; --path-shell: #2c2a27;
+    --show-ground: #1d1b18; --show-plate: #272522; --split: #1d1b18;
+    --show-card: #272522; --show-card-edge: rgb(238 237 233 / 0.12); --show-tabs: #2a2825; --show-raised: #2a2825;
+    --lift: #272522; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #272522; --path-card-2: #2c2a27; --path-card-3: #312f2b; --path-card-4: #22314f; --foot-name: #c2bfb8;
     --paper: #d0cdc6; --paper-ink: #3a3834; --paper-strong: #161513; --paper-lit: #b7c6e0;
-    --ui-surface: #1f1e1b; --ui-raised: #2a2825; --ui-border: rgb(238 237 233 / 0.12); --ui-rule: rgb(238 237 233 / 0.08);
-    --ui-lift: #232220; --ui-lift-edge: rgb(238 237 233 / 0.14); --cta-field: #181715; --photo-dim: 0.88;
+    --ui-surface: #272522; --ui-raised: #312f2b; --ui-border: rgb(238 237 233 / 0.12); --ui-rule: rgb(238 237 233 / 0.08);
+    --ui-lift: #2c2a27; --ui-lift-edge: rgb(238 237 233 / 0.14); --cta-field: #1d1b18; --photo-dim: 0.88;
     color-scheme: dark;
   }
 }
 :root[data-look="dark"] {
-  --ground: #100f0d; --surface: #1e1c19; --raised: #282623; --stage: #181715; --active: #282623;
+  --ground: #0e0d0b; --surface: #272522; --raised: #312f2b; --stage: #1d1b18; --active: #282623;
   --border: #312f2c; --rule: #282623; --control-edge: #7f7c75;
   --ink: #eeede9; --muted: #b6b3ac; --faint: #aaa7a0; --thermal-ink: #b6b3ac;
   --accent: #92b6f6; --accent-strong: #b3cbf8; --accent-soft: #1a2742; --on-accent-field: #eeede9;
   --primary: #eeede9; --primary-hover: #d9d7d1; --on-primary: #100f0d;
-  --secondary: #312f2c; --secondary-hover: #3a3835; --bar-control: #34322e;
-  --chip-on: var(--accent); --on-chip-on: #100f0d; --lift-control: #36342f; --lift-control-hover: #403e3a; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
-  --deep: #1e1c19; --deep-raised: #2a2825;
+  --secondary: #34322e; --secondary-hover: #3d3a36; --bar-control: #3a3834;
+  --chip-on: var(--accent); --on-chip-on: #100f0d; --lift-control: #3d3a36; --lift-control-hover: #47443f; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
+  --deep: #1d1b18; --deep-raised: #272522;
   --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
   --warn-ink: #e8c477; --warn-bg: #2a2412; --warn-edge: #8f7440;
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-  --plate: #181715; --bezel: #2a2825; --edge-hi: rgb(255 255 255 / 0.07);
+  --plate: #1d1b18; --bezel: #2a2825; --edge-hi: rgb(255 255 255 / 0.07);
   --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
-  --path-1: #181715; --path-2: #1d1c19; --path-3: #23211e; --path-4: #172f63; --path-shell: #2c2a27;
-  --show-ground: #181715; --show-plate: #1f1e1b; --split: #181715;
-  --show-card: #1f1e1b; --show-card-edge: rgb(238 237 233 / 0.12); --show-tabs: #2a2825; --show-raised: #2a2825;
-  --lift: #1f1e1b; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #211f1c; --path-card-2: #262421; --path-card-3: #2c2a27; --path-card-4: #211f1c; --foot-name: #c2bfb8;
+  --path-1: #1d1b18; --path-2: #23211e; --path-3: #2a2825; --path-4: #142a5a; --path-shell: #2c2a27;
+  --show-ground: #1d1b18; --show-plate: #272522; --split: #1d1b18;
+  --show-card: #272522; --show-card-edge: rgb(238 237 233 / 0.12); --show-tabs: #2a2825; --show-raised: #2a2825;
+  --lift: #272522; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #272522; --path-card-2: #2c2a27; --path-card-3: #312f2b; --path-card-4: #22314f; --foot-name: #c2bfb8;
   --paper: #d0cdc6; --paper-ink: #3a3834; --paper-strong: #161513; --paper-lit: #b7c6e0;
-  --ui-surface: #1f1e1b; --ui-raised: #2a2825; --ui-border: rgb(238 237 233 / 0.12); --ui-rule: rgb(238 237 233 / 0.08);
-  --ui-lift: #232220; --ui-lift-edge: rgb(238 237 233 / 0.14); --cta-field: #181715; --photo-dim: 0.88;
+  --ui-surface: #272522; --ui-raised: #312f2b; --ui-border: rgb(238 237 233 / 0.12); --ui-rule: rgb(238 237 233 / 0.08);
+  --ui-lift: #2c2a27; --ui-lift-edge: rgb(238 237 233 / 0.14); --cta-field: #1d1b18; --photo-dim: 0.88;
   color-scheme: dark;
 }
 

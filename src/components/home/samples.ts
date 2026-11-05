@@ -9,17 +9,17 @@ export type Sample = { id: string; label: string; receipt: ReceiptData; items: r
 
 export const SAMPLES: readonly Sample[] = [
   {
-    id: "alabalik", label: "Lokanta",
+    id: "lokanta", label: "Lokanta",
     receipt: {
-      vendorName: "ÖRNEK BALIK LOKANTASI", receiptNo: "0047", date: "2026-09-05",
-      vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
+      vendorName: "ÖRNEK BALIK LOKANTASI", receiptNo: "0412", date: "2026-09-08",
+      vatLines: [{ rate: 10, grossKurus: 648000, vatKurus: 58909 }], totalKurus: 648000, paymentMethod: "card", category: "meal",
     },
     items: [
-      { name: "LEVREK 2 AD", rate: 10, kurus: 310000 },
-      { name: "KARİDES GÜVEÇ", rate: 10, kurus: 185000 },
-      { name: "MEZE TABAĞI 4", rate: 10, kurus: 220000 },
-      { name: "SALATA 2 AD", rate: 10, kurus: 57500 },
-      { name: "İÇECEK 4 AD", rate: 10, kurus: 100000 },
+      { name: "LEVREK 2 AD", rate: 10, kurus: 240000 },
+      { name: "KARİDES GÜVEÇ", rate: 10, kurus: 150000 },
+      { name: "MEZE TABAĞI 4", rate: 10, kurus: 160000 },
+      { name: "SALATA 2 AD", rate: 10, kurus: 38000 },
+      { name: "İÇECEK 4 AD", rate: 10, kurus: 60000 },
     ],
   },
   {

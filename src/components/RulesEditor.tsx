@@ -7,8 +7,8 @@ import { useLeaveGuard } from "@/components/useLeaveGuard";
 import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, rulesToRows, type RuleKind, type RuleRow } from "@/lib/default-rules";
 import { formatTrAmount } from "@/lib/money";
 
-// The example receipt 0047 (8.725,00 TL, KDV %10 793,18, paid by card) shows what the rule in focus produces.
-const SAMPLE = { total: 872500, vat: 79318 };
+// The example receipt 0412 (6.480,00 TL, KDV %10 589,09, paid by card) shows what the rule in focus produces.
+const SAMPLE = { total: 648000, vat: 58909 };
 const vatAt = (rate: number) => Math.round((SAMPLE.total * rate) / (100 + rate));
 const PAID: Record<string, string> = { cash: "Nakit ödenen fiş", card: "Kartla ödenen fiş", other: "Başka yolla ödenen fiş" };
 
