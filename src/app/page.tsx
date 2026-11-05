@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { CSSProperties, ReactNode } from "react";
+import { Suspense, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
@@ -352,6 +352,7 @@ export default function LandingPage() {
 
         {/* how-it-works: on desktop a sticky split story (four clauses, one card through four states, the field wiped in from
             below, YON.md 23.3.4); without script, below 1100px and with reduced motion the four cards stand in their own fields. */}
+        <Suspense>
         <section className="path" aria-labelledby="path-title">
           <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2>
           {PATH.map((f, i) => (
@@ -373,9 +374,11 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        </Suspense>
 
         {/* The signature (YON.md 23.3.1): in the control window the receipt's base, VAT and total lift off the paper and land in
             their Luca cells, codes come in, the balance closes and Onayla opens. Server output is the end state. */}
+        <Suspense>
         <section className="rule" aria-labelledby="rule-title" data-scene="rule">
           <div className="rule-track">
             <div className="rule-stick wrap">
@@ -443,16 +446,20 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        </Suspense>
 
         {/* showcase: lit panel, dark row */}
+        <Suspense>
         <section className="show" aria-labelledby="show-title">
           <div className="show-inner wrap">
             <h2 className="t-head show-title" id="show-title">Kontrol ekranından Luca’ya</h2>
             <ShowRow pieces={PIECES} />
           </div>
         </section>
+        </Suspense>
 
         {/* features: panel with margin notes, each note on the row of the part it explains; nothing in the panel is editable */}
+        <Suspense>
         <section className="feat wrap" aria-labelledby="feat-title">
           <h2 className="t-head feat-title" id="feat-title">Sizin hesap planınız</h2>
           <div className="feat-panel" data-ui aria-label="Örnek hesap kuralları paneli" role="group">
@@ -471,8 +478,10 @@ export default function LandingPage() {
             </div>
           ))}
         </section>
+        </Suspense>
 
         {/* list: two-ended rows, and the Fişler window the file comes out of */}
+        <Suspense>
         <section className="routes wrap" aria-labelledby="routes-title">
           <div className="routes-list">
             <h2 className="t-head" id="routes-title">Excel ya da pano ile Luca’ya</h2>
@@ -531,13 +540,17 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        </Suspense>
 
         {/* faq: question index, one answer */}
+        <Suspense>
         <section className="faq wrap" aria-labelledby="sss-title" id="sss">
           <Faq items={FAQ} titleId="sss-title" />
         </section>
+        </Suspense>
 
         {/* cta: one action, beside the machine the receipt comes from */}
+        <Suspense>
         <section className="cta" aria-labelledby="cta-title">
           <div className="cta-inner wrap">
             <div className="cta-copy">
@@ -565,6 +578,7 @@ export default function LandingPage() {
             </figure>
           </div>
         </section>
+        </Suspense>
       </main>
 
       <footer className="foot wrap">

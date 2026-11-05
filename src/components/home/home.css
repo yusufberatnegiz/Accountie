@@ -921,6 +921,9 @@
   .rule[data-mode="scroll"] .fly-y { animation-name: fly-y-last; animation-timing-function: var(--ease-in-out); }
   .rule[data-mode] :is(.fly-copy, .fly-y, .fly-s, .fly-val, .fly-dash, [data-amt] > span:last-child, .rule-code, .rule-close, .rule-close .ui-reason, .rule-btn > .btn, .rule-receipt, .rule-win .win) { animation-fill-mode: both; }
   .rule[data-mode] [data-amt]::before { animation-fill-mode: both; }
+  /* Timed mode (phone) is set when the page is idle; the layers its play() needs are made then, not in the scroll frame that
+     starts the scene (4x CPU: a 181 ms frame at play(), YON 23.23). */
+  .rule[data-mode="timed"] :is(.fly-copy, .fly-y, .fly-s, .fly-val, .fly-dash, [data-amt] > span:last-child, .rule-close, .rule-close .ui-reason, .rule-btn > .btn, .rule-receipt) { will-change: transform, opacity; }
   .rule[data-mode] .rule-win { contain: layout style; }
 
   /* Clock: once, when the lines card is on screen (HomeMotion calls play() on these); until then it waits at its start. */
