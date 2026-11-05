@@ -240,6 +240,17 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
     const name = knownAccounts.find((a) => a.code === code.trim())?.name;
     update(key, name ? { accountCode: code, accountName: name } : { accountCode: code });
   };
+  // Phone: a line shows only the side it carries; an empty line keeps the side picked for it, and a switch moves the amount across.
+  const [picked, setPicked] = useState<Record<number, "debit" | "credit">>({});
+  const sideOf = (l: EditLine) => (l.debit && l.credit ? "both" : l.credit ? "credit" : l.debit ? "debit" : picked[l.key] ?? "debit");
+  const setSide = (l: EditLine, side: "debit" | "credit") => {
+    setPicked((p) => ({ ...p, [l.key]: side }));
+    const [here, there] = side === "debit" ? [l.debit, l.credit] : [l.credit, l.debit];
+    if (there && !here) {
+      touch(`${side}-${l.key}`);
+      update(l.key, side === "debit" ? { debit: there, credit: "" } : { credit: there, debit: "" });
+    }
+  };
   const addLine = () => setLines((ls) => [...ls, { ...ls[0], key: nextKey.current++, accountCode: "", accountName: "", debit: "", credit: "" }]);
 
   async function call(url: string, init?: RequestInit): Promise<boolean> {
@@ -293,7 +304,9 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   // The bar keeps its sentence while the field it pointed to has focus: the reason must stay in view as the keyboard opens.
   const [pointed, setPointed] = useState(false);
   const fix = () => {
-    const el = (invalid ? document.querySelector<HTMLInputElement>('.journal [aria-invalid="true"]') : null) ?? (target ? document.getElementById(target.id) : null);
+    let el = (invalid ? document.querySelector<HTMLInputElement>('.journal [aria-invalid="true"]') : null) ?? (target ? document.getElementById(target.id) : null);
+    // On the phone a line hides its empty side; the visible amount is the field to fix.
+    if (el && !el.offsetParent) el = document.getElementById(el.id.replace("-borc", "-alacak")) ?? el;
     if (!el) return;
     setPointed(true);
     el.addEventListener("blur", () => setPointed(false), { once: true });
@@ -382,8 +395,9 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
                 const creditFlag = flagged(`credit-${l.key}`, amountsUnsure && !!l.credit);
                 const unsure = (on: boolean) => (on ? ", kontrol edin" : "");
                 const src = sourceOf(l.accountCode, kurus(l.credit) || 0);
+                const side = sideOf(l);
                 return (
-                <tr key={l.key} data-key={l.key} data-new={firstKeys.has(l.key) ? undefined : ""} {...traced(src)} onMouseEnter={(e) => traceOn(src, e.currentTarget)} onMouseLeave={traceOff} onFocus={(e) => traceOn(src, e.currentTarget)} onBlur={traceOff}>
+                <tr key={l.key} data-key={l.key} data-side={side} data-new={firstKeys.has(l.key) ? undefined : ""} {...traced(src)} onMouseEnter={(e) => traceOn(src, e.currentTarget)} onMouseLeave={traceOff} onFocus={(e) => traceOn(src, e.currentTarget)} onBlur={traceOff}>
                   {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
                   <td data-label="Hesap kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
                     autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder="770.08…" aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
@@ -393,7 +407,11 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
                     {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} />{checkNote(debitFlag)}</td>
                   <td data-label="Alacak (TL)" className="col-amount"><input id={`satir-${i + 1}-alacak`} autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
                     {...flag(creditFlag)} onChange={(e) => { touch(`credit-${l.key}`); update(l.key, { credit: e.target.value }); }} />{checkNote(creditFlag)}</td>
-                  {editable ? <td className="col-del"><button className="btn btn-quiet btn-sm" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => ((!l.debit && !l.credit) || confirm(`Satır ${i + 1} (${l.accountCode || "hesap kodu yok"}) silinsin mi?`)) && removeLine(l.key)}>Sil</button></td> : null}
+                  {editable ? <td className="col-del">
+                    <span className="side-switch" role="group" aria-label={`Satır ${i + 1} tarafı`}>
+                      {(["debit", "credit"] as const).map((s) => <button key={s} className="side-opt" type="button" aria-pressed={side === s} onClick={() => setSide(l, s)}>{s === "debit" ? "Borç" : "Alacak"}</button>)}
+                    </span>
+                    <button className="btn btn-quiet btn-sm" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => ((!l.debit && !l.credit) || confirm(`Satır ${i + 1} (${l.accountCode || "hesap kodu yok"}) silinsin mi?`)) && removeLine(l.key)}>Sil</button></td> : null}
                 </tr>
                 );
               })}
@@ -401,9 +419,9 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
           </table>
           {editable ? <div className="journal-add"><button id="satir-ekle" className="btn btn-sm" type="button" disabled={working} onClick={addLine}>Satır ekle</button></div> : null}
           <dl className="balance-strip" data-balanced={!gap && !invalid ? "" : undefined}>
-            <div><dt>Borç toplamı</dt><dd className="num to-luca"><Odometer value={formatTrAmount(debit)} instant={typing} /></dd></div>
-            <div><dt>Alacak toplamı</dt><dd className="num to-luca"><Odometer value={formatTrAmount(credit)} instant={typing} /></dd></div>
-            <div><dt>KDV (191)</dt><dd className="num to-luca"><Odometer value={formatTrAmount(vat)} instant={typing} /></dd></div>
+            <div><dt>Borç toplamı</dt><dd className="num"><Odometer value={formatTrAmount(debit)} instant={typing} /></dd></div>
+            <div><dt>Alacak toplamı</dt><dd className="num"><Odometer value={formatTrAmount(credit)} instant={typing} /></dd></div>
+            <div><dt>KDV (191)</dt><dd className="num"><Odometer value={formatTrAmount(vat)} instant={typing} /></dd></div>
             <div className="balance-answer"><dt>{gap ? "Fark" : "Fark yok, dengede"}</dt><dd className={gap ? "num balance-off" : "num balance-ok"}><Odometer value={formatTrAmount(gap)} instant={typing} />
               {/* Shown when debit meets credit; a CSS transition, so it never plays on load. */}
               <svg className="balance-check" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8.5l3.25 3.25L13 5" /></svg></dd></div>

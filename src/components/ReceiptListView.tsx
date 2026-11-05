@@ -152,7 +152,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
               {byAccount.slice(0, 5).map(([code, kurus]) => (
                 <li key={code}>
                   <span className="acc-name"><span className="tnum" translate="no">{code}</span> <span className="muted">{accountNames[code] ?? ""}</span></span>
-                  <span className={tab.status === "draft" ? "num" : "num to-luca"}>{formatTrAmount(kurus)}</span>
+                  <span className="num">{formatTrAmount(kurus)}</span>
                   <span className="acc-track" aria-hidden="true"><span className="acc-bar" style={{ transform: `scaleX(${kurus / byAccount[0][1]})` }} /></span>
                 </li>
               ))}
@@ -161,7 +161,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
             {/* The VAT side of the same receipts, apart from the expense accounts above. */}
             <p className="by-account-foot">
               <span><span className="tnum" translate="no">191</span> <span className="muted">İndirilecek KDV</span></span>
-              <span className={tab.status === "draft" ? "num" : "num to-luca"}>{formatTrAmount(vatTotal)}</span>
+              <span className="num">{formatTrAmount(vatTotal)}</span>
             </p>
           </section>
         ) : null}

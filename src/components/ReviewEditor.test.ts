@@ -21,7 +21,7 @@ describe("problemTarget", () => {
     expect(problemTarget("Borç ile alacak farkı 27,00 TL.", lines, null).action).toBe("Tutarları düzeltin");
   });
 
-  it("the OPET preview is blocked by its missing date", () => {
+  it("the fuel preview is blocked by its missing date", () => {
     const opet = PREVIEW_RECEIPTS.find((r) => r.receiptNo === "1182")!;
     expect(problemTarget(approvalProblem(opet.lines)!).id).toBe("evrak-tarihi");
   });
