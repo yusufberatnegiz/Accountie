@@ -30,7 +30,7 @@ const USER = "user-a";
 const ID = "8b0f6c1e-1b7a-4c1e-9d55-0d6f1d7a2c11";
 const params = (id = ID) => ({ params: Promise.resolve({ id }) });
 const { lines } = buildJournalLines({
-  vendorName: "ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
+  vendorName: "ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
   vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
 }, DEFAULT_RULES);
 const draft = { id: ID, status: "draft", lines } as unknown as Awaited<ReturnType<typeof q.getReceipt>>;
@@ -75,7 +75,7 @@ describe("POST /api/receipts", () => {
     vi.mocked(extractReceipt).mockResolvedValue({
       ok: true, model: "claude-haiku-5-5", problems: [], inputTokens: 3000, outputTokens: 300,
       extraction: {
-        vendorName: "ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", taxOffice: null, taxNumber: "0790014526", date: "05.09.2026", time: null,
+        vendorName: "ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
         receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
         paymentMethod: "card", category: "meal", unreadableFields: [],
       },

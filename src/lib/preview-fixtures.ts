@@ -1,4 +1,4 @@
-// Sample data for the dev-only screen preview (/onizleme) and nothing else. Mirrors the real example receipt.
+// Sample data for the dev-only screen preview (/onizleme) and nothing else. Invented ÖRNEK vendor and tax number.
 import type { ReceiptDetail } from "@/db/queries";
 import { DEFAULT_RULES, rulesToRows } from "./default-rules";
 import { buildJournalLines, warn, type ReceiptData } from "./journal";
@@ -7,14 +7,14 @@ const base = (id: string, data: ReceiptData, extra: Partial<ReceiptDetail> = {})
   const { lines, warnings } = buildJournalLines(data, DEFAULT_RULES);
   return {
     id, status: "draft", vendorName: data.vendorName, receiptNo: data.receiptNo, receiptDate: data.date, totalKurus: data.totalKurus,
-    createdAt: new Date("2026-09-05T17:30:00Z"), taxNumber: "0790014526", paymentMethod: data.paymentMethod, category: data.category,
+    createdAt: new Date("2026-09-05T17:30:00Z"), taxNumber: "1111111114", paymentMethod: data.paymentMethod, category: data.category,
     warnings, lines, ...extra,
   };
 };
 
 export const PREVIEW_RECEIPTS: ReceiptDetail[] = [
   base("00000000-0000-4000-8000-000000000001", {
-    vendorName: "ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
+    vendorName: "ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
     vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
   }),
   base("00000000-0000-4000-8000-000000000002", {

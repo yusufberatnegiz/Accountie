@@ -3,7 +3,7 @@ import { descriptionFromVendor } from "./description";
 
 describe("descriptionFromVendor", () => {
   it("örnek unvanı Luca açıklamasına çevirir", () => {
-    expect(descriptionFromVendor("ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ")).toBe("arkadaş alabalık üretim çiftliği");
+    expect(descriptionFromVendor("ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ")).toBe("örnek alabalık üretim çiftliği");
   });
   it("Türkçe I ve İ harflerini doğru küçültür", () => {
     expect(descriptionFromVendor("IŞIK İNŞAAT LTD.ŞTİ.")).toBe("ışık inşaat");

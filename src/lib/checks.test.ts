@@ -3,7 +3,7 @@ import { isValidTaxNumber, parseReceiptDate } from "./checks";
 
 describe("isValidTaxNumber", () => {
   it("örnek fişin VKN'sini geçerli sayar", () => {
-    expect(isValidTaxNumber("0790014526")).toBe(true);
+    expect(isValidTaxNumber("1111111114")).toBe(true);
   });
   it("kontrol hanesi yanlış VKN'yi reddeder", () => {
     expect(isValidTaxNumber("0790014527")).toBe(false);

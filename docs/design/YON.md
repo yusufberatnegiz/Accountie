@@ -32,7 +32,7 @@ Kâğıtlar kaybolursa aynı çıktıyı üreten komutlar bölüm 12'de. Bu belg
 ## 1. Ürün envanteri (yalnız bu ürüne ait olanlar)
 
 1. **Yazar kasa (ÖKC) fişi:** dar termal kâğıt şeridi, büyük harf satıcı unvanı, `TOPKDV *793,18`, `TOPLAM *8.725,00`, yıldızlı tutarlar, `KREDİ KARTI`. Zamanla soluklaşan gri baskı.
-2. **Örnek fiş 0047:** Arkadaş Alabalık Üretim Çiftliği, 05.09.2026, %10, toplam 8.725,00, KDV 793,18, kartla. Projenin kendi test fikstürü.
+2. **Örnek fiş 0047:** Örnek Alabalık Üretim Çiftliği, 05.09.2026, %10, toplam 8.725,00, KDV 793,18, kartla. Projenin kendi test fikstürü.
 3. **Yevmiye kaydı:** 770.08 Borç 7.931,82 / 191.03.10 Borç 793,18 / 331.01 Alacak 8.725,00. Borç toplamı alacağa eşit olmadan onay yok.
 4. **KDV kuralı:** matrah = KDV dahil tutar - fişteki KDV, kuruş kuruş tam sayı. KDV yeniden hesaplanmaz. %1, %10, %20; eski %8 ve %18 uyarı verir.
 5. **Luca Fiş Detayı grid'i:** Hesap Kodu, Evrak No, Evrak Tarihi, Açıklama, Borç, Alacak, BT. Muhasebecinin her gün baktığı gri ERP tablosu.
@@ -95,7 +95,7 @@ Yeri: hero'nun sağ yarısı (telefonda üstte). Kök elemanda `data-ui`.
 - **Eylem:** "Satırları kopyala" düğmesi `clipboardText(lines)` ile Luca Fiş Detayı sırasını panoya yazar; `aria-live="polite"` durum: "Kopyalandı. Luca Fiş Detayı'na yapıştırabilirsiniz."
 - **Veri:** `src/lib/journal.ts`, `src/lib/default-rules.ts`, `src/lib/luca/clipboard.ts`, `src/lib/money.ts` istemciye alınır (saf modüller, sır yok). Veritabanı, oturum, API çağrısı yok.
 - **Örnek fişler** (A ve B `preview-fixtures` ile aynı, C örnek veri, rapora "değiştirilebilir örnek" diye yazılır):
-  - A: ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ, 0047, 05.09.2026, %10, brüt 8.725,00, KDV 793,18, kart. Sonuç: 770.08 B 7.931,82 / 191.03.10 B 793,18 / 331.01 A 8.725,00.
+  - A: ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ, 0047, 05.09.2026, %10, brüt 8.725,00, KDV 793,18, kart. Sonuç: 770.08 B 7.931,82 / 191.03.10 B 793,18 / 331.01 A 8.725,00.
   - B: KIRTASİYE DÜNYASI, 0912, 02.09.2026, %20, brüt 480,00, KDV 80,00, nakit. Sonuç: 770.02 B 400,00 / 191.03.20 B 80,00 / 100.01 A 480,00.
   - C: GÜNEŞ MARKET (örnek), 2214, 04.09.2026, kategori Mutfak ve market, %1 brüt 412,50 KDV 4,08 ve %20 brüt 186,00 KDV 31,00, toplam 598,50, kart. Sonuç: 770.12 B 408,42 / 191.03.01 B 4,08 / 770.12 B 155,00 / 191.03.20 B 31,00 / 331.01 A 598,50. (Toplam kontrolü: 408,42 + 4,08 + 155,00 + 31,00 = 598,50.)
   - VKN gösterilmez. Kart numarası, son dört hane, fiş fotoğrafı hiçbir yerde yok.
@@ -144,7 +144,7 @@ Kurallar: em dash yok; başlıklar her genişlikte en fazla iki satır; jenerik 
 - Alan 1 cümlesi: Önce telefonla çekilir.
   - Kart: durum "Okunuyor…", "Fotoğraf cihazınızda, 1600 px", değerlerin yerinde gerçek boyutlu yükleniyor çubukları.
 - Alan 2 cümlesi: Sonra satırları okunur.
-  - Kart: Satıcı ARKADAŞ ALABALIK…, Evrak No 0047, Tarih 05.09.2026, KDV %10 793,18, Toplam 8.725,00, Kategori Yemek ve ağırlama.
+  - Kart: Satıcı ÖRNEK ALABALIK…, Evrak No 0047, Tarih 05.09.2026, KDV %10 793,18, Toplam 8.725,00, Kategori Yemek ve ağırlama.
 - Alan 3 cümlesi: Ardından siz onaylarsınız.
   - Kart: üç satır, "Borç 8.725,00 = Alacak 8.725,00", durum Onaylandı.
 - Alan 4 cümlesi: En son Luca'ya gider.

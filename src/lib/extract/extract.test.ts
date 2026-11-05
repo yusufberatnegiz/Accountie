@@ -4,9 +4,9 @@ import { extractReceipt, type ExtractClient } from "./extract";
 import { checkExtraction, ReceiptExtractionSchema, toReceiptData, type ReceiptExtraction } from "./schema";
 
 const goodOutput: ReceiptExtraction = {
-  vendorName: "ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ",
+  vendorName: "ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ",
   taxOffice: "ANTALYA KURUMLAR",
-  taxNumber: "0790014526",
+  taxNumber: "1111111114",
   date: "05.09.2026",
   time: "20:15",
   receiptNo: "0047",

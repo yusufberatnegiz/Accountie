@@ -47,7 +47,7 @@ Kaynak: [Fişliyo, Luca Excel Fiş Aktarımı](https://fisliyo.com/luca-fis-akta
 | 4 | Hesap Kodu | 770.08 |
 | 5 | Evrak No | 0047 (metin, baştaki sıfırlar korunmalı) |
 | 6 | Evrak Tarihi | 05.09.2026 |
-| 7 | Detay Açıklama | arkadaş alabalık üretim çiftliği |
+| 7 | Detay Açıklama | örnek alabalık üretim çiftliği |
 | 8 | Borç | 7931,82 |
 | 9 | Alacak | 0 / boş |
 | 10 | Miktar | boş |

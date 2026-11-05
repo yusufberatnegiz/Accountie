@@ -20,7 +20,7 @@ const TOKEN = `acx_${"a".repeat(43)}`;
 const params = (id = ID) => ({ params: Promise.resolve({ id }) });
 const bearer = (token = TOKEN, method = "GET") => new Request("http://test", { method, headers: { authorization: `Bearer ${token}` } });
 const { lines } = buildJournalLines({
-  vendorName: "ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
+  vendorName: "ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
   vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
 }, DEFAULT_RULES);
 
@@ -80,7 +80,7 @@ describe("GET /api/extension/receipts", () => {
     expect(q.listForExport).toHaveBeenCalledWith(USER);
     const { receipts } = await res.json();
     expect(receipts).toEqual([{
-      id: ID, title: "arkadaş alabalık üretim çiftliği", documentNo: "0047", documentDate: "05/09/2026", total: "8.725,00",
+      id: ID, title: "örnek alabalık üretim çiftliği", documentNo: "0047", documentDate: "05/09/2026", total: "8.725,00",
       rows: expect.arrayContaining([expect.objectContaining({ accountCode: "331.01", credit: "8.725,00", debit: "" })]),
     }]);
     expect(receipts[0].rows).toHaveLength(3);

@@ -59,14 +59,14 @@ describe("POST /api/receipts", () => {
     vi.mocked(extractReceipt).mockResolvedValue({
       ok: true, model: "m", inputTokens: 1, outputTokens: 1, problems: [],
       extraction: {
-        vendorName: "ARKADAŞ ALABALIK", taxOffice: null, taxNumber: "0790014526", date: "05.09.2026", time: null, receiptNo: "0047",
+        vendorName: "ÖRNEK ALABALIK", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null, receiptNo: "0047",
         zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
         paymentMethod: "card", category: "meal", unreadableFields: [],
       },
     });
     const res = await POST(jpeg());
     expect(res.status).toBe(201);
-    expect(hasDuplicateReceipt).toHaveBeenCalledWith("user-1", "0790014526", "0047", "2026-09-05");
+    expect(hasDuplicateReceipt).toHaveBeenCalledWith("user-1", "1111111114", "0047", "2026-09-05");
     expect(vi.mocked(createReceipt).mock.calls[0][1].warnings.map((w) => w.code)).toContain("duplicate");
   });
 

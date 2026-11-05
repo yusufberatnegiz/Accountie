@@ -31,7 +31,7 @@ Yaklaşım TDD: yeni kural veya hata düzeltmesi önce başarısız testle başl
 
 ## Altın örnek
 
-Girdi (model çıktısı): unvan `ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ`, fiş no `0047`, tarih `05.09.2026`, `vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }]`, toplam `8.725,00`, ödeme `card`, kategori `meal`.
+Girdi (model çıktısı): unvan `ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ`, fiş no `0047`, tarih `05.09.2026`, `vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }]`, toplam `8.725,00`, ödeme `card`, kategori `meal`.
 
 Beklenen satırlar:
 
@@ -41,7 +41,7 @@ Beklenen satırlar:
 | 191.03.10 | 79318 | 0 |
 | 331.01 | 0 | 872500 |
 
-Hepsinde Evrak No `0047`, BT `ÖK`, açıklama `arkadaş alabalık üretim çiftliği`. Bu test her zaman geçmelidir.
+Hepsinde Evrak No `0047`, BT `ÖK`, açıklama `örnek alabalık üretim çiftliği`. Bu test her zaman geçmelidir.
 
 ## Diğer zorunlu durumlar
 

@@ -3,7 +3,7 @@ import { DEFAULT_RULES } from "./default-rules";
 import { approvalProblem, buildJournalLines, isBalanced, type ReceiptData } from "./journal";
 
 const sample: ReceiptData = {
-  vendorName: "ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ",
+  vendorName: "ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ",
   receiptNo: "0047",
   date: "2026-09-05",
   vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }],
@@ -19,9 +19,9 @@ describe("buildJournalLines", () => {
   it("örnek fişten Luca'daki üç satırı üretir", () => {
     const result = buildJournalLines(sample, DEFAULT_RULES);
     expect(result.lines).toEqual([
-      { accountCode: "770.08", accountName: "Yeme-İçme ve Ağırlama Giderleri", debitKurus: 793182, creditKurus: 0, description: "arkadaş alabalık üretim çiftliği", documentNo: "0047", documentDate: "2026-09-05", documentType: "ÖK", quantity: 0, babs: false },
-      { accountCode: "191.03.10", accountName: "%10 İndirilecek KDV", debitKurus: 79318, creditKurus: 0, description: "arkadaş alabalık üretim çiftliği", documentNo: "0047", documentDate: "2026-09-05", documentType: "ÖK", quantity: 0, babs: false },
-      { accountCode: "331.01", accountName: "Ortaklara Borçlar", debitKurus: 0, creditKurus: 872500, description: "arkadaş alabalık üretim çiftliği", documentNo: "0047", documentDate: "2026-09-05", documentType: "ÖK", quantity: 0, babs: false },
+      { accountCode: "770.08", accountName: "Yeme-İçme ve Ağırlama Giderleri", debitKurus: 793182, creditKurus: 0, description: "örnek alabalık üretim çiftliği", documentNo: "0047", documentDate: "2026-09-05", documentType: "ÖK", quantity: 0, babs: false },
+      { accountCode: "191.03.10", accountName: "%10 İndirilecek KDV", debitKurus: 79318, creditKurus: 0, description: "örnek alabalık üretim çiftliği", documentNo: "0047", documentDate: "2026-09-05", documentType: "ÖK", quantity: 0, babs: false },
+      { accountCode: "331.01", accountName: "Ortaklara Borçlar", debitKurus: 0, creditKurus: 872500, description: "örnek alabalık üretim çiftliği", documentNo: "0047", documentDate: "2026-09-05", documentType: "ÖK", quantity: 0, babs: false },
     ]);
     expect(result.balanced).toBe(true);
     expect(warningCodes(result)).toEqual(["meal"]);

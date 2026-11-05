@@ -43,11 +43,11 @@ Fişteki bilgilerin otomatik doldurulmasını istiyorum.
 
 Luca'ya gireceğim satırların kurallara göre hazırlanmasını istiyorum.
 
-- [ ] Örnek fiş (Arkadaş Alabalık, 0047, 05.09.2026, %10, toplam 8.725,00, KDV 793,18, kartla) şu üç satırı üretir:
+- [ ] Örnek fiş (Örnek Alabalık, 0047, 05.09.2026, %10, toplam 8.725,00, KDV 793,18, kartla) şu üç satırı üretir:
   - 770.08 Borç 7.931,82
   - 191.03.10 Borç 793,18
   - 331.01 Alacak 8.725,00
-  - Hepsinde Evrak No `0047`, Evrak Tarihi `05/09/2026`, BT `ÖK`, Açıklama `arkadaş alabalık üretim çiftliği`.
+  - Hepsinde Evrak No `0047`, Evrak Tarihi `05/09/2026`, BT `ÖK`, Açıklama `örnek alabalık üretim çiftliği`.
 - [ ] Matrah = KDV dahil tutar - fişteki KDV. Tüm hesap tam sayı kuruşla yapılır.
 - [ ] Çok oranlı fişte her oran için ayrı gider ve 191 satırı açılır.
 - [ ] Gider hesabı kategoriden, KDV hesabı orandan, alacak hesabı ödeme şeklinden kullanıcının kural tablosuna göre gelir. Model hesap kodu üretmez.

@@ -1,6 +1,6 @@
 # Fişten yevmiye kaydı üretme kuralları
 
-Tarih: 03.11.2026. Kapsam: Ödeme kaydedici cihaz (ÖKC, yazar kasa) fişlerinden Luca "Fiş Detayı" ekranına girilecek yevmiye satırlarının üretilmesi. Kaynak örnek: Arkadaş Alabalık fişi (0047, 05.09.2026) ve kullanıcının Luca'da elle girdiği kayıt.
+Tarih: 03.11.2026. Kapsam: Ödeme kaydedici cihaz (ÖKC, yazar kasa) fişlerinden Luca "Fiş Detayı" ekranına girilecek yevmiye satırlarının üretilmesi. Kaynak örnek: Örnek Alabalık fişi (0047, 05.09.2026) ve kullanıcının Luca'da elle girdiği kayıt.
 
 Önemli: Tek Düzen Hesap Planı (TDHP) yalnızca ana hesapları (100, 191, 770 vb.) ve bazı grupları sabitler. `770.08`, `191.03.10`, `331.01` gibi **alt hesaplar her firmanın kendi Luca hesap planında tanımlıdır**. Bu dokümandaki alt hesap kodları makul varsayılanlardır; uygulama bunları kullanıcının düzenleyebileceği bir tablo olarak tutmalı, ilk kurulumda kullanıcıdan kendi planıyla eşleştirmesini istemelidir. Luca'da tanımlı olmayan bir alt hesapla kayıt atılamaz (Excel içe aktarma da hata verir).
 
@@ -8,9 +8,9 @@ Tarih: 03.11.2026. Kapsam: Ödeme kaydedici cihaz (ÖKC, yazar kasa) fişlerinde
 
 | Hesap Kodu | Hesap Adı | Evrak No | Evrak Tarihi | BT | Açıklama | Borç | Alacak |
 |---|---|---|---|---|---|---|---|
-| 770.08 | Yeme-İçme Ve Ağırlama Giderleri | 0047 | 05/09/2026 | ÖK | arkadaş alabalık üretim çiftliği | 7.931,82 | |
-| 191.03.10 | % 10 Lı İndirilecek Kdv | 0047 | 05/09/2026 | ÖK | arkadaş alabalık üretim çiftliği | 793,18 | |
-| 331.01 | Ortaklara Borçlar | 0047 | 05/09/2026 | ÖK | arkadaş alabalık üretim çiftliği | | 8.725,00 |
+| 770.08 | Yeme-İçme Ve Ağırlama Giderleri | 0047 | 05/09/2026 | ÖK | örnek alabalık üretim çiftliği | 7.931,82 | |
+| 191.03.10 | % 10 Lı İndirilecek Kdv | 0047 | 05/09/2026 | ÖK | örnek alabalık üretim çiftliği | 793,18 | |
+| 331.01 | Ortaklara Borçlar | 0047 | 05/09/2026 | ÖK | örnek alabalık üretim çiftliği | | 8.725,00 |
 
 - Gider satırı = KDV hariç tutar (matrah) = 8.725,00 - 793,18 = 7.931,82.
 - KDV satırı = fişte yazan KDV tutarı, KDV oranına göre 191 alt hesabı.
@@ -99,7 +99,7 @@ Sonuç: "Kart" bilgisi tek başına doğru hesabı belirlemez. Uygulama:
 ## 5. Açıklama, Evrak No, Evrak Tarihi, BT, BaBs
 
 ### Açıklama
-Örnek: `ARKADAŞ ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ` -> `arkadaş alabalık üretim çiftliği`.
+Örnek: `ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ` -> `örnek alabalık üretim çiftliği`.
 Kural (varsayılan):
 1. Unvandaki şirket türü ve faaliyet eklerinden itibaren kesilir: ilk ` VE ` bağlacı veya `LTD`, `ŞTİ`, `A.Ş.`, `AŞ`, `TİC.`, `SAN.`, `İŞL.`, `RES.`, `KOLL.`, `ŞUBESİ` gibi eklerden biri.
 2. Kalan kısım **Türkçe kurallarla** küçük harfe çevrilir (`toLocaleLowerCase('tr-TR')`: `I -> ı`, `İ -> i`). Standart `toLowerCase` "ÇİFTLİĞİ"yi bozar.
