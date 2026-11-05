@@ -776,7 +776,7 @@
 .fly-dash { position: absolute; right: var(--s1); top: 50%; width: 2.5em; height: 2px; margin-top: -1px; border-radius: 1px; background: var(--border); opacity: 0; }
 .fly-dash-empty { display: none; }
 .fly-val, .fly-y, .fly-s { display: inline-block; transform-origin: 100% 50%; }
-.fly-val { padding: 0 var(--s1); border-radius: 2px; background: var(--accent-soft); }
+.fly-val { position: relative; z-index: 3; padding: 0 var(--s1); border-radius: 2px; background: var(--accent-soft); }
 .fly-copy { position: absolute; z-index: 2; top: 0; right: 0; opacity: 0; pointer-events: none; color: var(--accent); white-space: nowrap; }
 /* The flying figure is an opaque chip a full line tall (6px over and under the glyphs): whatever it passes over is covered whole,
    never left as half letters at its edges (YON 23.15). The extra height is taken back by margins, so it lands on the figure. */
@@ -1009,9 +1009,9 @@
 /* The figure grows a little as it leaves the paper and settles to the cell's size: a lift, not a jump in size (1.15, YON 23.15). */
 @keyframes fly-s { from { transform: scale(var(--sc, 1)); } 30% { transform: scale(1.15); } to { transform: none; } }
 /* Chip and source swap in the same 2%: never both printed, never neither. */
-/* The chip is gone before its figure shows: no frame has the chip over the landed figure. Once landed it is also hidden, not only
-   transparent, so the resting copy over the figure is not a layer on it at all (inspect.mjs covered-text, YON 23.28). */
-@keyframes fly-fade { 0% { opacity: 0; } 2%, 94% { opacity: 1; } 95% { opacity: 0; } 100% { opacity: 0; visibility: hidden; } }
+/* The chip is gone before its figure shows: no frame has the chip over the landed figure. Opacity only (YON 23.30): a discrete
+   visibility step kept the animation off the compositor; the landed figure is stacked above its resting copy instead (.fly-val). */
+@keyframes fly-fade { 0% { opacity: 0; } 2%, 94% { opacity: 1; } 95%, 100% { opacity: 0; } }
 /* The source figure stays printed at a low tone while its copy is in the air (the receipt keeps its line), full again once landed. */
 @keyframes fly-src { 0% { opacity: 1; } 2%, 90% { opacity: 0.3; } 100% { opacity: 1; } }
 @keyframes fly-land { 0%, 95% { opacity: 0; transform: none; } 98% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: none; } }
