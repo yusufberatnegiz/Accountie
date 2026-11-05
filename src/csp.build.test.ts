@@ -55,7 +55,8 @@ describe.skipIf(!built)("production build CSP", () => {
 
   it("keeps the static homepage on the public policy", async () => {
     const csp = (await fetch(base)).headers.get("content-security-policy")!;
-    expect(csp).toMatch(/script-src 'self' 'unsafe-inline'/);
+    expect(csp).toMatch(/script-src 'self' 'unsafe-inline';/);
     expect(csp).not.toContain("nonce-");
+    expect(csp).not.toContain("cloudflare");
   });
 });
