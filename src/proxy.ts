@@ -16,8 +16,16 @@ export default async function proxy(incoming: NextRequest) {
     open.headers.set("content-security-policy", csp);
     return open;
   }
-  const response = await getAuth().middleware({ loginUrl: "/giris" })(request);
-  response?.headers.set("content-security-policy", csp);
+  let response: NextResponse;
+  try {
+    response = await getAuth().middleware({ loginUrl: "/giris" })(request);
+  } catch (error) {
+    // Missing auth config (or the auth client failing): fail closed with our own response, so it still gets the CSP here
+    // and next.config's security headers, which a thrown proxy error (a bare 500) skips.
+    console.error("proxy: oturum denetimi yapılamadı", error);
+    response = new NextResponse("Hizmet geçici olarak kullanılamıyor.", { status: 503, headers: { "content-type": "text/plain; charset=utf-8", "retry-after": "60", "cache-control": "no-store" } });
+  }
+  response.headers.set("content-security-policy", csp);
   // A panel deep link (a shared fiş, the extension, the PWA shortcut) survives the login: /giris?sonra=/panel/fis/...
   const location = response?.headers.get("location");
   const back = safeNextPath(request.nextUrl.pathname);

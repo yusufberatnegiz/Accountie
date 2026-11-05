@@ -89,6 +89,19 @@ describe("proxy panel CSP", () => {
     expect(a).toMatch(/frame-ancestors 'none'.*object-src 'none'/);
   });
 
+  it("fails closed with a 503 under the nonce policy when the auth config is missing", async () => {
+    vi.mocked(getAuth).mockImplementation(() => { throw new Error("NEON_AUTH_BASE_URL ortam değişkeni eksik."); });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await proxy(new NextRequest("http://localhost/panel/fis/abc"));
+    expect(res.status).toBe(503);
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("x-middleware-next")).toBeNull();
+    expect(res.headers.get("content-security-policy")).toMatch(/'strict-dynamic'.*frame-ancestors 'none'/);
+    expect(await res.text()).not.toContain("NEON");
+    error.mockRestore();
+    vi.mocked(getAuth).mockReset();
+  });
+
   it("keeps the request body for POSTs to the panel", async () => {
     let body = "";
     vi.mocked(getAuth).mockReturnValue({ middleware: () => async (req: NextRequest) => { body = await req.text(); return NextResponse.next(); } } as unknown as ReturnType<typeof getAuth>);
