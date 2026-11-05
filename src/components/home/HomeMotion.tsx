@@ -25,24 +25,35 @@ export function HomeMotion() {
     if (rule) {
       const measure = () => {
         const wide = matchMedia("(min-width: 1100px)").matches && CSS.supports("animation-timeline: view()");
-        rule.dataset.mode = wide ? "scroll" : "timed";
-        for (const copy of rule.querySelectorAll<HTMLElement>("[data-fly]")) {
+        // Setting the mode starts the scene's ~20 animations (a costly style pass); an unchanged value would redo it.
+        if (rule.dataset.mode !== (wide ? "scroll" : "timed")) rule.dataset.mode = wide ? "scroll" : "timed";
+        // All reads before any write: a write between reads forces a fresh style and layout per copy (the 4x CPU scroll LoAF).
+        const moves = [...rule.querySelectorAll<HTMLElement>("[data-fly]")].map((copy) => {
           const src = rule.querySelector<HTMLElement>(`[data-amt="${copy.dataset.fly}"] > span:last-child`);
           const cell = copy.parentElement;
-          if (!src || !cell) continue;
+          if (!src || !cell) return null;
           const s = src.getBoundingClientRect();
           const c = cell.getBoundingClientRect();
           const chip = copy.querySelector<HTMLElement>(".fly-s");
           const pad = chip ? parseFloat(getComputedStyle(chip).paddingRight) : 0;
           const scale = parseFloat(getComputedStyle(src).fontSize) / parseFloat(getComputedStyle(cell).fontSize);
           // The chip's text, not its padded box, starts exactly on the printed figure (scaled about its right edge).
-          copy.style.setProperty("--dx", `${s.right - c.right + pad}px`);
-          copy.style.setProperty("--dy", `${s.top + s.height / 2 - (c.top + c.height / 2)}px`);
-          copy.style.setProperty("--sc", String(scale));
+          return [copy, `${s.right - c.right + pad}px`, `${s.top + s.height / 2 - (c.top + c.height / 2)}px`, String(scale)] as const;
+        });
+        for (const m of moves) {
+          if (!m) continue;
+          m[0].style.setProperty("--dx", m[1]);
+          m[0].style.setProperty("--dy", m[2]);
+          m[0].style.setProperty("--sc", m[3]);
         }
       };
-      // First measure only when the scene is a screen away: measuring a content-visibility section at load renders it in the
-      // hydration task (the 4x CPU long task, YON 23.14).
+      // Not in the hydration task: measuring there renders the page's content-visibility sections (the 4x CPU long task, YON 23.14).
+      // That first pass sets the mode, so it runs when the page is idle after load, not inside a scroll frame (4x CPU: a ~100 ms
+      // LoAF at the scene's approach, YON 23.17); the approach then only re-measures, which writes the copies' variables only.
+      const ric = window.requestIdleCallback ?? ((f: () => void) => setTimeout(f, 1));
+      const cic = window.cancelIdleCallback ?? clearTimeout;
+      let idle = 0;
+      document.fonts.ready.then(() => { idle = ric(() => { idle = 0; measure(); }, { timeout: 3000 }); });
       const near = new IntersectionObserver(([e]) => { if (e.isIntersecting || e.boundingClientRect.bottom < 0) { near.disconnect(); measure(); } }, { rootMargin: "100% 0px" });
       near.observe(rule);
       let raf = 0;
@@ -57,7 +68,7 @@ export function HomeMotion() {
         raf = requestAnimationFrame(() => { measure(); raf = requestAnimationFrame(() => rule.classList.add("is-playing")); });
       }, { threshold: [0, 0.9] });
       io.observe(rule.querySelector(".rule-close") ?? rule);
-      offs.push(() => { near.disconnect(); cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
+      offs.push(() => { if (idle) cic(idle); near.disconnect(); cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
     }
 
     const path = document.querySelector<HTMLElement>(".path");

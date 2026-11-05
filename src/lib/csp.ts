@@ -12,7 +12,8 @@ export const SW_REGISTER = `if("serviceWorker" in navigator)addEventListener("lo
 
 const dev = process.env.NODE_ENV === "development";
 
-const policy = (scriptSrc: string) => [
+// Turnstile (giris/kayit) is the only third party: its frame and siteverify calls are allowed only where it can load.
+const policy = (scriptSrc: string, turnstile: boolean) => [
   "default-src 'self'",
   `script-src ${scriptSrc}${dev ? " 'unsafe-eval'" : ""}`,
   // Explicit: worker-src falls back to script-src, where 'strict-dynamic' drops 'self' and would block /sw.js.
@@ -20,8 +21,8 @@ const policy = (scriptSrc: string) => [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:",
   "font-src 'self'",
-  "connect-src 'self' https://challenges.cloudflare.com",
-  "frame-src https://challenges.cloudflare.com",
+  `connect-src 'self'${turnstile ? " https://challenges.cloudflare.com" : ""}`,
+  `frame-src ${turnstile ? "https://challenges.cloudflare.com" : "'none'"}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -30,12 +31,12 @@ const policy = (scriptSrc: string) => [
 
 // Static public pages (next.config.ts: homepage, /gizlilik, 404) keep 'unsafe-inline': App Router streams its RSC payload as
 // inline <script> whose text changes per build and page, so only a nonce could cover it, and a nonce forces dynamic rendering.
-// They carry no user data and no raw-HTML sink: dangerouslySetInnerHTML takes the constant strings above only.
-export const PUBLIC_CSP = policy("'self' 'unsafe-inline' https://challenges.cloudflare.com");
+// They carry no user data and no raw-HTML sink: dangerouslySetInnerHTML takes the constant strings above only. No Turnstile here.
+export const PUBLIC_CSP = policy("'self' 'unsafe-inline'", false);
 
 const sha256 = (text: string) => `'sha256-${createHash("sha256").update(text).digest("base64")}'`;
 const LAYOUT_HASHES = [HEAD_SCRIPT, SW_REGISTER].map(sha256).join(" ");
 
 /** The panel and the auth pages are dynamic anyway: per-request nonce for Next's scripts (and next/script, so Turnstile
  * loads through 'strict-dynamic'), hashes for the layout's two constants. */
-export const nonceCsp = (nonce: string) => policy(`'self' 'nonce-${nonce}' 'strict-dynamic' ${LAYOUT_HASHES}`);
+export const nonceCsp = (nonce: string) => policy(`'self' 'nonce-${nonce}' 'strict-dynamic' ${LAYOUT_HASHES}`, true);
