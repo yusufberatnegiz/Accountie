@@ -883,7 +883,7 @@
 /* The shown tab is filled ledger blue (YON 23.31): the page's blue shows on the chosen tab as well as on the Luca figures. */
 .show-pick[aria-selected="true"], .show .show-hl { background: var(--chip-on); color: var(--on-chip-on); }
 /* State is never colour alone (1.86:1 against the navy tray): the chosen tab also carries a light inner edge. */
-.show-pick[aria-selected="true"] { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.55); }
+.show-pick[aria-selected="true"] { outline: 1px solid rgb(255 255 255 / 0.55); outline-offset: -1px; }
 /* The copy is filled as one surface and clipped to the chosen tab, so the fill slides whole, never in pieces. */
 .show .show-hl .show-pick { background: none; color: var(--on-chip-on); }
 @media (hover: hover) and (pointer: fine) { .show-pick:hover:not([aria-selected="true"]) { color: var(--show-ink); background: color-mix(in srgb, var(--deep-raised), var(--on-accent-field) 8%); } }
