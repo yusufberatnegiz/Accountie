@@ -24,36 +24,37 @@
   /* Control heights */
   --control-sm: 32px; --control: 40px; --touch: 44px; --row: 44px;
 
-  /* Colour roles. Light neutrals are warm stone (chroma near 0), so ledger blue is the only coloured thing (YON 23.7). */
-  --ground: #f5f5f3;
+  /* Colour roles (YON 23.23): neutrals are measurably warm stone (R > G > B), ink is ledger blue-black (the logo's #141a22),
+     ledger blue is the one accent. */
+  --ground: #f4f1ea;
   --surface: #ffffff;
-  --raised: #f8f8f6;
-  --stage: #e8e7e3;
-  --active: #ebeae6;
-  --border: #e4e3df;
-  --rule: #efeeeb;
-  --control-edge: #84837d; /* 3.8:1 on white, WCAG 1.4.11 */
-  --ink: #121211;
-  --muted: #4e4d48;
-  --faint: #5e5d57;
-  --thermal-ink: #514f4a;
-  --accent: #2b5a9a;
-  --accent-strong: #234b82;
-  --accent-soft: #e4ecf6;
-  --accent-field: #1d3f73;
+  --raised: #faf8f3;
+  --stage: #e9e5dc;
+  --active: #ece8df;
+  --border: #e3dfd5;
+  --rule: #eeebe4;
+  --control-edge: #857f73; /* 3.8:1 on white, WCAG 1.4.11 */
+  --ink: #141a22;
+  --muted: #504c44;
+  --faint: #5f5a50;
+  --thermal-ink: #514d45;
+  --accent: #1f4d9e;
+  --accent-strong: #183d82;
+  --accent-soft: #e1e8f5;
+  --accent-field: #173b7c;
   --on-accent-field: #ffffff;
-  --primary: #171716;
-  --primary-hover: #2c2b29;
+  --primary: #141a22;
+  --primary-hover: #28303e;
   --on-primary: #ffffff;
-  --secondary: #e8e7e3;
-  --secondary-hover: #dcdbd6;
+  --secondary: #e9e5dc;
+  --secondary-hover: #ddd8cd;
   /* A chosen chip (hero pickers, showcase tabs), and a secondary button on a lifted card (--lift). */
   --chip-on: var(--primary); --on-chip-on: var(--on-primary);
   --lift-control: var(--secondary); --lift-control-hover: var(--secondary-hover);
-  --deep: #131312;
-  --deep-raised: #20201e;
-  --ink-on-deep: #f0efec;
-  --muted-on-deep: #aeada7;
+  --deep: #121826;
+  --deep-raised: #1f2738;
+  --ink-on-deep: #f1eee7;
+  --muted-on-deep: #a9adb7;
   --positive: #1f6b45;
   --positive-soft: #e3f3ea;
   --negative: #b3261e;
@@ -61,38 +62,38 @@
   --warn-ink: #8a4b00;
   --warn-bg: #fdf3df;
   --focus: var(--accent);
-  --scrim: rgb(18 18 17 / 0.5);
-  --shadow-float: 0 8px 24px rgb(18 18 17 / 0.12), 0 1px 3px rgb(18 18 17 / 0.08);  /* taste-skill-ignore: only for floating menus, dialogs, skip link */
+  --scrim: rgb(20 26 34 / 0.5);
+  --shadow-float: 0 8px 24px rgb(20 26 34 / 0.12), 0 1px 3px rgb(20 26 34 / 0.08);  /* taste-skill-ignore: only for floating menus, dialogs, skip link */
   /* Depth (YON 23.1): ground > plate > surface > raised, one tone step each. --plate is the slab a product window sits on;
      --bezel the phone frame (dark in both themes); --edge-hi a 1px top inner light on raised dark surfaces (none in light). */
-  --plate: #eae9e5; --bezel: #1a1a18; --edge-hi: transparent;
+  --plate: #ebe7de; --bezel: #161a22; --edge-hi: transparent;
   /* Only for the one layer per screen that overlaps another (YON 23.1); everything else separates by tone. */
-  --shadow-lift: 0 24px 48px -12px rgb(18 18 17 / 0.18), 0 2px 6px rgb(18 18 17 / 0.06); /* taste-skill-ignore: lift layer, YON 23.1 */
+  --shadow-lift: 0 24px 48px -12px rgb(20 26 34 / 0.18), 0 2px 6px rgb(20 26 34 / 0.06); /* taste-skill-ignore: lift layer, YON 23.1 */
 
   /* how-it-works fields, light to dark, last one is the accent field */
-  --field-1: #e7e6e1; --field-2: #dad8d2; --field-3: #cbc8c0;
+  --field-1: #e8e4da; --field-2: #dbd6ca; --field-3: #ccc6b8;
   --field-4: var(--accent-field); --on-field-4: var(--on-accent-field);
   /* Bir fişin yolu (YON 23.18): three steps of stone, then the one Luca blue field (the file going to Luca); the shell card over them. */
-  --path-1: #eae9e5; --path-2: #e2e1dc; --path-3: #d6d4ce; --path-4: #12294d; --path-shell: var(--lift);
+  --path-1: #ebe7de; --path-2: #e3ded3; --path-3: #d6d0c3; --path-4: #132e63; --path-shell: var(--lift);
   /* The showcase field and its plate (dark lifts both a step so the section reads off the ground). */
   --show-ground: var(--deep); --show-plate: var(--deep-raised);
   /* The homepage hero and the auth screens: a clear second field beside the ground (1.3:1), and the hero's unselected choices on it. */
-  --split: #e2e1dc; --choice: #ffffff;
+  --split: #e3ded3; --choice: #ffffff;
   /* Homepage: the showcase field and the archive pictures. The field is one clear step off the ground and the product card a step
      lighter again, in both themes (YON.md 16.5); dark lowers the pictures' white point (opacity over --raised). */
-  --show-field: #e7e6e1; --show-card: var(--surface); --show-card-edge: var(--border); --show-tabs: #dad8d2; --show-raised: var(--raised); --show-ink: var(--ink);
+  --show-field: #e8e4da; --show-card: var(--surface); --show-card-edge: var(--border); --show-tabs: #dbd6ca; --show-raised: var(--raised); --show-ink: var(--ink);
   /* Product cards on a field (hero, auth stage, the four path fields): white in light; in dark one tone above their field (colour.md 6). */
   --lift: var(--surface); --lift-edge: var(--border); --path-card-1: var(--surface); --path-card-2: var(--surface); --path-card-3: var(--surface); --path-card-4: var(--surface); --foot-name: var(--ink);
   --picture-opacity: 1;
   /* Inside a product fragment ([data-ui]): the same surfaces in light; in dark a step above the plate, so a window sits on its plate as in light (YON 23.14). */
   --ui-surface: var(--surface); --ui-raised: var(--raised); --ui-border: var(--border); --ui-rule: var(--rule);
   /* Thermal paper: a warm off-white in light, so it reads as an object on the white window; a dimmed warm grey in dark (still paper, no longer the brightest surface on the screen). */
-  --paper: #faf8f3; --paper-ink: #3d3c38; --paper-strong: #121211; --paper-lit: #dce6f3;
+  --paper: #fcfaf5; --paper-ink: #3d3a34; --paper-strong: #14130f; --paper-lit: #d9e4f5;
   /* YON 23.19 depth ladder, one step each: ground < plate < window (--ui-surface) < a layer lifted over the window (--ui-lift).
      In light the window and the lifted layer are both white and the lift separates them; in dark the lifted layer is a clear tone step. */
   --ui-lift: var(--surface); --ui-lift-edge: var(--border);
   /* The closing call: a stone field (the page has one blue field, the Luca file in the path). */
-  --cta-field: #dcdad4;
+  --cta-field: #ddd8cc;
   /* Photographs (YON 23.19): square corners (6.5), a mat in the plate tone while loading and around letterboxing, the lift only
      when the photo overlaps another layer, and a lowered white point in dark (--photo-dim is opacity over the mat). */
   --photo-radius: 0px; --photo-mat: var(--plate); --photo-shadow: var(--shadow-lift); --photo-dim: 1;
@@ -127,56 +128,54 @@
 /* ---------- Tokens: dark. Same block twice: system preference without JS, and data-look (set by the theme script, src/lib/theme.ts). ---------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not([data-look]) {
-    --ground: #0c0c0b; --surface: #151513; --raised: #1c1c1a; --stage: #1d1d1b; --active: #262523;
-    --border: #2a2926; --rule: #21201e; --control-edge: #75736d;
-    --ink: #f0efec; --muted: #aeada7; --faint: #9c9a94; --thermal-ink: #aeada7;
-    --accent: #8db0e0; --accent-strong: #a9c4e9; --accent-soft: #1d2a3a;
-    --accent-field: #1a2f52; --on-accent-field: #f0efec;
-    --primary: #f0efec; --primary-hover: #d9d8d3; --on-primary: #0f0f0e;
-    --secondary: #262523; --secondary-hover: #31302d;
-    --chip-on: #a3a29c; --on-chip-on: #0f0f0e; --lift-control: #3e3d39; --lift-control-hover: #484743; /* chips stay below the blue action; controls a step over --lift */
-    --deep: #181816; --deep-raised: #242422;
+    --ground: #100f0d; --surface: #1a1815; --raised: #211e1a; --stage: #221f1b; --active: #2a2722;
+    --border: #2f2b25; --rule: #25221e; --control-edge: #7b766b;
+    --ink: #f2efe8; --muted: #b2ada2; --faint: #a09a8f; --thermal-ink: #b2ada2;
+    --accent: #7fa7f2; --accent-strong: #a2bff7; --accent-soft: #1a2742;
+    --accent-field: #1b3670; --on-accent-field: #f2efe8;
+    --primary: #f2efe8; --primary-hover: #dcd7cc; --on-primary: #100f0d;
+    --secondary: #2a2722; --secondary-hover: #36322b;
+    --chip-on: #a9a397; --on-chip-on: #100f0d; --lift-control: #433f37; --lift-control-hover: #4d4840; /* chips stay below the blue action; controls a step over --lift */
+    --deep: #1a2439; --deep-raised: #26324b;
     --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
     --warn-ink: #e8c477; --warn-bg: #2a2412;
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-    --plate: #1d1d1b; --bezel: #34332f; --edge-hi: rgb(255 255 255 / 0.06);
+    --plate: #25221d; --bezel: #38342d; --edge-hi: rgb(255 255 255 / 0.06);
     --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
-    --field-1: #151513; --field-2: #1b1b19; --field-3: #22221f; --field-4: #2a2a27; --on-field-4: #f0efec;
-    --path-1: #161614; --path-2: #1c1c1a; --path-3: #242422; --path-4: #12223d; --path-shell: #2e2e2b; --show-ground: #141413; --show-plate: #20201e;
-    --split: #171715; --choice: #2e2d2a; --show-field: #171715; --show-card: #2c2c29; --show-card-edge: #3a3935; --show-tabs: #21211e; --show-raised: #33322f; --picture-opacity: 0.9;
-    --lift: #272725; --lift-edge: #33322f; --path-card-1: #232321; --path-card-2: #282826; --path-card-3: #30302d; --path-card-4: #2c2c29; --foot-name: #bebdb7;
-    --paper: #e9e6df; --paper-ink: #383733; --paper-strong: #151513; --paper-lit: #bfcde0;
-  --ui-surface: #252523; --ui-raised: #2c2c29; --ui-border: #383733; --ui-rule: #2f2e2b;
-  --ui-lift: #32312e; --ui-lift-edge: #45443f; --cta-field: #1d1d1b; --photo-mat: #1d1d1b; --photo-dim: 0.88;
-    --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
+    --field-1: #1a1815; --field-2: #211e1a; --field-3: #2a2621; --field-4: #302c26; --on-field-4: #f2efe8;
+    --path-1: #25221d; --path-2: #2b2722; --path-3: #34302a; --path-4: #172f63; --path-shell: #3a362f; --show-ground: #1a2439; --show-plate: #26324b;
+    --split: #26231e; --choice: #36322b; --show-field: #1a2439; --show-card: #36322c; --show-card-edge: #48433b; --show-tabs: #222d45; --show-raised: #3e3a33; --picture-opacity: 0.9;
+    --lift: #332f29; --lift-edge: #413c35; --path-card-1: #322e28; --path-card-2: #35312a; --path-card-3: #3d3830; --path-card-4: #2e2a25; --foot-name: #c3beb2;
+    --paper: #e8e3d8; --paper-ink: #3a3631; --paper-strong: #171512; --paper-lit: #bccdeb;
+  --ui-surface: #2f2b26; --ui-raised: #36322c; --ui-border: #433e37; --ui-rule: #39352e;
+  --ui-lift: #3e3a33; --ui-lift-edge: #524c43; --cta-field: #26231e; --photo-mat: #25221d; --photo-dim: 0.88;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"], :root[data-look="dark"]:not([data-theme="light"]) {
-  --ground: #0c0c0b; --surface: #151513; --raised: #1c1c1a; --stage: #1d1d1b; --active: #262523;
-  --border: #2a2926; --rule: #21201e; --control-edge: #75736d;
-  --ink: #f0efec; --muted: #aeada7; --faint: #9c9a94; --thermal-ink: #aeada7;
-  --accent: #8db0e0; --accent-strong: #a9c4e9; --accent-soft: #1d2a3a;
-  --accent-field: #1a2f52; --on-accent-field: #f0efec;
-  --primary: #f0efec; --primary-hover: #d9d8d3; --on-primary: #0f0f0e;
-  --secondary: #262523; --secondary-hover: #31302d;
-    --chip-on: #a3a29c; --on-chip-on: #0f0f0e; --lift-control: #3e3d39; --lift-control-hover: #484743; /* chips stay below the blue action; controls a step over --lift */
-  --deep: #181816; --deep-raised: #242422;
+  --ground: #100f0d; --surface: #1a1815; --raised: #211e1a; --stage: #221f1b; --active: #2a2722;
+  --border: #2f2b25; --rule: #25221e; --control-edge: #7b766b;
+  --ink: #f2efe8; --muted: #b2ada2; --faint: #a09a8f; --thermal-ink: #b2ada2;
+  --accent: #7fa7f2; --accent-strong: #a2bff7; --accent-soft: #1a2742;
+  --accent-field: #1b3670; --on-accent-field: #f2efe8;
+  --primary: #f2efe8; --primary-hover: #dcd7cc; --on-primary: #100f0d;
+  --secondary: #2a2722; --secondary-hover: #36322b;
+    --chip-on: #a9a397; --on-chip-on: #100f0d; --lift-control: #433f37; --lift-control-hover: #4d4840; /* chips stay below the blue action; controls a step over --lift */
+  --deep: #1a2439; --deep-raised: #26324b;
   --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
   --warn-ink: #e8c477; --warn-bg: #2a2412;
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-  --plate: #1d1d1b; --bezel: #34332f; --edge-hi: rgb(255 255 255 / 0.06);
+  --plate: #25221d; --bezel: #38342d; --edge-hi: rgb(255 255 255 / 0.06);
   --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
-  --field-1: #151513; --field-2: #1b1b19; --field-3: #22221f; --field-4: #2a2a27; --on-field-4: #f0efec;
-    --path-1: #161614; --path-2: #1c1c1a; --path-3: #242422; --path-4: #12223d; --path-shell: #2e2e2b; --show-ground: #141413; --show-plate: #20201e;
-  --split: #171715; --choice: #2e2d2a; --show-field: #171715; --show-card: #2c2c29; --show-card-edge: #3a3935; --show-tabs: #21211e; --show-raised: #33322f; --picture-opacity: 0.9;
-  --lift: #272725; --lift-edge: #33322f; --path-card-1: #232321; --path-card-2: #282826; --path-card-3: #30302d; --path-card-4: #2c2c29; --foot-name: #bebdb7;
-  --paper: #e9e6df; --paper-ink: #383733; --paper-strong: #151513; --paper-lit: #bfcde0;
-  --ui-surface: #252523; --ui-raised: #2c2c29; --ui-border: #383733; --ui-rule: #2f2e2b;
-  --ui-lift: #32312e; --ui-lift-edge: #45443f; --cta-field: #1d1d1b; --photo-mat: #1d1d1b; --photo-dim: 0.88;
-  --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
+  --field-1: #1a1815; --field-2: #211e1a; --field-3: #2a2621; --field-4: #302c26; --on-field-4: #f2efe8;
+    --path-1: #25221d; --path-2: #2b2722; --path-3: #34302a; --path-4: #172f63; --path-shell: #3a362f; --show-ground: #1a2439; --show-plate: #26324b;
+  --split: #26231e; --choice: #36322b; --show-field: #1a2439; --show-card: #36322c; --show-card-edge: #48433b; --show-tabs: #222d45; --show-raised: #3e3a33; --picture-opacity: 0.9;
+  --lift: #332f29; --lift-edge: #413c35; --path-card-1: #322e28; --path-card-2: #35312a; --path-card-3: #3d3830; --path-card-4: #2e2a25; --foot-name: #c3beb2;
+  --paper: #e8e3d8; --paper-ink: #3a3631; --paper-strong: #171512; --paper-lit: #bccdeb;
+  --ui-surface: #2f2b26; --ui-raised: #36322c; --ui-border: #433e37; --ui-rule: #39352e;
+  --ui-lift: #3e3a33; --ui-lift-edge: #524c43; --cta-field: #26231e; --photo-mat: #25221d; --photo-dim: 0.88;
   color-scheme: dark;
 }
 
@@ -434,8 +433,10 @@ main:focus, main:focus-visible { outline: none; }
   :is(.odo-d, .roll-slot)[data-old]::before { animation: odo-out var(--odo-t, var(--t-digit)) var(--ease-out) forwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms)); }
 }
 @media (prefers-reduced-motion: reduce) { :is(.odo-d, .roll-slot)[data-old]::before { content: none; } }
-/* A theme change is a jump, never a fade (YON 6.2): theme.ts sets this class for one frame around the switch. */
-html.tema-degisiyor *, html.tema-degisiyor *::before, html.tema-degisiyor *::after { transition: none !important; }
+/* A theme change is a jump, never a fade (YON 6.2): theme.ts sets this class for two frames around the switch. Only the
+   elements that carry a colour transition are listed (not *), so removing the class re-styles those, not the whole page (YON 23.23). */
+html.tema-degisiyor :is(a, button, label, summary, input, select, textarea, tr, svg, .btn, .rail-item, .feat-note-name, .thermal-row, .status, .read-values > div, .read-brief div),
+html.tema-degisiyor :is(.faq-q, .r-status)::before, html.tema-degisiyor :is(.faq-q, .r-status)::after { transition: none !important; }
 /* Reduced motion: fewer and gentler, not none. Travel and scale go, colour and opacity stay;
    animations jump to their end state. Recipes should still be written inside no-preference blocks. */
 @media (prefers-reduced-motion: reduce) {

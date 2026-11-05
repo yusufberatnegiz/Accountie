@@ -2,7 +2,7 @@ export type ThemeChoice = "system" | "light" | "dark";
 
 export const THEME_STORAGE_KEY = "tema";
 /** Matches --ground in globals.css; the browser bar takes this colour. */
-export const THEME_COLOR = { light: "#f5f5f3", dark: "#0c0c0b" } as const;
+export const THEME_COLOR = { light: "#f4f1ea", dark: "#100f0d" } as const;
 
 /**
  * Runs in <head> before first paint (layout.tsx): applies a saved manual choice so the page never flashes.
@@ -20,6 +20,6 @@ export const FREEZE_CLASS = "tema-degisiyor";
  * the colour React inserted a second, stale copy (the duplicates viewport.themeColor and a JSX meta both produced).
  * Without JS the bar keeps the browser's own colour.
  */
-const LOOK = `var r=document.documentElement,q=matchMedia("(prefers-color-scheme: dark)"),b=function(){var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement("meta");m.name="theme-color";document.head.appendChild(m)}m.content=r.dataset.look==="dark"?"${THEME_COLOR.dark}":"${THEME_COLOR.light}"};r.dataset.look=r.dataset.theme||(q.matches?"dark":"light");b();q.addEventListener("change",function(){if(r.dataset.theme)return;r.classList.add("${FREEZE_CLASS}");r.dataset.look=q.matches?"dark":"light";b();getComputedStyle(r).color;requestAnimationFrame(function(){requestAnimationFrame(function(){r.classList.remove("${FREEZE_CLASS}")})})})`;
+const LOOK = `var r=document.documentElement,q=matchMedia("(prefers-color-scheme: dark)"),b=function(){var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement("meta");m.name="theme-color";document.head.appendChild(m)}m.content=r.dataset.look==="dark"?"${THEME_COLOR.dark}":"${THEME_COLOR.light}"};r.dataset.look=r.dataset.theme||(q.matches?"dark":"light");b();q.addEventListener("change",function(){if(r.dataset.theme)return;r.classList.add("${FREEZE_CLASS}");r.dataset.look=q.matches?"dark":"light";b();requestAnimationFrame(function(){requestAnimationFrame(function(){r.classList.remove("${FREEZE_CLASS}")})})})`;
 
 export const THEME_INIT_SCRIPT = `try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}try{${LOOK}}catch(e){}`;

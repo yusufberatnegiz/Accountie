@@ -38,7 +38,6 @@ export function applyTheme(choice: ThemeChoice) {
     // Private mode or blocked storage: the choice still applies for this page.
   }
   syncThemeColor(look);
-  void getComputedStyle(root).color; // flush the new colours while transitions are off
   requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove(FREEZE_CLASS)));
   window.dispatchEvent(new Event(EVENT));
 }
