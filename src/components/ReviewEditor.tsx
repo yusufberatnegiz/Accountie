@@ -195,15 +195,14 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   const debit = sum((l) => l.debitKurus);
   const credit = sum((l) => l.creditKurus);
   const vat = sum((l) => (l.accountCode.startsWith("191") ? l.debitKurus : 0));
-  // The strip rolls its figures once a value is complete (a 300ms pause), not on every key.
-  const totals = [debit, credit, vat].join("|");
-  const [settled, setSettled] = useState(totals);
+  // The strip shows the same values as the action bar in the same frame; while keys come (until a 300ms pause) its figures
+  // swap without rolling, and a whole-line change (delete) rolls.
+  const [typing, setTyping] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setSettled(totals), still() ? 0 : 300);
+    if (!typing) return;
+    const t = setTimeout(() => setTyping(false), 300);
     return () => clearTimeout(t);
-  }, [totals]);
-  const [shownDebit, shownCredit, shownVat] = settled.split("|").map(Number);
-  const shownGap = Math.abs(shownDebit - shownCredit);
+  }, [typing, lines]);
   const problem = invalid ? "Tutar biçimi hatalı." : approvalProblem(parsed);
   const creditCode = parsed.find((l) => l.creditKurus > 0)?.accountCode ?? "";
   const head = lines[0];
@@ -224,7 +223,10 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   };
   const touch = (name: string) => !seen.has(name) && setSeen((s) => new Set(s).add(name));
 
-  const update = (key: number, patch: Partial<EditLine>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+  const update = (key: number, patch: Partial<EditLine>) => {
+    setTyping(true);
+    setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+  };
   const updateAll = (field: SharedField, value: string | null) => {
     touch(field);
     setLines((ls) => ls.map((l) => ({ ...l, [field]: value })));
@@ -398,11 +400,11 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             </tbody>
           </table>
           {editable ? <div className="journal-add"><button id="satir-ekle" className="btn btn-sm" type="button" disabled={working} onClick={addLine}>Satır ekle</button></div> : null}
-          <dl className="balance-strip" data-balanced={!shownGap && !invalid ? "" : undefined}>
-            <div><dt>Borç toplamı</dt><dd className="num to-luca"><Odometer value={formatTrAmount(shownDebit)} /></dd></div>
-            <div><dt>Alacak toplamı</dt><dd className="num to-luca"><Odometer value={formatTrAmount(shownCredit)} /></dd></div>
-            <div><dt>KDV (191)</dt><dd className="num to-luca"><Odometer value={formatTrAmount(shownVat)} /></dd></div>
-            <div className="balance-answer"><dt>{shownGap ? "Fark" : "Fark yok, dengede"}</dt><dd className={shownGap ? "num balance-off" : "num balance-ok"}><Odometer value={formatTrAmount(shownGap)} />
+          <dl className="balance-strip" data-balanced={!gap && !invalid ? "" : undefined}>
+            <div><dt>Borç toplamı</dt><dd className="num to-luca"><Odometer value={formatTrAmount(debit)} instant={typing} /></dd></div>
+            <div><dt>Alacak toplamı</dt><dd className="num to-luca"><Odometer value={formatTrAmount(credit)} instant={typing} /></dd></div>
+            <div><dt>KDV (191)</dt><dd className="num to-luca"><Odometer value={formatTrAmount(vat)} instant={typing} /></dd></div>
+            <div className="balance-answer"><dt>{gap ? "Fark" : "Fark yok, dengede"}</dt><dd className={gap ? "num balance-off" : "num balance-ok"}><Odometer value={formatTrAmount(gap)} instant={typing} />
               {/* Shown when debit meets credit; a CSS transition, so it never plays on load. */}
               <svg className="balance-check" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8.5l3.25 3.25L13 5" /></svg></dd></div>
           </dl>
