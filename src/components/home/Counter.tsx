@@ -49,24 +49,14 @@ export function Counter() {
   const [bal, setBal] = useState(balanced);
   const [flips, setFlips] = useState(0);
   if (bal !== balanced) { setBal(balanced); setFlips((n) => n + 1); }
-  // Once after load the counter shows its own link: the TOPLAM rows on the paper and the 331.01 line they make light together for
-  // under two seconds (YON 23.20). Any input first, or reduced motion, and it never runs.
-  useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const evs = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
-    const t: number[] = [];
-    const stop = () => { t.forEach(clearTimeout); evs.forEach((e) => removeEventListener(e, stop)); };
-    evs.forEach((e) => addEventListener(e, stop, { passive: true }));
-    t.push(window.setTimeout(() => setHot({ kind: "total" }), 1200), window.setTimeout(() => { setHot(null); stop(); }, 3000));
-    return stop;
-  }, []);
   // The new paper rises once it is committed (the choice renders in a transition, so not in the click's frame).
   const shown = useRef(sampleId);
   useLayoutEffect(() => {
     if (shown.current === sampleId) return;
     shown.current = sampleId;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    slot.current?.firstElementChild?.animate([{ opacity: 0, transform: "translateY(8px)" }, {}], { duration: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+    // The paper stays opaque: only its print changes, the new print rising 8px on the same paper (YON 23.28).
+    slot.current?.querySelectorAll(".thermal-paper > *").forEach((el) => el.animate([{ opacity: 0, transform: "translateY(8px)" }, {}], { duration: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }));
   }, [sampleId]);
 
   async function copyLines() {
@@ -103,14 +93,19 @@ export function Counter() {
   );
 
   return (
-    <div className="counter" data-ui data-touched={touched || undefined}>
+    <div className="counter" data-ui data-touched={touched || undefined} suppressHydrationWarning>
+      {/* The pickers are the page's control for the picture, above the window, not inside the app (YON 23.28). */}
+      {controls}
       <div className="counter-body">
         <AppWindow title={`Fiş ${sample.receipt.receiptNo}, Luca satırları`} className="counter-win">
           <div className="counter-app">
             {/* The panel's own rail, drawn: the phone rides over its lower part. */}
-            <ul className="counter-rail" aria-hidden="true"><li data-on>Fişler</li><li>Kurallar</li></ul>
+            <ul className="counter-rail" aria-hidden="true">
+              <li data-on>Fişler</li><li>Kurallar</li>
+              <li className="counter-rail-head">Taslak</li>
+              {SAMPLES.map((s) => <li key={s.id} className="counter-rail-fis" data-sel={s.id === sampleId || undefined}><span>{s.receipt.receiptNo}</span><span>{s.label}</span></li>)}
+            </ul>
             <div className="counter-sheet">
-              {controls}
               {/* Phone: the receipt is above the card, so the card names it and its total; a choice and its paper stay on one screen. */}
               <p className="counter-chip"><span translate="no">{sample.receipt.vendorName}</span><span>TOPLAM <Odometer value={formatTrAmount(sample.receipt.totalKurus ?? 0)} /></span></p>
               <table className="counter-lines" onMouseLeave={() => setHot(null)}>
@@ -129,7 +124,7 @@ export function Counter() {
 
               <div className="counter-foot">
                 <p className="counter-balance" aria-live="polite">
-                  <span className="counter-sum">Borç <span className="to-luca"><Odometer value={formatTrAmount(debit)} /></span> · Alacak <span className="to-luca"><Odometer value={formatTrAmount(credit)} /></span></span> ·{" "}
+                  <span className="counter-sum">Borç <Odometer value={formatTrAmount(debit)} /> · Alacak <Odometer value={formatTrAmount(credit)} /></span> ·{" "}
                   <span key={flips} data-pop={flips > 0 || undefined} className={`counter-state ${balanced ? "balance-ok" : "balance-off"}`}>{balanced ? "Dengede" : "Dengesiz"}</span>
                 </p>
                 <p className="counter-formula">
@@ -150,7 +145,8 @@ export function Counter() {
         </AppWindow>
 
         <Phone className="counter-phone">
-          <p className="phone-head"><span>Fiş çekildi</span><span>{sample.label}</span></p>
+          {/* "Fiş çekildi" turns to "Okundu" once in the load scenario (CSS, YON 23.28); the end state is the server's text. */}
+          <p className="phone-head"><span className="phone-state"><span>Fiş çekildi</span><span>Okundu</span></span><span>{sample.label}</span></p>
           <div className="counter-slot" ref={slot}>
             <Thermal sample={sample} printedPayment={PRINTED[payment]} hot={hot} />
           </div>

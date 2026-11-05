@@ -72,7 +72,7 @@
   --shadow-lift: 0 24px 48px -12px rgb(20 26 34 / 0.18), 0 2px 6px rgb(20 26 34 / 0.06); /* taste-skill-ignore: lift layer, YON 23.1 */
 
   /* Bir fişin yolu (YON 23.18): three steps of stone, then the one Luca blue field (the file going to Luca); the shell card over them. */
-  --path-1: var(--plate); --path-2: #dddad3; --path-3: #cfcbc2; --path-4: #132e63; --path-shell: var(--lift);
+  --path-1: var(--plate); --path-2: #d3d0c8; --path-3: #bdb9b0; --path-4: #132e63; --path-shell: var(--lift);
   /* The showcase field and its plate. */
   --show-ground: var(--deep); --show-plate: var(--deep-raised);
   /* The auth screens: a clear second field beside the ground. */
@@ -144,10 +144,10 @@
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
     --plate: #312f2c; --bezel: #3a3835; --edge-hi: rgb(255 255 255 / 0.06);
     --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
-    --path-1: #282623; --path-2: #312f2c; --path-3: #3a3835; --path-4: #172f63; --path-shell: #42403d;
+    --path-1: #282623; --path-2: #3a3835; --path-3: #4a4845; --path-4: #172f63; --path-shell: #42403d;
     --show-ground: #282623; --show-plate: #312f2c; --split: #282623;
     --show-card: #3a3835; --show-card-edge: #4a4845; --show-tabs: #312f2c; --show-raised: #42403d;
-    --lift: #3a3835; --lift-edge: #42403d; --path-card-1: #312f2c; --path-card-2: #3a3835; --path-card-3: #42403d; --path-card-4: #312f2c; --foot-name: #c2bfb8;
+    --lift: #3a3835; --lift-edge: #42403d; --path-card-1: #312f2c; --path-card-2: #312f2c; --path-card-3: #3a3835; --path-card-4: #312f2c; --foot-name: #c2bfb8;
     --paper: #d0cdc6; --paper-ink: #3a3834; --paper-strong: #161513; --paper-lit: #b7c6e0;
     --ui-surface: #3a3835; --ui-raised: #42403d; --ui-border: #4a4845; --ui-rule: #42403d;
     --ui-lift: #42403d; --ui-lift-edge: #4a4845; --cta-field: #282623; --photo-dim: 0.88;
@@ -169,10 +169,10 @@
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
   --plate: #312f2c; --bezel: #3a3835; --edge-hi: rgb(255 255 255 / 0.06);
   --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
-  --path-1: #282623; --path-2: #312f2c; --path-3: #3a3835; --path-4: #172f63; --path-shell: #42403d;
+  --path-1: #282623; --path-2: #3a3835; --path-3: #4a4845; --path-4: #172f63; --path-shell: #42403d;
   --show-ground: #282623; --show-plate: #312f2c; --split: #282623;
   --show-card: #3a3835; --show-card-edge: #4a4845; --show-tabs: #312f2c; --show-raised: #42403d;
-  --lift: #3a3835; --lift-edge: #42403d; --path-card-1: #312f2c; --path-card-2: #3a3835; --path-card-3: #42403d; --path-card-4: #312f2c; --foot-name: #c2bfb8;
+  --lift: #3a3835; --lift-edge: #42403d; --path-card-1: #312f2c; --path-card-2: #312f2c; --path-card-3: #3a3835; --path-card-4: #312f2c; --foot-name: #c2bfb8;
   --paper: #d0cdc6; --paper-ink: #3a3834; --paper-strong: #161513; --paper-lit: #b7c6e0;
   --ui-surface: #3a3835; --ui-raised: #42403d; --ui-border: #4a4845; --ui-rule: #42403d;
   --ui-lift: #42403d; --ui-lift-edge: #4a4845; --cta-field: #282623; --photo-dim: 0.88;

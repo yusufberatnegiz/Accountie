@@ -70,6 +70,15 @@
 }
 @keyframes auth-rise { from { transform: translateY(12px); } to { transform: none; } }
 
+/* Large screens: the piece takes about 80% of its half (YON 23.28), the type inside grows with it. */
+@media (min-width: 1281px) {
+  .auth { --auth-h: 560px; }
+  .auth-piece { --ov: 112px; grid-template-columns: 320px minmax(0, 580px); }
+  .auth-strip .thermal { font-size: 16px; }
+  .auth-sheet { --fs-body: 17px; --fs-small: 14px; --fs-section: 20px; gap: var(--s5); padding: var(--s6) var(--s6) var(--s6) calc(var(--ov) + var(--s6)); }
+  .auth-sheet td { padding-block: var(--s3); }
+  .auth-plate { margin-top: var(--s8); }
+}
 @media (max-width: 1180px) and (min-width: 901px) {
   .auth { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .auth-piece { grid-template-columns: minmax(0, 360px); }

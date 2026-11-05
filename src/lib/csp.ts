@@ -4,7 +4,10 @@ import { THEME_INIT_SCRIPT } from "./theme";
 // Marks <html> before first paint so the homepage's entrance animations run only with script. A tab opened in the background
 // gets it when first shown, so its entrances play on first view. In the root layout (not the page), so it is also set when the
 // homepage is reached by client navigation.
-const JS_FLAG = "(function(d){function f(){d.documentElement.classList.add('js')}d.visibilityState!=='hidden'?f():d.addEventListener('visibilitychange',f,{once:true})})(document)";
+// The hero's load sequence waits for "go": the frame after the first contentful paint, then the web fonts (at most 700 ms
+// more), so it is seen rather than run before the first paint (YON 23.28); 3 s is the cap where paint timing is missing.
+// The first input marks the counter still: its short scenario jumps to its end.
+const JS_FLAG = "(function(d,w){var h=d.documentElement,n=0;function g(){h.classList.add('go')}function s(){var c=d.querySelector('.counter');c&&c.setAttribute('data-still','')}function p(){if(n)return;n=1;requestAnimationFrame(function(){var t=setTimeout(g,700);(d.fonts?d.fonts.ready:Promise.resolve()).then(function(){clearTimeout(t);g()})})}function f(){h.classList.add('js');try{new PerformanceObserver(function(l){l.getEntriesByName('first-contentful-paint').length&&p()}).observe({type:'paint',buffered:true})}catch(e){p()}setTimeout(p,3000);['pointerdown','keydown','wheel','touchstart'].forEach(function(e){w.addEventListener(e,s,{once:true,passive:true})})}d.visibilityState!=='hidden'?f():d.addEventListener('visibilitychange',f,{once:true})})(document,window)";
 /** The root layout's <head> script. Constant text: the panel CSP allows it by hash. */
 export const HEAD_SCRIPT = THEME_INIT_SCRIPT + ";" + JS_FLAG;
 /** Production only: public/sw.js serves public/cevrimdisi.html when a navigation fails offline (caches nothing else). */
