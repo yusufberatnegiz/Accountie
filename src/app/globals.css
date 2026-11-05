@@ -389,7 +389,9 @@ main:focus, main:focus-visible { outline: none; }
 .odo { display: inline-block; white-space: nowrap; }
 .odo.code { display: block; }
 .odo-digits { display: inline-flex; user-select: none; }
-.odo-d, .roll-slot { position: relative; display: inline-block; clip-path: inset(0 -0.1em); }
+.odo-d, .roll-slot { position: relative; display: inline-block; }
+/* Only a rolling slot clips (and so takes a layer); unchanged digits stay plain text. */
+:is(.odo-d, .roll-slot)[data-old] { clip-path: inset(0 -0.1em); }
 :is(.odo-d, .roll-slot) > span { display: inline-block; white-space: nowrap; }
 :is(.odo-d, .roll-slot)[data-old]::before { content: attr(data-old); position: absolute; left: 0; top: 0; white-space: nowrap; }
 @keyframes odo-in { from { transform: translateY(100%); opacity: 0; } }

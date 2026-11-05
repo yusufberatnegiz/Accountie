@@ -3,18 +3,18 @@
 .site-dock { position: sticky; top: 0; z-index: 20; height: 0; }
 /* Once the page scrolls, the gap above the bar is filled with the ground, so headings pass cleanly behind the bar instead of
    showing as a sliver above it. At the top it is absent, so the hero's two tones still run to the top edge. */
-.site-dock::before { content: ""; position: absolute; inset-inline: 0; top: 0; height: calc(var(--s4) + 56px); background: var(--ground); opacity: 0; pointer-events: none; }
+.site-dock::before { content: ""; position: absolute; inset-inline: 0; top: 0; height: 64px; background: var(--ground); opacity: 0; pointer-events: none; }
 @supports (animation-timeline: scroll()) {
   .site-dock::before { animation: site-fill linear both; animation-timeline: scroll(root); animation-range: 0px 1px; }
 }
 @keyframes site-fill { to { opacity: 1; } }
 /* Keyboard focus and in-page jumps stop below the bar (16px offset + 56px bar + a gap), never under it. */
 html:has(.site-dock) { scroll-padding-top: 88px; }
+/* A plain full-width bar, no box: wordmark, links, actions on the page margins; once the page scrolls it sits on the ground tone. */
 .site-bar {
-  position: absolute; top: var(--s4); inset-inline: var(--page-margin);
-  display: flex; align-items: center; gap: var(--s5); height: 56px; padding: 0 var(--s2) 0 var(--s4);
-  background: var(--surface); color: var(--ink); border: 1px solid var(--border); /* taste-skill-ignore: data-ui bar edge (YON 14.1) */
-  border-radius: var(--radius-card);
+  position: absolute; top: 4px; inset-inline: 0;
+  display: flex; align-items: center; gap: var(--s5); height: 56px; padding: 0 var(--page-margin);
+  color: var(--ink);
 }
 /* The name takes the page's body step, so the public pages keep to their few type sizes. */
 .site-brand { min-height: var(--touch); flex: none; font-size: var(--step-body); }
@@ -59,8 +59,8 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
   .site-menu { display: block; }
 }
 @media (max-width: 767px) {
-  .site-bar { top: max(var(--s2), env(safe-area-inset-top)); padding: 0 var(--s1) 0 var(--s3); gap: var(--s3); }
-  .site-dock::before { height: calc(max(var(--s2), env(safe-area-inset-top)) + 56px); }
+  .site-bar { top: max(4px, env(safe-area-inset-top)); gap: var(--s3); }
+  .site-dock::before { height: calc(max(4px, env(safe-area-inset-top)) + 60px); }
   .site-actions { gap: var(--s1); }
   .site-actions .btn, .site-actions .theme-cycle { min-height: var(--touch); height: var(--touch); }
   .site-actions .theme-cycle { width: var(--touch); }

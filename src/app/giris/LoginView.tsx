@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { AuthForm } from "./AuthForm";
 import { CookieNote } from "@/components/site/CookieNote";
 import { SiteBar } from "@/components/site/SiteBar";
@@ -28,8 +28,8 @@ function Stage() {
           <table>
             <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
             <tbody>
-              {lines.map((l, i) => (
-                <tr key={l.accountCode} style={{ "--i": i } as CSSProperties}>
+              {lines.map((l) => (
+                <tr key={l.accountCode}>
                   <td><span className="auth-code" translate="no">{l.accountCode}</span><span className="auth-code-name">{shownAccountName(l.accountName)}</span></td>
                   <td className="num to-luca">{l.debitKurus ? formatTrAmount(l.debitKurus) : ""}</td>
                   <td className="num to-luca">{l.creditKurus ? formatTrAmount(l.creditKurus) : ""}</td>

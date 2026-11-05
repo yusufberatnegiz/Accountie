@@ -60,7 +60,7 @@ function FlyCell({ value, from }: { value: string; from: string }) {
     <span className="fly-cell">
       <span className="fly-dash" aria-hidden="true" />
       <span className="fly-val">{value}</span>
-      <span className="fly-copy" aria-hidden="true" data-fly={from}><span className="fly-y">{value}</span></span>
+      <span className="fly-copy" aria-hidden="true" data-fly={from}><span className="fly-y"><span className="fly-s">{value}</span></span></span>
     </span>
   );
 }
@@ -490,7 +490,7 @@ export default function LandingPage() {
                   <Thermal sample={SAMPLES[1]} printedPayment="NAKİT" compact />
                 </div>
                 <span className="btn btn-primary cam-shoot">Fiş çek</span>
-                <p className="cam-last"><span><span className="cam-last-no">Fiş 0047</span><span className="code-name">8.725,00</span></span><span className="status">Taslak</span></p>
+                <p className="cam-last"><span><span className="cam-last-no">Önceki fiş 0047</span><span className="code-name">8.725,00</span></span><span className="status">Taslak</span></p>
               </Phone>
               <figcaption>Telefonda Fiş çek tek dokunuştur; çekilen fiş listeye taslak olarak düşer.</figcaption>
             </figure>

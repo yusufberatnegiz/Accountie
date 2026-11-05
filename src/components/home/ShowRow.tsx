@@ -7,7 +7,7 @@ export type Piece = { name: string; text: string; body: ReactNode };
 
 /**
  * Showcase "Lit panel, dark row" (YON.md 3.4.3, 23.2): five product pieces in one place, each in an app window on the dark field; only the chosen one is shown and takes space,
- * and a change swaps it in place (its name fades in), never a neighbour cut at an edge. The picker is a column of tabs on the right (a filled tab is the shown piece), the piece's name and sentence under it.
+ * and a change swaps it in place (the new piece rises 8px into the window), never a neighbour cut at an edge. The picker is one strip of tabs above the window (a raised tab is the shown piece), the piece's name and sentence beside it.
  * Without script the first piece shows; every piece carries its own caption (shown on phones, read by screen readers).
  */
 export function ShowRow({ pieces }: { pieces: Piece[] }) {
@@ -32,8 +32,8 @@ export function ShowRow({ pieces }: { pieces: Piece[] }) {
             </li>
           ))}
         </ul>
-        <div className="show-now" aria-hidden="true">
-          <h3 className="show-name" key={active}>{pieces[active].name}</h3>
+        <div className="show-now" aria-hidden="true" key={active}>
+          <h3 className="show-name">{pieces[active].name}</h3>
           <p className="show-text">{pieces[active].text}</p>
         </div>
       </div>

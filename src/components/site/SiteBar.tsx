@@ -20,7 +20,7 @@ export function SiteBar({ current }: { current?: "giris" | "kayit" }) {
   return (
     <div className="site-dock">
       <header className="site-bar">
-        <Link className="brand site-brand" href="/" translate="no"><BrandMark />Accountie</Link>
+        <Link className="brand site-brand" href="/" prefetch={false} translate="no"><BrandMark />Accountie</Link>
         <nav className="site-links" aria-label="Bölümler">
           {LINKS.map((l) => <Link key={l.href} href={l.href}>{l.label}</Link>)}
         </nav>
