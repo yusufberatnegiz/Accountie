@@ -29,6 +29,8 @@ export function ShowRow({ pieces }: { pieces: Piece[] }) {
       if (!b) return;
       const r = ul.getBoundingClientRect(), t = b.getBoundingClientRect();
       setClip(`inset(${t.top - r.top}px ${r.right - t.right}px ${r.bottom - t.bottom}px ${t.left - r.left}px round 6px)`);
+      // A phone's strip scrolls: the chosen tab is brought to its middle, so the next one is always in sight (YON 23.28).
+      if (ul.scrollWidth > ul.clientWidth) ul.scrollTo({ left: b.offsetLeft - (ul.clientWidth - b.offsetWidth) / 2, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     };
     const near = new IntersectionObserver(([e]) => { if (e.isIntersecting) { seen.current = true; near.disconnect(); place(); } }, { rootMargin: "50% 0px" });
     if (seen.current) place(); else near.observe(ul.closest("section") ?? ul);

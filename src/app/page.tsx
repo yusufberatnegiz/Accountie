@@ -150,11 +150,14 @@ const PIECES: Piece[] = [
     text: "Accountie onaylı fişleri 50 fiş ya da 400 satırda yeni dosyaya geçerek yazar; bir fiş iki dosyaya bölünmez.",
     body: (
       <div className="ui-card ui-file">
-        {/* The panel's own Luca card (ReceiptListView) after the first of two downloads: 88 approved, the first file took 50. */}
+        {/* The panel's own Luca card (ReceiptListView) after the first of two downloads: 88 approved, the first file took 50.
+            The counts are the piece's picture, at the section's large size (YON 23.28). */}
         <p className="ui-file-head"><span>Luca dosyası</span><span className="ui-meta">88 onaylı fiş, ikinci dosya</span></p>
-        <div className="ui-meter"><span>Fiş</span><span className="ui-track"><span style={{ transform: "scaleX(0.76)" }} /></span><span className="num">38 / 50</span></div>
-        <div className="ui-meter"><span>Satır</span><span className="ui-track"><span style={{ transform: "scaleX(0.74)" }} /></span><span className="num">296 / 400</span></div>
-        <span className="btn">Luca için indir</span>
+        <div className="ui-counts">
+          <div className="ui-count"><p><span className="ui-count-n">38</span> / 50 fiş</p><span className="ui-track"><span style={{ transform: "scaleX(0.76)" }} /></span></div>
+          <div className="ui-count"><p><span className="ui-count-n">296</span> / 400 satır</p><span className="ui-track"><span style={{ transform: "scaleX(0.74)" }} /></span></div>
+        </div>
+        <p className="ui-file-tile"><span className="ui-file-name">luca-fisler-20260905.xlsx</span><span className="btn">Luca için indir</span></p>
         <p className="ui-meta">İlk 50 fiş birinci dosyaya yazıldı; kalan 38 fiş bu dosyada. Luca bir dosyada en fazla 50 fiş alır.</p>
         <ol className="ui-steps">
           <li>Luca’da Muhasebe, Fiş İşlemleri, Excel veri aktarımı ekranını açın.</li>
@@ -168,8 +171,17 @@ const PIECES: Piece[] = [
     name: "Eklenti uyarısı", screen: "Luca Fiş Detayı, fiş 0912",
     text: "Açık Fiş Detayı ekranına satırları yazmayı dener. Luca’da henüz denenmedi; birincil yol Excel aktarımıdır.",
     body: (
-      <div className="ui-card ui-split">
-        <div className="ui-ext">
+      // The moment in the browser: Luca's Fiş Detayı grid as the extension left it, its popup floating over the grid's corner.
+      <div className="ui-card ui-ext-scene">
+        <table className="ui-sheet ui-luca-grid">
+          <thead><tr><th scope="col">Hesap Kodu</th><th scope="col">Evrak No</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th><th scope="col">BT</th></tr></thead>
+          <tbody>
+            {LINES_KIRTASIYE.map((l, i) => (
+              <tr key={l.code}><td translate="no">{l.code}</td><td>0912</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td><td className={i === 0 ? "ui-cell-miss" : undefined}>{i === 0 ? <span className="visually-hidden">boş</span> : "ÖK"}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="ui-ext ui-ext-pop">
           <p className="ui-ext-head"><BrandMark /> Accountie</p>
           <ul className="ui-files">
             {LINES_KIRTASIYE.map((l, i) => (
@@ -177,10 +189,7 @@ const PIECES: Piece[] = [
             ))}
             <li><span>1. satır BT</span><span className="balance-off">Bulunamadı</span></li>
           </ul>
-        </div>
-        <div className="ui-ext">
-          <p className="ui-warn">Alan bulunamadı: 1. satır BT. Bu alanları elle doldurun, sonra Kaydet’e siz basın.</p>
-          <p className="ui-meta">Eklenti bulamadığı alanı tahmin etmez.</p>
+          <p className="ui-warn">Bu alanı elle doldurun, sonra Kaydet’e siz basın. Eklenti bulamadığı alanı tahmin etmez.</p>
         </div>
       </div>
     ),
@@ -261,9 +270,8 @@ const PATH = [
   { clause: "Sonra fiş okunur.", card: (
     <>
       <p className="ui-card-head"><span>Fiş 0331</span><span className="status" data-step>Taslak</span></p>
-      {/* The read: the paper beside the fields taken from it, as the panel's review screen sets them. */}
+      {/* The read: only the fields taken from the paper (the paper itself was the step before; YON 23.28, no third strip-and-table). */}
       <div className="path-read" data-step>
-        <div className="path-read-paper"><Thermal sample={KAFE} printedPayment="KREDİ KARTI" hot={{ kind: "total" }} compact /></div>
         <div className="path-read-fields">
           {[["Satıcı", "ÖRNEK KAFE"], ["Evrak No", "0331"], ["Tarih", "01.09.2026"], ["KDV %10", "24,09"], ["Toplam", "265,00"], ["Ödeme", "KREDİ KARTI"], ["Kategori", "Yemek ve ağırlama"]].map(([k, v]) => (
             <p className="ui-kv" key={k}><span>{k}</span><span className="from-receipt">{v}</span></p>
@@ -291,7 +299,7 @@ const PATH = [
     <>
       <p className="ui-card-head"><span>Fiş 0331</span><span className="status status-exported" data-step>Aktarıldı</span></p>
       <p className="path-file" data-step><span className="ui-file-name">luca-fisler-20260901.xlsx</span><span>1 fiş, 3 satır</span></p>
-      {/* The file as a spreadsheet opens it: column letters, row numbers, the export's header row, the lines, then the empty grid. */}
+      {/* The file as a spreadsheet opens it: column letters, row numbers, the export's header row and the lines (no empty filler rows). */}
       <table className="path-xl" data-step>
         <thead><tr><td />{["A", "B", "C", "D", "E"].map((c) => <th scope="col" key={c} className={c === "C" ? "path-xl-date" : undefined}>{c}</th>)}</tr></thead>
         <tbody>
@@ -299,7 +307,6 @@ const PATH = [
           {LINES_KAFE.map((l, i) => (
             <tr key={l.code}><th scope="row">{i + 2}</th><td translate="no">{l.code}</td><td>0331</td><td className="path-xl-date">01.09.2026</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td></tr>
           ))}
-          {[5, 6, 7, 8].map((n) => <tr key={n} aria-hidden="true"><th scope="row">{n}</th><td /><td /><td className="path-xl-date" /><td /><td /></tr>)}
         </tbody>
       </table>
       <p className="ui-meta" data-step>Luca’da Excel veri aktarımı ile yüklenir, Fiş Kes ile kaydedilir.</p>
@@ -324,12 +331,12 @@ export default function LandingPage() {
         {/* Hero: two tones, the counter is the picture */}
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
-            {/* Each line rises once in its mask (YON 23.24): pure CSS from the first paint, so it never waits for hydration. */}
+            {/* Each line rises once, readable from the first frame; the move starts after the first paint (html.go, YON 23.28). */}
             <h1 className="hero-title" id="hero-title"><span className="hero-line"><span>Fişten Luca’ya</span></span> <span className="hero-line"><span>yevmiye kaydı</span></span></h1>
-            <p className="hero-sub" data-load style={cssVars({ "--d": "420ms" })}>
+            <p className="hero-sub">
               Yazar kasa fişini telefonla çekin; gider, KDV ve alacak satırları sizin hesap kodlarınızla hazırlanır, siz onaylayınca Excel ile Luca’ya aktarırsınız.
             </p>
-            <p data-load style={cssVars({ "--d": "480ms" })}>
+            <p>
               <Link className="btn btn-primary btn-lg" href="/kayit">Hesap oluştur</Link>
             </p>
           </div>
@@ -358,7 +365,8 @@ export default function LandingPage() {
         {/* how-it-works: on desktop a sticky split story (four clauses, one card through four states, the field wiped in from
             below, YON.md 23.3.4); without script, below 1100px and with reduced motion the four cards stand in their own fields. */}
         <Suspense>
-        <section className="path" aria-labelledby="path-title">
+        {/* HomeMotion may mark it (data-ready, is-near) before this boundary hydrates: those attributes are the client's own. */}
+        <section className="path" aria-labelledby="path-title" suppressHydrationWarning>
           <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2>
           {PATH.map((f, i) => (
             <div className={`path-field path-field-${i + 1}`} key={f.clause} data-n={i + 1} data-on={i === 0 || undefined}>
@@ -577,7 +585,8 @@ export default function LandingPage() {
                     <span className="cam-c cam-c1" /><span className="cam-c cam-c2" /><span className="cam-c cam-c3" /><span className="cam-c cam-c4" />
                     <Thermal sample={SAMPLES[1]} printedPayment="NAKİT" compact />
                   </div>
-                  <span className="btn cam-shoot">Fiş çek</span>
+                  {/* The camera's shutter, not a page button: a ring, as the panel's capture screen draws it (YON 23.28). */}
+                  <span className="cam-shoot" aria-hidden="true" />
                   <p className="cam-last"><span><span className="cam-last-no">Önceki fiş 0047</span><span className="code-name">8.725,00</span></span><span className="status">Taslak</span></p>
                 </Phone>
                 <ul className="cta-chips" data-ui>

@@ -10,7 +10,7 @@ const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
  *
  * Rule scene: each flying copy is measured once against the receipt figure it leaves from (and again on resize), as CSS
  * variables; the move itself is CSS. From 1100px with scroll-driven animations the scene is tied to the scroll ("scroll"),
- * otherwise it plays once when the balance strip is whole on screen, or at once if the scene is already passed ("timed").
+ * otherwise it plays once when the ledger's rows are whole on screen, or at once if the scene is already passed ("timed").
  * Path scene: the clause row under the screen's middle line sets which of the four states the sticky card shows. The rows
  * touch, so after any jump (PageDown, an anchor, a reload mid-page) exactly one row holds the line and reports it. The state is written
  * on the stage (data-active) and on the one field that holds it (data-on), so a change restyles those few nodes, not the section;
@@ -28,6 +28,10 @@ export function HomeMotion() {
         // Setting the mode starts the scene's ~20 animations (a costly style pass); an unchanged value would redo it.
         if (rule.dataset.mode !== (wide ? "scroll" : "timed")) rule.dataset.mode = wide ? "scroll" : "timed";
         // All reads before any write: a write between reads forces a fresh style and layout per copy (the 4x CPU scroll LoAF).
+        // The gutter between the paper and the ledger: the chip goes down or up in it, never over printed words.
+        const paper = rule.querySelector(".rule-receipt")?.getBoundingClientRect();
+        const ledger = rule.querySelector(".rule-ledger")?.getBoundingClientRect();
+        const gx = paper && ledger ? (paper.right + ledger.left) / 2 : 0;
         const moves = [...rule.querySelectorAll<HTMLElement>("[data-fly]")].map((copy) => {
           const src = rule.querySelector<HTMLElement>(`[data-amt="${copy.dataset.fly}"] > span:last-child`);
           const cell = copy.parentElement;
@@ -37,14 +41,22 @@ export function HomeMotion() {
           const chip = copy.querySelector<HTMLElement>(".fly-s");
           const pad = chip ? parseFloat(getComputedStyle(chip).paddingRight) : 0;
           const scale = parseFloat(getComputedStyle(src).fontSize) / parseFloat(getComputedStyle(cell).fontSize);
+          // The row line the chip slides along: its own row's top or bottom edge, whichever is nearer the paper's figure, so it
+          // travels between the rows' text, never over an account name (YON 23.28).
+          const row = cell.closest("tr")?.getBoundingClientRect() ?? c;
+          const sy = s.top + s.height / 2, cy = c.top + c.height / 2;
+          const edge = Math.abs(sy - row.top) < Math.abs(sy - row.bottom) ? row.top : row.bottom;
           // The chip's text, not its padded box, starts exactly on the printed figure (scaled about its right edge).
-          return [copy, `${s.right - c.right + pad}px`, `${s.top + s.height / 2 - (c.top + c.height / 2)}px`, String(scale)] as const;
+          const w = copy.getBoundingClientRect().width;
+          return [copy, `${s.right - c.right + pad}px`, `${sy - cy}px`, String(scale), `${edge - cy}px`, `${gx + w / 2 - c.right}px`] as const;
         });
         for (const m of moves) {
           if (!m) continue;
           m[0].style.setProperty("--dx", m[1]);
           m[0].style.setProperty("--dy", m[2]);
           m[0].style.setProperty("--sc", m[3]);
+          m[0].style.setProperty("--dg", m[4]);
+          m[0].style.setProperty("--dxg", m[5]);
         }
       };
       // Not in the hydration task: measuring there renders the page's content-visibility sections (the 4x CPU long task, YON 23.14).
@@ -60,17 +72,15 @@ export function HomeMotion() {
       let raf = 0;
       const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(measure); };
       addEventListener("resize", onResize);
-      // Timed mode starts when the balance strip is whole on screen, so Onayla and "Dengede" are seen on a phone, not cut at its foot.
-      // The idle and approach passes have measured; starting is play() on the paused CSS animations: no class on the scene root,
-      // so no style pass over its whole subtree in a scroll frame (4x CPU: an 85 ms frame at the start, YON 23.18).
-      // It starts when the balance strip (totals, Dengede, Onayla) is whole on screen, so the scene's end is seen rather than played
-      // under the screen's foot (YON 23.24); on a phone the receipt is then on screen above it, so the figures are seen leaving it.
+      // Timed mode starts with play() on the paused CSS animations once the ledger's rows are whole on screen (the receipt is then
+      // on screen above it on a phone): no class on the scene root, so no style pass over its subtree in a scroll frame (YON 23.18).
       const io = new IntersectionObserver(([e]) => {
         if (!(e.intersectionRatio >= 0.99 || e.boundingClientRect.bottom < 0)) return;
         io.disconnect();
         if (rule.dataset.mode === "timed") raf = requestAnimationFrame(() => rule.getAnimations({ subtree: true }).forEach((a) => a.play()));
       }, { threshold: [0, 1] });
-      io.observe(rule.querySelector(".rule-close") ?? rule);
+      // The table, not the balance strip under it: the scene starts as soon as the three rows are on screen (YON 23.28).
+      io.observe(rule.querySelector(".rule-table") ?? rule);
       offs.push(() => { if (idle) cic(idle); near.disconnect(); cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
     }
 
