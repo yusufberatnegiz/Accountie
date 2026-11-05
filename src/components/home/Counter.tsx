@@ -19,8 +19,7 @@ const PRINTED: Record<Payment["id"], string> = { partner: "KREDİ KARTI", compan
  * The receipt is on a phone that sits over the bottom-left corner of the window holding the Luca lines (YON.md 23.2). After a choice
  * only the changed digits of codes and amounts roll (Odometer, YON.md 23.3.3), never counting; rows stay keyed by position.
  * A new sample keeps the chosen payment (the strip prints that payment), so one choice never silently changes another.
- * The pickers sit in the window's own toolbar, beside a thin rail of the panel's screens; on a phone the window is a card under the
- * phone and the pickers are at its top, so a choice and its lines are on one screen (YON 23.15). A new sample swaps the paper in the
+ * The pickers sit above the window (no rail in it, YON 23.32); on a phone the window is a card under the phone (YON 23.15). A new sample swaps the paper in the
  * same DOM (one Web Animation), no remount.
  * The radios are uncontrolled and a choice renders in a transition: the click's frame paints only the native radio, and quick
  * choices drop the renders they overtake (INP, YON 23.22). autoComplete off: the browser does not restore a choice React never saw.
@@ -99,12 +98,6 @@ export function Counter() {
       <div className="counter-body">
         <AppWindow title={`Fiş ${sample.receipt.receiptNo}, Luca satırları`} className="counter-win">
           <div className="counter-app">
-            {/* The panel's own rail, drawn: the phone rides over its lower part. */}
-            <ul className="counter-rail" aria-hidden="true">
-              <li data-on>Fişler</li><li>Kurallar</li>
-              <li className="counter-rail-head">Taslak</li>
-              {SAMPLES.map((s) => <li key={s.id} className="counter-rail-fis" data-sel={s.id === sampleId || undefined}><span>{s.receipt.receiptNo}</span><span>{s.label}</span></li>)}
-            </ul>
             <div className="counter-sheet">
               {/* Phone: the receipt is above the card, so the card names it and its total; a choice and its paper stay on one screen. */}
               <p className="counter-chip"><span translate="no">{sample.receipt.vendorName}</span><span>TOPLAM <Odometer value={formatTrAmount(sample.receipt.totalKurus ?? 0)} /></span></p>
