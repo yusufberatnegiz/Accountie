@@ -161,7 +161,8 @@ details.side-block:not([open]) { gap: 0; }
   .review { grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto 1fr auto auto auto; row-gap: 0; }
   .review > .source { grid-column: 1; grid-row: 1 / 5; }
   .review > :not(.source) { grid-column: 2; min-width: 0; }
-  .review > :not(.source):not(:first-child) { margin-top: var(--s4); }
+  .review > :not(.source):not(:first-child):not(.read-brief + *) { margin-top: var(--s4); }
+  .review > .read-brief { display: none; }
   /* When the receipt column is the taller one the lines panel takes the slack and its totals sit on its foot (app-screens 4.2):
      both columns end on one line and no band of ground opens beside the receipt. */
   .review > section.panel { grid-row: 2; align-self: stretch; display: flex; flex-direction: column; }
@@ -206,6 +207,17 @@ details.side-block:not([open]) { gap: 0; }
 /* Fiş izi: the receipt figure behind the journal line in focus. A full row tone, never a coloured edge. */
 .read-values > [data-traced] { background: var(--accent-soft); }
 .read-values > [data-traced] dd { color: var(--ink); }
+/* Below 1100px: the receipt's three figures in one strip above the lines; the line in focus lights its figure here (YON 23.13). */
+.read-brief { display: flex; align-items: center; gap: var(--s3); padding: var(--s2); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); }
+.read-brief dl { display: flex; flex: 1; gap: var(--s1); min-width: 0; margin: 0; }
+.read-brief dl > div { flex: 1 1 0; display: grid; gap: 2px; padding: var(--s1) var(--s2); border-radius: var(--radius-chip); min-width: 0; transition: background-color var(--t-hover) ease; }
+.read-brief dt { font-size: var(--fs-small); color: var(--muted); }
+.read-brief dd { margin: 0; font-size: var(--fs-body); font-weight: var(--w-medium); color: var(--thermal-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.read-brief dl > div:last-child dd { color: var(--ink); font-weight: var(--w-strong); }
+.read-brief dl > [data-traced] { background: var(--accent-soft); }
+.read-brief dl > [data-traced] dd { color: var(--ink); }
+.read-brief a { flex: none; display: inline-flex; align-items: center; min-height: var(--touch); padding: 0 var(--s2); font-size: var(--fs-small); color: var(--muted); text-underline-offset: 3px; }
+#fis-kaynak { scroll-margin-top: var(--s4); }
 .inline-field { display: grid; gap: var(--s1); font-size: var(--fs-small); color: var(--muted); }
 .inline-field .field { width: 260px; min-height: var(--control-sm); color: var(--ink); }
 .journal td, .journal th { padding: var(--s2) var(--s1); vertical-align: top; }
@@ -383,7 +395,13 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   /* While its receipt is read a second tap does nothing; the muted fill says so. */
   .app .rail-capture[aria-disabled="true"] { background: var(--active) !important; color: var(--muted) !important; cursor: progress; }
   /* Reading status and errors float just above the bar, under the thumb. */
-  .capture-rail .reading, .capture-rail .alert, .capture-head .reading, .empty-row .capture-head .reading { position: fixed; top: auto; width: auto; left: var(--s4); right: var(--s4); bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 4; }
+  .capture-rail .reading, .capture-rail .alert { position: fixed; top: auto; width: auto; left: var(--s4); right: var(--s4); bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 4; }
+  /* The list's foot clears the floating card, so the last row is never cut under it. */
+  .app:has(.capture-rail .reading) .canvas { padding-bottom: calc(var(--s9) + 112px + env(safe-area-inset-bottom)); }
+  /* Gallery reading on the phone: the card takes the button's own slot (same width, a few px taller), so no empty band is left. */
+  .capture-head .reading, .capture-head .reading:has(.feed) { position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; z-index: 2; padding: var(--s2) var(--s3); }
+  .capture-head .feed { width: 30px; height: 42px; }
+  .empty-row .capture-head .reading { top: 0; translate: none; }
   /* The receipt screen has its own bottom bar (balance, Onayla); the crumb leads back. */
   .app[data-screen="fis"] .rail { display: none; }
 
@@ -539,9 +557,11 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 ::view-transition-new(.title-morph) { animation: none; object-fit: none; object-position: left top; }
 /* Row into review (Link transitionTypes "fis-ac"). React cancels the root cross-fade here, so the old list is gone on the first
    frame and only the live new screen shows: a delay would leave a blank screen. The body rises in at once (160ms); the fixed
-   bottom bar and the rail are chrome and never fade (YON 23.10). */
+   bottom bar and the rail are chrome and never fade (YON 23.10). The title's own neighbours (crumb, pill, sentence) wait until it
+   lands (200ms, the morph is 240ms on ease-out), so the travelling title is the only thing moving in the header (YON 23.13). */
 @media (prefers-reduced-motion: no-preference) {
-  :root:active-view-transition-type(fis-ac) .app[data-screen="fis"] :is(.crumb, .title-line > .status, .finding, .review > :not(.action-bar, .trace-link)) { animation: vt-enter 160ms var(--ease-out) both; }
+  :root:active-view-transition-type(fis-ac) .app[data-screen="fis"] .review > :not(.action-bar, .trace-link) { animation: vt-enter 160ms var(--ease-out) both; }
+  :root:active-view-transition-type(fis-ac) .app[data-screen="fis"] :is(.crumb, .title-line > .status, .finding) { animation: vt-fade-in 120ms 200ms var(--ease-out) both; }
 }
 @keyframes vt-enter { from { opacity: 0; transform: translateY(6px); } }
 ::view-transition-group(.tab-slide) { animation-duration: 200ms; }

@@ -302,6 +302,15 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             <circle cx={4} cy={link.p} r={2.5} /><circle cx={link.w - 4} cy={link.q} r={2.5} />
           </svg>
         ) : null}
+        {/* Below 1100px the receipt column falls under the lines: its three figures sit above them, so the spotlight lands on screen. */}
+        <div className="read-brief">
+          <dl aria-label="Fişten okunan, özet">
+          <div data-src="base" {...traced("base")}><dt>Matrah</dt><dd className="num">{readTotal !== null ? formatTrAmount(readTotal - readVat) : <span className="dash">-</span>}</dd></div>
+          <div data-src="vat" {...traced("vat")}><dt>KDV</dt><dd className="num">{formatTrAmount(readVat)}</dd></div>
+          <div data-src="total" {...traced("total")}><dt>Toplam</dt><dd className="num">{readTotal !== null ? formatTrAmount(readTotal) : <span className="dash">-</span>}</dd></div>
+          </dl>
+          <a href="#fis-kaynak">{photo ? "Fişi göster" : "Tüm alanlar"}</a>
+        </div>
         {warnings.length ? (
           <div className="alert alert-warn" id="uyarilar">
             <p className="alert-title">Kontrol edilecekler</p>
@@ -378,14 +387,14 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
 
         <div className="source">
           {photo ? (
-            <figure className="photo">
+            <figure className="photo" id="fis-kaynak">
               {/* A fixed 3:4 box (the photo is shrunk to a 1600px long edge) so the lines beside it never move when it decodes. */}
               {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
               <img src={photo} alt="Fiş fotoğrafı" width={1200} height={1600} decoding="async" />
             </figure>
           ) : null}
           {/* The receipt as read; the journal line in focus lights the figure it came from. */}
-          <section className="panel read" aria-labelledby="okunan-baslik">
+          <section className="panel read" id={photo ? undefined : "fis-kaynak"} aria-labelledby="okunan-baslik">
             <h2 id="okunan-baslik">Fişten okunan</h2>
             <dl className="read-values">
               <div><dt>Satıcı</dt><dd>{read(receipt.vendorName)}</dd></div>
