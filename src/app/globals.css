@@ -5,9 +5,11 @@
   Everything references tokens; no raw colours below the token blocks.
 */
 
-/* Metric-matched fallbacks (next/font cannot compute them for Stack Sans): Arial scaled to the variable fonts' a-z width and ascent/descent, so a late font does not reflow the hero or body. Values from fontkit on the shipped woff2 files. */
-@font-face { font-family: "Stack Sans Text Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"); size-adjust: 109.72%; ascent-override: 91.14%; descent-override: 27.34%; line-gap-override: 0%; }
-@font-face { font-family: "Stack Sans Headline Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"); size-adjust: 104.3%; ascent-override: 95.88%; descent-override: 28.76%; line-gap-override: 0%; }
+/* Metric-matched fallbacks (next/font cannot compute them for Stack Sans): Arial at the web fonts' set width (measured in the
+   browser on real headings and body copy, 2026-11-05; the earlier a-z values left Arial 13% wider in the headline and 19% in the
+   text, so a missed font set the h1 on three lines), the ascent and descent scaled back so the line box stays the font's (YON 23.24). */
+@font-face { font-family: "Stack Sans Text Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"); size-adjust: 92%; ascent-override: 108.7%; descent-override: 32.6%; line-gap-override: 0%; }
+@font-face { font-family: "Stack Sans Headline Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"); size-adjust: 91%; ascent-override: 109.9%; descent-override: 33%; line-gap-override: 0%; }
 
 /* ---------- Tokens: light (default) ---------- */
 :root {
@@ -74,7 +76,7 @@
   --field-1: #e8e4da; --field-2: #dbd6ca; --field-3: #ccc6b8;
   --field-4: var(--accent-field); --on-field-4: var(--on-accent-field);
   /* Bir fişin yolu (YON 23.18): three steps of stone, then the one Luca blue field (the file going to Luca); the shell card over them. */
-  --path-1: #ebe7de; --path-2: #e3ded3; --path-3: #d6d0c3; --path-4: #132e63; --path-shell: var(--lift);
+  --path-1: #ebe7de; --path-2: #ddd8cb; --path-3: #cdc6b6; --path-4: #132e63; --path-shell: var(--lift);
   /* The showcase field and its plate (dark lifts both a step so the section reads off the ground). */
   --show-ground: var(--deep); --show-plate: var(--deep-raised);
   /* The homepage hero and the auth screens: a clear second field beside the ground (1.3:1), and the hero's unselected choices on it. */
@@ -144,9 +146,9 @@
     --plate: #25221d; --bezel: #38342d; --edge-hi: rgb(255 255 255 / 0.06);
     --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
     --field-1: #1a1815; --field-2: #211e1a; --field-3: #2a2621; --field-4: #302c26; --on-field-4: #f2efe8;
-    --path-1: #25221d; --path-2: #2b2722; --path-3: #34302a; --path-4: #172f63; --path-shell: #3a362f; --show-ground: #1a2439; --show-plate: #26324b;
+    --path-1: #25221d; --path-2: #322e28; --path-3: #403a32; --path-4: #172f63; --path-shell: #3a362f; --show-ground: #1a2439; --show-plate: #26324b;
     --split: #26231e; --choice: #36322b; --show-field: #1a2439; --show-card: #36322c; --show-card-edge: #48433b; --show-tabs: #222d45; --show-raised: #3e3a33; --picture-opacity: 0.9;
-    --lift: #332f29; --lift-edge: #413c35; --path-card-1: #322e28; --path-card-2: #35312a; --path-card-3: #3d3830; --path-card-4: #2e2a25; --foot-name: #c3beb2;
+    --lift: #332f29; --lift-edge: #413c35; --path-card-1: #322e28; --path-card-2: #3e3932; --path-card-3: #2e2a25; --path-card-4: #2e2a25; --foot-name: #c3beb2;
     --paper: #e8e3d8; --paper-ink: #3a3631; --paper-strong: #171512; --paper-lit: #bccdeb;
   --ui-surface: #2f2b26; --ui-raised: #36322c; --ui-border: #433e37; --ui-rule: #39352e;
   --ui-lift: #3e3a33; --ui-lift-edge: #524c43; --cta-field: #26231e; --photo-mat: #25221d; --photo-dim: 0.88;
@@ -170,9 +172,9 @@
   --plate: #25221d; --bezel: #38342d; --edge-hi: rgb(255 255 255 / 0.06);
   --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
   --field-1: #1a1815; --field-2: #211e1a; --field-3: #2a2621; --field-4: #302c26; --on-field-4: #f2efe8;
-    --path-1: #25221d; --path-2: #2b2722; --path-3: #34302a; --path-4: #172f63; --path-shell: #3a362f; --show-ground: #1a2439; --show-plate: #26324b;
+    --path-1: #25221d; --path-2: #322e28; --path-3: #403a32; --path-4: #172f63; --path-shell: #3a362f; --show-ground: #1a2439; --show-plate: #26324b;
   --split: #26231e; --choice: #36322b; --show-field: #1a2439; --show-card: #36322c; --show-card-edge: #48433b; --show-tabs: #222d45; --show-raised: #3e3a33; --picture-opacity: 0.9;
-  --lift: #332f29; --lift-edge: #413c35; --path-card-1: #322e28; --path-card-2: #35312a; --path-card-3: #3d3830; --path-card-4: #2e2a25; --foot-name: #c3beb2;
+  --lift: #332f29; --lift-edge: #413c35; --path-card-1: #322e28; --path-card-2: #3e3932; --path-card-3: #2e2a25; --path-card-4: #2e2a25; --foot-name: #c3beb2;
   --paper: #e8e3d8; --paper-ink: #3a3631; --paper-strong: #171512; --paper-lit: #bccdeb;
   --ui-surface: #2f2b26; --ui-raised: #36322c; --ui-border: #433e37; --ui-rule: #39352e;
   --ui-lift: #3e3a33; --ui-lift-edge: #524c43; --cta-field: #26231e; --photo-mat: #25221d; --photo-dim: 0.88;
@@ -420,12 +422,10 @@ main:focus, main:focus-visible { outline: none; }
 :is(.odo-d, .roll-slot)[data-old] { clip-path: inset(0 -0.1em); }
 :is(.odo-d, .roll-slot) > span { display: inline-block; white-space: nowrap; }
 :is(.odo-d, .roll-slot)[data-old]::before { content: attr(data-old); position: absolute; left: 0; top: 0; white-space: nowrap; }
-/* A whole-figure roll (length changed): the old figure leaves from its own right edge, a code from its left. It is cut to the new
-   figure's box on the side it would spill to, so a longer old amount never prints over the labels beside it (YON 23.15). */
-.odo-w[data-old] { clip-path: inset(0 -20em 0 0); }
-.odo.code .odo-w[data-old] { clip-path: inset(0 0 0 -20em); }
-.odo-w[data-old]::before { left: auto; right: 0; }
-.odo.code .odo-w[data-old]::before { left: 0; right: auto; }
+/* A whole-figure roll (length changed): the old figure is not drawn at all and the new one rises into its box. A longer old figure
+   cut to the new box read as a different amount (8.725,00 showed as 725,00), and one let out of the box printed over the label
+   beside it; so no frame shows a partial figure or two figures (YON 23.24). */
+.odo-w[data-old]::before { content: none; }
 @keyframes odo-in { from { transform: translateY(100%); opacity: 0; } }
 @keyframes odo-out { to { transform: translateY(-100%); opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {

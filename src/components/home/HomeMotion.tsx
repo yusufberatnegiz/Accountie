@@ -54,7 +54,8 @@ export function HomeMotion() {
       const cic = window.cancelIdleCallback ?? clearTimeout;
       let idle = 0;
       document.fonts.ready.then(() => { idle = ric(() => { idle = 0; measure(); }, { timeout: 3000 }); });
-      const near = new IntersectionObserver(([e]) => { if (e.isIntersecting || e.boundingClientRect.bottom < 0) { near.disconnect(); measure(); } }, { rootMargin: "100% 0px" });
+      // The approach pass also waits for an idle moment (its first layout of the scene was a 107 ms task at 4x CPU, YON 23.24).
+      const near = new IntersectionObserver(([e]) => { if (e.isIntersecting || e.boundingClientRect.bottom < 0) { near.disconnect(); if (idle) cic(idle); idle = ric(() => { idle = 0; measure(); }, { timeout: 500 }); } }, { rootMargin: "150% 0px" });
       near.observe(rule);
       let raf = 0;
       const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(measure); };
@@ -62,19 +63,26 @@ export function HomeMotion() {
       // Timed mode starts when the balance strip is whole on screen, so Onayla and "Dengede" are seen on a phone, not cut at its foot.
       // The idle and approach passes have measured; starting is play() on the paused CSS animations: no class on the scene root,
       // so no style pass over its whole subtree in a scroll frame (4x CPU: an 85 ms frame at the start, YON 23.18).
-      // It starts when the receipt and the lines card are on screen together (YON 23.20): the source rows are seen as the figures
-      // leave them. A body taller than the screen starts once as much of it as fits is in view.
+      // It starts when the balance strip (totals, Dengede, Onayla) is whole on screen, so the scene's end is seen rather than played
+      // under the screen's foot (YON 23.24); on a phone the receipt is then on screen above it, so the figures are seen leaving it.
       const io = new IntersectionObserver(([e]) => {
-        const need = Math.min(0.85, (innerHeight - 72) / Math.max(1, e.boundingClientRect.height));
-        if (!(e.intersectionRatio >= need || e.boundingClientRect.bottom < 0)) return;
+        if (!(e.intersectionRatio >= 0.99 || e.boundingClientRect.bottom < 0)) return;
         io.disconnect();
         if (rule.dataset.mode === "timed") raf = requestAnimationFrame(() => rule.getAnimations({ subtree: true }).forEach((a) => a.play()));
-      }, { threshold: [0, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85] });
-      io.observe(rule.querySelector(".rule-body") ?? rule);
+      }, { threshold: [0, 1] });
+      io.observe(rule.querySelector(".rule-close") ?? rule);
       offs.push(() => { if (idle) cic(idle); near.disconnect(); cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
     }
 
     const path = document.querySelector<HTMLElement>(".path");
+    // "Bir fişin yolu" is laid out (content-visibility) a screen and a half before it arrives, in an idle moment, not in the
+    // scroll frame that reaches it (a 122 ms task at 4x CPU, YON 23.24).
+    if (path) {
+      const ric = window.requestIdleCallback ?? ((f: () => void) => setTimeout(f, 1));
+      const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); ric(() => path.classList.add("is-near"), { timeout: 600 }); } }, { rootMargin: "150% 0px" });
+      io.observe(path);
+      offs.push(() => io.disconnect());
+    }
     const stage = path?.querySelector<HTMLElement>(".path-stage");
     if (path && stage) {
       const fields = [...path.querySelectorAll<HTMLElement>(".path-field")];

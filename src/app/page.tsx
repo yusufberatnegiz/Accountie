@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
 import { Suspense, type CSSProperties, type ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
 import { CookieNote } from "@/components/site/CookieNote";
 import { SiteBar } from "@/components/site/SiteBar";
 import { Counter } from "@/components/home/Counter";
 import { Faq, type Qa } from "@/components/home/Faq";
-import { AppWindow } from "@/components/home/Frames";
+import { AppWindow, Phone } from "@/components/home/Frames";
 import { HomeMotion } from "@/components/home/HomeMotion";
 import { ShowRow, type Piece } from "@/components/home/ShowRow";
-import { AKARYAKIT, journalFor, KAFE, SAMPLES, shownAccountName, sourcesFor, type Sample } from "@/components/home/samples";
+import { AKARYAKIT, journalFor, KAFE, OTOPARK, SAMPLES, shownAccountName, sourcesFor, type Sample } from "@/components/home/samples";
 import { Spotlight } from "@/components/home/Spotlight";
 import { Thermal } from "@/components/home/Thermal";
 import { WARNING_MESSAGES } from "@/lib/journal";
 import { formatTrAmount } from "@/lib/money";
 import { PAYMENT_ALTERNATIVES } from "@/lib/default-rules";
 import "@/components/home/home.css";
-// Two licensed photographs of the receipt's own material (YON 23.20); credited in the footer.
-import posStrip from "../../public/gorseller/pos-fis-seridi.webp";
-import paperRolls from "../../public/gorseller/termal-rulo.webp";
 
 // Public and static: no session, no user data (docs/design/YON.md 5.5).
 export const dynamic = "force-static";
@@ -43,6 +39,7 @@ const LINES_0047 = linesOf(SAMPLES[0]);
 const LINES_KAFE = linesOf(KAFE);
 const LINES_FUEL = linesOf(AKARYAKIT);
 const LINES_KIRTASIYE = linesOf(SAMPLES[1], "cash");
+const LINES_OTOPARK = linesOf(OTOPARK);
 
 /** A sample's Luca lines; `credit` replaces the credit amount (the misread receipt), `mark` adds a note to one line. */
 function MiniLines({ lines, credit, mark, lit }: { lines: Line[]; credit?: string; mark?: { code: string; node: ReactNode }; lit?: string }) {
@@ -100,9 +97,9 @@ const MARKET_LINES = journalFor(MARKET, "partner").lines.map((l, i) => ({
 const LIST = [
   ["0047", "ÖRNEK BALIK LOKANTASI", "05.09.2026", "8.725,00", "Onaylı"],
   ["2214", "ÖRNEK MARKET", "04.09.2026", "598,50", "Onaylı"],
-  ["0768", "ÖRNEK OTOPARK", "06.09.2026", "120,00", "Taslak"],
+  ["0768", "ÖRNEK OTOPARK", "06.09.2026", "120,00", "Aktarıldı"],
   ["1185", "ÖRNEK AKARYAKIT", "03.09.2026", "2.150,00", "Taslak"],
-  ["0912", "ÖRNEK KIRTASİYE", "02.09.2026", "480,00", "Aktarıldı"],
+  ["0912", "ÖRNEK KIRTASİYE", "02.09.2026", "480,00", "Taslak"],
   ["0331", "ÖRNEK KAFE", "01.09.2026", "265,00", "Aktarıldı"],
 ];
 
@@ -319,14 +316,16 @@ const SHEET = [
 export default function LandingPage() {
   return (
     <>
+      {/* First after the skip link: it steps aside past half a screen, so forward Tab must reach it at the top (YON 23.24). */}
+      <CookieNote />
       <HomeMotion />
       <SiteBar />
       <main id="icerik" tabIndex={-1} className="home">
         {/* Hero: two tones, the counter is the picture */}
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
-            {/* Painted whole on the first frame (YON 23.15): no line mask, so no half-cut glyphs while the page hydrates. */}
-            <h1 className="hero-title" id="hero-title"><span className="hero-line">Fişten Luca’ya</span> <span className="hero-line">yevmiye kaydı</span></h1>
+            {/* Each line rises once in its mask (YON 23.24): pure CSS from the first paint, so it never waits for hydration. */}
+            <h1 className="hero-title" id="hero-title"><span className="hero-line"><span>Fişten Luca’ya</span></span> <span className="hero-line"><span>yevmiye kaydı</span></span></h1>
             <p className="hero-sub" data-load style={cssVars({ "--d": "420ms" })}>
               Yazar kasa fişini telefonla çekin; gider, KDV ve alacak satırları sizin hesap kodlarınızla hazırlanır, siz onaylayınca Excel ile Luca’ya aktarırsınız.
             </p>
@@ -339,15 +338,21 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* The material (YON 23.20): one photograph across the width, the paper the product starts from, and one sentence. */}
-        <section className="paper" aria-labelledby="paper-title">
-          <figure className="photo paper-photo">
-            <Image src={posStrip} alt="Ödeme cihazından çıkan uzun, boş termal fiş şeridi, turuncu bir masanın üstünde" sizes="100vw" />
-          </figure>
+        {/* The material (YON 23.24): the thermal paper itself, printed large on a desk, its fold and cut edge; as the section
+            passes, the print fades row by row while the Luca lines laid over it stay whole. No photograph. */}
+        <section className="paper wrap" aria-labelledby="paper-title">
           <div className="paper-copy">
             <h2 className="t-head paper-title" id="paper-title">Termal fiş solar</h2>
             <p className="paper-text">Yazar kasa fişi ısıyla basılır ve zamanla okunmaz olur. Fiş okunurken satırlarını çıkarın; kayıt Luca’da kalır.</p>
           </div>
+          <figure className="paper-desk">
+            <div className="paper-strip" data-ui><Thermal sample={OTOPARK} printedPayment="KREDİ KARTI" /></div>
+            <div className="ui-card paper-luca" data-ui>
+              <p className="ui-card-head"><span>Fiş 0768, Luca satırları</span><span className="status status-exported">Aktarıldı</span></p>
+              <MiniLines lines={LINES_OTOPARK} />
+            </div>
+            <figcaption>Fiş 0768: kâğıt solar, satırları Luca’da kalır.</figcaption>
+          </figure>
         </section>
 
         {/* how-it-works: on desktop a sticky split story (four clauses, one card through four states, the field wiped in from
@@ -409,10 +414,11 @@ export default function LandingPage() {
                       </tbody>
                     </table>
                     <div className="rule-close">
+                      {/* The totals hold dashes until the last figure has landed: the balance is the result, never ahead of its rows. */}
                       <dl className="ui-totals">
-                        <div><dt>Borç</dt><dd>2.150,00</dd></div>
-                        <div><dt>Alacak</dt><dd>2.150,00</dd></div>
-                        <div><dt>Fark</dt><dd>0,00</dd></div>
+                        {[["Borç", "2.150,00"], ["Alacak", "2.150,00"], ["Fark", "0,00"]].map(([k, v]) => (
+                          <div key={k}><dt>{k}</dt><dd className="rule-sum"><span className="rule-sum-dash" aria-hidden="true" /><span className="rule-sum-val">{v}</span></dd></div>
+                        ))}
                       </dl>
                       <div className="ui-approve">
                         <span className="rule-btn"><span className="btn" aria-hidden="true">Onayla</span><span className="btn btn-primary">Onayla</span></span>
@@ -561,20 +567,27 @@ export default function LandingPage() {
                 <p>Hesabınız var mı? <Link href="/giris" prefetch={false}>Giriş yapın</Link></p>
               </div>
             </div>
+            {/* The moment of the shot (YON 23.24): the phone's camera screen on Kırtasiye 0912, and the lines it becomes as chips
+                leaving the screen's edge toward the copy; they settle one after another as the section comes in. */}
             <figure className="cta-figure">
               <div className="cta-pic">
-                <div className="photo cta-photo">
-                  <Image src={paperRolls} alt="Elde tutulan iki rulo termal yazar kasa kâğıdı" sizes="(max-width: 900px) 100vw, 520px" />
-                </div>
-                {/* Kırtasiye 0912 paid in cash: the lines this paper becomes, as sharp chips over the photograph (Pennylane, YON 23.2). */}
+                <Phone className="cta-phone">
+                  <p className="phone-head"><span>Fiş çek</span><span>Fişi çerçeveye sığdırın</span></p>
+                  <div className="cam">
+                    <span className="cam-c cam-c1" /><span className="cam-c cam-c2" /><span className="cam-c cam-c3" /><span className="cam-c cam-c4" />
+                    <Thermal sample={SAMPLES[1]} printedPayment="NAKİT" compact />
+                  </div>
+                  <span className="btn cam-shoot">Fiş çek</span>
+                  <p className="cam-last"><span><span className="cam-last-no">Önceki fiş 0047</span><span className="code-name">8.725,00</span></span><span className="status">Taslak</span></p>
+                </Phone>
                 <ul className="cta-chips" data-ui>
-                  {LINES_KIRTASIYE.map((l) => (
-                    <li key={l.code}><span translate="no">{l.code}</span><span className="to-luca">{l.debit || l.credit}</span></li>
+                  {LINES_KIRTASIYE.map((l, i) => (
+                    <li key={l.code} style={cssVars({ "--i": i })}><span translate="no">{l.code}</span><span className="to-luca">{l.debit || l.credit}</span></li>
                   ))}
-                  <li className="balance-ok">Dengede</li>
+                  <li className="balance-ok" style={cssVars({ "--i": 3 })}>Dengede</li>
                 </ul>
               </div>
-              <figcaption>Fiş 0912, nakit: rulodan çıkan fiş Luca’da üç satır olur.</figcaption>
+              <figcaption>Fiş 0912, nakit: çekilen fiş Luca’da üç satır olur.</figcaption>
             </figure>
           </div>
         </section>
@@ -591,11 +604,8 @@ export default function LandingPage() {
             <Link href="/gizlilik" prefetch={false}>Gizlilik</Link>
           </nav>
         </div>
-        <p className="foot-credit">Görsel kaynakları: termal fiş şeridi, Towfiqu barbhuiya, <a href="https://unsplash.com/photos/payment-terminal-with-white-receipt-xkArbdUcUeE">Unsplash</a> (Unsplash Lisansı); termal kâğıt rulosu, Acheolg, <a href="https://commons.wikimedia.org/w/index.php?curid=156143903">Wikimedia Commons</a> (CC BY-SA 4.0, kırpıldı).</p>
         <p className="foot-name" translate="no" aria-hidden="true">Accountie</p>
       </footer>
-      {/* Fixed strip, last in reading and Tab order. */}
-      <CookieNote />
     </>
   );
 }
