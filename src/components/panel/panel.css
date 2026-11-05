@@ -152,14 +152,14 @@ details.side-block:not([open]) { gap: 0; }
 @media (max-width: 720px) { .phone-only-inline { display: inline; } }
 
 /* ---------- Review screen ---------- */
-/* The DOM is the one-column order (warnings, lines, receipt, actions, delete), so Tab follows the eye at every width.
-   From 1100px the receipt column takes the left track down to the bar's row; that row is 1fr, so a taller receipt column
-   never spreads gaps between the items on the right. */
+/* The DOM is the one-column order (warnings, lines, receipt, header fields, actions, delete), so Tab follows the eye at every width.
+   From 1100px the receipt column takes the left track down to the bar's row and the header fields sit under the lines on the right,
+   so Tab never jumps between the columns (YON 23.16); the lines row is 1fr, so a taller receipt column never spreads gaps on the right. */
 .review { display: grid; gap: var(--s4); align-items: start; }
 @media (min-width: 1100px) {
-  /* Rows: warnings, lines (1fr), the tray's two rows, Fişi sil. The receipt column runs down to the tray's foot. */
-  .review { grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto 1fr auto auto auto; row-gap: 0; }
-  .review > .source { grid-column: 1; grid-row: 1 / 5; }
+  /* Rows: warnings, lines (1fr), header fields, the tray's two rows, Fişi sil. The receipt column runs down to the tray's foot. */
+  .review { grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto 1fr auto auto auto auto; row-gap: 0; }
+  .review > .source { grid-column: 1; grid-row: 1 / 6; }
   .review > :not(.source) { grid-column: 2; min-width: 0; }
   .review > :not(.source):not(:first-child):not(.read-brief + *) { margin-top: var(--s4); }
   .review > .read-brief { display: none; }
@@ -168,17 +168,16 @@ details.side-block:not([open]) { gap: 0; }
   .review > section.panel { grid-row: 2; align-self: stretch; display: flex; flex-direction: column; }
   .review > section.panel > .balance-strip { margin-top: auto; }
   /* The secondary actions are the tray's upper row and Onayla's row closes it: one block under the lines. */
-  .review > .actions { grid-row: 3; padding: var(--s5) var(--s4); background: var(--stage); border: 1px solid var(--control); border-bottom: 0; border-radius: var(--radius-card) var(--radius-card) 0 0; }
+  .review > section.panel.info { grid-row: 3; align-self: start; display: block; }
+  .review > .actions { grid-row: 4; padding: var(--s5) var(--s4); background: var(--stage); border: 1px solid var(--control); border-bottom: 0; border-radius: var(--radius-card) var(--radius-card) 0 0; }
   .review > .actions + .action-bar { margin-top: 0; }
   /* On the tray's --stage ground the secondary fill vanishes; the buttons sit on a surface step, like Sıradaki taslak. */
   .review > .actions .btn:enabled:not(:hover) { background: var(--surface); border-color: var(--border); }
-  .review > .action-bar { grid-row: 4; padding: var(--s4); border-top-color: var(--rule); border-radius: 0 0 var(--radius-card) var(--radius-card); }
-  .review > .danger-zone { grid-row: 5; }
-  /* Evrak No beside the date, BT beside Açıklama: four fields in two rows. */
-  .source .form-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: start; }
-  .source .form-grid > label { grid-column: span 3; }
-  .source .form-grid > .bt-field { grid-column: span 2; }
-  .source .form-grid > .span-all { grid-column: span 4; }
+  .review > .action-bar { grid-row: 5; padding: var(--s4); border-top-color: var(--rule); border-radius: 0 0 var(--radius-card) var(--radius-card); }
+  .review > .danger-zone { grid-row: 6; }
+  /* Evrak No, date, BT and Açıklama in one row, Açıklama the widest. */
+  .info .form-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.6fr) minmax(0, 2fr); align-items: start; }
+  .info .form-grid > .span-all { grid-column: auto; }
 }
 /* The receipt column travels beside the lines, but only where all of it fits the screen; with the photo it would hide its own foot. */
 @media (min-width: 1100px) and (min-height: 820px) { .source:not(:has(.photo)) { position: sticky; top: var(--s4); } }
@@ -212,7 +211,7 @@ details.side-block:not([open]) { gap: 0; }
 .read-brief dl { display: flex; flex: 1; gap: var(--s1); min-width: 0; margin: 0; }
 .read-brief dl > div { flex: 1 1 0; display: grid; gap: 2px; padding: var(--s1) var(--s2); border-radius: var(--radius-chip); min-width: 0; transition: background-color var(--t-hover) ease; }
 .read-brief dt { font-size: var(--fs-small); color: var(--muted); }
-.read-brief dd { margin: 0; font-size: var(--fs-body); font-weight: var(--w-medium); color: var(--thermal-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.read-brief dd { margin: 0; text-align: left; font-size: var(--fs-body); font-weight: var(--w-medium); color: var(--thermal-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .read-brief dl > div:last-child dd { color: var(--ink); font-weight: var(--w-strong); }
 .read-brief dl > [data-traced] { background: var(--accent-soft); }
 .read-brief dl > [data-traced] dd { color: var(--ink); }
@@ -486,9 +485,10 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .by-account { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
 .by-account li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s1) var(--s3); font-size: var(--fs-body); }
 .by-account .acc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.by-account .acc-track { grid-column: 1 / -1; display: block; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--control-edge) 28%, var(--surface)); overflow: hidden; }
-.by-account .acc-bar { display: block; height: 100%; background: var(--faint); transform-origin: left center; }
-.by-account li:first-child .acc-bar { background: var(--ink); }
+.by-account .acc-track { grid-column: 1 / -1; display: block; height: 8px; border-radius: 999px; background: var(--rule); overflow: hidden; }
+/* Bars stay quiet greys, the largest a step darker; the figure carries the emphasis, so no bar outshines Fiş çek (YON 23.16). */
+.by-account .acc-bar { display: block; height: 100%; background: color-mix(in srgb, var(--faint) 55%, var(--surface)); transform-origin: left center; }
+.by-account li:first-child .acc-bar { background: color-mix(in srgb, var(--ink) 70%, var(--surface)); }
 .by-account-foot { display: flex; justify-content: space-between; gap: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--rule); font-size: var(--fs-body); }
 
 /* Locked (approved) lines read as plain text on the column edges, and what goes to Luca stays ledger blue. */

@@ -107,6 +107,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   // Lines on screen when it opened; a line added later comes in with a short drop (YON 23.4.6).
   const [firstKeys] = useState(() => new Set(lines.map((l) => l.key)));
   const tbody = useRef<HTMLTableSectionElement>(null);
+  const reviewRef = useRef<HTMLDivElement>(null);
   const flip = useRef<Map<string, number> | null>(null);
   // After a line is removed, the ones below slide up from where they were (FLIP), transform only.
   useLayoutEffect(() => {
@@ -133,9 +134,32 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
     row.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(-4px)" }], { duration: 140, easing: "cubic-bezier(0.55, 0.055, 0.675, 0.19)", fill: "forwards" }).finished.then(done, done);
     setTimeout(done, 200);
   };
+  // Approve and reopen re-lay the screen (the header fields move between their card and the strip over the lines):
+  // the blocks that stay slide from where they were, transform only, no height animation (YON 23.16).
+  const lockFlip = useRef<Map<Element, number> | null>(null);
+  // The title moves too: a shorter locked page can pull the scroll back, and a still title would sit under the sliding blocks.
+  // Inside the lines panel the swap is in place (inputs to text, the header strip fades in); only whole blocks slide.
+  const flipTargets = () => [...(reviewRef.current?.parentElement?.querySelectorAll(":scope > .title-row, .review > :not(.trace-link), .source > *, .head-strip") ?? [])];
+  const measureLock = () => { lockFlip.current = still() ? null : new Map(flipTargets().map((el) => [el, el.getBoundingClientRect().top])); };
+  useLayoutEffect(() => {
+    const before = lockFlip.current;
+    lockFlip.current = null;
+    if (!before) return;
+    const targets = flipTargets();
+    const shift = new Map(targets.map((el) => [el, before.has(el) ? before.get(el)! - el.getBoundingClientRect().top : NaN]));
+    for (const el of targets) {
+      const dy = shift.get(el)!;
+      // A block that was not there (the header strip, the fields card) fades in where it lands.
+      if (Number.isNaN(dy)) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: EASE_OUT });
+      else {
+        // A nested block moves with its parent's slide; only its own share is added.
+        const own = dy - ((el.parentElement && shift.get(el.parentElement)) || 0);
+        if (Math.abs(own) > 1) el.animate([{ transform: `translateY(${own}px)` }, { transform: "none" }], { duration: 180, easing: EASE_OUT });
+      }
+    }
+  }, [editable]);
   // Fiş izi link: one curve from the journal line to the receipt figure it came from, only while the two columns sit side by side.
-  const reviewRef = useRef<HTMLDivElement>(null);
-  const [link, setLink] = useState<{ x: number; y: number; w: number; h: number; p: number; q: number; fromRight: boolean } | null>(null);
+    const [link, setLink] = useState<{ x: number; y: number; w: number; h: number; p: number; q: number; fromRight: boolean } | null>(null);
   const traceOn = (src: Source, row: HTMLElement) => {
     setTrace(src);
     const root = reviewRef.current;
@@ -407,45 +431,46 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             </dl>
             <p className="muted small">{photo ? "Fotoğraf yalnızca bu cihazda, bu oturumda görünür." : "Fotoğraf bu cihazda değil; sunucu fotoğrafı saklamaz. Satırları kâğıt fişle karşılaştırın."}</p>
           </section>
-          {/* Header fields that every line carries: beside what the receipt said, under the same eye. Locked, they sit atop the lines instead. */}
-          {editable ? (
-          <section className="panel panel-pad info" aria-labelledby="bilgi-baslik">
-            <h2 id="bilgi-baslik">Fiş bilgileri</h2>
-            <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>
-            <div className="form-grid">
-              <label>
-                <span>Evrak No</span>
-                <input id="evrak-no" className="field tnum" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40} required autoComplete="off" spellCheck={false}
-                  {...flag(headFlags.documentNo)}
-                  onChange={(e) => updateAll("documentNo", e.target.value)} />{checkNote(headFlags.documentNo)}
-              </label>
-              <label>
-                <span>Evrak tarihi</span>
-                <input id="evrak-tarihi" className="field tnum" type="date" value={head?.documentDate ?? ""} disabled={!editable} required
-                  {...flag(headFlags.documentDate)}
-                  onChange={(e) => updateAll("documentDate", e.target.value || null)} />{checkNote(headFlags.documentDate)}
-              </label>
-              <label className="bt-field">
-                <span>Belge türü</span>
-                <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} autoComplete="off" onChange={(e) => updateAll("documentType", e.target.value)} />
-              </label>
-              <label className="span-all">
-                <span>Açıklama</span>
-                <input className="field" value={head?.description ?? ""} disabled={!editable} maxLength={200} autoComplete="off"
-                  {...flag(headFlags.description)}
-                  onChange={(e) => updateAll("description", e.target.value)} />{checkNote(headFlags.description)}
-              </label>
-            </div>
-          </section>
-          ) : null}
         </div>
+
+        {/* Header fields that every line carries: under the lines and before the actions, so Tab and the eye run the same way (YON 23.16). Locked, they sit atop the lines instead. */}
+        {editable ? (
+        <section className="panel panel-pad info" aria-labelledby="bilgi-baslik">
+          <h2 id="bilgi-baslik">Fiş bilgileri</h2>
+          <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>
+          <div className="form-grid">
+            <label>
+              <span>Evrak No</span>
+              <input id="evrak-no" className="field tnum" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40} required autoComplete="off" spellCheck={false}
+                {...flag(headFlags.documentNo)}
+                onChange={(e) => updateAll("documentNo", e.target.value)} />{checkNote(headFlags.documentNo)}
+            </label>
+            <label>
+              <span>Evrak tarihi</span>
+              <input id="evrak-tarihi" className="field tnum" type="date" value={head?.documentDate ?? ""} disabled={!editable} required
+                {...flag(headFlags.documentDate)}
+                onChange={(e) => updateAll("documentDate", e.target.value || null)} />{checkNote(headFlags.documentDate)}
+            </label>
+            <label className="bt-field">
+              <span>Belge türü</span>
+              <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} autoComplete="off" onChange={(e) => updateAll("documentType", e.target.value)} />
+            </label>
+            <label className="span-all">
+              <span>Açıklama</span>
+              <input className="field" value={head?.description ?? ""} disabled={!editable} maxLength={200} autoComplete="off"
+                {...flag(headFlags.description)}
+                onChange={(e) => updateAll("description", e.target.value)} />{checkNote(headFlags.description)}
+            </label>
+          </div>
+        </section>
+        ) : null}
 
         <div className="actions">
           {editable ? (
             <button className="btn" type="button" disabled={working} onClick={() => run(async () => { if (await save()) { setInfo("Kaydedildi."); refresh(); } })}>Taslağı kaydet</button>
           ) : receipt.status === "approved" ? (
             <>
-              <button className="btn" type="button" disabled={working} onClick={() => run(async () => { if (await call(`/api/receipts/${receipt.id}/reopen`, { method: "POST" })) refresh(); })}>
+              <button className="btn" type="button" disabled={working} onClick={() => run(async () => { if (await call(`/api/receipts/${receipt.id}/reopen`, { method: "POST" })) { measureLock(); refresh(); } })}>
                 Taslağa al
               </button>
               {/* Without this, a receipt typed into Luca by hand stays approved and the next Excel file repeats it. */}
@@ -480,7 +505,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             // aria-disabled keeps the button in the Tab order; pressing it while blocked goes to the field that fixes it.
             <button className="btn btn-primary btn-lg" type="button" disabled={working || approved} data-busy={working || approved || undefined} aria-disabled={target ? true : undefined}
               aria-describedby={target ? "onay-engeli" : undefined}
-              onClick={() => (target ? fix() : run(async () => { if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) { setApproved(true); refresh(); } }))}>
+              onClick={() => (target ? fix() : run(async () => { if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) { setApproved(true); measureLock(); refresh(); } }))}>
               {approved ? "Onaylandı" : busy ? "Kaydediliyor…" : "Onayla"}
             </button>
           ) : (
