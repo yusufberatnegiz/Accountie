@@ -18,6 +18,9 @@ export function ShowRow({ pieces }: { pieces: Piece[] }) {
   const [clip, setClip] = useState<string | null>(null);
 
   // One read of the chosen tab's box per choice (and on resize); the copy of the strip shows only that box.
+  // The first read waits until the section is near the screen: reading at hydration lays out this content-visibility section
+  // inside the hydration task (4x CPU TBT, YON 23.22).
+  const seen = useRef(false);
   useLayoutEffect(() => {
     const ul = list.current;
     if (!ul) return;
@@ -27,9 +30,11 @@ export function ShowRow({ pieces }: { pieces: Piece[] }) {
       const r = ul.getBoundingClientRect(), t = b.getBoundingClientRect();
       setClip(`inset(${t.top - r.top}px ${r.right - t.right}px ${r.bottom - t.bottom}px ${t.left - r.left}px round 6px)`);
     };
-    place();
-    addEventListener("resize", place);
-    return () => removeEventListener("resize", place);
+    const near = new IntersectionObserver(([e]) => { if (e.isIntersecting) { seen.current = true; near.disconnect(); place(); } }, { rootMargin: "50% 0px" });
+    if (seen.current) place(); else near.observe(ul.closest("section") ?? ul);
+    const onResize = () => { if (seen.current) place(); };
+    addEventListener("resize", onResize);
+    return () => { near.disconnect(); removeEventListener("resize", onResize); };
   }, [active]);
 
   // Tabs (WAI-ARIA): one stop for the strip; arrows, Home and End move and choose.
