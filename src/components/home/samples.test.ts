@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { journalFor, PAYMENTS, SAMPLES, shownAccountName, sourcesFor, type Payment } from "./samples";
+import { AKARYAKIT, journalFor, KAFE, PAYMENTS, SAMPLES, shownAccountName, sourcesFor, type Payment } from "./samples";
 
 const rows = (id: string, payment: Payment["id"]) =>
   journalFor(SAMPLES.find((s) => s.id === id)!, payment).lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus]);
@@ -34,6 +34,16 @@ describe("ana sayfa fiş tezgâhı örnekleri", () => {
       for (const v of s.receipt.vatLines) expect(s.items.filter((i) => i.rate === v.rate).reduce((a, i) => a + i.kurus, 0)).toBe(v.grossKurus);
       expect(sourcesFor(s)).toHaveLength(journalFor(s, "partner").lines.length);
     }
+  });
+
+  it("sayfadaki diğer fişler (akaryakıt, kafe) dengede, kalemleri brütü tutar, rakamları sahnelerdeki gibidir", () => {
+    for (const s of [AKARYAKIT, KAFE]) {
+      expect(journalFor(s, "partner").balanced).toBe(true);
+      for (const v of s.receipt.vatLines) expect(s.items.filter((i) => i.rate === v.rate).reduce((a, i) => a + i.kurus, 0)).toBe(v.grossKurus);
+    }
+    const r = (s: typeof KAFE) => journalFor(s, "partner").lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus]);
+    expect(r(AKARYAKIT)).toEqual([["770.01", 179167, 0], ["191.03.20", 35833, 0], ["331.01", 0, 215000]]);
+    expect(r(KAFE)).toEqual([["770.08", 24091, 0], ["191.03.10", 2409, 0], ["331.01", 0, 26500]]);
   });
 
   it("ağırlama uyarısı ortağın kartında çıkar, şirket kartında çıkmaz", () => {

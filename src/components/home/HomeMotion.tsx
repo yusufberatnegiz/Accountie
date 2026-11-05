@@ -10,9 +10,11 @@ const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
  *
  * Rule scene: each flying copy is measured once against the receipt figure it leaves from (and again on resize), as CSS
  * variables; the move itself is CSS. From 1100px with scroll-driven animations the scene is tied to the scroll ("scroll"),
- * otherwise it plays once when a third of the balance strip is on screen, or at once if the scene is already passed ("timed").
+ * otherwise it plays once when the balance strip is whole on screen, or at once if the scene is already passed ("timed").
  * Path scene: the clause row under the screen's middle line sets which of the four states the sticky card shows. The rows
- * touch, so after any jump (PageDown, an anchor, a reload mid-page) exactly one row holds the line and reports it.
+ * touch, so after any jump (PageDown, an anchor, a reload mid-page) exactly one row holds the line and reports it. The state is written
+ * on the stage (data-active) and on the one field that holds it (data-on), so a change restyles those few nodes, not the section;
+ * transitions start only after the first report, so a fast entry never shows the wipe from the server's state.
  */
 export function HomeMotion() {
   useEffect(() => {
@@ -46,28 +48,34 @@ export function HomeMotion() {
       let raf = 0;
       const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(measure); };
       addEventListener("resize", onResize);
-      // Timed mode starts when the balance strip is a third on screen, so the landings and "Dengede" are seen on a phone too.
+      // Timed mode starts when the balance strip is whole on screen, so Onayla and "Dengede" are seen on a phone, not cut at its foot.
       // Re-measure once the section is rendered (content-visibility), then start a frame later: reads, writes and the start of
       // the flight land in separate frames instead of one long one (YON 23.11).
       const io = new IntersectionObserver(([e]) => {
-        if (!(e.intersectionRatio >= 0.34 || e.boundingClientRect.bottom < 0)) return;
+        if (!(e.intersectionRatio >= 0.9 || e.boundingClientRect.bottom < 0)) return;
         io.disconnect();
         raf = requestAnimationFrame(() => { measure(); raf = requestAnimationFrame(() => rule.classList.add("is-playing")); });
-      }, { threshold: [0, 0.34] });
+      }, { threshold: [0, 0.9] });
       io.observe(rule.querySelector(".rule-close") ?? rule);
       offs.push(() => { near.disconnect(); cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
     }
 
     const path = document.querySelector<HTMLElement>(".path");
-    if (path) {
+    const stage = path?.querySelector<HTMLElement>(".path-stage");
+    if (path && stage) {
+      const fields = [...path.querySelectorAll<HTMLElement>(".path-field")];
+      let ready = 0;
       const io = new IntersectionObserver((entries) => {
         for (const e of entries) {
           const n = (e.target.parentElement as HTMLElement).dataset.n ?? "1";
-          if (e.isIntersecting && path.dataset.active !== n) path.dataset.active = n;
+          if (!e.isIntersecting || stage.dataset.active === n) continue;
+          stage.dataset.active = n;
+          for (const f of fields) f.toggleAttribute("data-on", f.dataset.n === n);
         }
+        if (!ready) ready = requestAnimationFrame(() => path.setAttribute("data-ready", ""));
       }, { rootMargin: "-50% 0px -50% 0px" });
       path.querySelectorAll(".path-clause").forEach((c) => io.observe(c));
-      offs.push(() => io.disconnect());
+      offs.push(() => { io.disconnect(); cancelAnimationFrame(ready); });
     }
 
     return () => offs.forEach((f) => f());

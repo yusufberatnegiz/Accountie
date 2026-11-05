@@ -4,8 +4,8 @@
   Below 900px the form is centred and the piece becomes a band under it, so no half of the screen is left empty.
 */
 /* Form and piece share one top line (--auth-top), so the two halves read as one composition. The line is set so the taller of
-   the pair (--auth-h: the piece and its note on login, the form on signup) sits in the middle of the screen under the bar. */
-.auth { --auth-h: 460px; --auth-top: max(calc(72px + var(--s7)), calc(72px + (100dvh - 72px - var(--auth-h)) / 2)); min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+   the pair (--auth-h: the piece on login, the form on signup) sits in the middle of the screen under the bar. */
+.auth { --auth-h: 420px; --auth-top: max(calc(72px + var(--s7)), calc(72px + (100dvh - 72px - var(--auth-h)) / 2)); min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
 .auth:has(#auth-name) { --auth-h: 600px; }
 .auth > .site-dock { grid-column: 1 / -1; grid-row: 1; }
 .auth-main { grid-column: 1; grid-row: 1 / span 2; display: grid; padding: var(--auth-top) var(--page-margin) var(--s8); }
@@ -61,7 +61,6 @@
 .auth-balance .balance-ok { color: var(--positive); }
 /* The approved lines' next stop: the Excel file Luca reads. */
 .auth-file { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) var(--s3); background: var(--raised); border-radius: var(--radius-control); font-size: var(--fs-body); font-weight: var(--w-medium); overflow-wrap: anywhere; }
-.auth-stage-note { margin: 0; font-size: var(--fs-body); color: var(--muted); }
 
 @media (prefers-reduced-motion: no-preference) {
   /* Two quiet arrivals, both painted from the first frame and settled by 600ms: the form rises 12px, the card settles onto its
@@ -92,13 +91,14 @@
 /* While the cookie strip is shown (stepped aside too: tying this room to data-away changed the scroll range and flipped it back and forth), the form can scroll clear of it and focus never lands under it (WIG: no overlay over the primary control). */
 @media (max-width: 900px) {
   html:has(.cookie-note) { scroll-padding-bottom: 96px; }
-  /* Constant, not tied to the note mounting: the note renders on the client, and room added then pushed the stage down (CLS). */
-  .auth .auth-main { padding-bottom: calc(var(--s8) + 72px); }
+  /* Constant, not tied to the note mounting: the note renders on the client, and room added then pushed the stage down (CLS).
+     The room is at the page's end (the stage's foot), not between the form and the piece (YON 23.15). */
+  .auth .auth-stage { padding-bottom: calc(var(--s8) + 72px); }
 }
 @media (max-width: 640px) {
-  .auth-main { padding: calc(56px + var(--s7)) var(--page-margin) var(--s7); }
+  .auth-main { padding: calc(56px + var(--s7)) var(--page-margin) var(--s6); }
   .auth-form { justify-self: stretch; }
-  .auth-stage { padding-block: var(--s7); }
+  .auth-stage { padding-top: var(--s6); }
   .auth-piece { grid-template-columns: minmax(0, 1fr); gap: var(--s4); width: 100%; }
   .auth-strip { width: 100%; max-width: 280px; justify-self: center; }
   .auth-plate { grid-area: 2 / 1; margin: -32px 0 0; }

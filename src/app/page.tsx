@@ -9,7 +9,7 @@ import { Faq, type Qa } from "@/components/home/Faq";
 import { AppWindow, Phone } from "@/components/home/Frames";
 import { HomeMotion } from "@/components/home/HomeMotion";
 import { ShowRow, type Piece } from "@/components/home/ShowRow";
-import { journalFor, SAMPLES, shownAccountName, sourcesFor } from "@/components/home/samples";
+import { AKARYAKIT, journalFor, KAFE, SAMPLES, shownAccountName, sourcesFor, type Sample } from "@/components/home/samples";
 import { Spotlight } from "@/components/home/Spotlight";
 import { Thermal } from "@/components/home/Thermal";
 import { WARNING_MESSAGES } from "@/lib/journal";
@@ -27,19 +27,26 @@ export const metadata: Metadata = {
 
 const cssVars = (v: Record<string, string | number>) => v as CSSProperties;
 
-const LINES_0047 = [
-  { code: "770.08", name: "Yeme-İçme ve Ağırlama Giderleri", debit: "7.931,82", credit: "" },
-  { code: "191.03.10", name: "%10 İndirilecek KDV", debit: "793,18", credit: "" },
-  { code: "331.01", name: "Ortaklara Borçlar", debit: "", credit: "8.725,00" },
-];
+type Line = { code: string; name: string; debit: string; credit: string };
+/** A sample's Luca lines as the page prints them: the product's own journal with the default rules (partner card unless cash). */
+const linesOf = (s: Sample, pay: "partner" | "cash" = "partner"): Line[] => journalFor(s, pay).lines.map((l) => ({
+  code: l.accountCode, name: shownAccountName(l.accountName),
+  debit: l.debitKurus ? formatTrAmount(l.debitKurus) : "", credit: l.creditKurus ? formatTrAmount(l.creditKurus) : "",
+}));
+// Every slot reads its own receipt (YON 23.15): the hero counter 0047, the path a café 0331, the signature a fuel receipt 1185,
+// the showcase Market 2214 and others, the Excel file the two approved fişler of the list.
+const LINES_0047 = linesOf(SAMPLES[0]);
+const LINES_KAFE = linesOf(KAFE);
+const LINES_FUEL = linesOf(AKARYAKIT);
+const LINES_KIRTASIYE = linesOf(SAMPLES[1], "cash");
 
-/** The three Luca lines of fiş 0047; `credit` replaces the credit amount (the misread receipt), `mark` adds a note to one line. */
-function MiniLines({ credit, mark, lit }: { credit?: string; mark?: { code: string; node: ReactNode }; lit?: string }) {
+/** A sample's Luca lines; `credit` replaces the credit amount (the misread receipt), `mark` adds a note to one line. */
+function MiniLines({ lines, credit, mark, lit }: { lines: Line[]; credit?: string; mark?: { code: string; node: ReactNode }; lit?: string }) {
   return (
     <table className="ui-table">
       <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
       <tbody>
-        {LINES_0047.map((l) => (
+        {lines.map((l) => (
           <tr key={l.code} data-lit={l.code === lit || undefined}>
             <td><span className="code" translate="no">{l.code}</span><span className="code-name">{l.name}</span>{mark?.code === l.code ? mark.node : null}</td>
             <td className="num to-luca">{l.debit}</td>
@@ -52,7 +59,7 @@ function MiniLines({ credit, mark, lit }: { credit?: string; mark?: { code: stri
 }
 
 
-/** Where each of fiş 0047's three amounts is printed on the strip (Thermal data-amt): base, TOPKDV, TOPLAM. */
+/** Where each of fiş 1185's three amounts is printed on the strip (Thermal data-amt): base, TOPKDV, TOPLAM. */
 const FLY_FROM = ["base", "vat", "total"];
 
 /** A Luca cell in the signature scene: the real figure, a dash that holds its place, and the aria-hidden copy that flies in. */
@@ -97,14 +104,14 @@ const LIST = [
 
 const PIECES: Piece[] = [
   {
-    name: "Fiş ve satırlar",
+    name: "Fiş ve satırlar", screen: "Fiş 2214, kontrol",
     text: "Fişten okunan alanlar ve Luca satırları aynı ekranda. Hesap kodu, tutar, Evrak No ve BT orada düzeltilir.",
     body: (
       <Spotlight meta="Evrak No 2214, 04.09.2026, BT ÖK. Her KDV oranı kendi satırını açar." read={MARKET_READ} lines={MARKET_LINES} />
     ),
   },
   {
-    name: "Alacak hesabı",
+    name: "Alacak hesabı", screen: "Fiş 0331, alacak hesabı",
     text: "Ortağın kartıyla ödendiyse 331.01, şirket kartıysa 309.01. Tek seçimle değişir.",
     body: (
       <div className="ui-card ui-split">
@@ -119,16 +126,16 @@ const PIECES: Piece[] = [
             ))}
           </ul>
         </div>
-        <MiniLines lit="331.01" />
+        <MiniLines lines={LINES_KAFE} lit="331.01" />
       </div>
     ),
   },
   {
-    name: "Uyarı notları",
+    name: "Uyarı notları", screen: "Fiş 0047, notlar",
     text: "Binek araç, ağırlama ve eski KDV oranı satırın yanında not olarak durur, onayı engellemez.",
     body: (
       <div className="ui-card ui-split">
-        <MiniLines mark={{ code: "770.08", node: <span className="pill pill-warn">Ağırlama</span> }} />
+        <MiniLines lines={LINES_0047} mark={{ code: "770.08", node: <span className="pill pill-warn">Ağırlama</span> }} />
         <div className="ui-notes">
           <p><span className="pill pill-warn">Ağırlama</span> {WARNING_MESSAGES.meal}</p>
           <p><span className="pill pill-warn">Binek araç</span> {WARNING_MESSAGES.vehicle}</p>
@@ -138,7 +145,7 @@ const PIECES: Piece[] = [
     ),
   },
   {
-    name: "Luca dosyası",
+    name: "Luca dosyası", screen: "Fişler, ikinci dosya",
     text: "Accountie onaylı fişleri 50 fiş ya da 400 satırda yeni dosyaya geçerek yazar; bir fiş iki dosyaya bölünmez.",
     body: (
       <div className="ui-card ui-file">
@@ -157,14 +164,14 @@ const PIECES: Piece[] = [
     ),
   },
   {
-    name: "Eklenti uyarısı",
+    name: "Eklenti uyarısı", screen: "Luca Fiş Detayı, fiş 0912",
     text: "Açık Fiş Detayı ekranına satırları yazmayı dener. Luca’da henüz denenmedi; birincil yol Excel aktarımıdır.",
     body: (
       <div className="ui-card ui-split">
         <div className="ui-ext">
           <p className="ui-ext-head"><BrandMark /> Accountie</p>
           <ul className="ui-files">
-            {LINES_0047.map((l, i) => (
+            {LINES_KIRTASIYE.map((l, i) => (
               <li key={l.code}><span>{i + 1}. satır <span translate="no">{l.code}</span></span><span className="ui-meta">Yazıldı</span></li>
             ))}
             <li><span>1. satır BT</span><span className="balance-off">Bulunamadı</span></li>
@@ -237,48 +244,75 @@ const FAQ: Qa[] = [
   { q: "Telefonda uygulama gibi açılır mı?", a: "Evet. Ana ekrana eklediğinizde ayrı bir uygulama gibi açılır, Fiş çek tek dokunuştur." },
 ];
 
+// Bir fişin yolu follows a café receipt, and each state is a different object (YON 23.15): the viewfinder with the paper on the
+// desk, the read fields, the approved lines with their balance, the Excel file.
 const PATH = [
   { clause: "Önce telefonla çekilir.", card: (
     <>
-      <p className="ui-card-head"><span>Fiş</span><span className="status" data-step>Çekildi</span></p>
-      <div className="path-strip"><Thermal sample={SAMPLES[0]} printedPayment="KREDİ KARTI" compact /></div>
+      <p className="ui-card-head"><span>Fiş 0331</span><span className="status" data-step>Çekildi</span></p>
+      <div className="cam path-cam">
+        <span className="cam-c cam-c1" /><span className="cam-c cam-c2" /><span className="cam-c cam-c3" /><span className="cam-c cam-c4" />
+        <Thermal sample={KAFE} printedPayment="KREDİ KARTI" compact />
+      </div>
       <p className="ui-meta" data-step>Accountie fotoğrafı saklamaz.</p>
     </>
   ) },
   { clause: "Sonra fiş okunur.", card: (
     <>
-      <p className="ui-card-head"><span>Fiş 0047</span><span className="status" data-step>Taslak</span></p>
-      {[["Satıcı", "ÖRNEK BALIK LOKANTASI"], ["Evrak No", "0047"], ["Tarih", "05.09.2026"], ["KDV %10", "793,18"], ["Toplam", "8.725,00"], ["Ödeme", "KREDİ KARTI"], ["Kategori", "Yemek ve ağırlama"]].map(([k, v]) => (
-        <p className="ui-kv" key={k}><span>{k}</span><span className="from-receipt" data-step>{v}</span></p>
-      ))}
+      <p className="ui-card-head"><span>Fiş 0331</span><span className="status" data-step>Taslak</span></p>
+      {/* The read: the paper beside the fields taken from it, as the panel's review screen sets them. */}
+      <div className="path-read" data-step>
+        <div className="path-read-paper"><Thermal sample={KAFE} printedPayment="KREDİ KARTI" hot={{ kind: "total" }} compact /></div>
+        <div className="path-read-fields">
+          {[["Satıcı", "ÖRNEK KAFE"], ["Evrak No", "0331"], ["Tarih", "01.09.2026"], ["KDV %10", "24,09"], ["Toplam", "265,00"], ["Ödeme", "KREDİ KARTI"], ["Kategori", "Yemek ve ağırlama"]].map(([k, v]) => (
+            <p className="ui-kv" key={k}><span>{k}</span><span className="from-receipt">{v}</span></p>
+          ))}
+        </div>
+      </div>
     </>
   ) },
   { clause: "Ardından siz onaylarsınız.", card: (
     <>
-      <p className="ui-card-head"><span>Fiş 0047</span><span className="status status-approved" data-step>Onaylandı</span></p>
-      {LINES_0047.map((l) => (
+      <p className="ui-card-head"><span>Fiş 0331</span><span className="status status-approved" data-step>Onaylandı</span></p>
+      {LINES_KAFE.map((l) => (
         <p className="ui-kv ui-kv-line" key={l.code} data-step><span><span className="code" translate="no">{l.code}</span><span className="code-name">{l.name}</span></span><span className="to-luca">{l.debit || l.credit}</span></p>
       ))}
-      <p className="ui-meta" data-step>Evrak No 0047, 05.09.2026, BT ÖK</p>
-      <p className="ui-meta balance-ok" data-step>Borç 8.725,00 = Alacak 8.725,00</p>
+      <dl className="ui-totals path-totals" data-step>
+        <div><dt>Borç</dt><dd>265,00</dd></div>
+        <div><dt>Alacak</dt><dd>265,00</dd></div>
+        <div><dt>Fark</dt><dd>0,00</dd></div>
+      </dl>
+      <div className="ui-approve" data-step>
+        <span className="btn btn-primary">Onaylandı</span>
+        <span className="ui-reason balance-ok">Dengede. Evrak No 0331, BT ÖK</span>
+      </div>
     </>
   ) },
   { clause: "En son Excel ile Luca’ya yüklenir.", card: (
     <>
-      <p className="ui-card-head"><span>Fiş 0047</span><span className="status status-exported" data-step>Aktarıldı</span></p>
-      <p className="path-file" data-step><span className="ui-file-name">luca-fisler-20260905.xlsx</span><span>1 fiş, 3 satır</span></p>
-      <table className="ui-sheet" data-step>
-        <thead><tr><th scope="col">Hesap</th><th scope="col">Evrak</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
+      <p className="ui-card-head"><span>Fiş 0331</span><span className="status status-exported" data-step>Aktarıldı</span></p>
+      <p className="path-file" data-step><span className="ui-file-name">luca-fisler-20260901.xlsx</span><span>1 fiş, 3 satır</span></p>
+      {/* The file as a spreadsheet opens it: column letters, row numbers, the export's header row, the lines, then the empty grid. */}
+      <table className="path-xl" data-step>
+        <thead><tr><td />{["A", "B", "C", "D", "E"].map((c) => <th scope="col" key={c} className={c === "C" ? "path-xl-date" : undefined}>{c}</th>)}</tr></thead>
         <tbody>
-          {LINES_0047.map((l) => (
-            <tr key={l.code}><td translate="no">{l.code}</td><td>0047</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td></tr>
+          <tr className="path-xl-head"><th scope="row">1</th><td>Hesap Kodu</td><td>Evrak No</td><td className="path-xl-date">Fiş Tarihi</td><td className="num">Borç</td><td className="num">Alacak</td></tr>
+          {LINES_KAFE.map((l, i) => (
+            <tr key={l.code}><th scope="row">{i + 2}</th><td translate="no">{l.code}</td><td>0331</td><td className="path-xl-date">01.09.2026</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td></tr>
           ))}
+          {[5, 6, 7, 8].map((n) => <tr key={n} aria-hidden="true"><th scope="row">{n}</th><td /><td /><td className="path-xl-date" /><td /><td /></tr>)}
         </tbody>
       </table>
       <p className="ui-meta" data-step>Luca’da Excel veri aktarımı ile yüklenir, Fiş Kes ile kaydedilir.</p>
     </>
   ) },
 ];
+
+/** The Excel file of the routes section: the export's own columns for the list's two approved fişler, 0047 and 2214 (8 lines). */
+const SHEET = [
+  { no: "1", date: "05.09.2026", evrak: "0047", lines: LINES_0047 },
+  { no: "2", date: "04.09.2026", evrak: "2214", lines: linesOf(SAMPLES[2]) },
+].flatMap((f) => f.lines.map((l) => ({ ...f, l })));
 
 export default function LandingPage() {
   return (
@@ -290,10 +324,8 @@ export default function LandingPage() {
         {/* Hero: two tones, the counter is the picture */}
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
-            <h1 className="hero-title lines" id="hero-title">
-              <span className="line"><span data-line style={cssVars({ "--i": 0 })}>Fişten Luca’ya</span></span>{" "}
-              <span className="line"><span data-line style={cssVars({ "--i": 1 })}>yevmiye kaydı</span></span>
-            </h1>
+            {/* Painted whole on the first frame (YON 23.15): no line mask, so no half-cut glyphs while the page hydrates. */}
+            <h1 className="hero-title" id="hero-title"><span className="hero-line">Fişten Luca’ya</span> <span className="hero-line">yevmiye kaydı</span></h1>
             <p className="hero-sub" data-load style={cssVars({ "--d": "420ms" })}>
               Yazar kasa fişini telefonla çekin; gider, KDV ve alacak satırları sizin hesap kodlarınızla hazırlanır, siz onaylayınca Excel ile Luca’ya aktarırsınız.
             </p>
@@ -308,19 +340,19 @@ export default function LandingPage() {
 
         {/* how-it-works: on desktop a sticky split story (four clauses, one card through four states, the field wiped in from
             below, YON.md 23.3.4); without script, below 1100px and with reduced motion the four cards stand in their own fields. */}
-        <section className="path" aria-labelledby="path-title" data-active="1">
+        <section className="path" aria-labelledby="path-title">
           <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2>
           {PATH.map((f, i) => (
-            <div className={`path-field path-field-${i + 1}`} key={f.clause} data-n={i + 1}>
+            <div className={`path-field path-field-${i + 1}`} key={f.clause} data-n={i + 1} data-on={i === 0 || undefined}>
               <p className="path-clause"><span>{f.clause}</span></p>
               <div className="path-plate"><div className="ui-card path-card" data-ui>{f.card}</div></div>
             </div>
           ))}
-          <div className="path-stage" aria-hidden="true">
+          <div className="path-stage" aria-hidden="true" data-active="1">
             {[1, 2, 3, 4].map((n) => <span key={n} className={`path-bg path-bg-${n}`} />)}
             {/* One card through four states: the shell and its head stay, the pill rolls, only the body under it changes. */}
             <div className="ui-card path-shell" data-ui>
-              <p className="ui-card-head"><span>Fiş 0047</span>
+              <p className="ui-card-head"><span>Fiş 0331</span>
                 <span className="path-pill">
                   <span className="status" data-s="1">Çekildi</span><span className="status" data-s="2">Taslak</span>
                   <span className="status status-approved" data-s="3">Onaylandı</span><span className="status status-exported" data-s="4">Aktarıldı</span>
@@ -339,22 +371,22 @@ export default function LandingPage() {
               <div className="rule-copy">
                 <p className="rule-sub">Fişten okunan matrah, KDV ve toplam kendi hesap satırına iner. Borç alacağa eşit olunca Onayla açılır.</p>
                 <ul className="rule-map">
-                  <li><span>Matrah</span><span translate="no">770.08 borç</span></li>
-                  <li><span>TOPKDV</span><span translate="no">191.03.10 borç</span></li>
+                  <li><span>Matrah</span><span translate="no">770.01 borç</span></li>
+                  <li><span>TOPKDV</span><span translate="no">191.03.20 borç</span></li>
                   <li><span>TOPLAM</span><span translate="no">331.01 alacak</span></li>
                 </ul>
               </div>
-              <AppWindow title="Fiş 0047, kontrol" className="rule-win">
+              <AppWindow title="Fiş 1185, kontrol" className="rule-win">
                 <div className="rule-body">
-                  <div className="rule-receipt"><Thermal sample={SAMPLES[0]} printedPayment="KREDİ KARTI" base /></div>
+                  <div className="rule-receipt"><Thermal sample={AKARYAKIT} printedPayment="KREDİ KARTI" base /></div>
                   <div className="rule-ledger">
                     <table className="ui-table rule-table">
-                      <caption className="visually-hidden">Fiş 0047 için Luca satırları</caption>
+                      <caption className="visually-hidden">Fiş 1185 için Luca satırları</caption>
                       <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
                       <tbody>
-                        {LINES_0047.map((l, i) => (
+                        {LINES_FUEL.map((l, i) => (
                           <tr key={l.code} style={cssVars({ "--n": i })}>
-                            <td><span className="code rule-code" translate="no">{l.code}</span><span className="code-name">{l.name}</span></td>
+                            <td><span className="rule-code"><span className="code" translate="no">{l.code}</span><span className="code-name">{l.name}</span></span></td>
                             <td className="num to-luca">{l.debit ? <FlyCell value={l.debit} from={FLY_FROM[i]} /> : <Dash />}</td>
                             <td className="num to-luca">{l.credit ? <FlyCell value={l.credit} from={FLY_FROM[i]} /> : <Dash />}</td>
                           </tr>
@@ -363,8 +395,8 @@ export default function LandingPage() {
                     </table>
                     <div className="rule-close">
                       <dl className="ui-totals">
-                        <div><dt>Borç</dt><dd>8.725,00</dd></div>
-                        <div><dt>Alacak</dt><dd>8.725,00</dd></div>
+                        <div><dt>Borç</dt><dd>2.150,00</dd></div>
+                        <div><dt>Alacak</dt><dd>2.150,00</dd></div>
                         <div><dt>Fark</dt><dd>0,00</dd></div>
                       </dl>
                       <div className="ui-approve">
@@ -377,20 +409,23 @@ export default function LandingPage() {
               </AppWindow>
             </div>
           </div>
+          {/* After the scene, one figure at the page's largest size (YON 23.15): the same fiş read wrong. The card sits on the
+              figure's end, so "open when equal, closed when not" reads in one frame, out of the page's split layout. */}
           <div className="rule-after wrap">
-            <p className="rule-note">Fişte toplam 8.725,00 iken alacak 8.752,00 okunursa fark 27,00 olarak görünür ve Onayla kapalı kalır. Tutarı fişe göre düzeltince onay açılır.</p>
+            <p className="rule-gap" aria-hidden="true">360,00</p>
+            <p className="rule-note"><span className="balance-off">Fark 360,00.</span> Fişte toplam 2.150,00 iken alacak 2.510,00 okunursa fark görünür ve Onayla kapalı kalır. Tutarı fişe göre düzeltince onay açılır.</p>
             <div className="rule-proof" data-ui>
               <div className="ui-card rule-card">
-                <p className="ui-card-head"><span translate="no">ÖRNEK BALIK LOKANTASI</span><span className="status">Taslak</span></p>
-                <MiniLines credit="8.752,00" />
+                <p className="ui-card-head"><span translate="no">ÖRNEK AKARYAKIT</span><span className="status">Taslak</span></p>
+                <MiniLines lines={LINES_FUEL} credit="2.510,00" />
                 <dl className="ui-totals">
-                  <div><dt>Borç</dt><dd>8.725,00</dd></div>
-                  <div><dt>Alacak</dt><dd>8.752,00</dd></div>
-                  <div><dt>Fark</dt><dd className="balance-off">27,00</dd></div>
+                  <div><dt>Borç</dt><dd>2.150,00</dd></div>
+                  <div><dt>Alacak</dt><dd>2.510,00</dd></div>
+                  <div><dt>Fark</dt><dd className="balance-off">360,00</dd></div>
                 </dl>
                 <div className="ui-approve">
-                  <span className="btn btn-primary" aria-disabled="true">Onayla</span>
-                  <span className="ui-reason">Fişte toplam 8.725,00. Alacak satırını düzeltin.</span>
+                  <span className="btn btn-off">Onayla<span className="visually-hidden"> (kapalı)</span></span>
+                  <span className="ui-reason">Fişte toplam 2.150,00. Alacak satırını düzeltin.</span>
                 </div>
               </div>
             </div>
@@ -468,16 +503,16 @@ export default function LandingPage() {
                 </div>
               </div>
             </AppWindow>
-            {/* The file Luca reads: the export's own columns (src/lib/luca/export.ts) for fiş 0047, leaving the window. */}
+            {/* The file Luca reads: the export's own columns (src/lib/luca/export.ts) for the two approved fişler, leaving the window. */}
             <div className="ui-card routes-file" data-ui>
               <p className="ui-card-head"><span className="ui-file-name">luca-fisler-20260905.xlsx</span><span className="ui-meta">Fişler sayfası</span></p>
               {/* On a phone the identifier columns step aside so the amounts stay whole; a narrower screen still scrolls, so the region is a keyboard stop (WCAG 2.1.1). */}
-              <div className="routes-file-scroll" tabIndex={0} role="region" aria-label="Luca Excel dosyasının ilk satırları">
+              <div className="routes-file-scroll" tabIndex={0} role="region" aria-label="Luca Excel dosyasının satırları">
                 <table className="ui-sheet">
                   <thead><tr>{["Fiş No", "Fiş Tarihi", "Hesap Kodu", "Evrak No", "Borç", "Alacak", "Belge Türü"].map((c) => <th scope="col" key={c} className={c === "Borç" || c === "Alacak" ? "num" : c === "Hesap Kodu" || c === "Belge Türü" ? undefined : "sheet-id"}>{c}</th>)}</tr></thead>
                   <tbody>
-                    {LINES_0047.map((l) => (
-                      <tr key={l.code}><td className="sheet-id">1</td><td className="sheet-id">05.09.2026</td><td translate="no">{l.code}</td><td className="sheet-id">0047</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td><td>ÖK</td></tr>
+                    {SHEET.map(({ no, date, evrak, l }, i) => (
+                      <tr key={i} data-first={(i > 0 && SHEET[i - 1].no !== no) || undefined}><td className="sheet-id">{no}</td><td className="sheet-id">{date}</td><td translate="no">{l.code}</td><td className="sheet-id">{evrak}</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td><td>ÖK</td></tr>
                     ))}
                   </tbody>
                 </table>

@@ -4,7 +4,7 @@ import { AuthForm } from "./AuthForm";
 import { CookieNote } from "@/components/site/CookieNote";
 import { SiteBar } from "@/components/site/SiteBar";
 import { Thermal } from "@/components/home/Thermal";
-import { defaultPayment, journalFor, SAMPLES, shownAccountName } from "@/components/home/samples";
+import { defaultPayment, journalFor, KAFE, shownAccountName } from "@/components/home/samples";
 import { formatTrAmount } from "@/lib/money";
 import "./auth.css";
 
@@ -13,7 +13,8 @@ const MESSAGES: Record<string, string> = {
   "sifre-yeni": "Şifreniz değişti. Yeni şifrenizle giriş yapın.",
 };
 
-const SAMPLE = SAMPLES[0];
+// A café receipt, not the homepage counter's 0047: each product picture reads its own fiş (YON 23.15).
+const SAMPLE = KAFE;
 const { lines } = journalFor(SAMPLE, defaultPayment(SAMPLE));
 const total = lines.reduce((s, l) => s + l.debitKurus, 0);
 
@@ -38,10 +39,9 @@ function Stage() {
             </tbody>
           </table>
           <p className="auth-balance">Borç <span className="to-luca">{formatTrAmount(total)}</span> = Alacak <span className="to-luca">{formatTrAmount(total)}</span> · <span className="balance-ok">Dengede</span></p>
-          <p className="auth-file"><span>luca-fisler-20260905.xlsx</span><span className="auth-sheet-meta">1 fiş, 3 satır</span></p>
+          <p className="auth-file"><span>luca-fisler-20260901.xlsx</span><span className="auth-sheet-meta">1 fiş, 3 satır</span></p>
         </div></div>
       </div>
-      <p className="auth-stage-note">Fişten okunan rakam gri, Luca’ya giden rakam mavi.</p>
     </aside>
   );
 }

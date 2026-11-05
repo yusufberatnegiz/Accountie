@@ -37,8 +37,9 @@
 .ui-sheet td { padding: var(--s1); border-top: 1px solid var(--rule); white-space: nowrap; } /* taste-skill-ignore: data-ui fragment (Luca grid) */
 .ui-sheet .num { text-align: right; }
 
-/* The top bar is SiteBar (components/site). Section headings clear it when reached by an anchor. */
-.home [id] { scroll-margin-top: calc(56px + var(--s6)); }
+/* The top bar is SiteBar (components/site); site.css's scroll-padding-top already clears it for anchors, so no second offset here. */
+/* Pretty wrapping costs layout; inside product pictures the lines are short labels and figures (YON 23.15, 4x CPU load). */
+.home [data-ui] p { text-wrap: wrap; }
 
 /* ---------- Hero: control that reads the page ---------- */
 /* One display size on the page: the h1 and the CTA title (YON.md 16.6). The desktop hero gives the counter seven of twelve
@@ -59,11 +60,11 @@
 /* The counter sits on a fixed top line, never re-centred: a choice changes only what is under the pickers, the pickers stay put. */
 /* The stage is the window's plate itself (one warm step off the ground) and starts under the top bar, so the bar sits on one tone. */
 .hero-stage { background: var(--plate); display: grid; align-items: start; justify-items: center; padding: var(--stage-top) var(--page-margin) var(--s7) var(--s5); }
+/* The pickers are the window's toolbar (YON 23.15): the window is the whole picture, so it is centred on its plate. */
+@media (min-width: 961px) { .hero-stage { align-content: center; } }
 .hero-counter { width: 100%; container-type: inline-size; }
 
-/* Masked headline: each line rises from behind its own baseline (motion.md "Masked line reveal"). */
-.lines .line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
-.lines [data-line] { display: inline-block; }
+.hero-line { display: block; }
 
 /* ---------- The counter: controls, then the paper strip beside the Luca sheet ---------- */
 .counter { display: grid; gap: var(--s4); font-size: var(--fs-body); }
@@ -88,6 +89,10 @@
 .counter-slot .thermal-paper { padding-inline: var(--s3); }
 /* The strip itself is in thermal.css. */
 .counter-slot { overflow: clip; padding-bottom: var(--s2); min-width: 0; }
+/* What the phone read, under the paper: the screen ends in a status block, not in an empty black band. */
+.phone-read { margin-top: auto; display: grid; gap: 2px; padding: var(--s2) var(--s3); border-radius: 14px; background: color-mix(in srgb, var(--deep), var(--on-accent-field) 9%); font-size: 12px; font-weight: var(--w-medium); }
+.phone-read p { margin: 0; display: flex; justify-content: space-between; gap: var(--s2); }
+.phone-read p > span:last-child { opacity: 0.72; font-variant-numeric: tabular-nums; }
 
 .counter-lines { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
 .counter-lines th { padding: 0 var(--s2) var(--s2); text-align: left; font-size: var(--fs-small); font-weight: var(--w-medium); color: var(--muted); }
@@ -109,7 +114,7 @@
 .counter-status { font-size: var(--fs-small); color: var(--muted); min-height: 1.5em; }
 
 @media (min-width: 961px) {
-  .hero-stage { margin-top: 64px; padding-top: calc(var(--stage-top) - 64px); border-top-left-radius: 12px; }
+  .hero-stage { margin-top: 64px; padding-top: var(--s7); border-top-left-radius: 12px; }
 }
 @media (min-width: 1181px) {
   /* The counter is the hero's picture: receipt and lines at reading size (16px lines, 14px paper), about 60% of a 900px screen. */
@@ -142,6 +147,28 @@
 .path-strip { margin-inline: calc(var(--s2) * -1); overflow: clip; }
 .path-strip .thermal-items { display: none; }
 .path-card .ui-sheet { margin-top: var(--s1); }
+/* The first state is the camera: the paper lies on the desk in the viewfinder (the CTA's .cam), a material, not a table. */
+.path-cam { min-height: 260px; padding: var(--s4); }
+.path-totals dd { font-size: var(--fs-title); }
+/* In the four small cards the read is the fields alone and the sheet drops its date column; the sticky desktop card, wide
+   enough, sets the paper beside the fields and shows every column. */
+.path-read { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5); align-items: center; }
+.path-read-paper, .path-xl .path-xl-date { display: none; }
+.path-read-paper .thermal { font-size: 11px; }
+.path-read-fields { display: grid; gap: var(--s2); }
+/* The Excel grid: letters and row numbers on the raised tone, every cell drawn (a spreadsheet's own lines, data-ui). */
+.path-xl { width: 100%; border-collapse: collapse; font-size: var(--fs-small); font-variant-numeric: tabular-nums; table-layout: fixed; }
+.path-xl :is(th, td) { height: 30px; padding: 0 var(--s1); border: 1px solid var(--ui-border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; } /* taste-skill-ignore: data-ui spreadsheet grid */
+.path-xl thead :is(th, td), .path-xl tbody th { background: var(--ui-raised); color: var(--muted); font-weight: var(--w-medium); text-align: center; }
+.path-xl thead td, .path-xl tbody th { width: 2.5em; }
+.path-xl .path-xl-head td { font-weight: var(--w-medium); }
+.path-xl .num { text-align: right; }
+@media (min-width: 1100px) and (prefers-reduced-motion: no-preference) {
+  .js .path-read { grid-template-columns: minmax(0, 200px) minmax(0, 1fr); }
+  .js .path-read-paper { display: block; }
+  .js .path-xl .path-xl-date { display: table-cell; }
+  .js .path-xl :is(th, td) { padding: 0 var(--s2); }
+}
 .path-file { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) var(--s3); background: color-mix(in srgb, var(--card), var(--ink) 6%); border-radius: var(--radius-control); font-size: var(--fs-small); }
 
 /* ---------- showcase: lit panel, dark row ---------- */
@@ -155,20 +182,25 @@
 .show-stage { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s6); align-items: start; }
 /* Every piece sits in the same cell, so the stage is as tall as the tallest and nothing shifts; only the chosen one is shown. */
 .show-row { grid-column: 1 / -1; grid-row: 2; display: grid; align-items: start; min-width: 0; }
-/* Only the chosen piece takes space, so the stage ends at the taller of the piece and the tabs (ShowRow cross-fades the change). */
-.show-piece { position: relative; width: 100%; display: none; gap: var(--s4); }
-.show-piece[data-lit] { display: grid; }
+/* Only the chosen piece takes space, so the stage ends at the taller of the piece and the tabs (ShowRow cross-fades the change).
+   Without script every piece is shown, one under the other (YON 23.15). */
+.show-row { gap: var(--s7); }
+.show-piece { position: relative; width: 100%; display: grid; gap: var(--s4); }
+.js .show-piece:not([data-lit]) { display: none; }
 .show-ui { --fs-ui: 16px; --fs-body: 16px; --fs-small: 14px; --fs-title: 30px; }
 .show-piece .ui-card { padding: var(--s6); gap: var(--s4); }
 .show-cap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .show-side { grid-column: 1 / -1; grid-row: 1; display: flex; align-items: center; justify-content: space-between; gap: var(--s6); min-width: 0; }
 .show-now { display: grid; gap: var(--s1); align-content: start; max-width: 44ch; }
-.show-name { font-size: var(--step-body); font-weight: var(--w-strong); color: var(--show-ink); margin: 0; }
 .show-text { font-size: var(--step-body); color: var(--muted); margin: 0; }
 /* Tabs: a filled tab is the shown piece. */
 .show-index { list-style: none; margin: 0; padding: var(--s1); display: flex; flex: none; gap: 2px; background: var(--show-tabs); border-radius: var(--radius-card); }
 .show-pick { display: flex; align-items: center; white-space: nowrap; min-height: var(--touch); padding: 0 var(--s4); border: 0; border-radius: var(--radius-control); background: none; color: var(--muted); font-size: var(--step-body); font-weight: var(--w-medium); text-align: left; cursor: pointer; transition: color var(--t-hover) ease, background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
 .show-pick[aria-pressed="true"] { background: var(--chip-on); color: var(--on-chip-on); }
+/* The chosen fill is one layer that slides (ShowRow): a copy of the strip in the chosen colours, clipped to the chosen tab. */
+.show-tabs { position: relative; flex: none; min-width: 0; }
+.show-hl { position: absolute; inset: 0; pointer-events: none; transition: clip-path var(--t-ui) var(--ease-out); }
+.show-tabs[data-hl] .show-index:not(.show-hl) .show-pick[aria-pressed="true"] { background: none; }
 .show-pick:active { transform: scale(0.98); }
 @media (hover: hover) and (pointer: fine) { .show-pick:hover:not([aria-pressed="true"]) { color: var(--ink); background: var(--show-card); } }
 .ui-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: var(--s8); }
@@ -192,7 +224,8 @@
 .ui-totals dt { font-size: var(--fs-small); color: var(--muted); }
 .ui-totals dd { margin: 0; font-size: var(--fs-title); font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
 .ui-approve { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
-.ui-approve .btn[aria-disabled="true"] { cursor: default; }
+/* A closed Onayla drawn in a picture: the disabled look, its state said in text (a span cannot carry aria-disabled). */
+.ui-approve .btn-off { background: transparent; color: var(--muted); border-color: var(--control-edge); }
 .ui-reason { font-size: var(--fs-small); color: var(--ink); }
 .ui-notes p { font-size: var(--fs-ui, 13px); line-height: 1.45; }
 .ui-file-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); font-weight: var(--w-strong); }
@@ -248,7 +281,9 @@
 .routes-value { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 0; }
 .routes-tip { font-size: var(--step-body); max-width: 44ch; margin: 0; }
 .routes-aside { grid-column: 7 / 13; display: grid; justify-items: end; align-content: start; position: sticky; top: calc(56px + var(--s7)); }
-.routes-file { --fs-small: 13px; padding: var(--s5); }
+.routes-file { --fs-small: 14px; padding: var(--s5); }
+/* Two fişler in one file: the second one's first line starts a new block. */
+.routes-file .ui-sheet tr[data-first] td { border-top-color: var(--ui-border); padding-top: var(--s2); }
 .routes-file-scroll { overflow-x: auto; }
 .routes-file .ui-sheet th { white-space: nowrap; }
 .routes-file .ui-sheet :is(th, td):last-child { padding-left: var(--s4); width: 5.5em; }
@@ -260,6 +295,9 @@
 .faq-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s6); }
 .faq-title { grid-column: 1 / -1; }
 .faq-list { grid-row: 2; grid-column: 1 / 7; list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1); align-content: start; }
+/* A summary: its own marker is replaced by the chevron. */
+.faq-q { list-style: none; }
+.faq-q::-webkit-details-marker { display: none; }
 .faq-q { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); width: 100%; min-height: var(--touch); padding: var(--s2) 0; border: 0; border-radius: var(--radius-card); background: none; text-align: left; font-size: var(--step-body); color: var(--ink); cursor: pointer; transition: color var(--t-hover) ease, background-color var(--t-hover) ease; }
 .faq-chev { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; color: var(--muted); transform: rotate(-90deg); transition: transform var(--t-ui) var(--ease-out), color var(--t-hover) ease; }
 .faq-list li[data-open] .faq-q { font-weight: var(--w-strong); }
@@ -267,6 +305,8 @@
 @media (hover: hover) and (pointer: fine) { .faq-q:hover { color: var(--accent); } }
 .faq-a-inline { font-size: var(--step-body); padding: 0 0 var(--s3); max-width: 48ch; margin: 0; }
 /* The pane is as tall as its answer and travels with the list, level with its first question. */
+.faq-pane { display: none; }
+.js .faq-pane { display: block; }
 .faq-pane { grid-column: 7 / 13; grid-row: 2; align-self: start; position: sticky; top: calc(88px + var(--s4)); background: var(--stage); border-radius: var(--radius-card); padding: var(--s6); }
 .faq-a-text { font-size: var(--step-lead); line-height: 1.35; letter-spacing: -0.01em; max-width: 30ch; margin: 0; color: var(--ink); }
 @media (min-width: 901px) {
@@ -282,8 +322,9 @@
   .faq-pane { border-top-left-radius: 0; }
   .faq-list li[data-open] .faq-chev { color: var(--muted); }
   .faq-list li[data-shown] .faq-chev { color: var(--ink); }
-  /* The pane shows the answer; the inline copy stays for screen readers only. */
-  .faq-a-inline:not([hidden]) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; padding: 0; }
+  /* With script the pane shows the answer; the inline copy stays for screen readers only. Without script it opens under its question. */
+  .faq-a-inline { padding-left: var(--s4); }
+  .js .faq-a-inline { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; padding: 0; }
 }
 
 /* ---------- cta: first step, already open ---------- */
@@ -304,6 +345,9 @@
 .cta-figure figcaption { font-size: var(--step-small); color: var(--on-accent-field); }
 
 /* ---------- footer: the name returns at full width ---------- */
+.foot, .rule-after { container-type: inline-size; }
+/* The wordmark's size, shared by the rule scene's one large figure: one size, not two. */
+.foot, .rule-after { --mark-size: calc(100cqi * 0.2306); }
 .foot { margin-top: var(--section-gap); padding-bottom: max(var(--s5), env(safe-area-inset-bottom)); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s9); overflow: clip; }
 .foot-top { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s6); align-items: start; }
 .foot-what { grid-column: 1 / 5; font-size: var(--step-body); max-width: 30ch; margin: 0; }
@@ -311,7 +355,8 @@
 .foot-links a { display: inline-flex; align-items: center; min-height: var(--touch); color: var(--ink); text-decoration: underline; text-decoration-color: transparent; transition: text-decoration-color var(--t-hover) ease; }
 @media (hover: hover) and (pointer: fine) { .foot-links a:hover { color: var(--ink); text-decoration-color: currentColor; } }
 /* Decorative wordmark: never over the credit links, and its glyph sidebearings are pulled back to the margins. */
-.foot-name { margin: 0 -0.035em; font-family: var(--font-head); font-weight: 300; font-size: 21.2vw; line-height: 0.8; letter-spacing: -0.045em; white-space: nowrap; color: var(--foot-name); pointer-events: none; user-select: none; }
+/* Sized so the ink runs from margin to margin (measured: the glyphs' left sidebearing is 0.016em; YON 23.15). */
+.foot-name { margin: 0 0 0 -0.016em; font-family: var(--font-head); font-weight: 300; font-size: var(--mark-size); line-height: 0.8; letter-spacing: -0.045em; white-space: nowrap; color: var(--foot-name); pointer-events: none; user-select: none; }
 
 
 @media (min-width: 961px) and (max-width: 1180px) {
@@ -335,7 +380,8 @@
 @media (max-width: 1180px) {
   .show-side { flex-direction: column; align-items: stretch; gap: var(--s4); }
   /* The five tabs wrap (one row on a tablet, two on a phone): nothing is cut at the screen edge. */
-  .show-index { flex-wrap: wrap; align-self: start; }
+  .show-index { flex-wrap: wrap; }
+  .show-tabs { align-self: start; }
 }
 @media (max-width: 1100px) {
   /* The panel is too narrow for three columns: the account name goes under its label and code. */
@@ -350,7 +396,7 @@
   .routes-list, .routes-aside { grid-column: 1 / 13; }
   .routes-aside { position: static; }
   .faq-list, .faq-title { grid-column: 1 / -1; }
-  .faq-pane { display: none; }
+  .js .faq-pane { display: none; }
   /* The answer opens under its question: the arrow turns down, and up when open. */
   .faq-chev { transform: none; }
   .faq-list li[data-open] .faq-chev { transform: rotate(180deg); }
@@ -359,9 +405,10 @@
 
 /* ---------- Phone: its own composition. The strip and its lines on the first screen, the choices under them. ---------- */
 @media (max-width: 640px) {
-  .hero-copy { padding: calc(var(--s8) + var(--s7)) var(--page-margin) var(--s7); gap: var(--s6); }
+  /* The phone's top is on the first screen with room to spare: a tighter head, the stage right under the action. */
+  .hero-copy { padding: calc(56px + var(--s6)) var(--page-margin) var(--s5); gap: var(--s5); }
   .hero-sub { font-size: var(--step-body); }
-  .hero-stage { padding: var(--s4) var(--page-margin) var(--s6); place-items: stretch; }
+  .hero-stage { padding: var(--s5) var(--page-margin) var(--s6); place-items: stretch; }
   .counter { gap: var(--s4); }
   .counter-controls { display: grid; gap: var(--s2); }
   /* One line per choice, scrolled sideways by the thumb; its label stays visible above it. */
@@ -436,6 +483,8 @@
 /* --pl/--pr: how far it runs past each side; a side with a neighbour keeps to the column gap. */
 .plated::before { content: ""; position: absolute; z-index: -1; inset: 24px calc(var(--pr, 48px) * -1) -24px calc(var(--pl, 48px) * -1); border-radius: 12px; background: var(--plate); }
 .win { height: 100%; display: grid; grid-template-rows: 36px minmax(0, 1fr); background: var(--surface); color: var(--ink); border: 1px solid var(--border); /* taste-skill-ignore: data-ui window edge */ border-top-color: color-mix(in srgb, var(--border), var(--ink) 14%); border-radius: var(--radius-card); overflow: clip; }
+/* In dark the bar carries the 1px top light of a raised surface (--edge-hi, none in light). */
+.win-bar { box-shadow: inset 0 1px 0 var(--edge-hi); } /* taste-skill-ignore: 1px top inner light, dark only (YON 23.1) */
 .win-bar { margin: 0; display: flex; align-items: center; gap: var(--s2); padding: 0 var(--s4); background: var(--raised); border-bottom: 1px solid var(--border); /* taste-skill-ignore: data-ui window bar */ font-size: 13px; font-weight: var(--w-medium); color: var(--muted); white-space: nowrap; }
 .win-bar .mark { width: 16px; height: 16px; }
 .win-body { min-width: 0; min-height: 0; }
@@ -452,19 +501,26 @@
 .hero-stage { padding-right: 0; justify-items: stretch; }
 /* --ph: phone width, --ov: how far it reaches into the window. The window takes what is left plus a bleed past the screen edge. */
 .counter-body { --ph: 260px; --ov: 120px; position: relative; display: flex; padding: 0 0 48px calc(var(--ph) - var(--ov)); }
-/* Tall enough for the five-line Market receipt, so a choice never moves the window or the phone on it. */
-.counter-win { flex: none; width: min(780px, calc(100cqi - var(--ph) + var(--ov) + 48px)); min-height: 540px; }
-/* Content keeps clear of the phone on the left and of the 48px bleed on the right. */
-.counter-win .win-body { padding: var(--s5) calc(48px + var(--s5)) var(--s5) calc(var(--ov) + var(--s5)); }
-.counter-win .win-bar { padding-left: calc(var(--ov) + var(--s5)); }
+/* Tall enough for the five-line Market receipt and its pickers, so a choice never moves the window or the phone on it. */
+.counter-win { flex: none; width: min(780px, calc(100cqi - var(--ph) + var(--ov) + 48px)); min-height: 628px; }
+/* The window is an app (YON 23.15): its bar runs the whole width, a rail of the panel's screens sits in the column the phone
+   rides over, the sheet keeps clear of the 48px bleed on the right. */
+.counter-app { height: 100%; display: grid; grid-template-columns: var(--ov) minmax(0, 1fr); }
+.counter-rail { list-style: none; margin: 0; padding: var(--s3) var(--s2); display: grid; gap: 2px; align-content: start; background: var(--ui-raised); border-right: 1px solid var(--ui-border); font-size: 13px; font-weight: var(--w-medium); color: var(--muted); } /* taste-skill-ignore: data-ui rail edge */
+.counter-rail li { padding: 6px var(--s2); border-radius: var(--radius-chip); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.counter-rail li[data-on] { background: var(--ui-surface); color: var(--ink); }
+.counter-win .counter-sheet { padding: var(--s4) calc(48px + var(--s5)) var(--s5) var(--s5); }
+/* The toolbar: the two pickers on the window's raised tone, the chosen option a surface tab. */
+.counter-win .counter-controls { margin: calc(var(--s4) * -1) calc((48px + var(--s5)) * -1) var(--s1) calc(var(--s5) * -1); padding: var(--s3) calc(48px + var(--s5)) var(--s3) var(--s5); background: var(--ui-raised); border-bottom: 1px solid var(--ui-border); } /* taste-skill-ignore: data-ui toolbar edge */
+.counter-win .segmented label { min-height: var(--control-sm); }
+.counter-win .segmented label:has(input:checked) { background: var(--ui-surface); }
 /* The hero stage is the plate, so the window has no second slab behind it. Window and phone keep their layout to themselves. */
 .counter-win::before { content: none; }
-.counter-win, .counter-phone { contain: layout style; }
-/* A new sample: the paper changes with a short fade and rise, new lines drop in (the panel's line-in); figures roll (Odometer). */
-@keyframes swap-paper { from { opacity: 0; transform: translateY(8px); } }
+.counter-win, .counter-phone { contain: layout style paint; }
+/* A new sample: the paper changes with a short fade and rise (Counter.tsx, one Web Animation), new lines drop in (the panel's
+   line-in); figures roll (Odometer). */
 @keyframes line-in { from { opacity: 0; transform: translateY(-8px); } }
 @media (prefers-reduced-motion: no-preference) {
-  .counter[data-touched] .counter-slot .thermal { animation: swap-paper 200ms var(--ease-out); }
   .counter-row-new { animation: line-in 180ms var(--ease-out); }
 }
 .counter-phone { position: absolute; left: 0; bottom: 0; z-index: 1; width: var(--ph); box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the phone truly stands on the window) */
@@ -477,20 +533,27 @@
 @media (max-width: 960px) {
   .hero-stage { padding-right: 0; }
   .counter-body { --ph: 240px; --ov: 104px; }
-  .counter-win { min-height: 500px; }
+  .counter-win { min-height: 628px; }
 }
 /* Phone: no window. Input before output (YON 23.2): the phone with the receipt first, so its top is on the first screen; the Luca
    lines card under it rides 40px over the phone's foot (the card is the one lift layer). The phone is as tall as its content. */
+/* Phone: the receipt's head and totals only (the lines card repeats the items), so the phone is short and the card under it,
+   with the pickers at its top, is on the same screen as the choice it answers (YON 23.15). */
 @media (max-width: 640px) {
   .hero-stage { padding-right: var(--page-margin); }
   .counter-body { flex-direction: column; padding: 0; }
   .counter-phone { position: relative; order: 0; align-self: center; width: min(280px, 100%); aspect-ratio: auto; box-shadow: none; } /* taste-skill-ignore: removes the lift */
   .counter-phone .phone-screen { padding-bottom: calc(var(--s4) + 40px); }
-  .counter-win { position: relative; z-index: 2; order: 1; width: 100%; min-height: 0; margin-top: -40px; }
+  .counter-phone .thermal-items { display: none; }
+  .counter-win { position: relative; z-index: 2; order: 1; width: 100%; min-height: 0; margin-top: -40px; contain: none; }
   .counter-win::before { content: none; }
   .counter-win .win { grid-template-rows: minmax(0, 1fr); box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the card truly rides over the phone) */
-  .counter-win .win-bar { display: none; }
-  .counter-win .win-body { padding: var(--s4); }
+  .counter-win .win-bar, .counter-rail { display: none; }
+  .counter-app { display: block; }
+  .counter-win .counter-sheet { padding: var(--s4); }
+  .counter-win .counter-controls { margin: calc(var(--s4) * -1) calc(var(--s4) * -1) var(--s1); padding: var(--s3) var(--s4); border-radius: var(--radius-card) var(--radius-card) 0 0; }
+  .counter-win .segmented { margin-inline: calc(var(--s4) * -1); padding-inline: var(--s4); }
+  .counter-win .segmented label { min-height: var(--touch); }
   .counter-phone .thermal { font-size: 11px; }
 }
 
@@ -499,11 +562,13 @@
 @media (min-width: 1100px) and (prefers-reduced-motion: no-preference) {
   /* Four clause rows and a hold after the last one (YON 23.12). The rows touch, so the screen's middle line is always inside one
      clause box (HomeMotion picks the state from it, after a jump too); each sentence sticks at the middle while its row passes,
-     so the left column always carries a sentence. The last clause spans the hold. */
-  .js .path { --path-h: 440px; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto repeat(4, 56vh) 36vh; column-gap: var(--s5); padding: 0 var(--page-margin) 10vh; }
+     so the left column always carries a sentence. The last clause spans the hold. The card fills most of the stage and is as
+     tall as the stage allows (YON 23.15); each body centres its content, so no state leaves an empty foot. */
+  .js .path { --path-h: min(540px, calc(100vh - 56px - 144px)); grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto repeat(4, 56vh) 36vh; column-gap: var(--s5); padding: 0 var(--page-margin) 10vh; }
   .js .path-title { grid-column: 1 / -1; grid-row: 1; padding: var(--s8) 0 var(--s6); }
   .js .path-field { display: contents; }
-  .js .path-clause { grid-column: 1 / 6; align-self: stretch; max-width: none; padding-top: calc(28vh - 1.1em); font-family: var(--font-head); font-weight: 300; font-size: clamp(2.25rem, 1rem + 2.2vw, 2.875rem); letter-spacing: -0.02em; line-height: 1.08; color: var(--ink); }
+  /* The sentences take the section heads' size: one size fewer on the page (YON 23.15). */
+  .js .path-clause { grid-column: 1 / 6; align-self: stretch; max-width: none; padding-top: calc(28vh - 1.1em); font-family: var(--font-head); font-weight: 300; font-size: clamp(2rem, 1.3rem + 2.4vw, 3.25rem); letter-spacing: -0.02em; line-height: 1.08; color: var(--ink); }
   .js .path-clause > span { position: sticky; top: calc(50vh - 1.1em); display: block; max-width: 13ch; opacity: 0.56; transition: opacity var(--t-ui) var(--ease-out); }
   .js .path-field-1 .path-clause { grid-row: 2; } .js .path-field-2 .path-clause { grid-row: 3; }
   .js .path-field-3 .path-clause { grid-row: 4; } .js .path-field-4 .path-clause { grid-row: 5 / 7; }
@@ -515,23 +580,30 @@
   .path-bg-2 { background: var(--path-2); }
   .path-bg-3 { background: var(--path-3); }
   .path-bg-4 { background: var(--path-4); }
-  .js .path[data-active="2"] .path-bg-2, .js .path[data-active="3"] :is(.path-bg-2, .path-bg-3), .js .path[data-active="4"] :is(.path-bg-2, .path-bg-3, .path-bg-4) { transform: none; }
+  /* The state lives on the stage and on the one field that holds it (HomeMotion), so a change restyles those nodes only. */
+  .path-stage[data-active="2"] .path-bg-2, .path-stage[data-active="3"] :is(.path-bg-2, .path-bg-3), .path-stage[data-active="4"] :is(.path-bg-2, .path-bg-3, .path-bg-4) { transform: none; }
   /* The shell: one card, its head and status stay; it is centred on the plate column, as the bodies are. */
-  .js .path-shell { --fs-body: 16px; --fs-ui: 15px; --fs-small: 14px; position: absolute; z-index: 1; left: calc(50% - var(--page-margin) / 2); top: 50%; width: 640px; height: var(--path-h); translate: -50% -50%; padding: var(--s6); background: var(--lift); border-color: var(--lift-edge); box-shadow: inset 0 1px 0 var(--edge-hi); } /* taste-skill-ignore: 1px top inner light, dark only (YON 23.1) */
+  .js .path-shell { --fs-body: 16px; --fs-ui: 15px; --fs-small: 14px; position: absolute; z-index: 1; left: calc(50% - var(--page-margin) / 2); top: 50%; width: 640px; height: var(--path-h); translate: -50% -50%; padding: var(--s6); background: var(--path-shell); border-color: var(--lift-edge); box-shadow: inset 0 1px 0 var(--edge-hi); } /* taste-skill-ignore: 1px top inner light, dark only (YON 23.1) */
   .path-pill { display: inline-grid; justify-items: end; overflow: clip; }
-  .path-pill > .status { grid-area: 1 / 1; transform: translateY(100%); opacity: 0; transition: transform var(--t-ui) var(--ease-out), opacity var(--t-ui) var(--ease-out); }
-  .path[data-active="1"] .path-pill > [data-s="1"], .path[data-active="2"] .path-pill > [data-s="2"], .path[data-active="3"] .path-pill > [data-s="3"], .path[data-active="4"] .path-pill > [data-s="4"] { transform: none; opacity: 1; }
-  .path[data-active="2"] .path-pill > [data-s="1"], .path[data-active="3"] .path-pill > :is([data-s="1"], [data-s="2"]), .path[data-active="4"] .path-pill > :is([data-s="1"], [data-s="2"], [data-s="3"]) { transform: translateY(-100%); }
+  /* The pill rolls with the body's entrance (100ms), never ahead of it: no frame shows a new state over the old content. */
+  .path-pill > .status { grid-area: 1 / 1; transform: translateY(100%); opacity: 0; transition: transform var(--t-ui) var(--ease-out) 100ms, opacity var(--t-ui) var(--ease-out) 100ms; }
+  .path-stage[data-active="1"] .path-pill > [data-s="1"], .path-stage[data-active="2"] .path-pill > [data-s="2"], .path-stage[data-active="3"] .path-pill > [data-s="3"], .path-stage[data-active="4"] .path-pill > [data-s="4"] { transform: none; opacity: 1; }
+  .path-stage[data-active="2"] .path-pill > [data-s="1"], .path-stage[data-active="3"] .path-pill > :is([data-s="1"], [data-s="2"]), .path-stage[data-active="4"] .path-pill > :is([data-s="1"], [data-s="2"], [data-s="3"]) { transform: translateY(-100%); }
   /* The bodies: no card of their own, their head kept as space under the shell's head. Out first (120ms), then in with a 6px settle. */
   /* As tall as the stage, so bodies and shell are released together at the section's end. */
   .js .path-plate { position: sticky; top: 56px; height: calc(100vh - 56px); align-content: center; z-index: 1; grid-column: 6 / 13; grid-row: 2 / 7; align-self: start; justify-self: center; width: 640px; opacity: 0; transform: translateY(6px); transition: opacity 120ms var(--ease-exit), transform 0s linear 120ms; }
   .js .path-card { --fs-body: 16px; --fs-ui: 15px; --fs-small: 14px; width: 100%; height: var(--path-h); min-height: 0; padding: var(--s6); gap: var(--s4); background: none; border-color: transparent; color: var(--ink); }
-  .js .path-card > .ui-card-head { visibility: hidden; }
-  .js .path-card > :last-child { margin-top: var(--s2); }
+  .js .path-card > .ui-card-head { visibility: hidden; margin-bottom: auto; }
+  .js .path-card > :last-child { margin-top: 0; margin-bottom: auto; }
+  .js .path-card .path-cam { flex: 1; margin-bottom: 0; }
+  .js .path-card:has(.path-cam) > :last-child { margin-bottom: 0; }
+  .js .path-card .path-read-fields .ui-kv { font-size: 16px; }
   .js .path-strip .thermal { font-size: 14px; }
-  .js .path-clause:is(.path[data-active="1"] .path-field-1 *, .path[data-active="2"] .path-field-2 *, .path[data-active="3"] .path-field-3 *, .path[data-active="4"] .path-field-4 *) > span { opacity: 1; }
-  .js .path-plate:is(.path[data-active="1"] .path-field-1 *, .path[data-active="2"] .path-field-2 *, .path[data-active="3"] .path-field-3 *, .path[data-active="4"] .path-field-4 *) { opacity: 1; transform: none; transition: opacity 200ms var(--ease-out) 100ms, transform 260ms var(--ease-out) 100ms; }
+  .js .path-field[data-on] .path-clause > span { opacity: 1; }
+  .js .path-field[data-on] .path-plate { opacity: 1; transform: none; transition: opacity 200ms var(--ease-out) 100ms, transform 260ms var(--ease-out) 100ms; }
   .js .path-field:hover .path-card { transform: none; }
+  /* Until the first state is known nothing transitions, so a fast entry never plays a wipe from the server's state. */
+  .path:not([data-ready]) :is(.path-bg, .path-plate, .path-pill > .status, .path-clause > span) { transition: none; }
 }
 
 /* ---------- The rule: the signature scene (YON.md 23.3.1) ---------- */
@@ -545,10 +617,8 @@
 .rule-map li > span:first-child { color: var(--muted); }
 .rule-map li > span:last-child { font-weight: var(--w-medium); }
 .rule-win { grid-column: 5 / 13; --pl: 24px; }
-/* The window is as tall as its content plus an empty 96px band at the foot: the unbalanced card rides over that band only,
-   never over Onayla and "Dengede" (the scene's last beat). */
 .rule-win .win { height: auto; }
-.rule-body { height: 100%; display: grid; grid-template-columns: 312px minmax(0, 1fr); gap: var(--s7); padding: var(--s7) var(--s6) calc(var(--s7) + 72px); align-items: start; }
+.rule-body { height: 100%; display: grid; grid-template-columns: 312px minmax(0, 1fr); gap: var(--s7); padding: var(--s7) var(--s6); align-items: start; }
 .rule-receipt { transform-origin: 0 0; }
 .rule-receipt .thermal { font-size: 15px; }
 .rule-ledger { --fs-ui: 18px; --fs-small: 14px; --fs-title: 26px; display: grid; gap: var(--s6); min-width: 0; }
@@ -569,33 +639,39 @@
 .fly-dash-empty { display: none; }
 .fly-val, .fly-y, .fly-s { display: inline-block; transform-origin: 100% 50%; }
 .fly-val { padding: 0 var(--s1); border-radius: 2px; background: var(--accent-soft); }
-.fly-copy { position: absolute; top: 0; right: 0; opacity: 0; pointer-events: none; color: var(--accent); white-space: nowrap; }
-/* The flying figure is a chip on the window's surface: it covers what it passes over, so it never prints over receipt text. */
-.fly-s { padding: 0 var(--s1); border-radius: 2px; background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface)); }
-/* After the scene: the same fiş read wrong, riding over the window's bottom-right corner. */
-.rule-after { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); align-items: start; }
-/* The note and the unbalanced card share their top edge, so "open when equal, closed when not" reads in one frame. */
-.rule-note { grid-column: 1 / 5; grid-row: 1; margin: -72px 0 0; padding-top: var(--s5); font-size: var(--step-body); max-width: 34ch; }
-.rule-proof { grid-column: 8 / 13; grid-row: 1; justify-self: end; width: min(420px, 100%); position: relative; z-index: 1; margin-top: -72px; }
+.fly-copy { position: absolute; z-index: 2; top: 0; right: 0; opacity: 0; pointer-events: none; color: var(--accent); white-space: nowrap; }
+/* The flying figure is an opaque chip a full line tall (6px over and under the glyphs): whatever it passes over is covered whole,
+   never left as half letters at its edges (YON 23.15). The extra height is taken back by margins, so it lands on the figure. */
+.fly-s { padding: 6px var(--s1); margin-block: -6px; border-radius: var(--radius-chip); background: color-mix(in srgb, var(--accent-soft) 70%, var(--ui-surface)); }
+/* After the scene: the difference as one figure at the footer wordmark's size (the page's scale moment, no new type size), the
+   note under it and the unbalanced card standing on its end: one composition across the width, not a split (YON 23.15). */
+.rule-after { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); align-items: end; margin-top: var(--s9); }
+.rule-gap { grid-column: 1 / -1; grid-row: 1; margin: 0; display: grid; justify-items: start; font-family: var(--font-head); font-weight: 300; font-size: var(--mark-size); line-height: 0.8; letter-spacing: -0.045em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rule-note .balance-off { font-weight: var(--w-medium); }
+.rule-note { grid-column: 1 / 6; grid-row: 2; align-self: start; margin: var(--s6) 0 0; font-size: var(--step-body); max-width: 40ch; }
+/* The card stands under the figure's end, its top edge on the figure's foot: nothing lies on the figure (it is the page's
+   statement at this point). */
+.rule-proof { grid-column: 8 / 13; grid-row: 2; align-self: start; justify-self: end; width: min(420px, 100%); margin-top: calc(var(--s5) * -1); position: relative; z-index: 1; }
 .rule-card { --fs-ui: 14px; --fs-body: 15px; --fs-small: 13px; padding: var(--s5); gap: var(--s4); font-size: var(--fs-body); box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the card truly stands on the window) */
 .rule-card .ui-totals dd { font-size: var(--fs-title); }
 .rule-card .ui-card-head { font-size: var(--fs-section); }
 @media (max-width: 1100px) {
+  /* The figure has the width to itself; note and card share the row under it, so nothing lies on the figure. */
+  .rule-note { grid-column: 1 / 7; }
+  .rule-proof { grid-column: 7 / 13; margin-top: var(--s6); }
   .rule-copy, .rule-win { grid-column: 1 / -1; }
   .rule-copy { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-  .rule-body { grid-template-columns: 264px minmax(0, 1fr); gap: var(--s5); padding: var(--s5) var(--s5) calc(var(--s5) + 40px); }
+  .rule-body { grid-template-columns: 264px minmax(0, 1fr); gap: var(--s5); padding: var(--s5); }
   .rule-receipt .thermal { font-size: 13px; letter-spacing: 0; }
   .rule-ledger { --fs-ui: 16px; --fs-title: 22px; }
-  .rule-note { grid-column: 1 / 7; margin-top: 0; }
-  .rule-proof { grid-column: 7 / 13; margin-top: -32px; }
 }
 @media (max-width: 760px) {
-  .rule-copy { grid-template-columns: minmax(0, 1fr); }
-  .rule-note, .rule-proof { grid-column: 1 / -1; grid-row: auto; }
-  .rule-after { row-gap: var(--s5); margin-top: var(--s7); }
-  .rule-note { margin-top: 0; padding-top: 0; }
+  .rule-copy { grid-template-columns: minmax(0, 1fr); padding-right: 0; }
+  .rule-gap, .rule-note, .rule-proof { grid-column: 1 / -1; grid-row: auto; }
+  .rule-after { row-gap: var(--s5); margin-top: var(--s8); }
+  .rule-note { margin-top: 0; }
   .rule-map { width: 100%; }
-  .rule-proof { margin-top: 0; }
+  .rule-proof { justify-self: stretch; width: 100%; }
   .rule-card { box-shadow: none; } /* taste-skill-ignore: removes the lift */
 }
 /* Phone: no window, the receipt and the lines card one under the other. */
@@ -603,7 +679,8 @@
   .rule-win::before { content: none; }
   .rule-win .win { height: auto; display: block; border: 0; background: none; overflow: visible; }
   .rule-win .win-bar { display: none; }
-  .rule-body { grid-template-columns: minmax(0, 1fr); padding: 0; gap: var(--s4); }
+  /* The receipt and the lines card sit on the plate tone, so the paper reads as an object, not a lighter patch of the ground. */
+  .rule-body { grid-template-columns: minmax(0, 1fr); padding: var(--s4); gap: var(--s4); background: var(--plate); border-radius: 12px; }
   /* The item lines are not part of the story; without them receipt and lines fit on one screen and the flight is seen whole. */
   .rule-receipt .thermal-items { display: none; }
   .rule-ledger { --fs-ui: 14px; background: var(--surface); border: 1px solid var(--border); /* taste-skill-ignore: data-ui fragment */ border-radius: var(--radius-card); padding: var(--s4); gap: var(--s4); }
@@ -618,7 +695,9 @@
 .show-index { background: var(--deep-raised); }
 .show-pick { color: var(--show-soft); }
 /* The shown tab is a raised step of the deep field with its full ink, not a white bar. */
-.show-pick[aria-pressed="true"] { background: color-mix(in srgb, var(--deep-raised), var(--on-accent-field) 13%); color: var(--show-ink); }
+.show-pick[aria-pressed="true"], .show .show-hl { background: color-mix(in srgb, var(--deep-raised), var(--on-accent-field) 13%); color: var(--show-ink); }
+/* The copy is filled as one surface and clipped to the chosen tab, so the fill slides whole, never in pieces. */
+.show .show-hl .show-pick { background: none; color: var(--show-ink); }
 @media (hover: hover) and (pointer: fine) { .show-pick:hover:not([aria-pressed="true"]) { color: var(--show-ink); background: color-mix(in srgb, var(--deep-raised), var(--on-accent-field) 8%); } }
 .show-win { --pl: var(--page-margin); --pr: 24px; }
 .show-win::before { background: var(--show-plate); }
@@ -626,6 +705,7 @@
 /* Fixed height (no shift between pieces) taken from the tallest piece, so no piece leaves half the window empty. */
 .show-win .win { height: 452px; background: var(--show-card); border-color: var(--show-card-edge); }
 .show-win .win-body { overflow: clip; }
+@media (max-width: 760px) { .show-win .win { height: auto; min-height: 470px; } }
 .show-win .win-body > .ui-card { height: 100%; border: 0; border-radius: 0; background: none; }
 .show .show-row { padding-bottom: 24px; }
 @media (max-width: 1180px) { .show-win .win { height: 480px; } }
@@ -646,8 +726,16 @@
 .spot-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .spot[data-on] .spot-row:not([data-lit]), .spot[data-on] .ui-read > div:not([data-lit]) { opacity: 0.7; }
 /* In the showcase each read field is one row, label left and value right, so eight fields fit and every line starts at the panel's edge. */
-.show .ui-review { grid-template-columns: minmax(280px, 5fr) minmax(0, 7fr); }
-.show .spot .ui-read > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
+/* Wide: read fields beside the lines. Each field is its label then its value, so the panel's right half is empty and the link
+   crosses it from the value's end to the line (YON 23.15). Below 761px one column: the fields, then the lines at full width. */
+@media (min-width: 761px) {
+  .show .ui-review { grid-template-columns: minmax(280px, 5fr) minmax(0, 7fr); }
+  .show .spot .ui-read > div { display: grid; grid-template-columns: 8.5em auto; justify-content: start; align-items: baseline; gap: var(--s3); }
+}
+@media (max-width: 760px) {
+  .show .ui-review { grid-template-columns: minmax(0, 1fr); gap: var(--s5); }
+  .show .spot .ui-read { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s4); }
+}
 .spot-row[data-lit] td { background: var(--accent-soft); }
 .spot-link { position: absolute; pointer-events: none; overflow: visible; fill: none; stroke: var(--accent); stroke-width: 1.5; transition: opacity 120ms ease; }
 .spot-link circle { fill: var(--accent); stroke: none; }
@@ -655,8 +743,8 @@
 /* One column: the sources are marked, no line (it would cross the text; the panel does the same, YON 23.7). */
 @media (max-width: 760px) { .spot-link { display: none; } }
 
-/* ---------- Features: the rules panel on its plate ---------- */
-.feat-plate { grid-column: 1 / 8; grid-row: 2 / 9; margin: 24px -24px -24px; border-radius: 12px; background: var(--plate); }
+/* ---------- Features: the rules panel on its plate, the plate 24px past every side (a frame, not an offset shadow) ---------- */
+.feat-plate { grid-column: 1 / 8; grid-row: 2 / 9; margin: -24px; border-radius: 12px; background: var(--plate); }
 @media (max-width: 640px) { .feat-plate { display: none; } }
 
 /* ---------- Routes: the Fişler window, the Excel file leaving it ---------- */
@@ -672,7 +760,7 @@
 .routes-luca .ui-meter { grid-template-columns: 2.6em 1fr auto; gap: var(--s2); font-size: 12px; }
 .routes-luca .btn { justify-self: start; margin-top: var(--s1); }
 .ui-track > span { transform-origin: 0 50%; }
-.routes-file { justify-self: start; position: relative; z-index: 1; width: min(560px, 100%); margin-top: -56px; box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the file truly leaves the window) */
+.routes-file { justify-self: start; position: relative; z-index: 1; width: min(600px, 100%); margin-top: -56px; box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the file truly leaves the window) */
 @media (max-width: 900px) {
   .routes-aside { justify-items: stretch; }
   .routes-win { width: 100%; }
@@ -690,15 +778,20 @@
 /* ---------- CTA: the camera screen ---------- */
 .cta-phone { width: 340px; justify-self: center; }
 /* The viewfinder looks at a desk: the receipt lies on it slightly turned. The finder clips, so the screen never overflows. */
-.cam { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; padding: var(--s5); border-radius: 18px; background: var(--deep-raised); overflow: clip; }
+.cam { position: relative; isolation: isolate; flex: 1; min-height: 0; display: grid; place-items: center; padding: var(--s5); border-radius: 18px; background: var(--deep-raised); overflow: clip; }
+/* The desk: two flat tones, the near edge of the table a step lighter (no gradient). */
+.cam::before { content: ""; position: absolute; z-index: -1; inset: 64% 0 0; background: color-mix(in srgb, var(--deep-raised), var(--on-accent-field) 6%); }
 @media (max-width: 960px) { .cam { padding: var(--s4) var(--s3); } }
 /* The paper on the desk: the one lifted layer of this screen, its shade follows the torn edge (a filter, not a box). */
-.cam .thermal { width: 100%; max-width: 224px; font-size: 11.5px; letter-spacing: 0; transform: rotate(-2.5deg); filter: drop-shadow(0 14px 18px rgb(0 0 0 / 0.45)); } /* taste-skill-ignore: lift layer, YON 23.1 (the paper lies on the desk) */
+/* Thermal paper as a material (YON 23.15): it lies a little turned, its far end lifted in a soft curl (a tilt in depth, not a
+   bend in the drawing), with the one soft shade that follows its torn edge. */
+.cam .thermal { width: 100%; max-width: 224px; font-size: 11.5px; letter-spacing: 0; transform: perspective(700px) rotateX(9deg) rotate(-2.5deg); transform-origin: 50% 100%; filter: drop-shadow(0 14px 18px rgb(0 0 0 / 0.45)); } /* taste-skill-ignore: lift layer, YON 23.1 (the paper lies on the desk) */
 /* The corner guides settle onto the receipt once as the phone comes into view (scroll-linked, compositor only). */
 .cam-c1 { --cx: -14px; --cy: -14px; } .cam-c2 { --cx: 14px; --cy: -14px; } .cam-c3 { --cx: -14px; --cy: 14px; } .cam-c4 { --cx: 14px; --cy: 14px; }
 @keyframes cam-settle { from { transform: translate(var(--cx), var(--cy)); opacity: 0; } }
 @supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) { .js .cam-c { animation: cam-settle linear both; animation-timeline: view(); animation-range: entry 40% cover 40%; } }
+  /* Done by the time the phone is wholly on screen, so the four guides are never seen half-drawn at rest. */
+  @media (prefers-reduced-motion: no-preference) { .js .cam-c { animation: cam-settle linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; } }
 }
 .cam-c { position: absolute; width: 22px; height: 22px; border: 0 solid var(--on-accent-field); opacity: 0.85; }
 .cam-c1 { top: 10px; left: 10px; border-width: 2px 0 0 2px; border-top-left-radius: 8px; }
@@ -712,30 +805,36 @@
 @media (max-width: 640px) { .cta-phone { width: 280px; } .cam .thermal-items { display: none; } }
 
 /* ---------- Motion ---------- */
-@keyframes home-line { from { transform: translateY(72%); } }
 @keyframes home-load { from { transform: translateY(12px); } }
 @keyframes home-swap { from { opacity: 0; transform: translateY(8px); } }
 /* The hero window arrives once from a laid-back plane and then rests flat at full size, so its text is sharp (YON 23.9). */
 @keyframes hero-tilt { from { transform: perspective(1600px) rotateX(13deg) translateY(40px) scale(0.95); } }
 @keyframes hero-phone { from { transform: translate(-16px, 32px); } }
+@keyframes hero-phone-m { from { transform: translateY(28px); } }
 @keyframes pop { from { transform: scale(0.96); opacity: 0; } }
 @keyframes spot-open { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
 @keyframes rule-lit { from { opacity: 0; } }
-/* The path (YON 23.12): the chip lifts in place over the printed figure, rises to its row's height (Y leads, ease-out) while
-   still over the paper, then slides right along that row (X waits, then ease-in-out), so it never sits beside another account. */
+/* Clock mode (YON 23.12): the chip lifts in place over the printed figure, rises to its row's height (Y leads, ease-out), then
+   slides right along that row (X waits, then ease-in-out). */
 @keyframes fly-x { 0%, 24% { transform: translateX(var(--dx, 0)); } to { transform: none; } }
 @keyframes fly-y { 0%, 4% { transform: translateY(var(--dy, 0)); } to { transform: none; } }
-/* The figure grows as it leaves the paper and settles to the cell's size: a visible lift, not a slide. */
-@keyframes fly-s { from { transform: scale(var(--sc, 1)); } 30% { transform: scale(1.4); } to { transform: none; } }
+/* Scroll mode (desktop, YON 23.15): X leads, so the chip leaves the paper at its own row's height into the ledger, whose
+   accounts are not drawn yet (they come in after the flights), and then rises or drops inside its own amount column: it never
+   crosses printed text, and never leaves half letters at its edges. */
+@keyframes fly-x-first { 0%, 4% { transform: translateX(var(--dx, 0)); } 52%, 100% { transform: none; } }
+@keyframes fly-y-last { 0%, 52% { transform: translateY(var(--dy, 0)); } to { transform: none; } }
+/* The figure grows a little as it leaves the paper and settles to the cell's size: a lift, not a jump in size (1.15, YON 23.15). */
+@keyframes fly-s { from { transform: scale(var(--sc, 1)); } 30% { transform: scale(1.15); } to { transform: none; } }
 /* Chip and source swap in the same 2%: never both printed, never neither. */
 @keyframes fly-fade { 0% { opacity: 0; } 2%, 88% { opacity: 1; } 100% { opacity: 0; } }
-/* The source figure leaves the paper while its copy is in the air, and is printed again once the copy has landed. */
-@keyframes fly-src { 0% { opacity: 1; } 2%, 90% { opacity: 0; } 100% { opacity: 1; } }
+/* The source figure stays printed at a low tone while its copy is in the air (the receipt keeps its line), full again once landed. */
+@keyframes fly-src { 0% { opacity: 1; } 2%, 90% { opacity: 0.3; } 100% { opacity: 1; } }
 /* On the clock (phone, tablet) the figures and codes wait at a quarter tone instead of an empty card; the flight brings them up. */
 @keyframes fly-land-t { 0%, 84% { opacity: 0.25; transform: none; } 92% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: none; } }
 @keyframes close-in-t { from { opacity: 0.4; transform: translateY(8px); } }
 @keyframes fly-land { 0%, 84% { opacity: 0; transform: none; } 92% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: none; } }
-@keyframes fly-dash { 0%, 84% { opacity: 1; } 92%, 100% { opacity: 0; } }
+/* The dash is gone before the chip reaches the cell, so the figure never lands beside it. */
+@keyframes fly-dash { 0%, 70% { opacity: 1; } 78%, 100% { opacity: 0; } }
 @keyframes code-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
 @keyframes close-in { from { opacity: 0; transform: translateY(8px); } }
 @keyframes fade-in { from { opacity: 0; } }
@@ -744,12 +843,13 @@
 @keyframes recede { to { opacity: 0.9; transform: scale(0.97); } }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Masked headline, line by line, then sentence and action. The offset exists only while the animation runs (backwards fill). */
-  .js .hero [data-line] { animation: home-line 700ms var(--ease-expo) backwards; animation-delay: calc(60ms + var(--i) * 110ms); }
+  /* The h1 is painted whole on the first frame; the sentence and action rise once under it. */
   .js .hero [data-load] { animation: home-load 500ms var(--ease-out) backwards; animation-delay: var(--d); }
   /* Desktop: the window comes flat onto its plate, then the phone settles over it; both are opaque from the first frame. */
   .js .counter-win { transform-origin: 50% 0; animation: hero-tilt 1100ms var(--ease-expo) 120ms backwards; }
   .js .counter-phone { animation: hero-phone var(--t-reveal) var(--ease-expo) 520ms backwards; }
+  /* Phone: the phone is centred, so it only rises (YON 23.15). */
+  @media (max-width: 640px) { .js .counter-phone { animation-name: hero-phone-m; } }
 
   .odo-code { --odo-t: 240ms; }
   .counter[data-touched] .counter-state { display: inline-block; animation: pop 160ms var(--ease-out); }
@@ -777,6 +877,8 @@
   .rule[data-mode] .rule-receipt { animation-name: recede; animation-timing-function: var(--ease-out); --a: 68%; --b: 80%; --t0: 1700ms; --tl: 320ms; }
   /* Clock mode: codes are there from the start, figures wait at a quarter tone, the balance strip at 0.4 (no empty card). */
   .rule[data-mode="timed"] .rule-code { animation-name: none; }
+  .rule[data-mode="scroll"] .fly-copy { animation-name: fly-x-first, fly-fade; }
+  .rule[data-mode="scroll"] .fly-y { animation-name: fly-y-last; animation-timing-function: var(--ease-in-out); }
   .rule[data-mode="timed"] .fly-val { animation-name: fly-land-t; }
   .rule[data-mode="timed"] .rule-close { animation-name: close-in-t; }
   .rule[data-mode="timed"] .fly-dash { animation-name: none; }
@@ -802,7 +904,8 @@
 /* Print and find-in-page see the end state of the signature, never a figure waiting for its flight. */
 @media print { .rule *, .rule [data-amt]::before { animation: none !important; } }
 /* Sections below the first screens are laid out only when near: the first layout is the hero's alone. */
-.show, .feat, .routes, .faq, .cta { content-visibility: auto; contain-intrinsic-size: auto 900px; }
+/* Not the routes: its sticky Excel card's shadow runs past the section box, and paint containment would cut it (YON 23.15). */
+.path, .show, .feat, .faq, .cta { content-visibility: auto; contain-intrinsic-size: auto 900px; }
 @media (prefers-reduced-motion: reduce) {
   .path-card { transition: none; transform: none !important; }
 }
