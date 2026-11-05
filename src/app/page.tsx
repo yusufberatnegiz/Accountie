@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
 import { CookieNote } from "@/components/site/CookieNote";
 import { SiteBar } from "@/components/site/SiteBar";
 import { Counter } from "@/components/home/Counter";
 import { Faq, type Qa } from "@/components/home/Faq";
-import { AppWindow, Phone } from "@/components/home/Frames";
+import { AppWindow } from "@/components/home/Frames";
 import { HomeMotion } from "@/components/home/HomeMotion";
 import { ShowRow, type Piece } from "@/components/home/ShowRow";
 import { AKARYAKIT, journalFor, KAFE, SAMPLES, shownAccountName, sourcesFor, type Sample } from "@/components/home/samples";
@@ -16,6 +17,9 @@ import { WARNING_MESSAGES } from "@/lib/journal";
 import { formatTrAmount } from "@/lib/money";
 import { PAYMENT_ALTERNATIVES } from "@/lib/default-rules";
 import "@/components/home/home.css";
+// Two licensed photographs of the receipt's own material (YON 23.20); credited in the footer.
+import posStrip from "../../public/gorseller/pos-fis-seridi.webp";
+import paperRolls from "../../public/gorseller/termal-rulo.webp";
 
 // Public and static: no session, no user data (docs/design/YON.md 5.5).
 export const dynamic = "force-static";
@@ -274,9 +278,7 @@ const PATH = [
   { clause: "Ardından siz onaylarsınız.", card: (
     <>
       <p className="ui-card-head"><span>Fiş 0331</span><span className="status status-approved" data-step>Onaylandı</span></p>
-      {LINES_KAFE.map((l) => (
-        <p className="ui-kv ui-kv-line" key={l.code} data-step><span><span className="code" translate="no">{l.code}</span><span className="code-name">{l.name}</span></span><span className="to-luca">{l.debit || l.credit}</span></p>
-      ))}
+      <MiniLines lines={LINES_KAFE} />
       <dl className="ui-totals path-totals" data-step>
         <div><dt>Borç</dt><dd>265,00</dd></div>
         <div><dt>Alacak</dt><dd>265,00</dd></div>
@@ -318,7 +320,6 @@ export default function LandingPage() {
   return (
     <>
       <HomeMotion />
-      <CookieNote />
       <SiteBar />
       <main id="icerik" tabIndex={-1} className="home">
         {/* Hero: two tones, the counter is the picture */}
@@ -335,6 +336,17 @@ export default function LandingPage() {
           </div>
           <div className="hero-stage">
             <div className="hero-counter"><Counter /></div>
+          </div>
+        </section>
+
+        {/* The material (YON 23.20): one photograph across the width, the paper the product starts from, and one sentence. */}
+        <section className="paper" aria-labelledby="paper-title">
+          <figure className="photo paper-photo">
+            <Image src={posStrip} alt="Ödeme cihazından çıkan uzun, boş termal fiş şeridi, turuncu bir masanın üstünde" sizes="100vw" />
+          </figure>
+          <div className="paper-copy">
+            <h2 className="t-head paper-title" id="paper-title">Termal fiş solar</h2>
+            <p className="paper-text">Yazar kasa fişi ısıyla basılır ve zamanla okunmaz olur. Fiş okunurken satırlarını çıkarın; kayıt Luca’da kalır.</p>
           </div>
         </section>
 
@@ -443,7 +455,6 @@ export default function LandingPage() {
         {/* features: panel with margin notes, each note on the row of the part it explains; nothing in the panel is editable */}
         <section className="feat wrap" aria-labelledby="feat-title">
           <h2 className="t-head feat-title" id="feat-title">Sizin hesap planınız</h2>
-          <div className="feat-plate" aria-hidden="true" />
           <div className="feat-panel" data-ui aria-label="Örnek hesap kuralları paneli" role="group">
             <p className="ui-panel-head">Hesap kuralları</p>
             {PART_TITLES.map((t, i) => (
@@ -538,16 +549,19 @@ export default function LandingPage() {
               </div>
             </div>
             <figure className="cta-figure">
-              <Phone className="cta-phone">
-                <p className="phone-head"><span>Fiş çek</span><span>Fişi çerçeveye sığdırın</span></p>
-                <div className="cam">
-                  <span className="cam-c cam-c1" /><span className="cam-c cam-c2" /><span className="cam-c cam-c3" /><span className="cam-c cam-c4" />
-                  <Thermal sample={SAMPLES[1]} printedPayment="NAKİT" compact />
+              <div className="cta-pic">
+                <div className="photo cta-photo">
+                  <Image src={paperRolls} alt="Elde tutulan iki rulo termal yazar kasa kâğıdı" sizes="(max-width: 900px) 100vw, 520px" />
                 </div>
-                <span className="btn btn-primary cam-shoot">Fiş çek</span>
-                <p className="cam-last"><span><span className="cam-last-no">Önceki fiş 0047</span><span className="code-name">8.725,00</span></span><span className="status">Taslak</span></p>
-              </Phone>
-              <figcaption>Telefonda Fiş çek tek dokunuştur; çekilen fiş listeye taslak olarak düşer.</figcaption>
+                {/* Kırtasiye 0912 paid in cash: the lines this paper becomes, as sharp chips over the photograph (Pennylane, YON 23.2). */}
+                <ul className="cta-chips" data-ui>
+                  {LINES_KIRTASIYE.map((l) => (
+                    <li key={l.code}><span translate="no">{l.code}</span><span className="to-luca">{l.debit || l.credit}</span></li>
+                  ))}
+                  <li className="balance-ok">Dengede</li>
+                </ul>
+              </div>
+              <figcaption>Fiş 0912, nakit: rulodan çıkan fiş Luca’da üç satır olur.</figcaption>
             </figure>
           </div>
         </section>
@@ -563,8 +577,11 @@ export default function LandingPage() {
             <Link href="/gizlilik" prefetch={false}>Gizlilik</Link>
           </nav>
         </div>
+        <p className="foot-credit">Görsel kaynakları: termal fiş şeridi, Towfiqu barbhuiya, <a href="https://unsplash.com/photos/payment-terminal-with-white-receipt-xkArbdUcUeE">Unsplash</a> (Unsplash Lisansı); termal kâğıt rulosu, Acheolg, <a href="https://commons.wikimedia.org/w/index.php?curid=156143903">Wikimedia Commons</a> (CC BY-SA 4.0, kırpıldı).</p>
         <p className="foot-name" translate="no" aria-hidden="true">Accountie</p>
       </footer>
+      {/* Fixed strip, last in reading and Tab order. */}
+      <CookieNote />
     </>
   );
 }

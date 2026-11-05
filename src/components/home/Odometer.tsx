@@ -11,6 +11,8 @@ export function Odometer({ value, className }: { value: string; className?: stri
   const [cur, setCur] = useState(value);
   const [old, setOld] = useState(value);
   if (value !== cur) { setOld(cur); setCur(value); }
+  // Until the first change the figure is plain text: the first layout has no digit slots to lay out (4x CPU LCP, YON 23.20).
+  if (old === cur) return <span className={`odo${className ? ` ${className}` : ""}`}>{cur}</span>;
   // Right-aligned, so 980,00 -> 1.250,00 rolls the units under the units.
   const n = Math.max(cur.length, old.length);
   const a = old.padStart(n, " ");

@@ -68,7 +68,7 @@ export const KAFE: Sample = {
     vatLines: [{ rate: 10, grossKurus: 26500, vatKurus: 2409 }], totalKurus: 26500, paymentMethod: "card", category: "meal",
   },
   items: [
-    { name: "FİLTRE KAHVE 2 AD", rate: 10, kurus: 13000 },
+    { name: "FİLTRE KAHVE 2", rate: 10, kurus: 13000 },
     { name: "SU BÖREĞİ", rate: 10, kurus: 9500 },
     { name: "SU 2 AD", rate: 10, kurus: 4000 },
   ],

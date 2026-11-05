@@ -50,7 +50,6 @@ function Stage() {
 export function AuthShell({ title, lead, current, children }: { title: string; lead: string; current?: "giris" | "kayit"; children: ReactNode }) {
   return (
     <div className="auth">
-      <CookieNote />
       <SiteBar current={current} />
       <main id="icerik" tabIndex={-1} className="auth-main">
         <section className="auth-form" aria-labelledby="auth-title">
@@ -62,6 +61,8 @@ export function AuthShell({ title, lead, current, children }: { title: string; l
         </section>
       </main>
       <Stage />
+      {/* After the content: the strip is fixed, so this only puts it last in reading and Tab order (WCAG 2.4.3). */}
+      <CookieNote />
     </div>
   );
 }

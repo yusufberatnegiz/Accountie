@@ -63,8 +63,9 @@ export function Spotlight({ read, lines, meta }: { read: SpotRead[]; lines: Spot
     <div className="ui-card ui-review spot" ref={box} data-on={on === null ? undefined : ""}>
       <dl className="ui-read">
         {read.map((f) => (
-          <div key={f.id} data-spot={f.id} data-lit={lit.includes(f.id) || undefined}>
-            <dt>{f.label}</dt><dd id={`spot-${f.id}`}>{f.value}</dd>
+          // The id is on the pair, so a line's description reads "%1 toplam 412,50", not the bare figure.
+          <div key={f.id} id={`spot-${f.id}`} data-spot={f.id} data-lit={lit.includes(f.id) || undefined}>
+            <dt>{f.label}</dt><dd>{f.value}</dd>
           </div>
         ))}
       </dl>

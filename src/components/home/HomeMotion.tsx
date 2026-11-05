@@ -62,12 +62,15 @@ export function HomeMotion() {
       // Timed mode starts when the balance strip is whole on screen, so Onayla and "Dengede" are seen on a phone, not cut at its foot.
       // The idle and approach passes have measured; starting is play() on the paused CSS animations: no class on the scene root,
       // so no style pass over its whole subtree in a scroll frame (4x CPU: an 85 ms frame at the start, YON 23.18).
+      // It starts when the receipt and the lines card are on screen together (YON 23.20): the source rows are seen as the figures
+      // leave them. A body taller than the screen starts once as much of it as fits is in view.
       const io = new IntersectionObserver(([e]) => {
-        if (!(e.intersectionRatio >= 0.9 || e.boundingClientRect.bottom < 0)) return;
+        const need = Math.min(0.85, (innerHeight - 72) / Math.max(1, e.boundingClientRect.height));
+        if (!(e.intersectionRatio >= need || e.boundingClientRect.bottom < 0)) return;
         io.disconnect();
         if (rule.dataset.mode === "timed") raf = requestAnimationFrame(() => rule.getAnimations({ subtree: true }).forEach((a) => a.play()));
-      }, { threshold: [0, 0.9] });
-      io.observe(rule.querySelector(".rule-close") ?? rule);
+      }, { threshold: [0, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85] });
+      io.observe(rule.querySelector(".rule-body") ?? rule);
       offs.push(() => { if (idle) cic(idle); near.disconnect(); cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
     }
 
