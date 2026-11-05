@@ -1137,3 +1137,12 @@ Jüri tur 4 (renk 7.5, mobil 7.5, erişim-perf 6.5, işlev 8) ve kullanıcı kar
 - **Hero alt metnindeki 12 px:** yazı kayması değil. Web yazısı engellenmiş ve yüklenmiş iki yüklemede h1, alt metin ve düğme aynı konumda (88, 186, 312). Görülen 12 px, `home-load` giriş hareketi (500 ms, 12 px yükselme); metrik eşli yedek yazılar (globals.css) zaten yerinde.
 - **Tema düğmesi:** `title` kalktı, ad yalnız `aria-label` (ekran okuyucu iki kez okumaz).
 - **Çevrimdışı sayfa:** service worker önbellek adı `cevrimdisi-v2`; yüklü PWA'lar yeni paletli çevrimdışı sayfayı alır. Çevrimdışı sayfa değişirse ad artırılır.
+
+### 23.19 Tur 5 tasarım sistemi: sayfada tek mavi alan, derinlik merdiveni, fotoğraf çerçevesi (2026-11-05; 23.18'deki "mavi alan iki kez" satırının üstündedir)
+
+Koordinatör tur 4 planı (kullanıcı konuyla ilgili lisanslı fotoğrafı onayladı) ve renk jürisinin "mavi alan üç kez geçiyor" bulgusu. Kararlar:
+
+- **Sayfada tek büyük mavi alan:** yalnız "Bir fişin yolu"nun son durumu (Excel ile Luca'ya giden dosya). Kapanış (CTA) artık taş alanı `--cta-field` (açık #dcdad4, koyu #1d1d1b), metin `--ink`, tek eylem sayfanın birincil dolgusu (`--primary`), odak halkası sayfanın `--accent`'i. Mavi = Luca'ya giden şey; küçük mavi (rakamlar, bağlantılar, logo çizgisi) değişmedi.
+- **Derinlik merdiveni:** zemin < plaka (`--plate`) < pencere (`--ui-surface`) < pencerenin üstüne kalkan katman (`--ui-lift`). Açıkta pencere ve kalkan katman ikisi de beyaz, gölge ayırır; koyuda kalkan katman bir ton adımı yukarıda (`--ui-lift` #32312e, kenar `--ui-lift-edge` #45443f). Uygulandığı yerler: dengesiz kart (`.rule-card`), Luca dosyası (`.routes-file`), hero'da telefonun üstündeki pencere (`.counter-win .win`). Koyu `--shadow-lift` 1px siyah dış halka ve daha koyu düşen gölge taşır; koyu zeminde gölge tek başına görünmüyordu.
+- **Fotoğraf çerçevesi (ortak, iki tema):** `.photo` sarmalayıcı (içinde `next/image`): köşe `--photo-radius` 0 (6.5), yüklenirken ve kırpım boşluğunda `--photo-mat` (plaka tonu), koyuda beyaz noktası düşük (`--photo-dim` 0.88, mat üstünde opaklık). Gölge yalnız fotoğraf başka katmanın üstüne biniyorsa: `.photo.is-lifted` (`--photo-shadow` = `--shadow-lift`). Fotoğrafın üstündeki HTML çipler `--ui-lift` yüzeyini kullanır.
+- **23.18'den doğrulanan:** koyu yol sıcak taş (`--path-1..3`, kartlar), vitrin koyu zemininde açık odak halkası, content-visibility yükseklikleri, tema düğmesinde `title` yok, SW `cevrimdisi-v2`. Hero alt metnindeki 12 px giriş hareketidir, yazı kayması değil (metrik eşli yedek yazılar globals.css başında).

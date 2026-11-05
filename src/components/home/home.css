@@ -328,21 +328,21 @@
 }
 
 /* ---------- cta: first step, already open ---------- */
-/* On the blue fields the ring takes the field's text colour: --accent on --accent-field shows no ring. */
-.cta { --focus: var(--on-accent-field); background: var(--accent-field); color: var(--on-accent-field); margin-top: var(--section-gap); }
+/* The close is a stone field (YON 23.19): the page's one blue field is the Luca file in the path. The ring is the page's own --accent. */
+.cta { background: var(--cta-field); color: var(--ink); margin-top: var(--section-gap); }
 .cta-inner { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s7); padding-block: var(--s10); align-items: center; }
 .cta-copy { grid-column: 1 / 7; display: grid; gap: var(--s5); }
-.cta-title { color: var(--on-accent-field); line-height: 0.95; font-size: var(--display); font-family: var(--font-head); font-weight: 300; letter-spacing: -0.035em; }
+.cta-title { color: var(--ink); line-height: 0.95; font-size: var(--display); font-family: var(--font-head); font-weight: 300; letter-spacing: -0.035em; }
 .cta-title span { display: block; }
 .cta-sub { font-size: var(--step-body); max-width: 40ch; margin: 0; }
 .cta-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s5); margin-top: var(--s3); }
 .cta-actions p { margin: 0; font-size: var(--step-body); }
-.cta-actions a:not(.btn) { color: var(--on-accent-field); display: inline-flex; align-items: center; min-height: var(--touch); }
-/* On the blue field the one action is the light fill. */
-.cta-btn { background: var(--on-accent-field); color: var(--accent-field); }
-@media (hover: hover) and (pointer: fine) { .cta-btn:hover { background: var(--surface); color: var(--ink); } }
+.cta-actions a:not(.btn) { color: var(--ink); display: inline-flex; align-items: center; min-height: var(--touch); }
+/* The one action is the primary fill, as everywhere else on the page. */
+.cta-btn { background: var(--primary); color: var(--on-primary); }
+@media (hover: hover) and (pointer: fine) { .cta-btn:hover { background: var(--primary-hover); color: var(--on-primary); } }
 .cta-figure { grid-column: 7 / 13; margin: 0; display: grid; gap: var(--s3); justify-items: center; }
-.cta-figure figcaption { font-size: var(--step-small); color: var(--on-accent-field); }
+.cta-figure figcaption { font-size: var(--step-small); color: var(--muted); }
 
 /* ---------- footer: the name returns at full width ---------- */
 .foot, .rule-after { container-type: inline-size; }
@@ -763,6 +763,8 @@
 .routes-luca .btn { justify-self: start; margin-top: var(--s1); }
 .ui-track > span { transform-origin: 0 50%; }
 .routes-file { justify-self: start; position: relative; z-index: 1; width: min(600px, 100%); margin-top: -56px; box-shadow: var(--shadow-lift); } /* taste-skill-ignore: lift layer, YON 23.1 (the file truly leaves the window) */
+/* The layers that stand on a window take the lifted step of the depth ladder (dark: a tone above the window, YON 23.19). */
+.rule-card, .routes-file, .counter-win .win { --surface: var(--ui-lift); --border: var(--ui-lift-edge); }
 @media (max-width: 900px) {
   .routes-aside { justify-items: stretch; }
   .routes-win { width: 100%; }
