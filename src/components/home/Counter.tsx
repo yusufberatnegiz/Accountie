@@ -55,7 +55,7 @@ export function Counter() {
     shown.current = sampleId;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     // The paper stays opaque: only its print changes, the new print rising 8px on the same paper (YON 23.28).
-    slot.current?.querySelectorAll(".thermal-paper > *").forEach((el) => el.animate([{ opacity: 0, transform: "translateY(8px)" }, {}], { duration: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }));
+    slot.current?.querySelectorAll(".thermal-paper > *").forEach((el) => el.animate([{ opacity: 0.35, transform: "translateY(6px)" }, {}], { duration: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }));
   }, [sampleId]);
 
   async function copyLines() {

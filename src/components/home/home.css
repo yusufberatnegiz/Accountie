@@ -503,6 +503,8 @@
   /* One line per choice, scrolled sideways by the thumb; its label stays visible above it. */
   .segmented { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--page-margin) * -1); padding-inline: var(--page-margin); }
   .segmented::-webkit-scrollbar { display: none; }
+  /* A row that runs past the edge says so: it fades out over the last 24px instead of being cut mid-word (jury tur 8, side-scroll). */
+  .segmented { mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
   .segmented legend { float: none; width: auto; margin-bottom: var(--s2); line-height: 1.3; }
   .segmented label { flex: none; min-height: var(--touch); }
   .counter-lines th, .counter-lines td { padding: var(--s1) var(--s2); }
@@ -512,6 +514,10 @@
      the page is a quarter shorter (YON 23.28). The title stays at the row's left. */
   .path { grid-template-columns: repeat(4, calc(100% - 24px)); grid-template-rows: auto auto; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
   .path::-webkit-scrollbar { display: none; }
+  /* Where the reader is in the row (jury tur 8: no indicator), and the next field fades in at the edge rather than standing as a
+     grey strip of another height. */
+  .path-step { margin-bottom: var(--s2); font-size: var(--fs-small); font-weight: var(--w-medium); color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+  .path { mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
   .path-title { grid-column: 1; position: sticky; left: 0; }
   /* Each field as tall as its own card (YON 23.32): equal heights left 189px of empty field under the first card. */
   .path-field, .path-field-3, .path-field-4 { grid-row: 2; grid-template-rows: none; align-content: start; align-self: start; row-gap: var(--s5); padding: var(--s6) var(--s6); scroll-snap-align: start; }
@@ -662,7 +668,12 @@
   .hero-stage { padding-right: var(--page-margin); }
   .counter-body { flex-direction: column; padding: 0; min-height: 0; }
   .counter-phone { position: relative; top: auto; order: 0; align-self: center; width: min(280px, 100%); aspect-ratio: auto; box-shadow: none; } /* taste-skill-ignore: removes the lift */
-  .counter-phone .phone-screen { padding-bottom: calc(var(--s4) + 40px); }
+  .counter-phone .phone-screen { padding-bottom: calc(var(--s2) + 40px); }
+  /* The card under the phone already says "Okundu, 3 satır": the phone's own read block went, so the receipt and its Luca lines
+     meet on the first screen (jury tur 8: at 390 the card started under the cookie band). */
+  .counter-phone .phone-read { display: none; }
+  .hero-copy { padding-bottom: var(--s5); gap: var(--s5); }
+  .counter-phone .phone-screen { padding-top: 36px; }
   /* The item lines are in the card under it (as lines); the strip keeps its head and totals, so no shown sum disagrees with them. */
   .counter-phone .thermal-items { display: none; }
   .counter-phone .thermal-paper { padding-bottom: var(--s5); }
@@ -701,7 +712,7 @@
   .js .path-field { display: contents; }
   /* The sentences take the section heads' size: one size fewer on the page (YON 23.15). */
   .js .path-clause { grid-column: 1 / 6; align-self: stretch; max-width: none; padding-top: calc(28vh - 1.1em); font-family: var(--font-head); font-weight: 300; font-size: clamp(2rem, 1.3rem + 2.4vw, 3.25rem); letter-spacing: -0.02em; line-height: 1.08; color: var(--ink); }
-  .js .path-clause > span { position: sticky; top: calc(50vh - 1.1em); display: block; max-width: 13ch; opacity: 0.56; transition: opacity var(--t-ui) var(--ease-out); }
+  .js .path-clause > span:not(.path-step) { position: sticky; top: calc(50vh - 1.1em); display: block; max-width: 13ch; opacity: 0.56; transition: opacity var(--t-ui) var(--ease-out); }
   .js .path-field-1 .path-clause { grid-row: 2; } .js .path-field-2 .path-clause { grid-row: 3; }
   .js .path-field-3 .path-clause { grid-row: 4; } .js .path-field-4 .path-clause { grid-row: 5 / 7; }
   /* The stage is a plate just larger than the card (40px each side, YON 23.24), its top on the title's line, centred on the
@@ -1080,10 +1091,11 @@
 
   /* The account name rolls with its code, in the same 240 ms, so code and name never disagree (YON 23.24). */
   .odo-code, .counter-lines .code-name { --odo-t: 240ms; }
-  /* The account name cross-fades in 120 ms (YON 23.32): a whole name rolling showed two half names over each other. */
+  /* The account name changes in two steps (jury tur 8: a simultaneous cross-fade showed both names over each other): the old one is
+     gone in 80 ms, then the new one fades in over 120 ms. */
   .counter-lines .code-name .roll-slot[data-old] { clip-path: none; --odo-t: 120ms; }
-  .counter-lines .code-name .roll-slot[data-old] > span { animation-name: fade-in; }
-  .counter-lines .code-name .roll-slot[data-old]::before { animation-name: fade-out; }
+  .counter-lines .code-name .roll-slot[data-old] > span { animation-name: fade-in; animation-delay: 80ms; }
+  .counter-lines .code-name .roll-slot[data-old]::before { animation-name: fade-out; animation-duration: 80ms; animation-delay: 0ms; }
   /* A figure that changes length rises from 30% of its box with some ink already on: no frame shows an empty cell (YON 23.28). */
   .counter .odo-w[data-old] > span { animation-name: odo-in-w; }
   .counter-state[data-pop] { display: inline-block; animation: pop 160ms var(--ease-out); }

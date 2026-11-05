@@ -14,8 +14,8 @@ const base = (id: string, data: ReceiptData, extra: Partial<ReceiptDetail> = {})
 
 export const PREVIEW_RECEIPTS: ReceiptDetail[] = [
   base("00000000-0000-4000-8000-000000000001", {
-    vendorName: "ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
-    vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
+    vendorName: "ÖRNEK BALIK LOKANTASI", receiptNo: "0412", date: "2026-09-08",
+    vatLines: [{ rate: 10, grossKurus: 648000, vatKurus: 58909 }], totalKurus: 648000, paymentMethod: "card", category: "meal",
   }),
   base("00000000-0000-4000-8000-000000000002", {
     vendorName: "ÖRNEK AKARYAKIT A.Ş.", receiptNo: "1182", date: null,
