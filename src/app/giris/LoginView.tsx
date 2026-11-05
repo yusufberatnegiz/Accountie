@@ -13,7 +13,7 @@ const MESSAGES: Record<string, string> = {
   "sifre-yeni": "Şifreniz değişti. Yeni şifrenizle giriş yapın.",
 };
 
-// A café receipt, not the homepage counter's 0047: each product picture reads its own fiş (YON 23.15).
+// A café receipt, not the homepage counter's 0412: each product picture reads its own fiş (YON 23.15).
 const SAMPLE = KAFE;
 const { lines } = journalFor(SAMPLE, defaultPayment(SAMPLE));
 const total = lines.reduce((s, l) => s + l.debitKurus, 0);

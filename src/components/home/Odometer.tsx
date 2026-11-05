@@ -57,7 +57,8 @@ export function Roll({ value }: { value: string }) {
   if (value !== cur) { setOld(cur); setCur(value); }
   return (
     <>
-      <span className="visually-hidden">{cur}</span>
+      {/* Not selectable, so a copied table carries the visible words once. */}
+      <span className="visually-hidden" style={{ userSelect: "none" }}>{cur}</span>
       <span key={cur} className="roll-slot" data-old={old ?? undefined} aria-hidden="true"><span>{cur}</span></span>
     </>
   );
