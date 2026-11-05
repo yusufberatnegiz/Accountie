@@ -115,3 +115,7 @@
   .auth-strip .thermal-items { display: none; }
   .auth-sheet { margin-top: 0; padding: calc(32px + var(--s4)) var(--s4) var(--s4); gap: var(--s3); }
 }
+
+/* The bar's secondary controls sit over the split field on desktop, where --secondary was 1.03:1 (light) and 1.00:1 (dark) against it (YON 23.31). */
+.auth .site-actions :is(.btn:not(.btn-primary), .theme-cycle) { background: var(--bar-control); border-color: var(--lift-edge); }
+@media (hover: hover) and (pointer: fine) { .auth .site-actions :is(.btn:not(.btn-primary), .theme-cycle):hover { background: var(--secondary-hover); } }

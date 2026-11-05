@@ -259,7 +259,7 @@
 /* The chosen fill is one layer that slides (ShowRow): a copy of the strip in the chosen colours, clipped to the chosen tab. */
 .show-tabs { position: relative; flex: none; min-width: 0; }
 .show-hl { position: absolute; inset: 0; pointer-events: none; transition: clip-path var(--t-ui) var(--ease-out); }
-.show-tabs[data-hl] .show-index:not(.show-hl) .show-pick[aria-selected="true"] { background: none; }
+.show-tabs[data-hl] .show-index:not(.show-hl) .show-pick[aria-selected="true"] { background: none; color: var(--show-ink); } /* under the blue overlay: the field's ink, never dark ink on the tray */
 .show-pick:active { transform: scale(0.98); }
 @media (hover: hover) and (pointer: fine) { .show-pick:hover:not([aria-selected="true"]) { color: var(--ink); background: var(--show-card); } }
 .ui-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: var(--s8); }
@@ -531,7 +531,7 @@
   .show .show-pick { flex: none; scroll-snap-align: start; background: none; padding-inline: var(--s3); font-size: 15px; box-shadow: inset 0 -2px 0 transparent; } /* taste-skill-ignore: tab underline */
   /* The sliding fill cannot follow a scrolled strip: on a phone the chosen tab carries its own fill. */
   .show .show-hl { display: none; }
-  .show .show-tabs[data-hl] .show-index:not(.show-hl) .show-pick[aria-selected="true"] { background: color-mix(in srgb, var(--deep-raised), var(--on-accent-field) 13%); color: var(--show-ink); }
+  .show .show-tabs[data-hl] .show-index:not(.show-hl) .show-pick[aria-selected="true"] { background: var(--chip-on); color: var(--on-chip-on); }
   .ui-review, .ui-split, .show .ui-file, .ui-ext-scene { grid-template-columns: minmax(0, 1fr); gap: var(--s5); }
   .ui-ext-pop { margin: calc(var(--s5) * -1) 0 0 var(--s5); }
   .ui-luca-grid :is(th, td):nth-child(2) { display: none; }
@@ -840,10 +840,10 @@
 .show-text { color: var(--show-soft); }
 .show-index { background: var(--deep-raised); }
 .show-pick { color: var(--show-soft); }
-/* The shown tab is a raised step of the deep field with its full ink, not a white bar. */
-.show-pick[aria-selected="true"], .show .show-hl { background: color-mix(in srgb, var(--deep-raised), var(--on-accent-field) 13%); color: var(--show-ink); }
+/* The shown tab is filled ledger blue (YON 23.31): the page's blue shows on the chosen tab as well as on the Luca figures. */
+.show-pick[aria-selected="true"], .show .show-hl { background: var(--chip-on); color: var(--on-chip-on); }
 /* The copy is filled as one surface and clipped to the chosen tab, so the fill slides whole, never in pieces. */
-.show .show-hl .show-pick { background: none; color: var(--show-ink); }
+.show .show-hl .show-pick { background: none; color: var(--on-chip-on); }
 @media (hover: hover) and (pointer: fine) { .show-pick:hover:not([aria-selected="true"]) { color: var(--show-ink); background: color-mix(in srgb, var(--deep-raised), var(--on-accent-field) 8%); } }
 .show-win { --pl: var(--page-margin); --pr: 24px; }
 /* No plate band: the window stands on the field, inside the grid (YON 23.28). */

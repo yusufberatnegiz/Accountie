@@ -8,9 +8,9 @@ const KEY = "cerez-bildirimi";
 /**
  * Cookie notice for the public pages (docs/design/YON.md 14.3). Accountie sets only the session cookie, so there is nothing
  * to refuse: "Tamam" and "Tercihler" instead of an accept/reject pair. Shown after hydration only when not yet dismissed,
- * so it never shifts the layout; blocked storage shows it again next time, which is harmless. Pages render it first, right after
- * the skip link: it is fixed at the screen's foot, so DOM order only sets the Tab order, and it hides past half a screen of
- * scroll, so a keyboard user reaches it at the top while it is still shown (YON 23.14).
+ * so it never shifts the layout; blocked storage shows it again next time, which is harmless. Pages render it after <main>: it is fixed at the screen's foot,
+ * so DOM order only sets reading and Tab order; the skip link and the h1 come first. Past half a screen it steps aside but stays
+ * focusable, and focus inside brings it back (site.css), so Tab still reaches it (YON 23.31). The dialog's title is not a heading.
  */
 export function CookieNote() {
   const [shown, setShown] = useState(false);
@@ -48,7 +48,7 @@ export function CookieNote() {
         <button type="button" className="btn" onClick={() => dialog.current?.showModal()}>Tercihler</button>
       </div>
       <dialog className="cookie-dialog floating" ref={dialog} aria-labelledby="cookie-dialog-title">
-        <h2 id="cookie-dialog-title">Çerez tercihleri</h2>
+        <p className="cookie-dialog-title" id="cookie-dialog-title">Çerez tercihleri</p>
         <label className="cookie-row">
           <input type="checkbox" defaultChecked disabled aria-describedby="cookie-session-hint" />
           <span>Zorunlu: oturum</span>
