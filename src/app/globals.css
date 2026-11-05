@@ -317,9 +317,10 @@ th, td { padding: var(--s3); border-bottom: 1px solid var(--rule); text-align: l
 th { font-size: var(--fs-small); font-weight: var(--w-medium); color: var(--muted); white-space: nowrap; border-bottom-color: var(--border); }
 th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:last-child td { border-bottom: 0; }
-/* Status marks: Taslak neutral, Onaylandı ledger blue, Aktarıldı green. Pale tint, dark ink. */
+/* Status marks: Taslak neutral, Onaylandı neutral with an ink dot (blue is kept for figures going to Luca, YON 23.10), Aktarıldı green. */
 .status { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--s2); border-radius: var(--radius-chip); font-size: var(--fs-small); font-weight: var(--w-medium); white-space: nowrap; flex: none; background: var(--active); color: var(--ink); }
-.status-approved { background: var(--accent-soft); color: var(--accent); }
+.status-approved { gap: 6px; }
+.status-approved::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
 .status-exported { background: var(--positive-soft); color: var(--positive); }
 
 /* ---------- Messages ---------- */
@@ -369,7 +370,7 @@ tbody tr:last-child td { border-bottom: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .status-message { animation: status-rise 500ms var(--ease-out) both; }
   /* The blue Luca line draws across the strip once: the product's one idea, even on a failed page. */
-  .status-mark .mark-luca { animation: status-draw 900ms 200ms var(--ease-expo) both; }
+  .status-mark .mark-luca { animation: status-draw 240ms 120ms var(--ease-out) both; }
 }
 @keyframes status-rise { from { transform: translateY(12px); } to { transform: none; } }
 /* Clip, not stroke-dashoffset: compositor-only (YON 23.3). The SVG path's reference box is its stroke box. */
@@ -388,7 +389,9 @@ main:focus, main:focus-visible { outline: none; }
    below, two slots, the box clips them. Shared by the homepage and the panel; --odo-t sets the pace. */
 .odo { display: inline-block; white-space: nowrap; }
 .odo.code { display: block; }
-.odo-digits { display: inline-flex; user-select: none; }
+.odo-digits { display: inline-flex; }
+/* The visible digits are what a selection copies; the screen-reader copy stays out of it, so the figure never pastes twice. */
+.odo > .visually-hidden { user-select: none; }
 .odo-d, .roll-slot { position: relative; display: inline-block; }
 /* Only a rolling slot clips (and so takes a layer); unchanged digits stay plain text. */
 :is(.odo-d, .roll-slot)[data-old] { clip-path: inset(0 -0.1em); }
@@ -397,8 +400,8 @@ main:focus, main:focus-visible { outline: none; }
 @keyframes odo-in { from { transform: translateY(100%); opacity: 0; } }
 @keyframes odo-out { to { transform: translateY(-100%); opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
-  :is(.odo-d, .roll-slot)[data-old] > span { animation: odo-in var(--odo-t, var(--t-digit)) var(--ease-out) backwards; animation-delay: calc(var(--k, 0) * 24ms); }
-  :is(.odo-d, .roll-slot)[data-old]::before { animation: odo-out var(--odo-t, var(--t-digit)) var(--ease-out) forwards; animation-delay: calc(var(--k, 0) * 24ms); }
+  :is(.odo-d, .roll-slot)[data-old] > span { animation: odo-in var(--odo-t, var(--t-digit)) var(--ease-out) backwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms)); }
+  :is(.odo-d, .roll-slot)[data-old]::before { animation: odo-out var(--odo-t, var(--t-digit)) var(--ease-out) forwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms)); }
 }
 @media (prefers-reduced-motion: reduce) { :is(.odo-d, .roll-slot)[data-old]::before { content: none; } }
 /* A theme change is a jump, never a fade (YON 6.2): theme.ts sets this class for one frame around the switch. */

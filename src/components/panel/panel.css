@@ -145,7 +145,8 @@ details.side-block:not([open]) { gap: 0; }
 .meter-head .meter-value { color: var(--ink); font-weight: var(--w-strong); }
 /* The empty track must be seen on its own (an empty file is a state): a step toward the control edge, in both themes. */
 .meter-track { display: block; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--control-edge) 28%, var(--surface)); overflow: hidden; }
-.meter-fill { display: block; height: 100%; background: var(--accent); transform-origin: left center; }
+/* Ink, not blue: blue is kept for the figures that go to Luca (YON 23.10). */
+.meter-fill { display: block; height: 100%; background: var(--ink); transform-origin: left center; }
 .guide { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); font-size: var(--fs-body); }
 .phone-only-inline { display: none; }
 @media (max-width: 720px) { .phone-only-inline { display: inline; } }
@@ -468,11 +469,13 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .by-account li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s1) var(--s3); font-size: var(--fs-body); }
 .by-account .acc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .by-account .acc-track { grid-column: 1 / -1; display: block; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--control-edge) 28%, var(--surface)); overflow: hidden; }
-.by-account .acc-bar { display: block; height: 100%; background: var(--accent); transform-origin: left center; }
+.by-account .acc-bar { display: block; height: 100%; background: var(--faint); transform-origin: left center; }
+.by-account li:first-child .acc-bar { background: var(--ink); }
 .by-account-foot { display: flex; justify-content: space-between; gap: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--rule); font-size: var(--fs-body); }
 
 /* Locked (approved) lines read as plain text on the column edges, and what goes to Luca stays ledger blue. */
-.journal .field:disabled, .form-grid .field:disabled { padding-left: 0; padding-right: 0; }
+/* The edge goes in the same frame as the padding (no 180ms fade), so no frame shows text against a still-drawn border. */
+.journal .field:disabled, .form-grid .field:disabled { padding-left: 0; padding-right: 0; transition: none; }
 .journal .field.to-luca:disabled { color: var(--accent); }
 
 /* ---------- Motion (docs/design/YON.md 15): feedback 120-200ms, stamp and view transitions at most 320ms ---------- */
@@ -500,8 +503,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .reading { animation: stage-in 180ms var(--ease-out) both; }
   @keyframes stage-in { from { opacity: 0; transform: translateY(6px); } }
 }
-/* Panel figures and labels roll at the panel's pace (YON 23.4): 240ms digits, 220ms status, 200ms stages. */
-.app { --odo-t: 240ms; }
+/* Panel figures and labels roll at the panel's pace (YON 23.4): digits 192ms plus 8ms a digit (six digits end at 240ms), 220ms status, 200ms stages. */
+.app { --odo-t: 192ms; --odo-stagger: 8ms; }
 .title-line > .status { --odo-t: 220ms; }
 .stages { --odo-t: 200ms; }
 /* Fiş izi link: one ledger-blue curve across the gutter, from the journal line to the receipt figure. */
@@ -534,12 +537,13 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 ::view-transition-group(.title-morph) { animation-duration: 240ms; }
 ::view-transition-old(.title-morph) { display: none; }
 ::view-transition-new(.title-morph) { animation: none; object-fit: none; object-position: left top; }
-/* Row into review (Link transitionTypes "fis-ac"). React leaves the root uncaptured, so the new screen is the live page under the
-   fading old one; everything but the travelling title comes in 60ms later, overlapping the old screen's fade so no frame is
-   blank, and the title travels on its own layer above it. */
+/* Row into review (Link transitionTypes "fis-ac"). React cancels the root cross-fade here, so the old list is gone on the first
+   frame and only the live new screen shows: a delay would leave a blank screen. The body rises in at once (160ms); the fixed
+   bottom bar and the rail are chrome and never fade (YON 23.10). */
 @media (prefers-reduced-motion: no-preference) {
-  :root:active-view-transition-type(fis-ac) .app[data-screen="fis"] :is(.crumb, .title-line > .status, .finding, .review) { animation: vt-fade-in 140ms 60ms var(--ease-out) both; }
+  :root:active-view-transition-type(fis-ac) .app[data-screen="fis"] :is(.crumb, .title-line > .status, .finding, .review > :not(.action-bar, .trace-link)) { animation: vt-enter 160ms var(--ease-out) both; }
 }
+@keyframes vt-enter { from { opacity: 0; transform: translateY(6px); } }
 ::view-transition-group(.tab-slide) { animation-duration: 200ms; }
 ::view-transition-new(.row-rise) { animation: vt-rise 240ms var(--ease-out) both; }
 ::view-transition-old(.row-out) { animation: vt-out-up 200ms var(--ease-exit) both; }
