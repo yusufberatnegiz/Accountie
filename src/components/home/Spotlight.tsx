@@ -10,7 +10,7 @@ type Box = { x: number; y: number; w: number; h: number; links: Link[] };
 
 /**
  * Spotlight link (YON.md 23.3.5): pointing at, focusing or tapping a Luca line marks the read fields it came from, draws a
- * line from the end of each source's value across the read panel to the row, and steps the rest of the piece back. Rows are
+ * line from the end of each source's value across the read panel's empty half to one point on the row, and steps the rest of the piece back. Rows are
  * focus stops and read their sources through aria-describedby. Layout is read only when a row is chosen; a resize clears it.
  */
 export function Spotlight({ read, lines, meta }: { read: SpotRead[]; lines: SpotLine[]; meta: string }) {
@@ -30,7 +30,7 @@ export function Spotlight({ read, lines, meta }: { read: SpotRead[]; lines: Spot
     if (!root) return;
     const o = root.getBoundingClientRect();
     const r = row.getBoundingClientRect();
-    const x2 = r.left - o.left + 4, y2 = r.top + r.height / 2 - o.top;
+    const x2 = r.left - o.left - 2, y2 = r.top + r.height / 2 - o.top;
     const ends: [number, number][] = [];
     for (const id of lines[i].from) {
       const dd = root.querySelector<HTMLElement>(`[data-spot="${id}"] dd`);
@@ -42,9 +42,8 @@ export function Spotlight({ read, lines, meta }: { read: SpotRead[]; lines: Spot
       ends.push([t.right - o.left + 8, t.top + t.height / 2 - o.top]);
     }
     if (!ends.length) return;
-    // Sources top to bottom land top to bottom on the row, 8px apart, so no two lines cross or meet in one point.
-    ends.sort((p, q) => p[1] - q[1]);
-    const lands = ends.map((_, k) => y2 + (k - (ends.length - 1) / 2) * 8);
+    // Every source runs to one point on the row's edge (YON 23.15): two paths that join there, a 4px dot at each end.
+    const lands = ends.map(() => y2);
     const xs = [...ends.map((e) => e[0]), x2], ys = [...ends.map((e) => e[1]), ...lands];
     const x = Math.min(...xs) - 4, y = Math.min(...ys) - 4;
     const w = Math.max(...xs) - x + 4, h = Math.max(...ys) - y + 4;
@@ -93,7 +92,7 @@ export function Spotlight({ read, lines, meta }: { read: SpotRead[]; lines: Spot
           style={{ left: path.x, top: path.y }} viewBox={`0 0 ${path.w} ${path.h}`}>
           {path.links.map((l) => <path key={l.d} d={l.d} />)}
           {path.links.map((l) => <circle key={`a${l.d}`} cx={l.a[0]} cy={l.a[1]} r="2" />)}
-          {path.links.map((l) => <circle key={`b${l.d}`} cx={l.b[0]} cy={l.b[1]} r="2" />)}
+          <circle cx={path.links[0].b[0]} cy={path.links[0].b[1]} r="2" />
         </svg>
       ) : null}
     </div>

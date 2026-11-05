@@ -25,7 +25,7 @@ export const SAMPLES: readonly Sample[] = [
   {
     id: "kirtasiye", label: "Kırtasiye",
     receipt: {
-      vendorName: "KIRTASİYE DÜNYASI", receiptNo: "0912", date: "2026-09-02",
+      vendorName: "ÖRNEK KIRTASİYE", receiptNo: "0912", date: "2026-09-02",
       vatLines: [{ rate: 20, grossKurus: 48000, vatKurus: 8000 }], totalKurus: 48000, paymentMethod: "cash", category: "stationery",
     },
     items: [
@@ -36,7 +36,7 @@ export const SAMPLES: readonly Sample[] = [
   {
     id: "market", label: "Market",
     receipt: {
-      vendorName: "GÜNEŞ MARKET", receiptNo: "2214", date: "2026-09-04",
+      vendorName: "ÖRNEK MARKET", receiptNo: "2214", date: "2026-09-04",
       vatLines: [{ rate: 1, grossKurus: 41250, vatKurus: 408 }, { rate: 20, grossKurus: 18600, vatKurus: 3100 }],
       totalKurus: 59850, paymentMethod: "card", category: "food_grocery",
     },
@@ -48,6 +48,31 @@ export const SAMPLES: readonly Sample[] = [
     ],
   },
 ];
+
+/**
+ * Receipts the page shows outside the counter, so each slot reads its own fiş (YON 23.15): a fuel receipt for the signature scene,
+ * a café receipt for "Bir fişin yolu" and the auth screens. Same rules as SAMPLES: invented ÖRNEK vendors, items add up to the gross.
+ */
+export const AKARYAKIT: Sample = {
+  id: "akaryakit", label: "Akaryakıt",
+  receipt: {
+    vendorName: "ÖRNEK AKARYAKIT", receiptNo: "1185", date: "2026-09-03",
+    vatLines: [{ rate: 20, grossKurus: 215000, vatKurus: 35833 }], totalKurus: 215000, paymentMethod: "card", category: "fuel",
+  },
+  items: [{ name: "MOTORİN 41,35 LT", rate: 20, kurus: 215000 }],
+};
+export const KAFE: Sample = {
+  id: "kafe", label: "Kafe",
+  receipt: {
+    vendorName: "ÖRNEK KAFE", receiptNo: "0331", date: "2026-09-01",
+    vatLines: [{ rate: 10, grossKurus: 26500, vatKurus: 2409 }], totalKurus: 26500, paymentMethod: "card", category: "meal",
+  },
+  items: [
+    { name: "FİLTRE KAHVE 2 AD", rate: 10, kurus: 13000 },
+    { name: "SU BÖREĞİ", rate: 10, kurus: 9500 },
+    { name: "SU 2 AD", rate: 10, kurus: 4000 },
+  ],
+};
 
 /**
  * How the receipt was paid, as a muhasebeci asks it: a card is the partner's (331.01, the default rule) or the company's (309.01).
