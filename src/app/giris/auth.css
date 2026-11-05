@@ -16,10 +16,9 @@
 .auth-fields { display: grid; gap: var(--s4); }
 .auth-field { display: grid; gap: var(--s2); }
 .auth-field > label { font-size: var(--fs-body); font-weight: var(--w-medium); }
-/* The reset link follows the password field in the DOM (tab order) and is drawn at the end of its label row. */
-.auth-field:has(.auth-aside) { position: relative; }
-.auth-aside { position: absolute; top: 0; right: 0; line-height: 1.5; }
-.auth-aside a { font-size: var(--fs-body); font-weight: var(--w-medium); color: var(--accent); display: inline-flex; align-items: center; min-height: var(--touch); margin-block: calc((var(--touch) - 1.5em) / -2); }
+/* The reset link follows the password field in the DOM and is drawn under it, at its end: tab order and the eye agree (YON 23.29). */
+.auth-aside { justify-self: end; line-height: 1.5; }
+.auth-aside a { font-size: var(--fs-body); font-weight: var(--w-medium); color: var(--accent); display: inline-flex; align-items: center; min-height: var(--touch); margin-block: 0 calc((var(--touch) - 1.5em) / -2); }
 .auth-password { position: relative; }
 .auth-password .field { padding-right: var(--s8); }
 .auth-reveal {

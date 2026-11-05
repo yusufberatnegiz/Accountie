@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { addTransitionType, startTransition, useEffect, useState } from "react";
+import { addTransitionType, startTransition, useEffect, useState, ViewTransition } from "react";
 import { setPhoto } from "@/lib/photo-store";
 import { Roll } from "./home/Odometer";
 
@@ -11,6 +11,8 @@ const TIMEOUT_MS = 60_000;
 const SLOW_MS = 10_000;
 // The real stages of one photo: shrunk on this device, read on the server, lines back.
 const STAGES = ["Fotoğraf hazırlanıyor", "", "Satırlar hazır"];
+// The same stages as a list on the phone's reading screen: each comes in when the work reaches it and is ticked when done.
+const STEPS: [doing: string, done: string][] = [["Fotoğraf hazırlanıyor", "Fotoğraf hazır"], ["", "Fiş okundu"], ["", "Satırlar hazır"]];
 
 /** Shrinks to ~3200px JPEG and applies EXIF orientation. Falls back to the original file if the browser cannot decode it. */
 async function shrink(file: File): Promise<Blob> {
@@ -88,7 +90,8 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       added += ids.length;
     }
     // One photo goes straight to its review; the reading card stays until that screen replaces it.
-    if (lastId && list.length === 1 && added === 1) return router.push(`${base}/fis/${lastId}`);
+    // The type carries the photo into the review screen's thumbnail (a shared view transition, ReviewEditor).
+    if (lastId && list.length === 1 && added === 1) return startTransition(() => { addTransitionType("fis-okundu"); router.push(`${base}/fis/${lastId}`); });
     setBusy(false);
     setStatus("");
     if (added > 1 && !failed) setNotice(`${added} fiş eklendi.`);
@@ -121,16 +124,34 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       <div role="status" className={busy ? "reading" : notice ? "" : "visually-hidden"}>
         {busy ? (
           <>
-            {/* The photo itself, settling in once when it arrives; the stage beside it rolls on as the real work moves (YON 23.4.3). */}
+            {/* The photo itself, settling in once when it arrives; the stage beside it rolls on as the real work moves (YON 23.4.3).
+                On the phone the photo fills the screen and the stages stack under it (YON 23.29). */}
             <span className="feed" aria-hidden="true">
-              {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
-              {thumb ? <img key={thumb} src={thumb} alt="" /> : null}
+              {thumb ? (
+                <ViewTransition name="fis-foto" share="photo-morph" default="none">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
+                  <img key={thumb} src={thumb} alt="" />
+                </ViewTransition>
+              ) : null}
             </span>
             <div className="reading-text">
               <p className="stages">
                 <Roll value={STAGES[stage] || status} />
                 {stage < 2 ? <span className="wait-dots" aria-hidden="true"><i /><i /><i /></span> : null}
               </p>
+              {/* The status line above is what screen readers hear; this list is its picture. */}
+              <ol className="steps" aria-hidden="true">
+                {STEPS.slice(0, stage + 1).map(([doing, done], i) => {
+                  const finished = i < stage || i === 2;
+                  return (
+                    <li key={i} data-done={finished ? "" : undefined}>
+                      <svg className="step-check" viewBox="0 0 16 16" focusable="false"><path d="M3 8.5l3.25 3.25L13 5" /></svg>
+                      <span>{finished ? done : doing || status}</span>
+                      {finished ? null : <span className="wait-dots"><i /><i /><i /></span>}
+                    </li>
+                  );
+                })}
+              </ol>
               <p className="small">Sayfadan ayrılmayın.{slow ? " Hâlâ okunuyor, fiş uzunsa biraz sürebilir." : ""}</p>
             </div>
           </>
