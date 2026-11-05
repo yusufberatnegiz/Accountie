@@ -113,7 +113,7 @@
 .counter-sum { display: inline-block; }
 .counter-formula { font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; }
 /* A note, not an alarm: neutral surface and ink text, the warning carried by a 3px bar on its left edge (YON 23.12). */
-.counter-warn { font-size: var(--fs-small); background: var(--raised); color: var(--ink); padding: var(--s2) var(--s3); border-radius: var(--radius-control); box-shadow: inset 3px 0 0 var(--warn-ink); } /* taste-skill-ignore: data-ui note bar */
+.counter-warn { font-size: var(--fs-small); background: var(--raised); color: var(--ink); padding: calc(var(--s2) - 1px) calc(var(--s3) - 1px); border-radius: var(--radius-control); border: 1px solid var(--warn-edge); } /* taste-skill-ignore: data-ui note edge */
 .counter-copy { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); }
 .counter-status { font-size: var(--fs-small); color: var(--muted); min-height: 1.5em; }
 .segmented:disabled label { cursor: default; }
@@ -295,7 +295,7 @@
 .ui-steps { margin: 0; padding-left: 1.25em; display: grid; gap: var(--s1); font-size: var(--fs-ui, 13px); }
 .ui-menu li .ui-meta { margin-left: auto; }
 .ui-ext-head { display: flex; align-items: center; gap: var(--s2); font-weight: var(--w-strong); }
-.ui-warn { font-size: var(--fs-ui, 13px); background: var(--raised); color: var(--ink); box-shadow: inset 3px 0 0 var(--warn-ink); padding: var(--s2) var(--s3); border-radius: var(--radius-control); } /* taste-skill-ignore: data-ui note bar */
+.ui-warn { font-size: var(--fs-ui, 13px); background: var(--raised); color: var(--ink); border: 1px solid var(--warn-edge); padding: calc(var(--s2) - 1px) calc(var(--s3) - 1px); border-radius: var(--radius-control); } /* taste-skill-ignore: data-ui note edge */
 
 /* ---------- features: panel with margin notes (the panel's fields are static text drawn like fields) ---------- */
 .feat { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: 0; margin-top: var(--section-gap); }
@@ -928,8 +928,8 @@
 /* The figure grows a little as it leaves the paper and settles to the cell's size: a lift, not a jump in size (1.15, YON 23.15). */
 @keyframes fly-s { from { transform: scale(var(--sc, 1)); } 30% { transform: scale(1.15); } to { transform: none; } }
 /* Chip and source swap in the same 2%: never both printed, never neither. */
-/* The chip leaves the screen (and hit-testing) before its figure shows: no frame has the chip over the landed figure. */
-@keyframes fly-fade { 0% { opacity: 0; } 2%, 94% { opacity: 1; } 95%, 100% { opacity: 0; visibility: hidden; } }
+/* The chip is gone before its figure shows: no frame has the chip over the landed figure (it never takes hits: pointer-events none). */
+@keyframes fly-fade { 0% { opacity: 0; } 2%, 94% { opacity: 1; } 95%, 100% { opacity: 0; } }
 /* The source figure stays printed at a low tone while its copy is in the air (the receipt keeps its line), full again once landed. */
 @keyframes fly-src { 0% { opacity: 1; } 2%, 90% { opacity: 0.3; } 100% { opacity: 1; } }
 @keyframes fly-land { 0%, 95% { opacity: 0; transform: none; } 98% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: none; } }

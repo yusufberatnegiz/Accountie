@@ -5,9 +5,9 @@ import { HEAD_SCRIPT, SW_REGISTER } from "@/lib/csp";
 import "./globals.css";
 
 // Two families (docs/design/YON.md 6.3): Text for everything, Headline only for the homepage's large headings.
-// next/font has no metrics for Stack Sans, so the metric-matched Arial fallbacks are declared in globals.css. Text is the variable file (200-700); both themes use the same weights, so a theme change never relayouts text (YON 23.23). display "optional": a font that misses the first ~100 ms stays the fallback for that page view, so no swap relayout (YON 23.23).
-const text = Stack_Sans_Text({ variable: "--font-stack-text", subsets: ["latin", "latin-ext"], weight: "variable", display: "optional", adjustFontFallback: false, fallback: ["Stack Sans Text Fallback"] });
-const head = Stack_Sans_Headline({ variable: "--font-stack-head", subsets: ["latin", "latin-ext"], weight: ["300"], display: "optional", adjustFontFallback: false, fallback: ["Stack Sans Headline Fallback"] });
+// next/font has no metrics for Stack Sans, so the metric-matched Arial fallbacks are declared in globals.css. Text is the variable file (200-700); both themes use the same weights, so a theme change never relayouts text (YON 23.23). display "swap": the web font always arrives on the first visit ("optional" left most cold visits in Arial); the fallbacks are set to the fonts' width and line box, so the swap keeps line breaks and CLS stays near 0 (YON 23.27).
+const text = Stack_Sans_Text({ variable: "--font-stack-text", subsets: ["latin", "latin-ext"], weight: "variable", display: "swap", adjustFontFallback: false, fallback: ["Stack Sans Text Fallback"] });
+const head = Stack_Sans_Headline({ variable: "--font-stack-head", subsets: ["latin", "latin-ext"], weight: ["300"], display: "swap", adjustFontFallback: false, fallback: ["Stack Sans Headline Fallback"] });
 
 export const metadata: Metadata = {
   title: { default: "Accountie", template: "%s · Accountie" },
