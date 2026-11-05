@@ -284,6 +284,7 @@ export default function LandingPage() {
   return (
     <>
       <HomeMotion />
+      <CookieNote />
       <SiteBar />
       <main id="icerik" tabIndex={-1} className="home">
         {/* Hero: two tones, the counter is the picture */}
@@ -529,7 +530,6 @@ export default function LandingPage() {
         </div>
         <p className="foot-name" translate="no" aria-hidden="true">Accountie</p>
       </footer>
-      <CookieNote />
     </>
   );
 }
