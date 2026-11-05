@@ -101,7 +101,7 @@ export function ThemeCycle() {
   const look = useSyncExternalStore(subscribeLook, readLook, () => null);
   const label = look === null ? "Temayı değiştir" : look === "dark" ? "Tema: Koyu. Açık temaya geç" : "Tema: Açık. Koyu temaya geç";
   return (
-    <button type="button" className="theme-cycle" onClick={() => applyTheme(nextChoice(readLook(), matchMedia(DARK_QUERY).matches))} aria-label={label} title={label}>
+    <button type="button" className="theme-cycle" onClick={() => applyTheme(nextChoice(readLook(), matchMedia(DARK_QUERY).matches))} aria-label={label}>
       {OPTIONS.filter((x) => x.value !== "system").map((x) => (
         <svg key={x.value} className={`theme-cycle-${x.value}`} viewBox="0 0 16 16" aria-hidden="true" focusable="false">{x.icon}</svg>
       ))}

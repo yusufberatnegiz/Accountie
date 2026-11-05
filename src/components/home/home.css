@@ -131,7 +131,7 @@
 /* One family in four steps (YON 23.12): paper, light ledger blue, ledger blue, the deep field. */
 .path-field-1 { background: var(--path-1); }
 .path-field-2 { background: var(--path-2); }
-.path-field-3 { --focus: var(--on-accent-field); background: var(--path-3); color: var(--on-accent-field); }
+.path-field-3 { background: var(--path-3); }
 .path-field-4 { --focus: var(--on-accent-field); background: var(--path-4); color: var(--on-accent-field); }
 /* The sentence sits on one line across the four fields, each card right under its own sentence. */
 .path-clause { grid-row: 1; align-self: end; margin: 0; font-size: var(--step-lead); font-weight: var(--w-medium); letter-spacing: -0.01em; line-height: 1.2; max-width: 14ch; }
@@ -691,6 +691,8 @@
 
 /* ---------- Showcase: each piece in a window on the deep field, a plate under it ---------- */
 .show { --show-field: var(--show-ground); --show-ink: var(--on-accent-field); --show-soft: color-mix(in srgb, var(--on-accent-field) 74%, var(--deep)); }
+/* The ring on the deep field is its light ink; inside the product window it is the window's own accent again (AA 3:1 on both). */
+.show { --focus: var(--on-accent-field); } .show .win { --focus: var(--accent); }
 .show-text { color: var(--show-soft); }
 .show-index { background: var(--deep-raised); }
 .show-pick { color: var(--show-soft); }
@@ -886,11 +888,9 @@
   .rule[data-mode] [data-amt]::before { animation-fill-mode: both; }
   .rule[data-mode] .rule-win { contain: layout style; }
 
-  /* Clock: once, when the lines card is on screen (HomeMotion adds .is-playing); until then it waits at its start. */
+  /* Clock: once, when the lines card is on screen (HomeMotion calls play() on these); until then it waits at its start. */
   .rule[data-mode="timed"] :is(.fly-copy, .fly-y, .fly-s, .fly-val, .fly-dash, [data-amt] > span:last-child, .rule-code, .rule-close, .rule-btn > .btn, .rule-close .ui-reason, .rule-receipt),
   .rule[data-mode="timed"] [data-amt]::before { animation-duration: var(--tl); animation-delay: var(--t0); animation-play-state: paused; }
-  .rule[data-mode="timed"].is-playing :is(.fly-copy, .fly-y, .fly-s, .fly-val, .fly-dash, [data-amt] > span:last-child, .rule-code, .rule-close, .rule-btn > .btn, .rule-close .ui-reason, .rule-receipt),
-  .rule[data-mode="timed"].is-playing [data-amt]::before { animation-play-state: running; }
 }
 /* Scroll: from 1100px, the window holds still in a 170vh track and the scroll plays the scene forward and back. */
 @supports (animation-timeline: view()) {
@@ -905,7 +905,12 @@
 @media print { .rule *, .rule [data-amt]::before { animation: none !important; } }
 /* Sections below the first screens are laid out only when near: the first layout is the hero's alone. */
 /* Not the routes: its sticky Excel card's shadow runs past the section box, and paint containment would cut it (YON 23.15). */
-.path, .show, .feat, .faq, .cta { content-visibility: auto; contain-intrinsic-size: auto 900px; }
+/* Placeholder heights near each section's real one per layout (measured 2026-11-05), so opening one does not move the page. */
+.path, .show, .feat, .faq, .cta { content-visibility: auto; }
+.path { contain-intrinsic-size: auto 2580px; } .show { contain-intrinsic-size: auto 850px; } .feat { contain-intrinsic-size: auto 1050px; }
+.faq { contain-intrinsic-size: auto 660px; } .cta { contain-intrinsic-size: auto 1000px; }
+@media (max-width: 1099px) { .path { contain-intrinsic-size: auto 1380px; } .show { contain-intrinsic-size: auto 950px; } .feat { contain-intrinsic-size: auto 1290px; } .cta { contain-intrinsic-size: auto 1120px; } }
+@media (max-width: 640px) { .path { contain-intrinsic-size: auto 2020px; } .show { contain-intrinsic-size: auto 1150px; } .feat { contain-intrinsic-size: auto 1530px; } .faq { contain-intrinsic-size: auto 630px; } .cta { contain-intrinsic-size: auto 1190px; } }
 @media (prefers-reduced-motion: reduce) {
   .path-card { transition: none; transform: none !important; }
 }
