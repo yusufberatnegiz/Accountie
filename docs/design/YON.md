@@ -1030,3 +1030,13 @@ Jüri tur 1 (animasyon 5, görsel 6, premium 7, mobil 6): büyük anlar görünm
 - **Giriş ve kayıt:** `auth-print`, satır ve denge girişleri kaldırıldı. Yalnız form 12px yükselir (500ms) ve kart plakasına oturur (300ms, 200ms gecikme); her şey 600ms'de durur.
 - **Performans:** katlama altındaki bölümler `content-visibility: auto`; odometrede `clip-path` yalnız dönen basamakta; çerez notu yalnız değer değişince render eder; marka bağlantısı `prefetch={false}`; arka planda açılan sekme `js` bayrağını ilk görünüşte alır. Ölçülen (prod, 4x CPU): tezgâh tıklaması 168/96/72ms; 7000px tekerlek kaydırmada uzun görev yok, en uzun kare 49ms (1440) ve 35ms (390).
 - inspect WARN savunmaları: fotoğraf ve video yok (23.2); 1440'ta sağ metin kenarı 73px (sağa yaslı olmayan metin bloklarının bitişi, çerçeve iki yanda 40px).
+
+### 23.10 Tur 2 panel hareketi ve mavi sınırı (2026-11-05; 23.4 ve 23.7'deki ilgili satırların üstündedir)
+
+- **Liste → fiş geçişi:** React bu geçişte kök çapraz solmasını iptal eder; eski liste ilk karede gider. Bu yüzden yeni ekranın gövdesi gecikmesiz gelir (160ms, opacity ve 6px yükselme). Uçan başlık kendi katmanında kalır. Sabit alt bar (`.action-bar`) ve rail krom sayılır, hiç solmaz. Hiçbir karede ekran boş kalmaz.
+- **Odometre panelde:** basamak süresi 192ms, basamak başına 8ms gecikme; altı basamak 240ms'de biter (tavan 23.4). Ana sayfa 24ms aralıkla kalır (`--odo-stagger`).
+- **Odometre seçimi:** görünen basamaklar seçilir ve kopyalanır; ekran okuyucu metni seçime girmez, tutar iki kez yapışmaz.
+- **Kilitlenme:** onaylanan alanların kenarı ve iç boşluğu aynı karede gider (geçiş yok); metnin kenarlığa yapıştığı ara kare olmaz.
+- **Satır silme:** görünmeyen sekmede çıkış animasyonu beklenmez, satır hemen silinir; sekme animasyon ortasında gizlenirse 200ms zamanlayıcı silmeyi tamamlar.
+- **Durum işareti** (hata ve çevrimdışı sayfaları): mavi çizgi clip-path ile 240ms'de çizilir.
+- **Mavi yalnız Luca'ya giden rakamda:** `Onaylandı` pill'i nötr zeminde mürekkep noktayla gösterilir (her yerde: panel, ana sayfa, giriş kartı). "Gider hesaplarına göre" çubukları gri, en büyük hesap mürekkep; Luca dosyası çubuğu mürekkep. Tutarlar mavi kalır.

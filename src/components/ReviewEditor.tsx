@@ -120,13 +120,18 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   }, [lines]);
   const removeLine = (key: number) => {
     const rows = [...(tbody.current?.rows ?? [])];
+    let gone = false;
     const done = () => {
+      if (gone) return;
+      gone = true;
       flip.current = new Map(rows.map((r) => [r.dataset.key ?? "", r.getBoundingClientRect().top]));
       setLines((ls) => ls.filter((x) => x.key !== key));
     };
     const row = rows.find((r) => r.dataset.key === String(key));
-    if (!row || still()) return done();
+    // A hidden tab's animation clock stops, so the delete never waits on it there; the timer is the fallback if the tab hides mid-exit.
+    if (!row || still() || document.visibilityState !== "visible") return done();
     row.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(-4px)" }], { duration: 140, easing: "cubic-bezier(0.55, 0.055, 0.675, 0.19)", fill: "forwards" }).finished.then(done, done);
+    setTimeout(done, 200);
   };
   // Fiş izi link: one curve from the journal line to the receipt figure it came from, only while the two columns sit side by side.
   const reviewRef = useRef<HTMLDivElement>(null);
