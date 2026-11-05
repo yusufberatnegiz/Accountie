@@ -24,37 +24,37 @@
   /* Control heights */
   --control-sm: 32px; --control: 40px; --touch: 44px; --row: 44px;
 
-  /* Colour roles */
-  --ground: #f4f6f8;
+  /* Colour roles. Light neutrals are warm stone (chroma near 0), so ledger blue is the only coloured thing (YON 23.7). */
+  --ground: #f5f5f3;
   --surface: #ffffff;
-  --raised: #f7f8fa;
-  --stage: #e4e9f0;
-  --active: #e8ebf0;
-  --border: #e3e7ec;
-  --rule: #eef1f4;
-  --control-edge: #7d8896; /* 3.6:1 on white, WCAG 1.4.11 */
-  --ink: #0f141b;
-  --muted: #4b5563;
-  --faint: #5b6573;
-  --thermal-ink: #4f5a67;
+  --raised: #f8f8f6;
+  --stage: #e8e7e3;
+  --active: #ebeae6;
+  --border: #e4e3df;
+  --rule: #efeeeb;
+  --control-edge: #84837d; /* 3.8:1 on white, WCAG 1.4.11 */
+  --ink: #121211;
+  --muted: #4e4d48;
+  --faint: #5e5d57;
+  --thermal-ink: #514f4a;
   --accent: #2b5a9a;
   --accent-strong: #234b82;
   --on-accent: #ffffff;
   --accent-soft: #e4ecf6;
   --accent-field: #2b5a9a;
   --on-accent-field: #ffffff;
-  --primary: #161c24;
-  --primary-hover: #2a323d;
+  --primary: #171716;
+  --primary-hover: #2c2b29;
   --on-primary: #ffffff;
-  --secondary: #e5e8ec;
-  --secondary-hover: #d8dde3;
+  --secondary: #e8e7e3;
+  --secondary-hover: #dcdbd6;
   /* A chosen chip (hero pickers, showcase tabs), and a secondary button on a lifted card (--lift). */
   --chip-on: var(--primary); --on-chip-on: var(--on-primary);
   --lift-control: var(--secondary); --lift-control-hover: var(--secondary-hover);
-  --deep: #111821;
-  --deep-raised: #1f2833;
-  --ink-on-deep: #eef1f4;
-  --muted-on-deep: #a9b2bd;
+  --deep: #131312;
+  --deep-raised: #20201e;
+  --ink-on-deep: #f0efec;
+  --muted-on-deep: #aeada7;
   --positive: #1f6b45;
   --positive-soft: #e3f3ea;
   --negative: #b3261e;
@@ -62,27 +62,27 @@
   --warn-ink: #8a4b00;
   --warn-bg: #fdf3df;
   --focus: var(--accent);
-  --scrim: rgb(14 17 20 / 0.5);
-  --shadow-float: 0 8px 24px rgb(20 26 34 / 0.12), 0 1px 3px rgb(20 26 34 / 0.08);  /* taste-skill-ignore: only for floating menus, dialogs, skip link */
+  --scrim: rgb(18 18 17 / 0.5);
+  --shadow-float: 0 8px 24px rgb(18 18 17 / 0.12), 0 1px 3px rgb(18 18 17 / 0.08);  /* taste-skill-ignore: only for floating menus, dialogs, skip link */
   /* Depth (YON 23.1): ground > plate > surface > raised, one tone step each. --plate is the slab a product window sits on;
      --bezel the phone frame (dark in both themes); --edge-hi a 1px top inner light on raised dark surfaces (none in light). */
-  --plate: #e9edf2; --bezel: #161c24; --edge-hi: transparent;
+  --plate: #eae9e5; --bezel: #1a1a18; --edge-hi: transparent;
   /* Only for the one layer per screen that overlaps another (YON 23.1); everything else separates by tone. */
-  --shadow-lift: 0 24px 48px -12px rgb(15 20 27 / 0.18), 0 2px 6px rgb(15 20 27 / 0.06); /* taste-skill-ignore: lift layer, YON 23.1 */
+  --shadow-lift: 0 24px 48px -12px rgb(18 18 17 / 0.18), 0 2px 6px rgb(18 18 17 / 0.06); /* taste-skill-ignore: lift layer, YON 23.1 */
 
   /* how-it-works fields, light to dark, last one is the accent field */
-  --field-1: #dbe2eb; --field-2: #ccd6e2; --field-3: #b9c7d9;
+  --field-1: #e7e6e1; --field-2: #dad8d2; --field-3: #cbc8c0;
   --field-4: var(--accent-field); --on-field-4: var(--on-accent-field);
   /* The homepage hero and the auth screens: a clear second field beside the ground (1.3:1), and the hero's unselected choices on it. */
-  --split: #ccd6e2; --choice: #ffffff;
+  --split: #dad8d2; --choice: #ffffff;
   /* Homepage: the showcase field and the archive pictures. The field is one clear step off the ground and the product card a step
      lighter again, in both themes (YON.md 16.5); dark lowers the pictures' white point (opacity over --raised). */
-  --show-field: #dbe2eb; --show-card: var(--surface); --show-card-edge: var(--border); --show-tabs: #ccd6e2; --show-raised: var(--raised); --show-ink: var(--ink);
+  --show-field: #e7e6e1; --show-card: var(--surface); --show-card-edge: var(--border); --show-tabs: #dad8d2; --show-raised: var(--raised); --show-ink: var(--ink);
   /* Product cards on a field (hero, auth stage, the four path fields): white in light; in dark one tone above their field (colour.md 6). */
   --lift: var(--surface); --lift-edge: var(--border); --path-card-1: var(--surface); --path-card-2: var(--surface); --path-card-3: var(--surface); --path-card-4: var(--surface); --foot-name: var(--ink);
   --picture-opacity: 1;
-  /* Thermal paper: white in light; a dimmed cool grey in dark (still paper, no longer the brightest surface on the screen). */
-  --paper: #ffffff; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #dce6f3;
+  /* Thermal paper: a warm off-white in light, so it reads as an object on the white window; a dimmed cool grey in dark (still paper, no longer the brightest surface on the screen). */
+  --paper: #faf8f3; --paper-ink: #3d3c38; --paper-strong: #121211; --paper-lit: #dce6f3;
 
   /* Type: two families, set by next/font in layout.tsx */
   --font-text: var(--font-stack-text), system-ui, sans-serif;
@@ -127,12 +127,12 @@
     --warn-ink: #e8c477; --warn-bg: #2a2412;
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-    --plate: #111418; --bezel: #2a3038; --edge-hi: rgb(255 255 255 / 0.06);
+    --plate: #1d2228; --bezel: #2a3038; --edge-hi: rgb(255 255 255 / 0.06);
     --shadow-lift: 0 24px 48px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 var(--edge-hi);
     --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
-    --split: #1d2229; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
+    --split: #0f1216; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
     --lift: #252b33; --lift-edge: #2f363f; --path-card-1: #1c2026; --path-card-2: #22272e; --path-card-3: #2a3038; --path-card-4: #323943; --foot-name: #b9c1ca;
-    --paper: #d8dadc; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #bfcde0;
+    --paper: #d8dadc; --paper-ink: #33363a; --paper-strong: #141a22; --paper-lit: #bfcde0;
     --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
     color-scheme: dark;
   }
@@ -151,12 +151,12 @@
   --warn-ink: #e8c477; --warn-bg: #2a2412;
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-  --plate: #111418; --bezel: #2a3038; --edge-hi: rgb(255 255 255 / 0.06);
+  --plate: #1d2228; --bezel: #2a3038; --edge-hi: rgb(255 255 255 / 0.06);
   --shadow-lift: 0 24px 48px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 var(--edge-hi);
   --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
-  --split: #1d2229; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
+  --split: #0f1216; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
   --lift: #252b33; --lift-edge: #2f363f; --path-card-1: #1c2026; --path-card-2: #22272e; --path-card-3: #2a3038; --path-card-4: #323943; --foot-name: #b9c1ca;
-  --paper: #d8dadc; --paper-ink: #4f5a67; --paper-strong: #141a22; --paper-lit: #bfcde0;
+  --paper: #d8dadc; --paper-ink: #33363a; --paper-strong: #141a22; --paper-lit: #bfcde0;
   --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
   color-scheme: dark;
 }
@@ -369,10 +369,11 @@ tbody tr:last-child td { border-bottom: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .status-message { animation: status-rise 500ms var(--ease-out) both; }
   /* The blue Luca line draws across the strip once: the product's one idea, even on a failed page. */
-  .status-mark .mark-luca { stroke-dasharray: 18; animation: status-draw 900ms 200ms var(--ease-expo) both; }
+  .status-mark .mark-luca { animation: status-draw 900ms 200ms var(--ease-expo) both; }
 }
 @keyframes status-rise { from { transform: translateY(12px); } to { transform: none; } }
-@keyframes status-draw { from { stroke-dashoffset: 18; } to { stroke-dashoffset: 0; } }
+/* Clip, not stroke-dashoffset: compositor-only (YON 23.3). The SVG path's reference box is its stroke box. */
+@keyframes status-draw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
 
 /* ---------- Auth: src/app/giris/auth.css ---------- */
 .alert-ok { background: var(--positive-soft); color: var(--positive); }

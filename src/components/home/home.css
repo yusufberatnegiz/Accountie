@@ -375,7 +375,7 @@
   .show-ui { --fs-ui: 13px; --fs-body: 14px; --fs-small: 12px; --fs-title: 20px; }
   .show-cap { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; display: grid; gap: var(--s1); }
   .show-cap-name { font-weight: var(--w-strong); font-size: var(--step-body); }
-  .show-cap-text { color: var(--muted); font-size: var(--step-body); }
+  .show-cap-text { color: var(--show-soft); font-size: var(--step-body); }
   /* The tabs come first, wrapped chips with no cut edge: what a tap changes is right under them, and they never move. */
   .show-side { grid-template-columns: minmax(0, 1fr); gap: 0; order: -1; min-width: 0; }
   .show-now { display: none; }

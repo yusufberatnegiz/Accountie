@@ -19,10 +19,10 @@ type EditLine = Omit<JournalLine, "debitKurus" | "creditKurus"> & { key: number;
 type SharedField = "documentNo" | "documentDate" | "documentType" | "description";
 
 const noSubscribe = () => () => {};
-let nextKey = 0;
-const toEdit = (l: JournalLine): EditLine => {
+// Keys come from the line index, so the server and the browser render the same data-key (no module counter across requests).
+const toEdit = (l: JournalLine, i: number): EditLine => {
   const { debitKurus, creditKurus, ...rest } = l;
-  return { ...rest, key: nextKey++, debit: debitKurus ? formatTrAmount(debitKurus) : "", credit: creditKurus ? formatTrAmount(creditKurus) : "" };
+  return { ...rest, key: i, debit: debitKurus ? formatTrAmount(debitKurus) : "", credit: creditKurus ? formatTrAmount(creditKurus) : "" };
 };
 
 /** "" -> 0, invalid -> NaN. */
@@ -84,6 +84,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   const router = useRouter();
   const editable = receipt.status === "draft";
   const [lines, setLines] = useState(() => receipt.lines.map(toEdit));
+  const nextKey = useRef(receipt.lines.length);
   const [savedSignature, setSavedSignature] = useState(() => signature(lines));
   const dirty = editable && signature(lines) !== savedSignature;
   const [seen, setSeen] = useState<ReadonlySet<string>>(new Set());
@@ -208,7 +209,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
     const name = knownAccounts.find((a) => a.code === code.trim())?.name;
     update(key, name ? { accountCode: code, accountName: name } : { accountCode: code });
   };
-  const addLine = () => setLines((ls) => [...ls, { ...ls[0], key: nextKey++, accountCode: "", accountName: "", debit: "", credit: "" }]);
+  const addLine = () => setLines((ls) => [...ls, { ...ls[0], key: nextKey.current++, accountCode: "", accountName: "", debit: "", credit: "" }]);
 
   async function call(url: string, init?: RequestInit): Promise<boolean> {
     const res = await fetch(url, init).catch(() => null);

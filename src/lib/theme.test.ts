@@ -26,7 +26,7 @@ describe("theme init script", () => {
   });
   it("a saved choice wins over the system look, in one meta", () => {
     const r = run("light", false, true);
-    expect(r.head).toEqual([{ name: "theme-color", content: "#f4f6f8" }]);
+    expect(r.head).toEqual([{ name: "theme-color", content: "#f5f5f3" }]);
   });
   it("leaves system preference alone when nothing or junk is saved", () => {
     expect(run(null).theme).toBeUndefined();
