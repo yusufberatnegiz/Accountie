@@ -88,6 +88,14 @@
   --ui-surface: var(--surface); --ui-raised: var(--raised); --ui-border: var(--border); --ui-rule: var(--rule);
   /* Thermal paper: a warm off-white in light, so it reads as an object on the white window; a dimmed warm grey in dark (still paper, no longer the brightest surface on the screen). */
   --paper: #faf8f3; --paper-ink: #3d3c38; --paper-strong: #121211; --paper-lit: #dce6f3;
+  /* YON 23.19 depth ladder, one step each: ground < plate < window (--ui-surface) < a layer lifted over the window (--ui-lift).
+     In light the window and the lifted layer are both white and the lift separates them; in dark the lifted layer is a clear tone step. */
+  --ui-lift: var(--surface); --ui-lift-edge: var(--border);
+  /* The closing call: a stone field (the page has one blue field, the Luca file in the path). */
+  --cta-field: #dcdad4;
+  /* Photographs (YON 23.19): square corners (6.5), a mat in the plate tone while loading and around letterboxing, the lift only
+     when the photo overlaps another layer, and a lowered white point in dark (--photo-dim is opacity over the mat). */
+  --photo-radius: 0px; --photo-mat: var(--plate); --photo-shadow: var(--shadow-lift); --photo-dim: 1;
 
   /* Type: two families, set by next/font in layout.tsx */
   --font-text: var(--font-stack-text), system-ui, sans-serif;
@@ -133,13 +141,14 @@
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
     --plate: #1d1d1b; --bezel: #34332f; --edge-hi: rgb(255 255 255 / 0.06);
-    --shadow-lift: 0 24px 48px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 var(--edge-hi);
+    --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
     --field-1: #151513; --field-2: #1b1b19; --field-3: #22221f; --field-4: #2a2a27; --on-field-4: #f0efec;
     --path-1: #161614; --path-2: #1c1c1a; --path-3: #242422; --path-4: #12223d; --path-shell: #2e2e2b; --show-ground: #141413; --show-plate: #20201e;
     --split: #171715; --choice: #2e2d2a; --show-field: #171715; --show-card: #2c2c29; --show-card-edge: #3a3935; --show-tabs: #21211e; --show-raised: #33322f; --picture-opacity: 0.9;
     --lift: #272725; --lift-edge: #33322f; --path-card-1: #232321; --path-card-2: #282826; --path-card-3: #30302d; --path-card-4: #2c2c29; --foot-name: #bebdb7;
     --paper: #e9e6df; --paper-ink: #383733; --paper-strong: #151513; --paper-lit: #bfcde0;
   --ui-surface: #252523; --ui-raised: #2c2c29; --ui-border: #383733; --ui-rule: #2f2e2b;
+  --ui-lift: #32312e; --ui-lift-edge: #45443f; --cta-field: #1d1d1b; --photo-mat: #1d1d1b; --photo-dim: 0.88;
     --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
     color-scheme: dark;
   }
@@ -159,13 +168,14 @@
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
   --plate: #1d1d1b; --bezel: #34332f; --edge-hi: rgb(255 255 255 / 0.06);
-  --shadow-lift: 0 24px 48px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 var(--edge-hi);
+  --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
   --field-1: #151513; --field-2: #1b1b19; --field-3: #22221f; --field-4: #2a2a27; --on-field-4: #f0efec;
     --path-1: #161614; --path-2: #1c1c1a; --path-3: #242422; --path-4: #12223d; --path-shell: #2e2e2b; --show-ground: #141413; --show-plate: #20201e;
   --split: #171715; --choice: #2e2d2a; --show-field: #171715; --show-card: #2c2c29; --show-card-edge: #3a3935; --show-tabs: #21211e; --show-raised: #33322f; --picture-opacity: 0.9;
   --lift: #272725; --lift-edge: #33322f; --path-card-1: #232321; --path-card-2: #282826; --path-card-3: #30302d; --path-card-4: #2c2c29; --foot-name: #bebdb7;
   --paper: #e9e6df; --paper-ink: #383733; --paper-strong: #151513; --paper-lit: #bfcde0;
   --ui-surface: #252523; --ui-raised: #2c2c29; --ui-border: #383733; --ui-rule: #2f2e2b;
+  --ui-lift: #32312e; --ui-lift-edge: #45443f; --cta-field: #1d1d1b; --photo-mat: #1d1d1b; --photo-dim: 0.88;
   --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
   color-scheme: dark;
 }
@@ -189,6 +199,10 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 p { margin: 0; text-wrap: pretty; }
 img, svg, video { display: block; max-width: 100%; }
 [data-ui] { --surface: var(--ui-surface); --raised: var(--ui-raised); --border: var(--ui-border); --rule: var(--ui-rule); }
+/* A photograph's frame (YON 23.19): wrap the next/image in .photo; add .is-lifted only where it overlaps another layer. */
+.photo { display: block; margin: 0; overflow: clip; border-radius: var(--photo-radius); background: var(--photo-mat); }
+.photo img { width: 100%; height: 100%; object-fit: cover; opacity: var(--photo-dim); }
+.photo.is-lifted { box-shadow: var(--photo-shadow); } /* taste-skill-ignore: lift layer, YON 23.1 */
 button, input, select, textarea { font: inherit; color: inherit; }
 /* Native controls keep explicit colours so Windows dark mode does not paint them white. */
 select, input, textarea { background-color: var(--surface); color: var(--ink); }
