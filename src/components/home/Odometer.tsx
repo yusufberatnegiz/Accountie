@@ -7,10 +7,11 @@ import { useState, type CSSProperties } from "react";
  * from below, two slots and never an in-between value. Points and commas stay put. A new value during a roll restarts from the
  * value on screen, so quick choices land on the last one. The real value is plain text for screen readers; the slots are aria-hidden.
  */
-export function Odometer({ value, className }: { value: string; className?: string }) {
+export function Odometer({ value, className, instant }: { value: string; className?: string; instant?: boolean }) {
   const [cur, setCur] = useState(value);
   const [old, setOld] = useState(value);
-  if (value !== cur) { setOld(cur); setCur(value); }
+  // instant: the figure swaps without a roll (a total following the keys).
+  if (value !== cur) { setOld(instant ? value : cur); setCur(value); }
   // Until the first change the figure is plain text: the first layout has no digit slots to lay out (4x CPU LCP, YON 23.20).
   if (old === cur) return <span className={`odo${className ? ` ${className}` : ""}`}>{cur}</span>;
   // Right-aligned, so 980,00 -> 1.250,00 rolls the units under the units.
