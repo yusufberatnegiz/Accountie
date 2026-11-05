@@ -42,6 +42,17 @@ describe.skipIf(!built)("production build CSP", () => {
     }
   });
 
+  it("sends a panel deep link without a session to /giris with the way back, under the nonce policy", async () => {
+    const res = await fetch(`${base}/panel/fis/abc`, { redirect: "manual" });
+    expect(res.status).toBeGreaterThanOrEqual(300);
+    expect(res.status).toBeLessThan(400);
+    const to = new URL(res.headers.get("location")!, base);
+    expect(to.pathname).toBe("/giris");
+    expect(to.searchParams.get("sonra")).toBe("/panel/fis/abc");
+    expect(res.headers.get("content-security-policy")).toContain("'strict-dynamic'");
+    expect((await fetch(`${base}/api/receipts`)).status).toBe(401);
+  });
+
   it("keeps the static homepage on the public policy", async () => {
     const csp = (await fetch(base)).headers.get("content-security-policy")!;
     expect(csp).toMatch(/script-src 'self' 'unsafe-inline'/);
