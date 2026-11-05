@@ -10,8 +10,9 @@ const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
  *
  * Rule scene: each flying copy is measured once against the receipt figure it leaves from (and again on resize), as CSS
  * variables; the move itself is CSS. From 1100px with scroll-driven animations the scene is tied to the scroll ("scroll"),
- * otherwise it plays once when 60% of the lines card is on screen ("timed").
- * Path scene: the clause in the middle band of the screen sets which of the four states the sticky card shows.
+ * otherwise it plays once when a third of the balance strip is on screen, or at once if the scene is already passed ("timed").
+ * Path scene: the clause row under the screen's middle line sets which of the four states the sticky card shows. The rows
+ * touch, so after any jump (PageDown, an anchor, a reload mid-page) exactly one row holds the line and reports it.
  */
 export function HomeMotion() {
   useEffect(() => {
@@ -42,15 +43,15 @@ export function HomeMotion() {
       let raf = 0;
       const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(measure); };
       addEventListener("resize", onResize);
-      // Timed mode starts when the target lines card is well on screen, so the landings and "Dengede" are seen, not the receipt alone.
+      // Timed mode starts when the balance strip is a third on screen, so the landings and "Dengede" are seen on a phone too.
       // Re-measure once the section is rendered (content-visibility), then start a frame later: reads, writes and the start of
       // the flight land in separate frames instead of one long one (YON 23.11).
       const io = new IntersectionObserver(([e]) => {
-        if (!e.isIntersecting) return;
+        if (!(e.intersectionRatio >= 0.34 || e.boundingClientRect.bottom < 0)) return;
         io.disconnect();
         raf = requestAnimationFrame(() => { measure(); raf = requestAnimationFrame(() => rule.classList.add("is-playing")); });
-      }, { threshold: 0.6 });
-      io.observe(rule.querySelector(".rule-ledger") ?? rule);
+      }, { threshold: [0, 0.34] });
+      io.observe(rule.querySelector(".rule-close") ?? rule);
       offs.push(() => { cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
     }
 
@@ -61,7 +62,7 @@ export function HomeMotion() {
           const n = (e.target.parentElement as HTMLElement).dataset.n ?? "1";
           if (e.isIntersecting && path.dataset.active !== n) path.dataset.active = n;
         }
-      }, { rootMargin: "-45% 0px -45% 0px" });
+      }, { rootMargin: "-50% 0px -50% 0px" });
       path.querySelectorAll(".path-clause").forEach((c) => io.observe(c));
       offs.push(() => io.disconnect());
     }

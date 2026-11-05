@@ -24,6 +24,8 @@ export function Counter() {
   const [copy, setCopy] = useState<"" | "ok" | "fail">("");
   const [hot, setHot] = useState<Source | null>(null);
   const [touched, setTouched] = useState(false);
+  // Rows at or past this index are new after a choice (Market has more lines): they drop in, the others stay keyed by position.
+  const [kept, setKept] = useState(Infinity);
   const sample = SAMPLES.find((s) => s.id === sampleId) ?? SAMPLES[0];
   const { lines, warnings, balanced } = journalFor(sample, payment);
   const sources = sourcesFor(sample);
@@ -48,7 +50,7 @@ export function Counter() {
           {SAMPLES.map((s) => (
             <label key={s.id}>
               <input type="radio" name="ornek-fis" value={s.id} checked={s.id === sampleId}
-                onChange={() => { setSampleId(s.id); setCopy(""); setHot(null); setTouched(true); }} />
+                onChange={() => { setKept(lines.length); setSampleId(s.id); setCopy(""); setHot(null); setTouched(true); }} />
               <span>{s.label}</span>
             </label>
           ))}
@@ -72,7 +74,7 @@ export function Counter() {
               <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
               <tbody>
                 {lines.map((l, i) => (
-                  <tr key={i} className="counter-row" onMouseEnter={() => setHot(sources[i])}>
+                  <tr key={i} className={i >= kept ? "counter-row counter-row-new" : "counter-row"} onMouseEnter={() => setHot(sources[i])}>
                     <td><Odometer className="code odo-code" value={l.accountCode} /><span className="code-name">{shownAccountName(l.accountName)}</span></td>
                     <td className="num to-luca">{l.debitKurus ? <Odometer value={formatTrAmount(l.debitKurus)} /> : ""}</td>
                     <td className="num to-luca">{l.creditKurus ? <Odometer value={formatTrAmount(l.creditKurus)} /> : ""}</td>
@@ -102,7 +104,7 @@ export function Counter() {
 
         <Phone className="counter-phone">
           <p className="phone-head"><span>Fiş çekildi</span><span>{sample.label}</span></p>
-          <div className="counter-slot">
+          <div className="counter-slot" key={sample.id}>
             <Thermal sample={sample} printedPayment={PRINTED[payment]} hot={hot} />
           </div>
           <p className="phone-foot"><span>Okundu</span><span>{lines.length} satır hazır</span></p>

@@ -22,7 +22,7 @@ export function SiteBar({ current }: { current?: "giris" | "kayit" }) {
       <header className="site-bar">
         <Link className="brand site-brand" href="/" prefetch={false} translate="no"><BrandMark />Accountie</Link>
         <nav className="site-links" aria-label="Bölümler">
-          {LINKS.map((l) => <Link key={l.href} href={l.href}>{l.label}</Link>)}
+          {LINKS.map((l) => <Link key={l.href} href={l.href} prefetch={false}>{l.label}</Link>)}
         </nav>
         <div className="site-actions">
           <ThemeCycle />

@@ -16,6 +16,15 @@ export function Odometer({ value, className }: { value: string; className?: stri
   const a = old.padStart(n, " ");
   const b = cur.padStart(n, " ");
   let k = 0;
+  // A figure that changes length (8.725,00 -> 480,00) rolls as one block: per-digit slots would mix old and new digits into a wrong amount.
+  if (old.length !== cur.length) {
+    return (
+      <span className={`odo${className ? ` ${className}` : ""}`}>
+        <span className="visually-hidden">{cur}</span>
+        <span className="odo-digits" aria-hidden="true"><span key={`w-${cur}`} className="odo-d odo-w" data-old={old}><span>{cur}</span></span></span>
+      </span>
+    );
+  }
   return (
     <span className={`odo${className ? ` ${className}` : ""}`}>
       <span className="visually-hidden">{cur}</span>
