@@ -329,7 +329,7 @@ export default function LandingPage() {
         {/* Hero: two tones, the counter is the picture */}
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
-            {/* Each line rises once, readable from the first frame; the move starts after the first paint (html.go, YON 23.28). */}
+            {/* The title stands still from the first frame; only the window and the phone settle (YON 23.32). */}
             <h1 className="hero-title" id="hero-title"><span className="hero-line"><span>Fişten Luca’ya</span></span> <span className="hero-line"><span>yevmiye kaydı</span></span></h1>
             <p className="hero-sub">
               Yazar kasa fişini telefonla çekin; gider, KDV ve alacak satırları sizin hesap kodlarınızla hazırlanır, siz onaylayınca Excel ile Luca’ya aktarırsınız.
@@ -351,7 +351,8 @@ export default function LandingPage() {
             <p className="paper-text">Yazar kasa fişi ısıyla basılır ve zamanla okunmaz olur. Fiş okunurken satırlarını çıkarın; kayıt Luca’da kalır.</p>
           </div>
           <figure className="paper-desk">
-            <div className="paper-strip" data-ui><Thermal sample={OTOPARK} printedPayment="KREDİ KARTI" /></div>
+            {/* The fading print is a picture of the material; its text is in the card and the caption, so readers skip it (YON 23.32). */}
+            <div className="paper-strip" data-ui aria-hidden="true"><Thermal sample={OTOPARK} printedPayment="KREDİ KARTI" /></div>
             <div className="ui-card paper-luca" data-ui>
               <p className="ui-card-head"><span>Fiş 0768, Luca satırları</span><span className="status status-exported">Aktarıldı</span></p>
               <MiniLines lines={LINES_OTOPARK} />
@@ -367,7 +368,7 @@ export default function LandingPage() {
         <section className="path" aria-labelledby="path-title" suppressHydrationWarning>
           <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2>
           {PATH.map((f, i) => (
-            <div className={`path-field path-field-${i + 1}`} key={f.clause} data-n={i + 1} data-on={i === 0 || undefined}>
+            <div className={`path-field path-field-${i + 1}`} key={f.clause} data-n={i + 1} data-on={i === 0 || undefined} role="group" aria-label={`Adım ${i + 1} / ${PATH.length}`}>
               <p className="path-clause"><span>{f.clause}</span></p>
               <div className="path-plate"><div className="ui-card path-card" data-ui>{f.card}</div></div>
             </div>

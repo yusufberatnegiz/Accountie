@@ -17,6 +17,17 @@ const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
  * transitions start only after the first report, so a fast entry never shows the wipe from the server's state.
  */
 export function HomeMotion() {
+  // On a phone "Bir fişin yolu" is a sideways scroller (CSS, any motion setting): it is a keyboard stop there and only there.
+  useEffect(() => {
+    const path = document.querySelector<HTMLElement>(".path");
+    if (!path) return;
+    const phone = matchMedia("(max-width: 640px)");
+    const set = () => (phone.matches ? path.setAttribute("tabindex", "0") : path.removeAttribute("tabindex"));
+    set();
+    phone.addEventListener("change", set);
+    return () => phone.removeEventListener("change", set);
+  }, []);
+
   useEffect(() => {
     if (reduced() || !("IntersectionObserver" in window)) return;
     const offs: (() => void)[] = [];
