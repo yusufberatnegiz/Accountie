@@ -6,7 +6,7 @@ export type SpotRead = { id: string; label: string; value: string };
 export type SpotLine = { code: string; name: string; debit: string; credit: string; from: string[] };
 
 type Link = { d: string; a: [number, number]; b: [number, number] };
-type Box = { x: number; y: number; w: number; h: number; b: [number, number]; links: Link[] };
+type Box = { x: number; y: number; w: number; h: number; links: Link[] };
 
 /**
  * Spotlight link (YON.md 23.3.5): pointing at, focusing or tapping a Luca line marks the read fields it came from, draws a
@@ -42,16 +42,19 @@ export function Spotlight({ read, lines, meta }: { read: SpotRead[]; lines: Spot
       ends.push([t.right - o.left + 8, t.top + t.height / 2 - o.top]);
     }
     if (!ends.length) return;
-    const xs = [...ends.map((e) => e[0]), x2], ys = [...ends.map((e) => e[1]), y2];
+    // Sources top to bottom land top to bottom on the row, 8px apart, so no two lines cross or meet in one point.
+    ends.sort((p, q) => p[1] - q[1]);
+    const lands = ends.map((_, k) => y2 + (k - (ends.length - 1) / 2) * 8);
+    const xs = [...ends.map((e) => e[0]), x2], ys = [...ends.map((e) => e[1]), ...lands];
     const x = Math.min(...xs) - 4, y = Math.min(...ys) - 4;
     const w = Math.max(...xs) - x + 4, h = Math.max(...ys) - y + 4;
-    const b: [number, number] = [x2 - x, y2 - y];
-    const links = ends.map(([ex, ey]) => {
+    const links = ends.map(([ex, ey], k) => {
       const a: [number, number] = [ex - x, ey - y];
+      const b: [number, number] = [x2 - x, lands[k] - y];
       const mx = (a[0] + b[0]) / 2;
       return { d: `M${a[0]} ${a[1]} C${mx} ${a[1]} ${mx} ${b[1]} ${b[0]} ${b[1]}`, a, b };
     });
-    setPath({ x, y, w, h, b, links });
+    setPath({ x, y, w, h, links });
     setOn(i);
   }
   const hide = () => setOn(null);
@@ -71,7 +74,7 @@ export function Spotlight({ read, lines, meta }: { read: SpotRead[]; lines: Spot
           <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
           <tbody>
             {lines.map((l, i) => (
-              <tr key={l.code} tabIndex={0} className="spot-row" data-lit={on === i || undefined}
+              <tr key={i} tabIndex={0} className="spot-row" data-lit={on === i || undefined}
                 aria-describedby={l.from.map((f) => `spot-${f}`).join(" ")}
                 onMouseEnter={(e) => show(i, e.currentTarget)} onMouseLeave={hide}
                 onFocus={(e) => show(i, e.currentTarget)} onBlur={hide}
@@ -90,7 +93,7 @@ export function Spotlight({ read, lines, meta }: { read: SpotRead[]; lines: Spot
           style={{ left: path.x, top: path.y }} viewBox={`0 0 ${path.w} ${path.h}`}>
           {path.links.map((l) => <path key={l.d} d={l.d} />)}
           {path.links.map((l) => <circle key={`a${l.d}`} cx={l.a[0]} cy={l.a[1]} r="2" />)}
-          <circle cx={path.b[0]} cy={path.b[1]} r="2" />
+          {path.links.map((l) => <circle key={`b${l.d}`} cx={l.b[0]} cy={l.b[1]} r="2" />)}
         </svg>
       ) : null}
     </div>

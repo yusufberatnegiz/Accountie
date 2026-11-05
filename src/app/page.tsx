@@ -9,10 +9,11 @@ import { Faq, type Qa } from "@/components/home/Faq";
 import { AppWindow, Phone } from "@/components/home/Frames";
 import { HomeMotion } from "@/components/home/HomeMotion";
 import { ShowRow, type Piece } from "@/components/home/ShowRow";
-import { SAMPLES } from "@/components/home/samples";
+import { journalFor, SAMPLES, shownAccountName, sourcesFor } from "@/components/home/samples";
 import { Spotlight } from "@/components/home/Spotlight";
 import { Thermal } from "@/components/home/Thermal";
 import { WARNING_MESSAGES } from "@/lib/journal";
+import { formatTrAmount } from "@/lib/money";
 import { PAYMENT_ALTERNATIVES } from "@/lib/default-rules";
 import "@/components/home/home.css";
 
@@ -66,6 +67,24 @@ function FlyCell({ value, from }: { value: string; from: string }) {
 }
 const Dash = () => <span className="fly-cell"><span className="fly-dash fly-dash-empty" aria-hidden="true" /></span>;
 
+/** The showcase reads a different receipt than the hero and the signature: Market 2214, two VAT rates, so two expense and two 191 lines. */
+const MARKET = SAMPLES[2];
+const MARKET_READ = [
+  { id: "satici", label: "Satıcı", value: MARKET.receipt.vendorName ?? "" },
+  { id: "evrak", label: "Evrak No", value: MARKET.receipt.receiptNo ?? "" },
+  ...MARKET.receipt.vatLines.flatMap((v) => [
+    { id: `brut${v.rate}`, label: `%${v.rate} toplam`, value: formatTrAmount(v.grossKurus) },
+    { id: `kdv${v.rate}`, label: `KDV %${v.rate}`, value: formatTrAmount(v.vatKurus ?? 0) },
+  ]),
+  { id: "toplam", label: "Toplam", value: formatTrAmount(MARKET.receipt.totalKurus ?? 0) },
+  { id: "odeme", label: "Ödeme", value: "KREDİ KARTI" },
+];
+const MARKET_FROM = sourcesFor(MARKET).map((src) => (src.kind === "total" ? ["toplam", "odeme"] : src.kind === "vat" ? [`kdv${src.rate}`] : [`brut${src.rate}`, `kdv${src.rate}`]));
+const MARKET_LINES = journalFor(MARKET, "partner").lines.map((l, i) => ({
+  code: l.accountCode, name: shownAccountName(l.accountName),
+  debit: l.debitKurus ? formatTrAmount(l.debitKurus) : "", credit: l.creditKurus ? formatTrAmount(l.creditKurus) : "", from: MARKET_FROM[i] ?? [],
+}));
+
 /** The Fişler window's rows: invented sample vendors in the ÖRNEK form, statuses mixed as a real list is. */
 const LIST = [
   ["0047", "ÖRNEK BALIK LOKANTASI", "05.09.2026", "8.725,00", "Onaylı"],
@@ -81,16 +100,7 @@ const PIECES: Piece[] = [
     name: "Fiş ve satırlar",
     text: "Fişten okunan alanlar ve Luca satırları aynı ekranda. Hesap kodu, tutar, Evrak No ve BT orada düzeltilir.",
     body: (
-      <Spotlight meta="Evrak No 0047, 05.09.2026, BT ÖK"
-        read={[
-          { id: "satici", label: "Satıcı", value: "ÖRNEK BALIK LOKANTASI" },
-          { id: "evrak", label: "Evrak No", value: "0047" },
-          { id: "tarih", label: "Tarih", value: "05.09.2026" },
-          { id: "kdv", label: "KDV %10", value: "793,18" },
-          { id: "toplam", label: "Toplam", value: "8.725,00" },
-          { id: "odeme", label: "Ödeme", value: "KREDİ KARTI" },
-        ]}
-        lines={LINES_0047.map((l, i) => ({ ...l, from: [["toplam", "kdv"], ["kdv"], ["toplam", "odeme"]][i] }))} />
+      <Spotlight meta="Evrak No 2214, 04.09.2026, BT ÖK. Her KDV oranı kendi satırını açar." read={MARKET_READ} lines={MARKET_LINES} />
     ),
   },
   {
@@ -133,11 +143,11 @@ const PIECES: Piece[] = [
     body: (
       <div className="ui-card ui-file">
         {/* The panel's own Luca card (ReceiptListView) after the first of two downloads: 88 approved, the first file took 50. */}
-        <p className="ui-file-head"><span>Luca dosyası</span><span className="ui-meta">88 onaylı fiş, 2 dosya</span></p>
-        <div className="ui-meter"><span>Fiş</span><span className="ui-track"><span style={{ width: "100%" }} /></span><span className="num">88 / 50</span></div>
-        <div className="ui-meter"><span>Satır</span><span className="ui-track"><span style={{ width: "100%" }} /></span><span className="num">684 / 400</span></div>
+        <p className="ui-file-head"><span>Luca dosyası</span><span className="ui-meta">88 onaylı fiş, ikinci dosya</span></p>
+        <div className="ui-meter"><span>Fiş</span><span className="ui-track"><span style={{ transform: "scaleX(0.76)" }} /></span><span className="num">38 / 50</span></div>
+        <div className="ui-meter"><span>Satır</span><span className="ui-track"><span style={{ transform: "scaleX(0.74)" }} /></span><span className="num">296 / 400</span></div>
         <span className="btn">Luca için indir</span>
-        <p className="ui-meta">Luca bir dosyada en fazla 50 fiş alır. 38 fiş kaldı, bir sonraki dosya için tekrar indirin.</p>
+        <p className="ui-meta">İlk 50 fiş birinci dosyaya yazıldı; kalan 38 fiş bu dosyada. Luca bir dosyada en fazla 50 fiş alır.</p>
         <ol className="ui-steps">
           <li>Luca’da Muhasebe, Fiş İşlemleri, Excel veri aktarımı ekranını açın.</li>
           <li>Dosyayı seçin, doğrulama kodunu yazıp Yükle’ye basın.</li>
@@ -301,12 +311,21 @@ export default function LandingPage() {
           <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2>
           {PATH.map((f, i) => (
             <div className={`path-field path-field-${i + 1}`} key={f.clause} data-n={i + 1}>
-              <p className="path-clause">{f.clause}</p>
+              <p className="path-clause"><span>{f.clause}</span></p>
               <div className="path-plate"><div className="ui-card path-card" data-ui>{f.card}</div></div>
             </div>
           ))}
           <div className="path-stage" aria-hidden="true">
             {[1, 2, 3, 4].map((n) => <span key={n} className={`path-bg path-bg-${n}`} />)}
+            {/* One card through four states: the shell and its head stay, the pill rolls, only the body under it changes. */}
+            <div className="ui-card path-shell" data-ui>
+              <p className="ui-card-head"><span>Fiş 0047</span>
+                <span className="path-pill">
+                  <span className="status" data-s="1">Çekildi</span><span className="status" data-s="2">Taslak</span>
+                  <span className="status status-approved" data-s="3">Onaylandı</span><span className="status status-exported" data-s="4">Aktarıldı</span>
+                </span>
+              </p>
+            </div>
           </div>
         </section>
 
@@ -478,8 +497,8 @@ export default function LandingPage() {
               <h2 className="t-display cta-title" id="cta-title"><span>İlk fişinizi</span> <span>çekin</span></h2>
               <p className="cta-sub">Hesabı açtığınızda varsayılan hesap planı kural tablonuza kopyalanır. İlk fişi telefonla çekip kontrol ekranında görürsünüz.</p>
               <div className="cta-actions">
-                <Link className="btn btn-lg cta-btn" href="/kayit">Hesap oluştur</Link>
-                <p>Hesabınız var mı? <Link href="/giris">Giriş yapın</Link></p>
+                <Link className="btn btn-lg cta-btn" href="/kayit" prefetch={false}>Hesap oluştur</Link>
+                <p>Hesabınız var mı? <Link href="/giris" prefetch={false}>Giriş yapın</Link></p>
               </div>
             </div>
             <figure className="cta-figure">
@@ -502,10 +521,10 @@ export default function LandingPage() {
         <div className="foot-top">
           <p className="foot-what"><span translate="no">Accountie</span>, yazar kasa fişinden Luca yevmiye kaydı hazırlar.</p>
           <nav className="foot-links" aria-label="Alt bağlantılar">
-            <Link href="/giris">Giriş yap</Link>
-            <Link href="/kayit">Hesap oluştur</Link>
+            <Link href="/giris" prefetch={false}>Giriş yap</Link>
+            <Link href="/kayit" prefetch={false}>Hesap oluştur</Link>
             <a href="#sss">Sık sorulanlar</a>
-            <Link href="/gizlilik">Gizlilik</Link>
+            <Link href="/gizlilik" prefetch={false}>Gizlilik</Link>
           </nav>
         </div>
         <p className="foot-name" translate="no" aria-hidden="true">Accountie</p>
