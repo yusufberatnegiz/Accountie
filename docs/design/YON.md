@@ -989,3 +989,26 @@ Jüri her alanı 10 üzerinden ayrı puanlar ve her puanı ekran görüntüsü y
 - Fiş izi bağ çizgisi panelde 240ms açılır (23.3.5'teki 360 yerine; panel tavanı 240), satırın tarafından fişe doğru, yalnız 1100px ve üstünde. Ekranın geri kalanı sönükleşmez: çalışma ekranında yalnız işaret ve çizgi.
 - Liste satırı: sağ boşlukta küçük "Aç" oku (işaretçili masaüstü, 901px ve üstü).
 - Denge onayı `clip-path` ile çizilir. Onayla'nın ton geçişi zaten `--t-hover` (180ms) ile vardı, değişmedi. Luca dosyası çubukları zaten `scaleX` 320ms idi.
+
+### 23.8 Palet tur 2: taş nötrler, tek renk mavi (2026-11-05; 23.1'deki açık tema nötrlerinin üstündedir)
+
+Jüri: açık temanın bütün yüzeyleri aynı pudra mavisi-gri tonundaydı; mavi vurgu kendi alanında kayboluyor, sayfa kurumsal şablon gibi okunuyordu. Karar: açık temada nötrler mavi tondan çıkar, çok düşük kromalı sıcak taş tonuna geçer (kanallar arası fark en çok 3-8 birim, R ≥ G ≥ B). Böylece defter mavisi sayfadaki tek renkli öğe olur. Koyu alanlar (vitrin, yolun son alanı, telefon ekranı) zaten `--deep`; o da sıcak siyaha geçer. Koyu tema nötrleri değişmez (jüri onayladı), yalnız derinlik sırası düzeltilir.
+
+| Token | Açık (eski → yeni) |
+|---|---|
+| `--ground` | #f4f6f8 → **#f5f5f3** (`theme-color`, manifest ve çevrimdışı sayfa da) |
+| `--raised` / `--stage` / `--active` | #f7f8fa / #e4e9f0 / #e8ebf0 → **#f8f8f6 / #e8e7e3 / #ebeae6** |
+| `--border` / `--rule` / `--control-edge` | → **#e4e3df / #efeeeb / #84837d** (beyazda 3.8:1) |
+| `--ink` / `--muted` / `--faint` / `--thermal-ink` | → **#121211 / #4e4d48 / #5e5d57 / #514f4a** |
+| `--primary` / `--secondary` | → **#171716** (hover #2c2b29) / **#e8e7e3** (hover #dcdbd6) |
+| `--deep` / `--deep-raised` / `--ink-on-deep` / `--muted-on-deep` | → **#131312 / #20201e / #f0efec / #aeada7** |
+| `--plate` / `--bezel` | → **#eae9e5 / #1a1a18** |
+| `--field-1..3`, `--split`, `--show-field`, `--show-tabs` | → **#e7e6e1, #dad8d2, #cbc8c0**; `--split` #dad8d2 (zemine 1.31:1) |
+| `--paper` / `--paper-ink` / `--paper-strong` | #ffffff / #4f5a67 → **#faf8f3 / #3d3c38 / #121211**: fiş kâğıdı beyaz pencereden bir ton ayrılır ve nesne olarak okunur; mürekkep koyulaştı, %72 opaklıkla geri çekilen fiş 4.6:1'de kalır |
+| gölge ve perde rengi | rgb(15 20 27) / rgb(20 26 34) → **rgb(18 18 17)** |
+
+Koyu tema: `--plate` #111418 → **#1d2228** ve `--split` #1d2229 → **#0f1216**. Eski sırada plaka sahne alanından koyuydu, pencerenin çevresinde çukur ya da sert ofset gölge gibi okunuyordu. Yeni sıra: zemin #0b0d10 < sahne #0f1216 < pencere `--surface` #14171c < plaka #1d2228. Plaka artık pencereyi taşıyan yükseltilmiş bir taban. Koyu `--paper-ink` #33363a (geri çekilmiş fişte 9.9:1).
+
+Ölçülen (WCAG): açık `--ink`/`--ground` 17.2, `--muted`/`--ground` 7.8, `--muted`/`--split` 5.9, `--faint`/beyaz 6.6, `--faint`/`--plate` 5.4, `--faint`/`--split` 4.6, `--accent`/`--ground` 6.4, `--ink`/`--paper-lit` 14.9, `--muted-on-deep`/`--deep` 8.3. Telefonda vitrin açıklaması (`.show-cap-text`) koyu alanda `--muted` yerine `--show-soft` kullanır.
+
+Hareket: durum sayfasındaki Luca çizgisi `stroke-dashoffset` yerine `clip-path: inset(0 100% 0 0)` → `inset(0)` ile çizilir (23.3'ün transform/opacity/clip-path kuralı). ReviewEditor satır anahtarları modül sayacından değil satır indeksinden gelir (yeni satırlar bileşen içi `useRef` sayacı), sunucu ve tarayıcı aynı `data-key`'i yazar; hydration uyarısı ve FLIP'in yanlış satırı bulması kalktı.
