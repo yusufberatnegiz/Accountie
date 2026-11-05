@@ -323,8 +323,6 @@ const SHEET = [
 export default function LandingPage() {
   return (
     <>
-      {/* First after the skip link: it steps aside past half a screen, so forward Tab must reach it at the top (YON 23.24). */}
-      <CookieNote />
       <HomeMotion />
       <SiteBar />
       <main id="icerik" tabIndex={-1} className="home">
@@ -615,6 +613,8 @@ export default function LandingPage() {
         </div>
         <p className="foot-name" translate="no" aria-hidden="true">Accountie</p>
       </footer>
+      {/* Fixed at the screen's foot, so only reading and Tab order follow the DOM: after the page's own h1 and content (YON 23.31). */}
+      <CookieNote />
     </>
   );
 }
