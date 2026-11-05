@@ -39,7 +39,10 @@ export function HomeMotion() {
           copy.style.setProperty("--sc", String(scale));
         }
       };
-      measure();
+      // First measure only when the scene is a screen away: measuring a content-visibility section at load renders it in the
+      // hydration task (the 4x CPU long task, YON 23.14).
+      const near = new IntersectionObserver(([e]) => { if (e.isIntersecting || e.boundingClientRect.bottom < 0) { near.disconnect(); measure(); } }, { rootMargin: "100% 0px" });
+      near.observe(rule);
       let raf = 0;
       const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(measure); };
       addEventListener("resize", onResize);
@@ -52,7 +55,7 @@ export function HomeMotion() {
         raf = requestAnimationFrame(() => { measure(); raf = requestAnimationFrame(() => rule.classList.add("is-playing")); });
       }, { threshold: [0, 0.34] });
       io.observe(rule.querySelector(".rule-close") ?? rule);
-      offs.push(() => { cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
+      offs.push(() => { near.disconnect(); cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
     }
 
     const path = document.querySelector<HTMLElement>(".path");

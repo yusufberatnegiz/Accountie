@@ -77,13 +77,15 @@
   /* The showcase field and its plate (dark lifts both a step so the section reads off the ground). */
   --show-ground: var(--deep); --show-plate: var(--deep-raised);
   /* The homepage hero and the auth screens: a clear second field beside the ground (1.3:1), and the hero's unselected choices on it. */
-  --split: #dad8d2; --choice: #ffffff;
+  --split: #e2e1dc; --choice: #ffffff;
   /* Homepage: the showcase field and the archive pictures. The field is one clear step off the ground and the product card a step
      lighter again, in both themes (YON.md 16.5); dark lowers the pictures' white point (opacity over --raised). */
   --show-field: #e7e6e1; --show-card: var(--surface); --show-card-edge: var(--border); --show-tabs: #dad8d2; --show-raised: var(--raised); --show-ink: var(--ink);
   /* Product cards on a field (hero, auth stage, the four path fields): white in light; in dark one tone above their field (colour.md 6). */
   --lift: var(--surface); --lift-edge: var(--border); --path-card-1: var(--surface); --path-card-2: var(--surface); --path-card-3: var(--surface); --path-card-4: var(--surface); --foot-name: var(--ink);
   --picture-opacity: 1;
+  /* Inside a product fragment ([data-ui]): the same surfaces in light; in dark a step above the plate, so a window sits on its plate as in light (YON 23.14). */
+  --ui-surface: var(--surface); --ui-raised: var(--raised); --ui-border: var(--border); --ui-rule: var(--rule);
   /* Thermal paper: a warm off-white in light, so it reads as an object on the white window; a dimmed warm grey in dark (still paper, no longer the brightest surface on the screen). */
   --paper: #faf8f3; --paper-ink: #3d3c38; --paper-strong: #121211; --paper-lit: #dce6f3;
 
@@ -130,13 +132,14 @@
     --warn-ink: #e8c477; --warn-bg: #2a2412;
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-    --plate: #1f1f1c; --bezel: #2e2d2a; --edge-hi: rgb(255 255 255 / 0.06);
+    --plate: #1d1d1b; --bezel: #34332f; --edge-hi: rgb(255 255 255 / 0.06);
     --shadow-lift: 0 24px 48px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 var(--edge-hi);
     --field-1: #151513; --field-2: #1b1b19; --field-3: #22221f; --field-4: #2a2a27; --on-field-4: #f0efec;
-    --path-1: #1f1f1c; --path-2: #1c2638; --path-3: var(--accent-field); --path-4: #0e1a2e; --show-ground: #1d1d1b; --show-plate: #2a2a27;
-    --split: #10100f; --choice: #2e2d2a; --show-field: #171715; --show-card: #262623; --show-card-edge: #34332f; --show-tabs: #21211e; --show-raised: #2a2a27; --picture-opacity: 0.9;
+    --path-1: #1f1f1c; --path-2: #1c2638; --path-3: var(--accent-field); --path-4: #0e1a2e; --show-ground: #141413; --show-plate: #20201e;
+    --split: #171715; --choice: #2e2d2a; --show-field: #171715; --show-card: #2c2c29; --show-card-edge: #3a3935; --show-tabs: #21211e; --show-raised: #33322f; --picture-opacity: 0.9;
     --lift: #272725; --lift-edge: #33322f; --path-card-1: #1d1d1b; --path-card-2: #242422; --path-card-3: #2c2c29; --path-card-4: #353431; --foot-name: #bebdb7;
     --paper: #e9e6df; --paper-ink: #383733; --paper-strong: #151513; --paper-lit: #bfcde0;
+  --ui-surface: #252523; --ui-raised: #2c2c29; --ui-border: #383733; --ui-rule: #2f2e2b;
     --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
     color-scheme: dark;
   }
@@ -155,13 +158,14 @@
   --warn-ink: #e8c477; --warn-bg: #2a2412;
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-  --plate: #1f1f1c; --bezel: #2e2d2a; --edge-hi: rgb(255 255 255 / 0.06);
+  --plate: #1d1d1b; --bezel: #34332f; --edge-hi: rgb(255 255 255 / 0.06);
   --shadow-lift: 0 24px 48px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 var(--edge-hi);
   --field-1: #151513; --field-2: #1b1b19; --field-3: #22221f; --field-4: #2a2a27; --on-field-4: #f0efec;
-    --path-1: #1f1f1c; --path-2: #1c2638; --path-3: var(--accent-field); --path-4: #0e1a2e; --show-ground: #1d1d1b; --show-plate: #2a2a27;
-  --split: #10100f; --choice: #2e2d2a; --show-field: #171715; --show-card: #262623; --show-card-edge: #34332f; --show-tabs: #21211e; --show-raised: #2a2a27; --picture-opacity: 0.9;
+    --path-1: #1f1f1c; --path-2: #1c2638; --path-3: var(--accent-field); --path-4: #0e1a2e; --show-ground: #141413; --show-plate: #20201e;
+  --split: #171715; --choice: #2e2d2a; --show-field: #171715; --show-card: #2c2c29; --show-card-edge: #3a3935; --show-tabs: #21211e; --show-raised: #33322f; --picture-opacity: 0.9;
   --lift: #272725; --lift-edge: #33322f; --path-card-1: #1d1d1b; --path-card-2: #242422; --path-card-3: #2c2c29; --path-card-4: #353431; --foot-name: #bebdb7;
   --paper: #e9e6df; --paper-ink: #383733; --paper-strong: #151513; --paper-lit: #bfcde0;
+  --ui-surface: #252523; --ui-raised: #2c2c29; --ui-border: #383733; --ui-rule: #2f2e2b;
   --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
   color-scheme: dark;
 }
@@ -184,6 +188,7 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 @media (hover: hover) and (pointer: fine) { a:hover { color: var(--accent-strong); } }
 p { margin: 0; text-wrap: pretty; }
 img, svg, video { display: block; max-width: 100%; }
+[data-ui] { --surface: var(--ui-surface); --raised: var(--ui-raised); --border: var(--ui-border); --rule: var(--ui-rule); }
 button, input, select, textarea { font: inherit; color: inherit; }
 /* Native controls keep explicit colours so Windows dark mode does not paint them white. */
 select, input, textarea { background-color: var(--surface); color: var(--ink); }
@@ -331,7 +336,8 @@ tbody tr:last-child td { border-bottom: 0; }
 .alert-error { background: var(--negative-soft); color: var(--negative); }
 /* An alert takes focus only so a screen reader reads it; it is not a control, so it draws no focus ring. */
 .alert[tabindex="-1"]:focus { outline: none; }
-.alert-warn { background: var(--warn-bg); color: var(--warn-ink); }
+/* Same note language as the homepage (YON 23.14): neutral raised ground, ink text, a 3px warn bar. */
+.alert-warn { background: var(--raised); color: var(--ink); box-shadow: inset 3px 0 0 var(--warn-ink); } /* taste-skill-ignore: note bar, not a shadow */
 .alert-title { font-weight: var(--w-strong); margin-bottom: var(--s1); }
 .notes { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); }
 .reading { display: flex; align-items: center; min-height: 52px; padding: 0 var(--s4); border-radius: var(--radius-control); background: var(--accent-soft); color: var(--ink); font-weight: var(--w-medium); }

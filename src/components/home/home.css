@@ -146,7 +146,7 @@
 
 /* ---------- showcase: lit panel, dark row ---------- */
 .show { background: var(--show-field); color: var(--show-ink); margin-top: var(--section-gap); padding-block: var(--s9); }
-.show { --raised: var(--show-raised); --rule: var(--show-card-edge); }
+.show { --raised: var(--show-raised); --rule: var(--show-card-edge); --ui-raised: var(--show-raised); --ui-rule: var(--show-card-edge); }
 .show .ui-card { background: var(--show-card); border-color: var(--show-card-edge); }
 .show-inner { display: grid; gap: var(--s6); }
 .show-title { color: var(--show-ink); }
@@ -205,7 +205,7 @@
 .ui-steps { margin: 0; padding-left: 1.25em; display: grid; gap: var(--s1); font-size: var(--fs-ui, 13px); }
 .ui-menu li .ui-meta { margin-left: auto; }
 .ui-ext-head { display: flex; align-items: center; gap: var(--s2); font-weight: var(--w-strong); }
-.ui-warn { font-size: var(--fs-ui, 13px); background: var(--warn-bg); color: var(--warn-ink); padding: var(--s2) var(--s3); border-radius: var(--radius-control); }
+.ui-warn { font-size: var(--fs-ui, 13px); background: var(--raised); color: var(--ink); box-shadow: inset 3px 0 0 var(--warn-ink); padding: var(--s2) var(--s3); border-radius: var(--radius-control); }
 
 /* ---------- features: panel with margin notes (the panel's fields are static text drawn like fields) ---------- */
 .feat { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: 0; margin-top: var(--section-gap); }

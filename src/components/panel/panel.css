@@ -258,7 +258,7 @@ details.side-block:not([open]) { gap: 0; }
   position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
   padding: var(--s3) var(--s4); padding-bottom: max(var(--s3), env(safe-area-inset-bottom));
   /* One ground step darker than the white panels it slides over, with a control-weight edge: the cut reads as a tray, not a clipped form. */
-  background: var(--stage); border: 1px solid var(--control); border-radius: var(--radius-card);
+  background: var(--stage); border: 1px solid var(--border); border-radius: var(--radius-card);
 }
 .action-bar .actions { justify-content: flex-end; }
 .action-bar .balance { flex: 1; min-width: 0; }
