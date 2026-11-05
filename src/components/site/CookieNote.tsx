@@ -42,7 +42,7 @@ export function CookieNote() {
   return (
     // A labelled region, not a heading: a screen reader's heading list starts with the page's own h1.
     <section ref={note} className="cookie-note" aria-label="Çerezler" data-away={away || undefined}>
-      <p>Yalnız oturum çerezi.<span className="cookie-more"> Analitik ve reklam yok.</span> <Link href="/gizlilik">Gizlilik</Link></p>
+      <p>Yalnız oturum çerezi.<span className="cookie-more"> Analitik ve reklam yok.</span> <Link href="/gizlilik" prefetch={false}>Gizlilik</Link></p>
       <div className="cookie-actions">
         <button type="button" className="btn" onClick={done}>Tamam</button>
         <button type="button" className="btn" onClick={() => dialog.current?.showModal()}>Tercihler</button>

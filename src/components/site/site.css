@@ -76,7 +76,7 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
 /* ---------- Cookie notice: a compact strip at the bottom left on desktop (the hero's live card is on the right), edge to edge on phones ---------- */
 /* A low strip at every width: one sentence beside two quiet buttons, on a tone step and a 1px edge (no heavy shadow). */
 .cookie-note {
-  position: fixed; z-index: 30; left: var(--page-margin); bottom: var(--s4); width: min(31rem, calc(100% - 2 * var(--page-margin)));
+  position: fixed; z-index: 30; left: var(--page-margin); bottom: max(var(--s4), env(safe-area-inset-bottom)); width: min(31rem, calc(100% - 2 * var(--page-margin)));
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--s4);
   padding: var(--s3) var(--s3) var(--s3) var(--s4); background: var(--surface); color: var(--ink); border-radius: var(--radius-card);
   border: 1px solid var(--border); /* taste-skill-ignore: floating strip edge */
@@ -84,6 +84,8 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
 .cookie-dialog h2 { margin: 0; font-size: var(--fs-section); font-weight: var(--w-strong); }
 .cookie-note p { margin: 0; font-size: var(--fs-body); line-height: 1.45; }
 .cookie-note a { color: var(--accent); }
+/* WCAG 2.5.8: the link's hit area is at least 24px tall without changing the line. */
+.cookie-note p a { display: inline-block; padding-block: var(--s1); margin-block: calc(var(--s1) * -1); }
 .cookie-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .cookie-actions .btn { min-height: var(--touch); flex: 1 1 auto; }
 .cookie-note > .cookie-actions { flex-wrap: nowrap; }
@@ -107,9 +109,10 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
   .cookie-note { width: auto; max-width: calc(100% - 2 * var(--page-margin)); }
   .cookie-more, .cookie-note > .cookie-actions .btn + .btn { display: none; }
 }
-/* Phones: the same strip, edge to edge, one line beside two 44px buttons (about 60px), so the hero receipt's total stays in view. */
+/* Phones: a thin band flush with the screen foot, one line beside one 44px button (52px plus the home indicator's inset), no
+   floating gap above it, so the hero's first screen keeps its receipt in view (YON 23.27). */
 @media (max-width: 640px) {
-  .cookie-note { left: var(--s2); right: var(--s2); bottom: max(var(--s2), env(safe-area-inset-bottom)); width: auto; column-gap: var(--s2); padding: var(--s2) var(--s2) var(--s2) var(--s3); }
+  .cookie-note { left: 0; right: 0; bottom: 0; width: auto; column-gap: var(--s2); padding: var(--s1) var(--s2) max(var(--s1), env(safe-area-inset-bottom)) var(--page-margin); border-radius: 0; border: 0; box-shadow: var(--shadow-float); } /* taste-skill-ignore: the band floats over the page; no edge-to-edge rule */
   .cookie-note p { font-size: 14px; line-height: 1.25; }
   /* One line and one button; the preferences only restate the Gizlilik page, which the link opens. */
   .cookie-more, .cookie-note > .cookie-actions .btn + .btn { display: none; }
