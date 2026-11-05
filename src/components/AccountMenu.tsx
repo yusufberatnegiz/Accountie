@@ -21,7 +21,8 @@ export function AccountMenu({ email }: { email?: string }) {
         onClick={(e) => { if (e.target === e.currentTarget) dialog.current?.close(); }}>
         <div className="account-body">
           <div className="account-head">
-            <h2 id="hesap-baslik">Hesap</h2>
+            {/* Not a heading: the dialog sits in the DOM before the page's h1, so an h2 here opened the outline (jury tur 8). */}
+            <p id="hesap-baslik" className="account-title">Hesap</p>
             <button className="btn btn-quiet btn-sm" type="button" onClick={() => dialog.current?.close()}>Kapat</button>
           </div>
           {email ? <p className="account-email" translate="no">{email}</p> : null}
