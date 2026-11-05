@@ -1,4 +1,4 @@
-// Sample data for the dev-only screen preview (/onizleme) and nothing else. Mirrors the real example receipt.
+// Sample data for the dev-only screen preview (/onizleme) and nothing else. Invented ÖRNEK vendor and tax number.
 import type { ReceiptDetail } from "@/db/queries";
 import { DEFAULT_RULES, rulesToRows } from "./default-rules";
 import { buildJournalLines, warn, type ReceiptData } from "./journal";
