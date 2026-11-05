@@ -27,8 +27,8 @@ export function SiteBar({ current }: { current?: "giris" | "kayit" }) {
         <div className="site-actions">
           <ThemeCycle />
           {current === "giris" ? null : <Link className="btn site-login" href="/giris">Giriş yap</Link>}
-          {/* On the auth screens the form's own button is the one accent action. */}
-          {current === "kayit" ? null : <Link className={current ? "btn site-cta" : "btn btn-accent site-cta"} href="/kayit">Hesap oluştur</Link>}
+          {/* On the auth screens the form’s own button is the one primary action. */}
+          {current === "kayit" ? null : <Link className={current ? "btn site-cta" : "btn btn-primary site-cta"} href="/kayit">Hesap oluştur</Link>}
           <SiteMenu links={[...LINKS, ...(current === "kayit" ? [] : [{ href: "/kayit", label: "Hesap oluştur" }])]} />
         </div>
       </header>

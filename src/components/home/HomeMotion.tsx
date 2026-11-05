@@ -43,11 +43,15 @@ export function HomeMotion() {
       const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(measure); };
       addEventListener("resize", onResize);
       // Timed mode starts when the target lines card is well on screen, so the landings and "Dengede" are seen, not the receipt alone.
+      // Re-measure once the section is rendered (content-visibility), then start a frame later: reads, writes and the start of
+      // the flight land in separate frames instead of one long one (YON 23.11).
       const io = new IntersectionObserver(([e]) => {
-        if (e.isIntersecting) { rule.classList.add("is-playing"); io.disconnect(); }
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        raf = requestAnimationFrame(() => { measure(); raf = requestAnimationFrame(() => rule.classList.add("is-playing")); });
       }, { threshold: 0.6 });
       io.observe(rule.querySelector(".rule-ledger") ?? rule);
-      offs.push(() => { removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
+      offs.push(() => { cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
     }
 
     const path = document.querySelector<HTMLElement>(".path");

@@ -6,7 +6,7 @@ import { useFormStatus } from "react-dom";
 export function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
   const { pending } = useFormStatus();
   return (
-    <button className="btn btn-accent" type="submit" disabled={pending} aria-disabled={pending}>
+    <button className="btn btn-primary" type="submit" disabled={pending} aria-disabled={pending}>
       {pending ? pendingLabel : label}
     </button>
   );
