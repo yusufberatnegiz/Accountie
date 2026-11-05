@@ -2,7 +2,7 @@ export type ThemeChoice = "system" | "light" | "dark";
 
 export const THEME_STORAGE_KEY = "tema";
 /** Matches --ground in globals.css; the browser bar takes this colour. */
-export const THEME_COLOR = { light: "#f3f2ef", dark: "#100f0d" } as const;
+export const THEME_COLOR = { light: "#f3f2ef", dark: "#0e0d0b" } as const;
 
 /**
  * Runs in <head> before first paint (layout.tsx): applies a saved manual choice so the page never flashes.

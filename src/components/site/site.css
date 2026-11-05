@@ -83,7 +83,7 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
 }
 .cookie-dialog-title { margin: 0; font-size: var(--fs-section); font-weight: var(--w-strong); }
 .cookie-note p { margin: 0; font-size: var(--fs-body); line-height: 1.45; }
-.cookie-note a { color: var(--accent); }
+.cookie-note a { color: inherit; }
 /* WCAG 2.5.8: the link's hit area is at least 24px tall without changing the line. */
 .cookie-note p a { display: inline-block; padding-block: var(--s1); margin-block: calc(var(--s1) * -1); }
 .cookie-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
