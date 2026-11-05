@@ -74,6 +74,16 @@ export const KAFE: Sample = {
   ],
 };
 
+/** The material scene's paper (YON 23.24): the list's parking receipt 0768, printed large. */
+export const OTOPARK: Sample = {
+  id: "otopark", label: "Otopark",
+  receipt: {
+    vendorName: "ÖRNEK OTOPARK", receiptNo: "0768", date: "2026-09-06",
+    vatLines: [{ rate: 20, grossKurus: 12000, vatKurus: 2000 }], totalKurus: 12000, paymentMethod: "card", category: "parking",
+  },
+  items: [{ name: "OTOPARK 4 SAAT", rate: 20, kurus: 12000 }],
+};
+
 /**
  * How the receipt was paid, as a muhasebeci asks it: a card is the partner's (331.01, the default rule) or the company's (309.01).
  * Both print as KREDİ KARTI on the receipt.

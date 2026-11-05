@@ -5,7 +5,7 @@ import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount } from "@/lib/money";
 import { defaultPayment, journalFor, PAYMENTS, SAMPLES, shownAccountName, sourcesFor, type Payment, type Source } from "./samples";
 import { AppWindow, Phone } from "./Frames";
-import { Odometer } from "./Odometer";
+import { Odometer, Roll } from "./Odometer";
 import { Thermal } from "./Thermal";
 
 /** The line made from the printed rows `hot` marks (Thermal's fiş izi), so the paper and the line light together. */
@@ -32,6 +32,10 @@ export function Counter() {
   const [copy, setCopy] = useState<"" | "ok" | "fail">("");
   const [hot, setHot] = useState<Source | null>(null);
   const [touched, setTouched] = useState(false);
+  // Without script the pickers would move (CSS :checked) beside a receipt that never changes: they are disabled until hydrated.
+  const [live, setLive] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- true only once the client runs the counter
+  useEffect(() => setLive(true), []);
   // Rows at or past this index are new after a choice (Market has more lines): they drop in, the others stay keyed by position.
   const [kept, setKept] = useState(Infinity);
   const sample = SAMPLES.find((s) => s.id === sampleId) ?? SAMPLES[0];
@@ -41,6 +45,10 @@ export function Counter() {
   const credit = lines.reduce((s, l) => s + l.creditKurus, 0);
   const vat = sample.receipt.vatLines;
   const slot = useRef<HTMLDivElement>(null);
+  // "Dengede" pops only when the balance itself changes (YON 23.3.3), not on the first choice.
+  const [bal, setBal] = useState(balanced);
+  const [flips, setFlips] = useState(0);
+  if (bal !== balanced) { setBal(balanced); setFlips((n) => n + 1); }
   // Once after load the counter shows its own link: the TOPLAM rows on the paper and the 331.01 line they make light together for
   // under two seconds (YON 23.20). Any input first, or reduced motion, and it never runs.
   useEffect(() => {
@@ -49,7 +57,7 @@ export function Counter() {
     const t: number[] = [];
     const stop = () => { t.forEach(clearTimeout); evs.forEach((e) => removeEventListener(e, stop)); };
     evs.forEach((e) => addEventListener(e, stop, { passive: true }));
-    t.push(window.setTimeout(() => setHot({ kind: "total" }), 1400), window.setTimeout(() => { setHot(null); stop(); }, 3200));
+    t.push(window.setTimeout(() => setHot({ kind: "total" }), 1200), window.setTimeout(() => { setHot(null); stop(); }, 3000));
     return stop;
   }, []);
   // The new paper rises once it is committed (the choice renders in a transition, so not in the click's frame).
@@ -72,7 +80,7 @@ export function Counter() {
 
   const controls = (
     <div className="counter-controls">
-      <fieldset className="segmented">
+      <fieldset className="segmented" disabled={!live}>
         <legend>Örnek fiş</legend>
         {SAMPLES.map((s) => (
           <label key={s.id}>
@@ -82,7 +90,7 @@ export function Counter() {
           </label>
         ))}
       </fieldset>
-      <fieldset className="segmented">
+      <fieldset className="segmented" disabled={!live}>
         <legend>Ödeme</legend>
         {PAYMENTS.map((p) => (
           <label key={p.id}>
@@ -111,7 +119,7 @@ export function Counter() {
                 <tbody>
                   {lines.map((l, i) => (
                     <tr key={i} className={i >= kept ? "counter-row counter-row-new" : "counter-row"} data-lit={same(hot, sources[i]) || undefined} onMouseEnter={() => setHot(sources[i])}>
-                      <td><Odometer className="code odo-code" value={l.accountCode} /><span className="code-name">{shownAccountName(l.accountName)}</span></td>
+                      <td><Odometer className="code odo-code" value={l.accountCode} /><span className="code-name"><Roll value={shownAccountName(l.accountName)} /></span></td>
                       <td className="num to-luca">{l.debitKurus ? <Odometer value={formatTrAmount(l.debitKurus)} /> : ""}</td>
                       <td className="num to-luca">{l.creditKurus ? <Odometer value={formatTrAmount(l.creditKurus)} /> : ""}</td>
                     </tr>
@@ -122,19 +130,21 @@ export function Counter() {
               <div className="counter-foot">
                 <p className="counter-balance" aria-live="polite">
                   <span className="counter-sum">Borç <span className="to-luca"><Odometer value={formatTrAmount(debit)} /></span> · Alacak <span className="to-luca"><Odometer value={formatTrAmount(credit)} /></span></span> ·{" "}
-                  <span key={String(balanced)} className={`counter-state ${balanced ? "balance-ok" : "balance-off"}`}>{balanced ? "Dengede" : "Dengesiz"}</span>
+                  <span key={flips} data-pop={flips > 0 || undefined} className={`counter-state ${balanced ? "balance-ok" : "balance-off"}`}>{balanced ? "Dengede" : "Dengesiz"}</span>
                 </p>
                 <p className="counter-formula">
                   Matrah = {vat.map((v) => `${formatTrAmount(v.grossKurus)} - ${formatTrAmount(v.vatKurus ?? 0)}`).join(" ve ")}
                 </p>
                 <div className="counter-copy">
-                  <button type="button" className="btn" onClick={copyLines}>Satırları kopyala</button>
+                  <button type="button" className="btn" onClick={copyLines} disabled={!live}>Satırları kopyala</button>
                   <p aria-live="polite" className="counter-status">
                     {copy === "ok" ? "Kopyalandı. Satırlar Luca Fiş Detayı kolon sırasında." : copy === "fail" ? "Panoya yazılamadı. Satırları seçip kopyalayın." : ""}
                   </p>
                 </div>
                 {warnings.map((w) => <p className="counter-warn" key={w.code}>{w.message}</p>)}
               </div>
+              {/* The file this fiş goes into: the window's foot holds the story's end, not empty surface (YON 23.24). */}
+              <p className="counter-file"><span className="ui-file-name">luca-fisler-{(sample.receipt.date ?? "").replaceAll("-", "")}.xlsx</span><span className="ui-meta">1 fiş, {lines.length} satır</span></p>
             </div>
           </div>
         </AppWindow>

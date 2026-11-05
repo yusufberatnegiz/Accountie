@@ -72,12 +72,14 @@ export function ShowRow({ pieces }: { pieces: Piece[] }) {
       </div>
       <div className="show-row">
         {pieces.map((p, i) => (
-          <figure className="show-piece" key={p.name} id={`parca-${i}`} role="tabpanel" aria-labelledby={`parca-sekme-${i}`} data-lit={i === active || undefined}>
+          // The tabpanel role sits on a div (a figure's own role is figure); the panel is a Tab stop, as APG asks of a panel whose
+          // piece may hold no focusable row.
+          <div className="show-piece" key={p.name} id={`parca-${i}`} role="tabpanel" tabIndex={0} aria-labelledby={`parca-sekme-${i}`} data-lit={i === active || undefined}><figure className="show-fig">
             <div className="show-ui"><AppWindow title={p.screen} className="show-win">{p.body}</AppWindow></div>
             <figcaption className="show-cap">
               <span className="show-cap-name">{p.name}</span> <span className="show-cap-text">{p.text}</span>
             </figcaption>
-          </figure>
+          </figure></div>
         ))}
       </div>
     </div>
