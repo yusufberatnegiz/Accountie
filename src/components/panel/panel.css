@@ -62,7 +62,7 @@
 .title-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); min-width: 0; }
 .crumb { font-size: var(--fs-small); color: var(--muted); }
 /* 44px touch target without moving the layout. */
-.crumb a { display: inline-block; padding: 13px 8px 13px 0; margin: -13px 0; outline-offset: -2px; color: var(--muted); }
+.crumb a { display: inline-block; padding: 13px 8px; margin: -13px -8px; outline-offset: -2px; color: var(--muted); }
 .finding { font-size: var(--fs-section); color: var(--muted); }
 .finding-off { color: var(--negative); font-weight: var(--w-medium); }
 .dash { color: var(--faint); }
@@ -108,13 +108,14 @@
 .receipts .col-status { width: 120px; }
 .receipts tbody tr { position: relative; transition: background-color 120ms ease; }
 @media (hover: hover) and (pointer: fine) and (min-width: 901px) {
-  .r-status { position: relative; }
-  .r-status::after { content: ""; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border: solid var(--faint); border-width: 1.5px 1.5px 0 0; transform: rotate(45deg); transition: transform 120ms var(--ease-out), border-color 120ms ease; }
+  /* The chevron is placed on the row, not a positioned cell, so the row link's ::after stays on top across the status column too. */
+  .r-status::after { content: ""; pointer-events: none; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border: solid var(--faint); border-width: 1.5px 1.5px 0 0; transform: rotate(45deg); transition: transform 120ms var(--ease-out), border-color 120ms ease; }
   .receipts tbody tr:hover .r-status::after { border-color: var(--ink); transform: translateX(4px) rotate(45deg); }
 }
 .r-vendor { min-width: 0; }
 .row-link { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.3; overflow-wrap: anywhere; color: var(--ink); font-weight: var(--w-medium); text-decoration: none; }
-/* The whole row opens the receipt. */
+/* The whole row opens the receipt; the padding also gives the link's own box 44px without moving the text. */
+.row-link { padding-block: 13px; margin-block: -13px; overflow: clip; overflow-clip-margin: content-box; }
 .row-link::after { content: ""; position: absolute; inset: 0; }
 .row-link:focus-visible { outline: none; }
 .receipts tbody tr:has(.row-link:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
@@ -360,19 +361,17 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   /* Rows become two lines: vendor and total, then number, date, account and status. Fields move, none is dropped. */
   .receipts thead { display: none; }
   .receipts, .receipts tbody { display: block; }
-  .receipts tr { display: grid; grid-template-columns: minmax(0, 3.5rem) 5.75rem minmax(0, 1fr) auto; gap: 2px var(--s3); align-items: baseline; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
+  /* Number, date and code sit in fixed columns so their digits line up from row to row; the spacer takes the rest. */
+  .receipts tr { display: grid; grid-template-columns: minmax(0, 3rem) 4.5rem minmax(4rem, max-content) minmax(0, 1fr) auto; gap: 2px var(--s2); align-items: baseline; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
   .receipts tbody tr:last-child { border-bottom: 0; }
   .receipts td, .receipts td:first-child, .receipts td:last-child { height: auto; padding: 0; border: 0; }
-  .receipts .r-vendor { grid-column: 1 / 4; }
-  .receipts .r-total { grid-column: 4; grid-row: 1; font-weight: var(--w-strong); }
-  /* The meta line is three fixed columns in tabular figures: number, date and code line up from row to row, left-aligned like the vendor above them. */
-  .receipts .r-no, .receipts .r-date, .receipts .r-code { grid-row: 2; font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; }
-  .receipts .r-no { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  /* Number and date start at the vendor's left edge, not right-aligned inside their columns. */
-  .receipts .r-no, .receipts .r-date { text-align: left; }
-  /* Codes start at one x on every row, whatever the width of the status pill. */
-  .receipts .r-code { color: var(--ink); text-align: left; }
-  .receipts .r-status { grid-column: 4; grid-row: 2; text-align: right; }
+  .receipts .r-vendor { grid-column: 1 / 5; }
+  .receipts .r-total { grid-column: 5; grid-row: 1; font-weight: var(--w-strong); white-space: nowrap; }
+  .receipts .r-no, .receipts .r-date, .receipts .r-code { grid-row: 2; font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  /* The evrak number starts at the vendor's edge; date and code, the figures compared down the list, are right-aligned. */
+  .receipts .r-no { overflow: hidden; text-overflow: ellipsis; text-align: left; }
+  .receipts .r-code { color: var(--ink); }
+  .receipts .r-status { grid-column: 5; grid-row: 2; text-align: right; }
   .r-notes { display: block; margin: 0; }
   .side { grid-template-columns: minmax(0, 1fr); }
   /* The tablet keeps the journal a table (one line per row), so the balance strip is on the first screen above the tray. */
@@ -502,6 +501,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .setting-save .btn { width: 100%; }
 }
 @media (max-width: 360px) {
+  /* 320px: the three fixed columns and the pill do not fit; the meta line packs to its contents, still right-aligned. */
+  .receipts tr { grid-template-columns: auto auto minmax(0, 1fr) 0 auto; column-gap: 6px; }
   /* 320px: the code column gives up 12px so the amount shows whole beside the switch. */
   .journal tr { grid-template-columns: 6.5rem minmax(0, 1fr) auto; }
   .journal tr:not(:has(.col-del)) td.col-amount { grid-template-columns: 6.5rem minmax(0, 1fr); }
