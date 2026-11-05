@@ -1,12 +1,15 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount } from "@/lib/money";
 import { defaultPayment, journalFor, PAYMENTS, SAMPLES, shownAccountName, sourcesFor, type Payment, type Source } from "./samples";
 import { AppWindow, Phone } from "./Frames";
 import { Odometer } from "./Odometer";
 import { Thermal } from "./Thermal";
+
+/** The line made from the printed rows `hot` marks (Thermal's fiş izi), so the paper and the line light together. */
+const same = (a: Source | null, b: Source | undefined) => !!a && !!b && a.kind === b.kind && (a.kind === "total" || (b.kind !== "total" && a.rate === b.rate));
 
 const PRINTED: Record<Payment["id"], string> = { partner: "KREDİ KARTI", company: "KREDİ KARTI", cash: "NAKİT" };
 
@@ -36,6 +39,17 @@ export function Counter() {
   const credit = lines.reduce((s, l) => s + l.creditKurus, 0);
   const vat = sample.receipt.vatLines;
   const slot = useRef<HTMLDivElement>(null);
+  // Once after load the counter shows its own link: the TOPLAM rows on the paper and the 331.01 line they make light together for
+  // under two seconds (YON 23.20). Any input first, or reduced motion, and it never runs.
+  useEffect(() => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const evs = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    const t: number[] = [];
+    const stop = () => { t.forEach(clearTimeout); evs.forEach((e) => removeEventListener(e, stop)); };
+    evs.forEach((e) => addEventListener(e, stop, { passive: true }));
+    t.push(window.setTimeout(() => setHot({ kind: "total" }), 1400), window.setTimeout(() => { setHot(null); stop(); }, 3200));
+    return stop;
+  }, []);
   function swapPaper() {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     slot.current?.firstElementChild?.animate([{ opacity: 0, transform: "translateY(8px)" }, {}], { duration: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
@@ -75,20 +89,22 @@ export function Counter() {
   );
 
   return (
-    <div className="counter" data-ui data-touched={touched || undefined} style={{ "--rows": lines.length } as CSSProperties}>
+    <div className="counter" data-ui data-touched={touched || undefined}>
       <div className="counter-body">
         <AppWindow title={`Fiş ${sample.receipt.receiptNo}, Luca satırları`} className="counter-win">
           <div className="counter-app">
             {/* The panel's own rail, drawn: the phone rides over its lower part. */}
-            <ul className="counter-rail" aria-hidden="true"><li data-on>Fişler</li><li>Kurallar</li><li>Luca dosyası</li></ul>
+            <ul className="counter-rail" aria-hidden="true"><li data-on>Fişler</li><li>Kurallar</li></ul>
             <div className="counter-sheet">
               {controls}
+              {/* Phone: the receipt is above the card, so the card names it and its total; a choice and its paper stay on one screen. */}
+              <p className="counter-chip"><span translate="no">{sample.receipt.vendorName}</span><span>TOPLAM <Odometer value={formatTrAmount(sample.receipt.totalKurus ?? 0)} /></span></p>
               <table className="counter-lines" onMouseLeave={() => setHot(null)}>
                 <caption className="visually-hidden">Luca Fiş Detayı satırları</caption>
                 <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
                 <tbody>
                   {lines.map((l, i) => (
-                    <tr key={i} className={i >= kept ? "counter-row counter-row-new" : "counter-row"} onMouseEnter={() => setHot(sources[i])}>
+                    <tr key={i} className={i >= kept ? "counter-row counter-row-new" : "counter-row"} data-lit={same(hot, sources[i]) || undefined} onMouseEnter={() => setHot(sources[i])}>
                       <td><Odometer className="code odo-code" value={l.accountCode} /><span className="code-name">{shownAccountName(l.accountName)}</span></td>
                       <td className="num to-luca">{l.debitKurus ? <Odometer value={formatTrAmount(l.debitKurus)} /> : ""}</td>
                       <td className="num to-luca">{l.creditKurus ? <Odometer value={formatTrAmount(l.creditKurus)} /> : ""}</td>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { AppWindow } from "./Frames";
 
 export type Piece = { name: string; screen: string; text: string; body: ReactNode };
@@ -32,24 +32,26 @@ export function ShowRow({ pieces }: { pieces: Piece[] }) {
     return () => removeEventListener("resize", place);
   }, [active]);
 
+  // Tabs (WAI-ARIA): one stop for the strip; arrows, Home and End move and choose.
+  function onKey(e: KeyboardEvent<HTMLUListElement>) {
+    const n = pieces.length;
+    const to = e.key === "ArrowRight" ? (active + 1) % n : e.key === "ArrowLeft" ? (active - 1 + n) % n : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : -1;
+    if (to < 0) return;
+    e.preventDefault();
+    setActive(to);
+    list.current?.querySelectorAll<HTMLElement>(".show-pick")[to]?.focus();
+  }
+
+  // The tabs come first in the DOM, as on screen (WCAG 2.4.3); the grid rows place them.
   return (
     <div className="show-stage">
-      <div className="show-row">
-        {pieces.map((p, i) => (
-          <figure className="show-piece" key={p.name} data-lit={i === active || undefined}>
-            <div className="show-ui"><AppWindow title={p.screen} className="show-win">{p.body}</AppWindow></div>
-            <figcaption className="show-cap">
-              <span className="show-cap-name">{p.name}</span> <span className="show-cap-text">{p.text}</span>
-            </figcaption>
-          </figure>
-        ))}
-      </div>
       <div className="show-side">
         <div className="show-tabs" data-hl={clip ? "" : undefined}>
-          <ul className="show-index" aria-label="Parçalar" ref={list}>
+          <ul className="show-index" role="tablist" aria-label="Parçalar" ref={list} onKeyDown={onKey}>
             {pieces.map((p, i) => (
-              <li key={p.name}>
-                <button type="button" className="show-pick" aria-pressed={i === active} onClick={() => setActive(i)}>{p.name}</button>
+              <li key={p.name} role="presentation">
+                <button type="button" role="tab" id={`parca-sekme-${i}`} className="show-pick" aria-selected={i === active} aria-controls={`parca-${i}`}
+                  tabIndex={i === active ? 0 : -1} onClick={() => setActive(i)}>{p.name}</button>
               </li>
             ))}
           </ul>
@@ -62,6 +64,16 @@ export function ShowRow({ pieces }: { pieces: Piece[] }) {
         <div className="show-now" aria-hidden="true" key={active}>
           <p className="show-text">{pieces[active].text}</p>
         </div>
+      </div>
+      <div className="show-row">
+        {pieces.map((p, i) => (
+          <figure className="show-piece" key={p.name} id={`parca-${i}`} role="tabpanel" aria-labelledby={`parca-sekme-${i}`} data-lit={i === active || undefined}>
+            <div className="show-ui"><AppWindow title={p.screen} className="show-win">{p.body}</AppWindow></div>
+            <figcaption className="show-cap">
+              <span className="show-cap-name">{p.name}</span> <span className="show-cap-text">{p.text}</span>
+            </figcaption>
+          </figure>
+        ))}
       </div>
     </div>
   );
