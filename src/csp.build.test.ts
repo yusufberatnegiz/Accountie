@@ -53,7 +53,7 @@ describe.skipIf(!built)("production build CSP", () => {
     expect((await fetch(`${base}/api/receipts`)).status).toBe(401);
   });
 
-  it("keeps the security headers on the panel's fail-closed 503 when the auth config is missing", async () => {
+  it("keeps the security headers on the fail-closed 503 of the panel, auth pages and API when the auth config is missing", async () => {
     // Empty counts as missing (src/lib/auth/server.ts), whatever the developer's shell has set.
     const bare = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", String(PORT + 1)], {
       stdio: "ignore",
@@ -69,6 +69,12 @@ describe.skipIf(!built)("production build CSP", () => {
       expect(res!.headers.get("strict-transport-security")).toContain("max-age=");
       expect(res!.headers.get("x-frame-options")).toBe("DENY");
       expect(res!.headers.get("content-security-policy")).toContain("'strict-dynamic'");
+      for (const path of ["/giris", "/kayit", "/api/receipts"]) {
+        const other = await fetch(`http://localhost:${PORT + 1}${path}`, { redirect: "manual" });
+        expect(other.status, path).toBe(503);
+        expect(other.headers.get("retry-after"), path).toBe("60");
+        expect(other.headers.get("x-frame-options"), path).toBe("DENY");
+      }
     } finally {
       bare.kill();
     }

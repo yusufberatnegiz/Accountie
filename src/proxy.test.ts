@@ -35,9 +35,11 @@ describe("proxy matcher", () => {
     }
   });
 
-  // API routes are skipped here on purpose: each route handler checks the session itself (routes.test.ts).
-  it("skips API routes", () => {
-    expect(guarded("/api/receipts")).toBe(false);
+  // API routes come through only for the auth config check: each route handler checks the session itself (routes.test.ts).
+  it("sends API routes through for the auth config check", () => {
+    for (const url of ["/api/receipts", "/api/auth/get-session", "/api/extension/receipts"]) {
+      expect(guarded(url), url).toBe(true);
+    }
   });
 });
 
@@ -100,6 +102,29 @@ describe("proxy panel CSP", () => {
     expect(await res.text()).not.toContain("NEON");
     error.mockRestore();
     vi.mocked(getAuth).mockReset();
+  });
+
+  it("fails closed with a 503 on the auth pages and the API too, without a body that names the config", async () => {
+    vi.mocked(getAuth).mockImplementation(() => { throw new Error("NEON_AUTH_BASE_URL ortam değişkeni eksik."); });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    for (const path of ["/giris", "/kayit", "/api/receipts"]) {
+      const res = await proxy(new NextRequest(`http://localhost${path}`));
+      expect(res.status, path).toBe(503);
+      expect(res.headers.get("retry-after"), path).toBe("60");
+      expect(res.headers.get("x-middleware-next"), path).toBeNull();
+      expect(await res.text(), path).not.toContain("NEON");
+    }
+    expect((await proxy(new NextRequest("http://localhost/giris"))).headers.get("content-security-policy")).toMatch(/'strict-dynamic'/);
+    expect(await (await proxy(new NextRequest("http://localhost/api/receipts"))).json()).toEqual({ error: "Hizmet geçici olarak kullanılamıyor. Bir dakika sonra yeniden deneyin." });
+    error.mockRestore();
+    vi.mocked(getAuth).mockReset();
+  });
+
+  it("passes API requests through untouched when the auth config is there", async () => {
+    vi.mocked(getAuth).mockReturnValue({} as unknown as ReturnType<typeof getAuth>);
+    const res = await proxy(new NextRequest("http://localhost/api/receipts", { method: "POST", body: "{}" }));
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+    expect(res.headers.get("content-security-policy")).toBeNull();
   });
 
   it("keeps the request body for POSTs to the panel", async () => {
