@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+// The auth pages' CSP has no 'unsafe-eval': without this, zod's Function("") probe logs a script-src violation on every load.
+z.config({ jitless: true });
+
 // Shared by the server actions and the form: the form runs the same check before sending, the server always runs it again.
 // Login only asks for a password; the 8-character rule is the signup's (an older short password still reaches Neon Auth).
 export const loginSchema = z.object({ email: z.email().max(200), password: z.string().min(1).max(128) });

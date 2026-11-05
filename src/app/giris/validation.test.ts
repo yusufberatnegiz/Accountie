@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { checkAuthForm } from "./validation";
+
+it("turns off zod's eval probe, which the auth pages' CSP would report on every load", () => {
+  expect(z.config().jitless).toBe(true);
+});
 
 describe("checkAuthForm (the form's pre-send check, same schema as the server)", () => {
   it("passes valid values", () => {
