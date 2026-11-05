@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount } from "@/lib/money";
 import { defaultPayment, journalFor, PAYMENTS, SAMPLES, shownAccountName, sourcesFor, type Payment, type Source } from "./samples";
@@ -22,6 +22,8 @@ const PRINTED: Record<Payment["id"], string> = { partner: "KREDİ KARTI", compan
  * The pickers sit in the window's own toolbar, beside a thin rail of the panel's screens; on a phone the window is a card under the
  * phone and the pickers are at its top, so a choice and its lines are on one screen (YON 23.15). A new sample swaps the paper in the
  * same DOM (one Web Animation), no remount.
+ * The radios are uncontrolled and a choice renders in a transition: the click's frame paints only the native radio, and quick
+ * choices drop the renders they overtake (INP, YON 23.22). autoComplete off: the browser does not restore a choice React never saw.
  * Pointing at a line marks the strip rows it came from (a pointer extra only: the rows are not focus stops). Server-rendered with sample A, so without script the table is there.
  */
 export function Counter() {
@@ -50,10 +52,14 @@ export function Counter() {
     t.push(window.setTimeout(() => setHot({ kind: "total" }), 1400), window.setTimeout(() => { setHot(null); stop(); }, 3200));
     return stop;
   }, []);
-  function swapPaper() {
+  // The new paper rises once it is committed (the choice renders in a transition, so not in the click's frame).
+  const shown = useRef(sampleId);
+  useLayoutEffect(() => {
+    if (shown.current === sampleId) return;
+    shown.current = sampleId;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     slot.current?.firstElementChild?.animate([{ opacity: 0, transform: "translateY(8px)" }, {}], { duration: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
-  }
+  }, [sampleId]);
 
   async function copyLines() {
     try {
@@ -70,8 +76,8 @@ export function Counter() {
         <legend>Örnek fiş</legend>
         {SAMPLES.map((s) => (
           <label key={s.id}>
-            <input type="radio" name="ornek-fis" value={s.id} checked={s.id === sampleId}
-              onChange={() => { setKept(lines.length); setSampleId(s.id); setCopy(""); setHot(null); setTouched(true); swapPaper(); }} />
+            <input type="radio" name="ornek-fis" value={s.id} autoComplete="off" defaultChecked={s.id === SAMPLES[0].id}
+              onChange={() => startTransition(() => { setKept(lines.length); setSampleId(s.id); setCopy(""); setHot(null); setTouched(true); })} />
             <span>{s.label}</span>
           </label>
         ))}
@@ -80,7 +86,7 @@ export function Counter() {
         <legend>Ödeme</legend>
         {PAYMENTS.map((p) => (
           <label key={p.id}>
-            <input type="radio" name="odeme" value={p.id} checked={p.id === payment} onChange={() => { setPayment(p.id); setCopy(""); setTouched(true); }} />
+            <input type="radio" name="odeme" value={p.id} autoComplete="off" defaultChecked={p.id === defaultPayment(SAMPLES[0])} onChange={() => startTransition(() => { setPayment(p.id); setCopy(""); setTouched(true); })} />
             <span>{p.label}</span>
           </label>
         ))}
