@@ -24,7 +24,9 @@ export function CookieNote() {
   useEffect(() => {
     if (!shown) return;
     // Past the first screen it steps aside, so it never lies over the page's headings; back at the top it returns.
-    const onScroll = () => setAway(window.scrollY > window.innerHeight * 0.5 && !dialog.current?.open);
+    // React bails out on an unchanged value, but only after scheduling; compare first so a scroll costs no render.
+    let last = false;
+    const onScroll = () => { const v = window.scrollY > window.innerHeight * 0.5 && !dialog.current?.open; if (v !== last) { last = v; setAway(v); } };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);

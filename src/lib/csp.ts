@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import { THEME_INIT_SCRIPT } from "./theme";
 
-// Marks <html> before first paint so the homepage's entrance animations run only with script, and not in a tab opened in
-// the background. In the root layout (not the page), so it is also set when the homepage is reached by client navigation.
-const JS_FLAG = "if(document.visibilityState!=='hidden')document.documentElement.classList.add('js')";
+// Marks <html> before first paint so the homepage's entrance animations run only with script. A tab opened in the background
+// gets it when first shown, so its entrances play on first view. In the root layout (not the page), so it is also set when the
+// homepage is reached by client navigation.
+const JS_FLAG = "(function(d){function f(){d.documentElement.classList.add('js')}d.visibilityState!=='hidden'?f():d.addEventListener('visibilitychange',f,{once:true})})(document)";
 /** The root layout's <head> script. Constant text: the panel CSP allows it by hash. */
 export const HEAD_SCRIPT = THEME_INIT_SCRIPT + ";" + JS_FLAG;
 /** Production only: public/sw.js serves public/cevrimdisi.html when a navigation fails offline (caches nothing else). */

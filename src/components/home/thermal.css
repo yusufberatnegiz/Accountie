@@ -2,15 +2,15 @@
 /* Thermal strip drawn in code: paper in both themes, printed grey, torn bottom edge. */
 .thermal { color: var(--paper-ink); font-size: 13px; line-height: 1.45; letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
 .thermal-paper {
-  background: var(--paper); padding: var(--s5) var(--s4) var(--s7); display: grid; gap: 2px;
+  background: var(--paper); padding: var(--s5) var(--s4) var(--s7); display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px;
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), 92% 100%, 84% calc(100% - 8px), 76% 100%, 68% calc(100% - 8px), 60% 100%, 52% calc(100% - 8px), 44% 100%, 36% calc(100% - 8px), 28% 100%, 20% calc(100% - 8px), 12% 100%, 4% calc(100% - 8px), 0 100%);
 }
 .thermal p { margin: 0; }
 .thermal-vendor { font-weight: 600; text-align: center; color: var(--paper-strong); margin-bottom: var(--s3) !important; }
-.thermal-items { display: grid; gap: 2px; margin: var(--s3) 0; }
+.thermal-items { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; margin: var(--s3) 0; }
 .thermal-row { display: flex; justify-content: space-between; gap: var(--s3); padding: 1px var(--s1); margin-inline: calc(var(--s1) * -1); border-radius: 2px; transition: background-color var(--t-hover) ease, color var(--t-hover) ease; }
-/* A long item name wraps under itself, as an ÖKC prints it; the amount column is never cut. */
-.thermal-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+/* Fixed columns, as an ÖKC prints them: a long item name is cut with an ellipsis, never broken mid-word; the amount is never cut. */
+.thermal-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .thermal-row > span:last-child { flex: none; white-space: nowrap; }
 .thermal-sep { margin-top: var(--s2) !important; }
 .thermal-total { font-weight: 600; color: var(--paper-strong); }

@@ -64,17 +64,12 @@
 .auth-stage-note { margin: 0; font-size: var(--fs-body); color: var(--muted); }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Travel only on the form: it is painted from the first frame. The strip prints from its slot, then the lines arrive. */
+  /* Two quiet arrivals, both painted from the first frame and settled by 600ms: the form rises 12px, the card settles onto its
+     plate. The strip does not move (no printer drop, YON 23.3.7). */
   .auth-form { animation: auth-rise 500ms var(--ease-out) both; }
-  .auth-strip .thermal-paper { animation: auth-print 900ms var(--ease-out) both; animation-delay: 200ms; }
-  .auth-sheet { animation: auth-rise 500ms var(--ease-out) both; animation-delay: 500ms; }
-  .auth-sheet tbody tr { animation: auth-row 360ms var(--ease-out) both; animation-delay: calc(800ms + var(--i) * 140ms); }
-  .auth-balance { animation: auth-row 320ms var(--ease-out) both; animation-delay: 1300ms; }
+  .auth-sheet { animation: auth-rise 300ms var(--ease-out) 200ms both; }
 }
 @keyframes auth-rise { from { transform: translateY(12px); } to { transform: none; } }
-/* Arrivals start from a visible state (YON.md 16.3). */
-@keyframes auth-print { from { transform: translateY(-12%); } to { transform: none; } }
-@keyframes auth-row { from { opacity: 0.6; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 @media (max-width: 1180px) and (min-width: 901px) {
   .auth { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
