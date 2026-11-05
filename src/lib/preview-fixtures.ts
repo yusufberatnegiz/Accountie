@@ -18,40 +18,40 @@ export const PREVIEW_RECEIPTS: ReceiptDetail[] = [
     vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
   }),
   base("00000000-0000-4000-8000-000000000002", {
-    vendorName: "OPET PETROLCÜLÜK A.Ş.", receiptNo: "1182", date: null,
+    vendorName: "ÖRNEK AKARYAKIT A.Ş.", receiptNo: "1182", date: null,
     vatLines: [{ rate: 20, grossKurus: 250000, vatKurus: null }], totalKurus: 250000, paymentMethod: "cash", category: "fuel",
   }, { warnings: [warn("vehicle"), warn("date_invalid"), warn("vat_computed"), warn("tax_number_invalid")], taxNumber: "1234567890" }),
   { ...base("00000000-0000-4000-8000-000000000003", {
-    vendorName: "KIRTASİYE DÜNYASI", receiptNo: "0912", date: "2026-09-02",
+    vendorName: "ÖRNEK KIRTASİYE", receiptNo: "0912", date: "2026-09-02",
     vatLines: [{ rate: 20, grossKurus: 48000, vatKurus: 8000 }], totalKurus: 48000, paymentMethod: "cash", category: "stationery",
   }), status: "approved" },
   { ...base("00000000-0000-4000-8000-000000000004", {
-    vendorName: "PTT KARGO", receiptNo: "5531", date: "2026-08-28",
+    vendorName: "ÖRNEK KARGO", receiptNo: "5531", date: "2026-08-28",
     vatLines: [{ rate: 20, grossKurus: 13500, vatKurus: 2250 }], totalKurus: 13500, paymentMethod: "card", category: "cargo",
   }), status: "exported" },
   // A month of a small office at its real size, so the list is seen at working density.
   base("00000000-0000-4000-8000-000000000005", {
-    vendorName: "KALEİÇİ PANSİYON TURİZM LTD.ŞTİ", receiptNo: "0311", date: "2026-09-04",
+    vendorName: "ÖRNEK PANSİYON TURİZM LTD.ŞTİ", receiptNo: "0311", date: "2026-09-04",
     vatLines: [{ rate: 10, grossKurus: 360000, vatKurus: 32727 }], totalKurus: 360000, paymentMethod: "card", category: "lodging",
   }),
   { ...base("00000000-0000-4000-8000-000000000006", {
-    vendorName: "ŞELALE OTOPARK İŞLETMECİLİĞİ", receiptNo: "2208", date: "2026-09-03",
+    vendorName: "ÖRNEK OTOPARK İŞLETMECİLİĞİ", receiptNo: "2208", date: "2026-09-03",
     vatLines: [{ rate: 20, grossKurus: 15000, vatKurus: 2500 }], totalKurus: 15000, paymentMethod: "cash", category: "parking",
   }), status: "approved" },
   { ...base("00000000-0000-4000-8000-000000000007", {
-    vendorName: "AKDENİZ TEMİZLİK MALZEMELERİ", receiptNo: "0764", date: "2026-09-01",
+    vendorName: "ÖRNEK TEMİZLİK MALZEMELERİ", receiptNo: "0764", date: "2026-09-01",
     vatLines: [{ rate: 20, grossKurus: 64800, vatKurus: 10800 }], totalKurus: 64800, paymentMethod: "card", category: "cleaning",
   }), status: "approved" },
   { ...base("00000000-0000-4000-8000-000000000008", {
-    vendorName: "MURATPAŞA KARDEŞLER GIDA", receiptNo: "4419", date: "2026-08-30",
+    vendorName: "ÖRNEK GIDA", receiptNo: "4419", date: "2026-08-30",
     vatLines: [{ rate: 1, grossKurus: 21740, vatKurus: 215 }], totalKurus: 21740, paymentMethod: "cash", category: "food_grocery",
   }), status: "approved" },
   { ...base("00000000-0000-4000-8000-000000000009", {
-    vendorName: "LARA TAKSİ DURAĞI", receiptNo: "0093", date: "2026-08-29",
+    vendorName: "ÖRNEK TAKSİ DURAĞI", receiptNo: "0093", date: "2026-08-29",
     vatLines: [{ rate: 20, grossKurus: 42000, vatKurus: 7000 }], totalKurus: 42000, paymentMethod: "cash", category: "transport",
   }), status: "exported" },
   { ...base("00000000-0000-4000-8000-000000000010", {
-    vendorName: "ÖZ İLETİŞİM BAYİ", receiptNo: "1276", date: "2026-08-27",
+    vendorName: "ÖRNEK İLETİŞİM BAYİ", receiptNo: "1276", date: "2026-08-27",
     vatLines: [{ rate: 20, grossKurus: 89900, vatKurus: 14983 }], totalKurus: 89900, paymentMethod: "card", category: "telecom",
   }), status: "exported" },
 ];

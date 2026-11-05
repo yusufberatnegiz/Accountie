@@ -234,6 +234,10 @@ details.side-block:not([open]) { gap: 0; }
 .journal .field.num { text-align: right; }
 .check-note { margin-left: var(--s1); font-size: var(--fs-small); font-weight: var(--w-medium); color: var(--warn-ink); }
 .journal .check-note { display: block; margin: 2px 0 0; }
+/* Borç/Alacak switch: phone only (the table shows both columns). The pressed side is the field itself: surface, control edge, ink. */
+.side-switch { display: none; }
+.side-opt { flex: 1; min-height: var(--touch); padding: 0 var(--s1); border: 1px solid transparent; border-radius: var(--radius-control); background: transparent; color: var(--muted); font: inherit; font-size: var(--fs-small); font-weight: var(--w-medium); cursor: pointer; touch-action: manipulation; transition: background-color var(--t-hover) ease, color var(--t-hover) ease; }
+.side-opt[aria-pressed="true"] { background: var(--surface); border-color: var(--control-edge); color: var(--ink); font-weight: var(--w-strong); }
 .journal-add { padding: var(--s2) var(--s5) var(--s4); }
 /* One strip split by dividers; the gap is the screen's answer figure. */
 .balance-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr); margin: 0; border-top: 1px solid var(--border); }
@@ -365,15 +369,25 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 
 /* ---------- Phone: the rail becomes a bottom bar ---------- */
 @media (max-width: 720px) {
-  /* Journal lines become small cards: code and name, then debit, credit and delete. */
+  /* Journal lines become two-line cards (YON 23.25): code and name on one line; under them the Borç/Alacak switch, the one side
+     the line carries and a narrow Sil (so the amount keeps its width at 320px). The empty side stays in the form, hidden;
+     the switch moves the amount across. */
   .journal thead { display: none; }
   .journal, .journal tbody { display: block; }
-  .journal tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: var(--s2) var(--s3); padding: var(--s3) var(--s5); border-bottom: 1px solid var(--rule); }
-  .journal td, .journal td:first-child, .journal td:last-child { border: 0; padding: 0; }
-  .journal td[data-label]::before { content: attr(data-label); display: block; font-size: var(--fs-small); color: var(--muted); margin-bottom: 2px; }
-  .journal td:nth-child(2) { grid-column: 2 / -1; }
-  .journal td.col-del { grid-column: 3; grid-row: 2; align-self: end; width: auto; }
+  .journal tr { display: grid; grid-template-columns: 7.25rem minmax(0, 1fr) auto; align-items: start; gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
+  .journal td, .journal td:first-child, .journal td:last-child { min-width: 0; border: 0; padding: 0; }
   .journal .col-code, .journal .col-amount { width: auto; }
+  .journal td:nth-child(2) { grid-column: 2 / -1; }
+  .journal td.col-amount { grid-column: 2; grid-row: 2; }
+  .journal tr[data-side="debit"] td.col-amount:nth-child(4), .journal tr[data-side="credit"] td.col-amount:nth-child(3) { display: none; }
+  .journal tr[data-side="both"] td:nth-child(4) { grid-row: 3; }
+  .journal td.col-del { display: contents; }
+  .journal td.col-del > .btn { grid-column: 3; grid-row: 2; min-width: var(--touch); padding: 0 var(--s1); }
+  .journal .side-switch { grid-column: 1; grid-row: 2; display: flex; border-radius: var(--radius-control); background: var(--active); }
+  .journal tr[data-side="both"] .side-switch { display: none; }
+  /* Locked lines have no switch: the side's name stands under the code, the amount under the account name. */
+  .journal tr:not(:has(.col-del)) td.col-amount { grid-column: 1 / -1; display: grid; grid-template-columns: 7.25rem minmax(0, 1fr); gap: var(--s2); align-items: baseline; }
+  .journal tr:not(:has(.col-del)) td.col-amount::before { content: attr(data-label); font-size: var(--fs-small); color: var(--muted); }
   .app { grid-template-columns: minmax(0, 1fr); }
   .rail {
     position: fixed; inset: auto 0 0 0; height: auto; flex-direction: row; justify-content: space-around; gap: 0;
@@ -422,10 +436,6 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .read { padding: var(--s4); }
   .panel-head { padding: var(--s4); }
   .inline-field, .inline-field .field { width: 100%; }
-  /* On the phone the name takes its own line under the code. */
-  .journal tr { padding: var(--s3) var(--s4); }
-  .journal td:nth-child(2) { grid-column: 1 / -1; }
-  .journal td.col-del { grid-row: 3; }
   .journal-add { padding: var(--s3) var(--s4); }
   .inline-field .field { min-height: var(--touch); font-size: 16px; }
   .balance-strip { grid-template-columns: 1fr 1fr; }
@@ -455,7 +465,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .app[data-screen="fis"]:has(.review :is(input, select):focus) .action-bar:not([data-pointed]) .balance { display: none; }
   /* A locked amount reads under its label, on the label's edge, not floating at the right of its half. */
   .journal .field.num:disabled { text-align: left; }
-  .journal td.col-del { justify-self: end; margin-left: var(--s3); }
+  /* Locked lines are text, not fields: no 44px box around each value. */
+  .journal .field:disabled { min-height: 0; height: auto; padding-block: 0; }
+  .journal td.col-amount .field:not(:disabled) { padding-inline: var(--s2); }
 
   .setting-row { padding: var(--s5) 0; }
   /* One rule per block: its name and code on one line, the account name at full width under them, never clipped. */
@@ -474,6 +486,11 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .setting-save:has(.btn-primary) { bottom: calc(68px + env(safe-area-inset-bottom)); }
   .setting-save .btn { width: 100%; }
 }
+@media (max-width: 360px) {
+  /* 320px: the code column gives up 12px so the amount shows whole beside the switch. */
+  .journal tr { grid-template-columns: 6.5rem minmax(0, 1fr) auto; }
+  .journal tr:not(:has(.col-del)) td.col-amount { grid-template-columns: 6.5rem minmax(0, 1fr); }
+}
 
 /* Luca upload steps, folded under the meter. */
 .howto { display: grid; gap: var(--s3); font-size: var(--fs-body); }
@@ -486,9 +503,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .by-account li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s1) var(--s3); font-size: var(--fs-body); }
 .by-account .acc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .by-account .acc-track { grid-column: 1 / -1; display: block; height: 8px; border-radius: 999px; background: var(--rule); overflow: hidden; }
-/* Bars stay quiet greys, the largest a step darker; the figure carries the emphasis, so no bar outshines Fiş çek (YON 23.16). */
-.by-account .acc-bar { display: block; height: 100%; background: color-mix(in srgb, var(--faint) 55%, var(--surface)); transform-origin: left center; }
-.by-account li:first-child .acc-bar { background: color-mix(in srgb, var(--ink) 70%, var(--surface)); }
+/* One tone for every bar (length already ranks them), at least 3:1 against the track in both themes; the figure stays in ink (YON 23.25). */
+.by-account .acc-bar { display: block; height: 100%; background: color-mix(in srgb, var(--ink) 55%, var(--surface)); transform-origin: left center; }
 .by-account-foot { display: flex; justify-content: space-between; gap: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--rule); font-size: var(--fs-body); }
 
 /* Locked (approved) lines read as plain text on the column edges, and what goes to Luca stays ledger blue. */
@@ -518,8 +534,10 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   @keyframes link-open-r { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
   .row-pending { animation: row-pending 900ms var(--ease-in-out) infinite; }
   @keyframes row-pending { from { transform: scaleX(0); } 60% { transform: scaleX(1); opacity: 1; } to { transform: scaleX(1); opacity: 0; } }
+  /* The card is opaque from its first frame (the list never shows through it); it rises, and only its contents fade. */
   .reading { animation: stage-in 180ms var(--ease-out) both; }
-  @keyframes stage-in { from { opacity: 0; transform: translateY(6px); } }
+  .reading > * { animation: vt-fade-in 140ms var(--ease-out) both; }
+  @keyframes stage-in { from { transform: translateY(8px); } }
 }
 /* Panel figures and labels roll at the panel's pace (YON 23.4): digits 192ms plus 8ms a digit (six digits end at 240ms), 220ms status, 200ms stages. */
 .app { --odo-t: 192ms; --odo-stagger: 8ms; }
