@@ -24,7 +24,7 @@ export function TurnstileWidget({ siteKey }: { siteKey?: string }) {
   );
 }
 
-/** Password with a show/hide toggle and its rule tied by aria-describedby. `aside` (the reset link) comes last in tab order and is drawn at the end of the label row. */
+/** Password with a show/hide toggle and its rule tied by aria-describedby. `aside` (the reset link) comes last in tab order and is drawn under the field. */
 export function PasswordField({ label, name, autoComplete, hint, error, aside }: { label: string; name: string; autoComplete: string; hint?: string; aside?: ReactNode } & Err) {
   const id = "auth-password";
   const [shown, setShown] = useState(false);
@@ -46,7 +46,7 @@ export function PasswordField({ label, name, autoComplete, hint, error, aside }:
       {/* The error restates the rule, so the hint steps aside while it shows. */}
       {hint && !error ? <p className="hint" id={`${id}-hint`}>{hint}</p> : null}
       <FieldError id={id} error={error} />
-      {/* After the field and its toggle in tab order; drawn at the end of the label row. */}
+      {/* After the field and its toggle, in tab order and on screen. */}
       {aside ? <div className="auth-aside">{aside}</div> : null}
     </div>
   );

@@ -216,6 +216,15 @@ details.side-block:not([open]) { gap: 0; }
 .read-brief dl > [data-traced] { background: var(--accent-soft); }
 .read-brief dl > [data-traced] dd { color: var(--ink); }
 .read-brief a { flex: none; display: inline-flex; align-items: center; min-height: var(--touch); padding: 0 var(--s2); font-size: var(--fs-small); color: var(--muted); text-underline-offset: 3px; }
+/* With a photo, its thumbnail leads the strip and opens the photo in place under it, above the lines: below 1100px a line and
+   the receipt share one screen, and the photo at the page's foot goes (YON 23.29). */
+.brief-thumb { flex: none; display: grid; place-items: center; width: var(--touch); min-height: 56px; padding: 0; border: 0; border-radius: var(--radius-chip); background: none; cursor: pointer; }
+.brief-thumb img { display: block; width: 36px; height: 48px; object-fit: cover; border-radius: 3px; background: var(--paper); }
+.brief-thumb[aria-expanded="true"] img { outline: 2px solid var(--ink); outline-offset: 2px; }
+.brief-photo { margin: 0; aspect-ratio: 3 / 4; max-height: 62vh; border-radius: var(--radius-card); overflow: hidden; background: var(--stage); }
+.brief-photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+@media (max-width: 1099px) { .source .photo { display: none; } }
+@media (min-width: 1100px) { .review > .brief-photo { display: none; } }
 #fis-kaynak { scroll-margin-top: var(--s4); }
 .inline-field { display: grid; gap: var(--s1); font-size: var(--fs-small); color: var(--muted); }
 .inline-field .field { width: 260px; min-height: var(--control-sm); color: var(--ink); }
@@ -232,6 +241,12 @@ details.side-block:not([open]) { gap: 0; }
 @media (pointer: coarse) { .journal .col-del .btn { min-height: var(--touch); min-width: var(--touch); } }
 .journal .field.to-luca { color: var(--accent); }
 .journal .field.num { text-align: right; }
+/* Account name: a one-line value in a textarea, so a long name wraps (two lines on the phone) instead of being cut. */
+.journal .name-field { display: block; min-height: var(--control); padding-block: 8px; line-height: 1.4; resize: none; overflow: hidden; field-sizing: content; }
+@media (pointer: coarse) { .journal .name-field { min-height: var(--touch); padding-block: 10px; } }
+@supports not (field-sizing: content) {
+  @media (max-width: 720px) { .journal td .name-field { min-height: calc(2lh + 22px); } .journal td .name-field:disabled { min-height: 2lh; } }
+}
 .check-note { margin-left: var(--s1); font-size: var(--fs-small); font-weight: var(--w-medium); color: var(--warn-ink); }
 .journal .check-note { display: block; margin: 2px 0 0; }
 /* Borç/Alacak switch: phone only (the table shows both columns). The pressed side is the field itself: surface, control edge, ink. */
@@ -536,6 +551,14 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   @keyframes row-pending { from { transform: scaleX(0); } 60% { transform: scaleX(1); opacity: 1; } to { transform: scaleX(1); opacity: 0; } }
   /* The card is opaque from its first frame (the list never shows through it); it rises, and only its contents fade. */
   .reading { animation: stage-in 180ms var(--ease-out) both; }
+  .steps li { animation: step-in 180ms var(--ease-out) both; }
+  @keyframes step-in { from { opacity: 0; transform: translateY(6px); } }
+  .step-check { transition: clip-path 200ms var(--ease-out); }
+  .brief-photo { animation: step-in 180ms var(--ease-out) both; }
+  /* While the server reads, the photo on the phone's reading screen draws 3% closer, once (the scale property, so the settle-in
+     transform above still plays); it holds where it stops. */
+  @media (max-width: 720px) { .app .capture .reading .feed img { animation: feed-in 200ms var(--ease-out) both, feed-near 4s 200ms var(--ease-out) both; } }
+  @keyframes feed-near { from { scale: 1; } to { scale: 1.03; } }
   .reading > * { animation: vt-fade-in 140ms var(--ease-out) both; }
   @keyframes stage-in { from { transform: translateY(8px); } }
 }
@@ -561,6 +584,30 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .wait-dots i:nth-child(2) { --n: 1; }
 .wait-dots i:nth-child(3) { --n: 2; }
 .reading-text .small { font-weight: 400; color: var(--muted); }
+/* Reading on the phone: the screen becomes the photo, edge to edge in the gutters, with the stages stacked under it; each stage
+   comes in when the work reaches it and is ticked when done (YON 23.29). The rolling one-line stage stays for screen readers. */
+.steps { display: none; }
+.steps li { display: flex; align-items: center; gap: var(--s3); font-size: var(--fs-section); color: var(--ink); }
+.steps li[data-done] { color: var(--muted); }
+.steps li[data-done]:nth-child(3) { color: var(--ink); font-weight: var(--w-strong); }
+.step-check { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--positive); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; clip-path: inset(0 100% 0 0); }
+.steps li[data-done] .step-check { clip-path: inset(0); }
+@media (max-width: 720px) {
+  .app .capture .reading:has(.feed) {
+    position: fixed; inset: 0; z-index: 6; translate: none; width: auto; min-width: 0;
+    display: grid; grid-template-rows: minmax(0, 1fr) auto; align-items: stretch; gap: var(--s5);
+    padding: max(var(--s4), env(safe-area-inset-top)) var(--s4) max(var(--s6), calc(env(safe-area-inset-bottom) + var(--s4)));
+    border-radius: 0; background: var(--ground);
+  }
+  /* No frame around the photo: it stands on the ground at its own proportions, so no letterbox bands. */
+  .app .capture .reading .feed { width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; background: none; }
+  /* The img box is the photo itself (no letterbox), so it shrinks into the review thumbnail as one picture. */
+  .app .capture .reading .feed { display: grid; place-items: center; }
+  .app .capture .reading .feed img { width: auto; height: auto; max-width: 100%; max-height: 100%; border-radius: var(--radius-chip); }
+  .app .capture .reading .reading-text { gap: var(--s4); }
+  .app .capture .reading .stages { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .app .capture .reading .steps { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
+}
 
 /* View transitions. Root cross-fades quickly; named parts carry the meaning. */
 ::view-transition-group(*) { animation-duration: 240ms; animation-timing-function: var(--ease-out); }
@@ -583,10 +630,24 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 }
 @keyframes vt-enter { from { opacity: 0; transform: translateY(6px); } }
 ::view-transition-group(.tab-slide) { animation-duration: 200ms; }
+/* Groups whose resize runs as a scale (moveOnly with the new element) scale from their top-left corner. */
+::view-transition-group(.tab-slide), ::view-transition-group(.photo-morph) { transform-origin: 0 0; }
+/* The read photo shrinks into the review screen's thumbnail (CaptureButton "fis-okundu"); the longest panel move, 320ms. */
+::view-transition-group(.photo-morph) { animation-duration: 320ms; }
 ::view-transition-new(.row-rise) { animation: vt-rise 240ms var(--ease-out) both; }
 ::view-transition-old(.row-out) { animation: vt-out-up 200ms var(--ease-exit) both; }
 ::view-transition-group(.row-move) { animation-duration: 240ms; }
 @keyframes vt-rise { from { opacity: 0; transform: translateY(16px); } }
+/* Tab filter ("sekme"): the same out and rise, sequenced so a sliding row never crosses a still-drawn one. Leaving rows are gone
+   in 120ms; the rows that stay slide and the joining ones rise after an 80ms beat (YON 23.29). */
+::view-transition-old(.row-leave) { animation: vt-out-up 120ms var(--ease-out) both; }
+::view-transition-group(.row-shift) { animation-duration: 240ms; animation-delay: 80ms; animation-fill-mode: both; }
+::view-transition-new(.row-join) { animation: vt-rise 240ms 80ms var(--ease-out) both; }
+/* The rest of the page (the panel's new height, the cards under it) comes in once the leaving rows are gone, so no two layers
+   of text are drawn over each other; the rail is chrome and its own group, so it never fades. */
+:root:active-view-transition-type(sekme)::view-transition-old(root) { animation: vt-fade-out 140ms 120ms var(--ease-exit) both; }
+:root:active-view-transition-type(sekme)::view-transition-new(root) { animation-delay: 120ms; }
+.rail { view-transition-name: panel-rail; }
 /* Up and to the left: toward the Aktarıldı tab at the top of the list. */
 @keyframes vt-out-up { to { opacity: 0; transform: translate(-8px, -12px); } }
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ViewTransition } from "react";
 import type { listReceipts, ReceiptStatus } from "@/db/queries";
 import { BulkApproveButton } from "@/components/BulkApproveButton";
 import { CaptureButton } from "@/components/CaptureButton";
@@ -8,6 +7,7 @@ import { InstallHint } from "@/components/InstallHint";
 import { ListTabs } from "@/components/ListTabs";
 import { RowPending } from "@/components/RowPending";
 import { LucaMeter } from "@/components/LucaMeter";
+import { MoveTransition } from "@/components/MoveTransition";
 import { CATEGORIES } from "@/lib/default-rules";
 import { MAX_LINES_PER_FILE, MAX_RECEIPTS_PER_FILE } from "@/lib/luca/export";
 import { formatTrAmount } from "@/lib/money";
@@ -88,14 +88,15 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
               {receipts.map((r) => {
                 const notes = r.status === "draft" ? r.warnings.length : 0;
                 return (
-                  // A new receipt rises in at the top; a downloaded one slides out toward the Aktarıldı tab.
-                  <ViewTransition key={r.id} enter={{ "fis-eklendi": "row-rise", default: "none" }} exit={{ aktarim: "row-out", default: "none" }}
-                    update={{ "fis-eklendi": "row-move", aktarim: "row-move", default: "none" }} default="none">
+                  // A new receipt rises in at the top; a downloaded one slides out toward the Aktarıldı tab. A tab change uses the same
+                  // two moves, in order: rows leaving the filter go out first, then the rest slide to their place and rows joining it rise in.
+                  <MoveTransition key={r.id} enter={{ "fis-eklendi": "row-rise", sekme: "row-join", default: "none" }} exit={{ aktarim: "row-out", sekme: "row-leave", default: "none" }}
+                    update={{ "fis-eklendi": "row-move", aktarim: "row-move", sekme: "row-shift", default: "none" }} default="none">
                   <tr>
                     <td className="r-vendor">
                       <Link className="row-link" href={`${base}/fis/${r.id}`} title={r.vendorName ?? undefined} transitionTypes={["fis-ac"]}>
                         {/* The vendor name becomes the review screen's title (ReviewEditor). */}
-                        <ViewTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{r.vendorName ?? "Okunamayan fiş"}</span></ViewTransition>
+                        <MoveTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{r.vendorName ?? "Okunamayan fiş"}</span></MoveTransition>
                         <RowPending />
                       </Link>
                       {notes ? <span className="r-notes">{notes} uyarı</span> : null}
@@ -106,7 +107,7 @@ export function ReceiptListView({ receipts: all, tab, base = "/panel" }: { recei
                     <td className="r-total num">{r.totalKurus === null ? <span className="dash">-</span> : <>{formatTrAmount(r.totalKurus)}<span className="unit">&nbsp;TL</span></>}</td>
                     <td className="r-status"><span className={`status status-${r.status}`}>{STATUS_LABELS[r.status]}</span></td>
                   </tr>
-                  </ViewTransition>
+                  </MoveTransition>
                 );
               })}
             </tbody>

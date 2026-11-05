@@ -10,6 +10,7 @@ import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount, parseTrAmount } from "@/lib/money";
 import { STATUS_LABELS } from "@/lib/status";
 import { getPhoto } from "@/lib/photo-store";
+import { moveOnly } from "@/lib/view-transition";
 import { CaptureButton } from "./CaptureButton";
 import { ExportButton } from "./ExportButton";
 import { Odometer, Roll } from "./home/Odometer";
@@ -186,6 +187,9 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
   }, [receipt.status]);
   // Photo exists only in this tab; server render has none.
   const photo = useSyncExternalStore(noSubscribe, () => getPhoto(receipt.id), () => undefined);
+  // Below 1100px the photo is a thumbnail over the lines that opens in place, so a line and the receipt share one screen.
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const thumbRef = useRef<HTMLImageElement>(null);
 
   useLeaveGuard(dirty);
 
@@ -323,7 +327,7 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
           <p className="crumb"><Link href={base}>Fişler</Link><span aria-hidden="true"> / </span><span translate="no">Fiş {receipt.receiptNo ?? "numarasız"}</span></p>
           <div className="title-line">
             {/* The list row's vendor name morphs into this title (ReceiptListView). */}
-            <ViewTransition name={`fis-${receipt.id}`} share="title-morph" default="none">
+            <ViewTransition name={`fis-${receipt.id}`} share="title-morph" default="none" onShare={(i) => moveOnly(i)}>
               <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
             </ViewTransition>
             <span className={`status status-${receipt.status}`}><Roll value={STATUS_LABELS[receipt.status]} /></span>
@@ -343,13 +347,29 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
         ) : null}
         {/* Below 1100px the receipt column falls under the lines: its three figures sit above them, so the spotlight lands on screen. */}
         <div className="read-brief">
+          {photo ? (
+            <button className="brief-thumb" type="button" aria-expanded={photoOpen} aria-controls="fis-onizleme" aria-label="Fiş fotoğrafı" onClick={() => setPhotoOpen((o) => !o)}>
+              {/* The reading screen's photo lands here (CaptureButton, "fis-okundu"); its resize runs as a scale. */}
+              <ViewTransition name="fis-foto" share="photo-morph" default="none" onShare={(i) => moveOnly(i, thumbRef.current)}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
+                <img ref={thumbRef} src={photo} alt="" width={36} height={48} />
+              </ViewTransition>
+            </button>
+          ) : null}
           <dl aria-label="Fişten okunan, özet">
           <div data-src="base" {...traced("base")}><dt>Matrah</dt><dd className="num">{readTotal !== null ? formatTrAmount(readTotal - readVat) : <span className="dash">-</span>}</dd></div>
           <div data-src="vat" {...traced("vat")}><dt>KDV</dt><dd className="num">{formatTrAmount(readVat)}</dd></div>
           <div data-src="total" {...traced("total")}><dt>Toplam</dt><dd className="num">{readTotal !== null ? formatTrAmount(readTotal) : <span className="dash">-</span>}</dd></div>
           </dl>
-          <a href="#fis-kaynak">{photo ? "Fişi göster" : "Tüm alanlar"}</a>
+          {/* With a photo the thumbnail takes this slot; the read fields follow the lines anyway. */}
+          {photo ? null : <a href="#fis-kaynak">Tüm alanlar</a>}
         </div>
+        {photo && photoOpen ? (
+          <figure className="brief-photo" id="fis-onizleme">
+            {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
+            <img src={photo} alt="Fiş fotoğrafı" width={1200} height={1600} />
+          </figure>
+        ) : null}
         {warnings.length ? (
           <div className="alert alert-warn" id="uyarilar">
             <p className="alert-title">Kontrol edilecekler</p>
@@ -402,7 +422,9 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
                   <td data-label="Hesap kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
                     autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder="770.08…" aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
                     {...flag(codeFlag)} onChange={(e) => { touch(`code-${l.key}`); setCode(l.key, e.target.value); }} />{checkNote(codeFlag)}</td>
-                  <td data-label="Hesap adı"><input autoComplete="off" className="field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable} onChange={(e) => update(l.key, { accountName: e.target.value })} /></td>
+                  {/* A textarea so a long name wraps on the phone instead of being cut; it stays one line of text (no line breaks). */}
+                  <td data-label="Hesap adı"><textarea rows={1} autoComplete="off" className="field name-field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable}
+                    onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }} onChange={(e) => update(l.key, { accountName: e.target.value.replace(/\s*\n\s*/g, " ") })} /></td>
                   <td data-label="Borç (TL)" className="col-amount"><input id={`satir-${i + 1}-borc`} autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} borç${unsure(debitFlag)}`} value={l.debit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.debit))}
                     {...flag(debitFlag)} onChange={(e) => { touch(`debit-${l.key}`); update(l.key, { debit: e.target.value }); }} />{checkNote(debitFlag)}</td>
                   <td data-label="Alacak (TL)" className="col-amount"><input id={`satir-${i + 1}-alacak`} autoComplete="off" className="field num to-luca" aria-label={`Satır ${i + 1} alacak${unsure(creditFlag)}`} value={l.credit} disabled={!editable} inputMode="decimal" aria-invalid={Number.isNaN(kurus(l.credit))}
@@ -431,14 +453,14 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
 
         <div className="source">
           {photo ? (
-            <figure className="photo" id="fis-kaynak">
+            <figure className="photo">
               {/* A fixed 3:4 box (the photo is shrunk to a 1600px long edge) so the lines beside it never move when it decodes. */}
               {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL from this device, next/image cannot optimize it */}
               <img src={photo} alt="Fiş fotoğrafı" width={1200} height={1600} decoding="async" />
             </figure>
           ) : null}
           {/* The receipt as read; the journal line in focus lights the figure it came from. */}
-          <section className="panel read" id={photo ? undefined : "fis-kaynak"} aria-labelledby="okunan-baslik">
+          <section className="panel read" id="fis-kaynak" aria-labelledby="okunan-baslik">
             <h2 id="okunan-baslik">Fişten okunan</h2>
             <dl className="read-values">
               <div><dt>Satıcı</dt><dd>{read(receipt.vendorName)}</dd></div>
