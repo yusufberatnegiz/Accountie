@@ -1070,3 +1070,10 @@ Jüri tur 3 (animasyon 6.5, görsel 6.5, renk 7, premium 7, mobil 6.5, erişim-p
 - **SSS:** odak soruyu açmaz; açmak tıklama/Enter/Space ile, masaüstünde odak yalnız önizler (`aria-expanded` değişmez).
 - **Performans:** katlama altındaki bağlantılar (üst çubuk bölüm bağlantıları, CTA, footer) `prefetch={false}`; hero ve üst çubuktaki Hesap oluştur/Giriş yap önceden yüklenir. Hero penceresi ve telefonu `contain: layout style`.
 - **Giriş ve kayıt:** plaka kartın her yanından eşit 24px (telefonda 12px) taşar; telefonda çerez notu için alt boşluk sabit (not istemcide yüklenince sahne kaymaz).
+
+### 23.13 Tur 3 panel: başlık tek başına uçar, kanıt editörün üstünde, okuma kartı düğmenin yerinde (2026-11-05; 23.4, 23.7 ve 23.10'daki ilgili satırların üstündedir)
+
+- Liste satırından fişe geçişte (`fis-ac`) başlığın komşuları (yol, durum pill'i, bulgu cümlesi) 200 ms bekler ve 120 ms'de solarak gelir; başlık 240 ms'lik uçuşunu tek başına yapar, uçan başlık çizilmiş cümleyi ya da yalnız kalan pill'i hiç kesmez. Gövde 23.10'daki gibi gecikmesiz yükselir.
+- 1100 px altında (fiş sütunu satırların altına düşer) `.read-brief` şeridi Matrah, KDV ve Toplam'ı satırların ve uyarıların üstünde tek satırda gösterir; odaktaki satırın kaynağı bu şeritte yanar, yani telefonda fiş izi ekranda kalır. "Fişi göster" (fotoğraf varsa) ya da "Tüm alanlar" bağlantısı tam "Fişten okunan" bölümüne iner. Masaüstünde şerit yoktur.
+- Telefonda galeriden okuma kartı düğmenin kendi yuvasına oturur (yuva genişliğinde, birkaç px yüksek, sekmelere değmez); boş bant kalmaz. Alt çubuktaki Fiş çek ile başlayan okumada kart alt çubuğun üstünde kalır, listenin alt boşluğu kartın yüksekliği kadar büyür, son satır kartın altında kesilmez.
+- Hesap penceresinin `h2`'si yerinde kalır: kapalı `dialog` `display: none`'dur, erişilebilirlik ağacında yoktur; açıkken modalın başlığıdır.
