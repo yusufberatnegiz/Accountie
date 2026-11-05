@@ -287,7 +287,7 @@ export default function LandingPage() {
               Yazar kasa fişini telefonla çekin; gider, KDV ve alacak satırları sizin hesap kodlarınızla hazırlanır, siz onaylayınca Excel ile Luca’ya aktarırsınız.
             </p>
             <p data-load style={cssVars({ "--d": "480ms" })}>
-              <Link className="btn btn-accent btn-lg" href="/kayit">Hesap oluştur</Link>
+              <Link className="btn btn-primary btn-lg" href="/kayit">Hesap oluştur</Link>
             </p>
           </div>
           <div className="hero-stage">

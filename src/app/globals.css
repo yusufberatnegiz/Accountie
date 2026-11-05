@@ -39,7 +39,6 @@
   --thermal-ink: #514f4a;
   --accent: #2b5a9a;
   --accent-strong: #234b82;
-  --on-accent: #ffffff;
   --accent-soft: #e4ecf6;
   --accent-field: #2b5a9a;
   --on-accent-field: #ffffff;
@@ -81,7 +80,7 @@
   /* Product cards on a field (hero, auth stage, the four path fields): white in light; in dark one tone above their field (colour.md 6). */
   --lift: var(--surface); --lift-edge: var(--border); --path-card-1: var(--surface); --path-card-2: var(--surface); --path-card-3: var(--surface); --path-card-4: var(--surface); --foot-name: var(--ink);
   --picture-opacity: 1;
-  /* Thermal paper: a warm off-white in light, so it reads as an object on the white window; a dimmed cool grey in dark (still paper, no longer the brightest surface on the screen). */
+  /* Thermal paper: a warm off-white in light, so it reads as an object on the white window; a dimmed warm grey in dark (still paper, no longer the brightest surface on the screen). */
   --paper: #faf8f3; --paper-ink: #3d3c38; --paper-strong: #121211; --paper-lit: #dce6f3;
 
   /* Type: two families, set by next/font in layout.tsx */
@@ -114,49 +113,49 @@
 /* ---------- Tokens: dark. Same block twice: system preference without JS, and data-look (set by the theme script, src/lib/theme.ts). ---------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not([data-look]) {
-    --ground: #0b0d10; --surface: #14171c; --raised: #1b1f25; --stage: #1b2027; --active: #232931;
-    --border: #262c34; --rule: #1f242b; --control-edge: #66717e;
-    --ink: #eef1f4; --muted: #a9b2bd; --faint: #949eaa; --thermal-ink: #a9b2bd;
-    --accent: #8db0e0; --accent-strong: #a9c4e9; --on-accent: #0e1114; --accent-soft: #1d2a3a;
-    --accent-field: #23406a; --on-accent-field: #eef1f4;
-    --primary: #eef1f4; --primary-hover: #d5dbe2; --on-primary: #0e1114;
-    --secondary: #232931; --secondary-hover: #2d343e;
-    --chip-on: #98a2ad; --on-chip-on: #0e1114; --lift-control: #39414b; --lift-control-hover: #434b56; /* chips stay below the blue action; controls a step over --lift */
-    --deep: #171c22; --deep-raised: #222931;
+    --ground: #0c0c0b; --surface: #151513; --raised: #1c1c1a; --stage: #1d1d1b; --active: #262523;
+    --border: #2a2926; --rule: #21201e; --control-edge: #75736d;
+    --ink: #f0efec; --muted: #aeada7; --faint: #9c9a94; --thermal-ink: #aeada7;
+    --accent: #8db0e0; --accent-strong: #a9c4e9; --accent-soft: #1d2a3a;
+    --accent-field: #23406a; --on-accent-field: #f0efec;
+    --primary: #f0efec; --primary-hover: #d9d8d3; --on-primary: #0f0f0e;
+    --secondary: #262523; --secondary-hover: #31302d;
+    --chip-on: #a3a29c; --on-chip-on: #0f0f0e; --lift-control: #3e3d39; --lift-control-hover: #484743; /* chips stay below the blue action; controls a step over --lift */
+    --deep: #181816; --deep-raised: #242422;
     --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
     --warn-ink: #e8c477; --warn-bg: #2a2412;
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-    --plate: #1d2228; --bezel: #2a3038; --edge-hi: rgb(255 255 255 / 0.06);
+    --plate: #1f1f1c; --bezel: #2e2d2a; --edge-hi: rgb(255 255 255 / 0.06);
     --shadow-lift: 0 24px 48px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 var(--edge-hi);
-    --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
-    --split: #0f1216; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
-    --lift: #252b33; --lift-edge: #2f363f; --path-card-1: #1c2026; --path-card-2: #22272e; --path-card-3: #2a3038; --path-card-4: #323943; --foot-name: #b9c1ca;
-    --paper: #d8dadc; --paper-ink: #33363a; --paper-strong: #141a22; --paper-lit: #bfcde0;
+    --field-1: #151513; --field-2: #1b1b19; --field-3: #22221f; --field-4: #2a2a27; --on-field-4: #f0efec;
+    --split: #10100f; --choice: #2e2d2a; --show-field: #171715; --show-card: #21211e; --show-card-edge: #302f2c; --show-tabs: #21211e; --show-raised: #2a2a27; --picture-opacity: 0.9;
+    --lift: #272725; --lift-edge: #33322f; --path-card-1: #1d1d1b; --path-card-2: #242422; --path-card-3: #2c2c29; --path-card-4: #353431; --foot-name: #bebdb7;
+    --paper: #dcdad5; --paper-ink: #383733; --paper-strong: #151513; --paper-lit: #bfcde0;
     --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"], :root[data-look="dark"]:not([data-theme="light"]) {
-  --ground: #0b0d10; --surface: #14171c; --raised: #1b1f25; --stage: #1b2027; --active: #232931;
-  --border: #262c34; --rule: #1f242b; --control-edge: #66717e;
-  --ink: #eef1f4; --muted: #a9b2bd; --faint: #949eaa; --thermal-ink: #a9b2bd;
-  --accent: #8db0e0; --accent-strong: #a9c4e9; --on-accent: #0e1114; --accent-soft: #1d2a3a;
-  --accent-field: #23406a; --on-accent-field: #eef1f4;
-  --primary: #eef1f4; --primary-hover: #d5dbe2; --on-primary: #0e1114;
-  --secondary: #232931; --secondary-hover: #2d343e;
-    --chip-on: #98a2ad; --on-chip-on: #0e1114; --lift-control: #39414b; --lift-control-hover: #434b56; /* chips stay below the blue action; controls a step over --lift */
-  --deep: #171c22; --deep-raised: #222931;
+  --ground: #0c0c0b; --surface: #151513; --raised: #1c1c1a; --stage: #1d1d1b; --active: #262523;
+  --border: #2a2926; --rule: #21201e; --control-edge: #75736d;
+  --ink: #f0efec; --muted: #aeada7; --faint: #9c9a94; --thermal-ink: #aeada7;
+  --accent: #8db0e0; --accent-strong: #a9c4e9; --accent-soft: #1d2a3a;
+  --accent-field: #23406a; --on-accent-field: #f0efec;
+  --primary: #f0efec; --primary-hover: #d9d8d3; --on-primary: #0f0f0e;
+  --secondary: #262523; --secondary-hover: #31302d;
+    --chip-on: #a3a29c; --on-chip-on: #0f0f0e; --lift-control: #3e3d39; --lift-control-hover: #484743; /* chips stay below the blue action; controls a step over --lift */
+  --deep: #181816; --deep-raised: #242422;
   --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
   --warn-ink: #e8c477; --warn-bg: #2a2412;
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-  --plate: #1d2228; --bezel: #2a3038; --edge-hi: rgb(255 255 255 / 0.06);
+  --plate: #1f1f1c; --bezel: #2e2d2a; --edge-hi: rgb(255 255 255 / 0.06);
   --shadow-lift: 0 24px 48px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 var(--edge-hi);
-  --field-1: #14171b; --field-2: #1a1e23; --field-3: #21262c; --field-4: #282e36; --on-field-4: #eef1f4;
-  --split: #0f1216; --choice: #2a3139; --show-field: #161b21; --show-card: #1f252d; --show-card-edge: #2c333c; --show-tabs: #1f252d; --show-raised: #272e37; --picture-opacity: 0.9;
-  --lift: #252b33; --lift-edge: #2f363f; --path-card-1: #1c2026; --path-card-2: #22272e; --path-card-3: #2a3038; --path-card-4: #323943; --foot-name: #b9c1ca;
-  --paper: #d8dadc; --paper-ink: #33363a; --paper-strong: #141a22; --paper-lit: #bfcde0;
+  --field-1: #151513; --field-2: #1b1b19; --field-3: #22221f; --field-4: #2a2a27; --on-field-4: #f0efec;
+  --split: #10100f; --choice: #2e2d2a; --show-field: #171715; --show-card: #21211e; --show-card-edge: #302f2c; --show-tabs: #21211e; --show-raised: #2a2a27; --picture-opacity: 0.9;
+  --lift: #272725; --lift-edge: #33322f; --path-card-1: #1d1d1b; --path-card-2: #242422; --path-card-3: #2c2c29; --path-card-4: #353431; --foot-name: #bebdb7;
+  --paper: #dcdad5; --paper-ink: #383733; --paper-strong: #151513; --paper-lit: #bfcde0;
   --w-medium: 450; --w-strong: 500; /* colour.md 6: light type on a dark ground reads heavier, one step lighter */
   color-scheme: dark;
 }
@@ -222,7 +221,7 @@ details.stack > summary h2 { display: inline; }
 .mark-thermal { stroke: var(--faint); stroke-width: 2; stroke-linecap: round; }
 .mark-luca { stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
 
-/* Buttons. App primary is near-black (--primary); the page's single action uses the ledger blue (.btn-accent).
+/* Buttons. One primary action everywhere: ink in light, light neutral in dark (YON 23.11). Blue stays for figures going to Luca, links and focus.
    Feedback: background shift on hover, scale on press, ring on focus. Never only a fade. */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
@@ -234,7 +233,6 @@ details.stack > summary h2 { display: inline; }
 @media (hover: hover) and (pointer: fine) {
   .btn:hover { background: var(--secondary-hover); color: var(--ink); }
   .btn-primary:hover { background: var(--primary-hover); color: var(--on-primary); }
-  .btn-accent:hover { background: var(--accent-strong); color: var(--on-accent); }
   .btn-danger:hover { background: var(--negative-soft); color: var(--negative); }
   .btn-quiet:hover { background: var(--active); color: var(--ink); }
 }
@@ -243,7 +241,6 @@ details.stack > summary h2 { display: inline; }
 .btn:disabled, .btn[aria-disabled="true"] { background: transparent; color: var(--muted); border-color: var(--control-edge); cursor: not-allowed; transform: none; }
 .btn:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
 .btn-primary { background: var(--primary); color: var(--on-primary); }
-.btn-accent { background: var(--accent); color: var(--on-accent); }
 .btn-danger { background: transparent; border-color: var(--negative); color: var(--negative); }
 .btn-quiet { background: transparent; color: var(--muted); }
 .btn-sm { min-height: var(--control-sm); padding: 0 var(--s3); }
@@ -389,7 +386,8 @@ main:focus, main:focus-visible { outline: none; }
    below, two slots, the box clips them. Shared by the homepage and the panel; --odo-t sets the pace. */
 .odo { display: inline-block; white-space: nowrap; }
 .odo.code { display: block; }
-.odo-digits { display: inline-flex; }
+/* Inline, not inline-flex: flex items are blocks, and a selection then copies one digit per line (YON 23.11). */
+.odo-digits { display: inline; white-space: nowrap; }
 /* The visible digits are what a selection copies; the screen-reader copy stays out of it, so the figure never pastes twice. */
 .odo > .visually-hidden { user-select: none; }
 .odo-d, .roll-slot { position: relative; display: inline-block; }
