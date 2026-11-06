@@ -31,26 +31,26 @@ Yaklaşım TDD: yeni kural veya hata düzeltmesi önce başarısız testle başl
 
 ## Altın örnek
 
-Girdi (model çıktısı): unvan `ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ`, fiş no `0047`, tarih `05.09.2026`, `vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }]`, toplam `8.725,00`, ödeme `card`, kategori `meal`.
+Girdi (model çıktısı): unvan `ÖRNEK BALIK LOKANTASI`, fiş no `0412`, tarih `08.09.2026`, `vatLines: [{ rate: 10, gross: "6.480,00", vat: "589,09" }]`, toplam `6.480,00`, ödeme `card`, kategori `meal`.
 
 Beklenen satırlar:
 
 | Hesap | Borç (kuruş) | Alacak (kuruş) |
 |---|---|---|
-| 770.08 | 793182 | 0 |
-| 191.03.10 | 79318 | 0 |
-| 331.01 | 0 | 872500 |
+| 770.08 | 589092 | 0 |
+| 191.03.10 | 58909 | 0 |
+| 331.01 | 0 | 648000 |
 
-Hepsinde Evrak No `0047`, BT `ÖK`, açıklama `örnek alabalık üretim çiftliği`. Bu test her zaman geçmelidir.
+Hepsinde Evrak No `0412`, BT `ÖK`, açıklama `örnek balık lokantası`. Bu test her zaman geçmelidir.
 
 ## Diğer zorunlu durumlar
 
 - Çok oranlı fiş (%1 + %20), %0 satırı, eski %8 oranı uyarısı.
-- KDV okunamadı: `vatFromGross(872500, 10) === 79318`.
+- KDV okunamadı: `vatFromGross(648000, 10) === 58909`.
 - Oran başına 1 kuruş fark: en büyük matrah satırına eklenir. 2 kuruş ve üstü: dengelenmez, uyarı.
-- `parseTrAmount`: `"8.725,00"`, `"793,18"`, `"1.234.567,89"`, `"12,5"`, geçersiz metin hata.
+- `parseTrAmount`: `"6.480,00"`, `"589,09"`, `"1.234.567,89"`, `"12,5"`, geçersiz metin hata.
 - Açıklama: `I` -> `ı`, `İ` -> `i`, 60 karakter sınırı.
-- Excel: başlıklar sabitle aynı, `0047` metin hücresi, 51 fişte 2 dosya, 400 satırı aşan fiş yeni dosyaya.
+- Excel: başlıklar sabitle aynı, `0412` metin hücresi, 51 fişte 2 dosya, 400 satırı aşan fiş yeni dosyaya.
 
 ## Yapay zeka kontrolleri
 

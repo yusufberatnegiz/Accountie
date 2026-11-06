@@ -42,12 +42,12 @@ Kaynak: [Fişliyo, Luca Excel Fiş Aktarımı](https://fisliyo.com/luca-fis-akta
 | # | Kolon | Örneğimizdeki değer |
 |---|---|---|
 | 1 | Fiş No | 1 (muhasebe fişi no, metin) |
-| 2 | Fiş Tarihi | 05.09.2026 |
+| 2 | Fiş Tarihi | 08.09.2026 |
 | 3 | Fiş Açıklama | ÖKC FİŞLERİ / satıcı adı |
 | 4 | Hesap Kodu | 770.08 |
-| 5 | Evrak No | 0047 (metin, baştaki sıfırlar korunmalı) |
-| 6 | Evrak Tarihi | 05.09.2026 |
-| 7 | Detay Açıklama | örnek alabalık üretim çiftliği |
+| 5 | Evrak No | 0412 (metin, baştaki sıfırlar korunmalı) |
+| 6 | Evrak Tarihi | 08.09.2026 |
+| 7 | Detay Açıklama | örnek balık lokantası |
 | 8 | Borç | 7931,82 |
 | 9 | Alacak | 0 / boş |
 | 10 | Miktar | boş |
@@ -67,7 +67,7 @@ Aynı kaynağa göre: başlıklar Luca ekranındakiyle birebir aynı olmalı; do
 ### Doğrulanamayan noktalar
 
 - Resmi şablonun kolon adları ve sırası (şablon giriş gerektiren ekranda).
-- Tutar hücresinin sayı mı, "7.931,82" metni mi olması gerektiği.
+- Tutar hücresinin sayı mı, "5.890,91" metni mi olması gerektiği.
 - Tarih hücresinin Excel tarih tipi mi, "GG.AA.YYYY" metni mi olacağı.
 - Hesap kodu ayırıcısı: ekranda noktalı (770.08, 191.03.10), dosyada da aynı biçim beklenir (doğrulanamadı).
 - Alacak/Borç boşken 0 mı boş mu yazılmalı.

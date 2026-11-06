@@ -1,6 +1,6 @@
 # Fişten yevmiye kaydı üretme kuralları
 
-Tarih: 03.11.2026. Kapsam: Ödeme kaydedici cihaz (ÖKC, yazar kasa) fişlerinden Luca "Fiş Detayı" ekranına girilecek yevmiye satırlarının üretilmesi. Kaynak örnek: Örnek Alabalık fişi (0047, 05.09.2026) ve kullanıcının Luca'da elle girdiği kayıt.
+Tarih: 03.11.2026. Kapsam: Ödeme kaydedici cihaz (ÖKC, yazar kasa) fişlerinden Luca "Fiş Detayı" ekranına girilecek yevmiye satırlarının üretilmesi. Kaynak örnek: Örnek Balık Lokantası fişi (0412, 08.09.2026) ve kullanıcının Luca'da elle girdiği kayıt.
 
 Önemli: Tek Düzen Hesap Planı (TDHP) yalnızca ana hesapları (100, 191, 770 vb.) ve bazı grupları sabitler. `770.08`, `191.03.10`, `331.01` gibi **alt hesaplar her firmanın kendi Luca hesap planında tanımlıdır**. Bu dokümandaki alt hesap kodları makul varsayılanlardır; uygulama bunları kullanıcının düzenleyebileceği bir tablo olarak tutmalı, ilk kurulumda kullanıcıdan kendi planıyla eşleştirmesini istemelidir. Luca'da tanımlı olmayan bir alt hesapla kayıt atılamaz (Excel içe aktarma da hata verir).
 
@@ -8,14 +8,14 @@ Tarih: 03.11.2026. Kapsam: Ödeme kaydedici cihaz (ÖKC, yazar kasa) fişlerinde
 
 | Hesap Kodu | Hesap Adı | Evrak No | Evrak Tarihi | BT | Açıklama | Borç | Alacak |
 |---|---|---|---|---|---|---|---|
-| 770.08 | Yeme-İçme Ve Ağırlama Giderleri | 0047 | 05/09/2026 | ÖK | örnek alabalık üretim çiftliği | 7.931,82 | |
-| 191.03.10 | % 10 Lı İndirilecek Kdv | 0047 | 05/09/2026 | ÖK | örnek alabalık üretim çiftliği | 793,18 | |
-| 331.01 | Ortaklara Borçlar | 0047 | 05/09/2026 | ÖK | örnek alabalık üretim çiftliği | | 8.725,00 |
+| 770.08 | Yeme-İçme Ve Ağırlama Giderleri | 0412 | 08/09/2026 | ÖK | örnek balık lokantası | 5.890,91 | |
+| 191.03.10 | % 10 Lı İndirilecek Kdv | 0412 | 08/09/2026 | ÖK | örnek balık lokantası | 589,09 | |
+| 331.01 | Ortaklara Borçlar | 0412 | 08/09/2026 | ÖK | örnek balık lokantası | | 6.480,00 |
 
-- Gider satırı = KDV hariç tutar (matrah) = 8.725,00 - 793,18 = 7.931,82.
+- Gider satırı = KDV hariç tutar (matrah) = 6.480,00 - 589,09 = 5.890,91.
 - KDV satırı = fişte yazan KDV tutarı, KDV oranına göre 191 alt hesabı.
 - Alacak satırı = fiş toplamı (KDV dahil), ödeme şekline göre hesap.
-- Borç toplamı 8.725,00 = Alacak toplamı 8.725,00. Luca alt bilgide "191 Toplam: 793,18" de gösteriyor; uygulama da aynı kontrol toplamını göstermeli.
+- Borç toplamı 6.480,00 = Alacak toplamı 6.480,00. Luca alt bilgide "191 Toplam: 589,09" de gösteriyor; uygulama da aynı kontrol toplamını göstermeli.
 - Miktar 0, BaBs işaretsiz.
 
 ## 2. Fiş türü -> gider hesabı önerileri
@@ -71,9 +71,9 @@ Not: Luca ekranının sağındaki "KDV İşlemleri" kutusu genel `191.01` / `391
 4. Farklı oranlar farklı kategoriye ait olabilir (market fişinde gıda %1, deterjan %20). Model kalem bazında kategori dönerse gider satırları (hesap, oran) bazında gruplanır; dönmezse tüm fiş tek kategori.
 
 ### Kuruş ve yuvarlama kuralı
-- Tüm tutarlar **integer kuruş** (`8725,00 TL = 872500`). Kayan nokta yok. Fişten okunan "8.725,00" metni doğrudan kuruşa çevrilir (nokta binlik, virgül ondalık).
+- Tüm tutarlar **integer kuruş** (`8725,00 TL = 648000`). Kayan nokta yok. Fişten okunan "6.480,00" metni doğrudan kuruşa çevrilir (nokta binlik, virgül ondalık).
 - KDV fişte yazıyorsa **fişteki değer esastır**, yeniden hesaplanmaz. Matrah çıkarma ile bulunur, böylece borç toplamı her zaman brüte eşit olur.
-- KDV fişte okunamadıysa: `kdv = yuvarla(brüt * oran / (100 + oran))`, kuruşta **yarım yukarı** (0,5 kuruş ve üstü yukarı). Integer hesap: `kdv = floor((brüt * oran * 2 + (100 + oran)) / (2 * (100 + oran)))`. Örnek: 872500 * 10 / 110 = 79318,18 -> 79318 (793,18, fişle aynı).
+- KDV fişte okunamadıysa: `kdv = yuvarla(brüt * oran / (100 + oran))`, kuruşta **yarım yukarı** (0,5 kuruş ve üstü yukarı). Integer hesap: `kdv = floor((brüt * oran * 2 + (100 + oran)) / (2 * (100 + oran)))`. Örnek: 648000 * 10 / 110 = 58909,18 -> 58909 (589,09, fişle aynı).
 - Doğrulama: `Σ brüt_oran == fiş TOPLAM`. Eşit değilse (indirim, iskonto, okuma hatası) kayıt **otomatik dengelenmez**, kullanıcıya fark gösterilir. Tek istisna: fark oran başına en fazla 1 kuruşsa en büyük matrah satırına eklenir ve not düşülür.
 - Model ayrıca `kdv_oran` ile `brüt_oran * oran / (100+oran)` arasında 1 kuruştan büyük fark görürse uyarı (yanlış oran ya da yanlış okuma).
 - Son kontrol: `Σ borç == Σ alacak` değilse kayıt onaylanamaz.
@@ -99,7 +99,7 @@ Sonuç: "Kart" bilgisi tek başına doğru hesabı belirlemez. Uygulama:
 ## 5. Açıklama, Evrak No, Evrak Tarihi, BT, BaBs
 
 ### Açıklama
-Örnek: `ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ` -> `örnek alabalık üretim çiftliği`.
+Örnek: `ÖRNEK BALIK LOKANTASI` -> `örnek balık lokantası`.
 Kural (varsayılan):
 1. Unvandaki şirket türü ve faaliyet eklerinden itibaren kesilir: ilk ` VE ` bağlacı veya `LTD`, `ŞTİ`, `A.Ş.`, `AŞ`, `TİC.`, `SAN.`, `İŞL.`, `RES.`, `KOLL.`, `ŞUBESİ` gibi eklerden biri.
 2. Kalan kısım **Türkçe kurallarla** küçük harfe çevrilir (`toLocaleLowerCase('tr-TR')`: `I -> ı`, `İ -> i`). Standart `toLowerCase` "ÇİFTLİĞİ"yi bozar.
@@ -107,10 +107,10 @@ Kural (varsayılan):
 4. Sonuç boşsa ilk 4 kelime kullanılır. Kullanıcı açıklamayı her zaman düzenleyebilir.
 
 ### Evrak No
-Fişteki "FİŞ NO" değeri, **baştaki sıfırlar korunarak metin** olarak (`0047`). Sayıya çevrilmez. Fiş No okunamazsa Z No + Fiş No birleşimi önerilir, kullanıcı onaylar.
+Fişteki "FİŞ NO" değeri, **baştaki sıfırlar korunarak metin** olarak (`0412`). Sayıya çevrilmez. Fiş No okunamazsa Z No + Fiş No birleşimi önerilir, kullanıcı onaylar.
 
 ### Evrak Tarihi
-Fiş tarihi, Luca formatında `GG/AA/YYYY` (`05/09/2026`). Saat kullanılmaz. Fiş tarihi açık muhasebe döneminin dışındaysa (Luca üst sağda dönem 01/01/2026-31/12/2026) uyarı.
+Fiş tarihi, Luca formatında `GG/AA/YYYY` (`08/09/2026`). Saat kullanılmaz. Fiş tarihi açık muhasebe döneminin dışındaysa (Luca üst sağda dönem 01/01/2026-31/12/2026) uyarı.
 
 ### BT (Belge Türü) = "ÖK"
 BT, Luca fiş satırındaki **Belge Türü** kolonudur (ekranda kırmızı başlık, yani zorunlu). e-Defter'de her yevmiye satırı için belge tipi istenir. "ÖK" büyük olasılıkla **Ödeme Kaydedici (cihaz) fişi**, yani yazar kasa/ÖKC fişi kısaltmasıdır. Bu, Luca dokümantasyonunda doğrulanamadı; kullanıcı örneğinde ÖKC fişi için ÖK seçilmiş olması tahmini destekliyor. Uygulama:

@@ -43,11 +43,11 @@ Fişteki bilgilerin otomatik doldurulmasını istiyorum.
 
 Luca'ya gireceğim satırların kurallara göre hazırlanmasını istiyorum.
 
-- [ ] Örnek fiş (Örnek Alabalık, 0047, 05.09.2026, %10, toplam 8.725,00, KDV 793,18, kartla) şu üç satırı üretir:
-  - 770.08 Borç 7.931,82
-  - 191.03.10 Borç 793,18
-  - 331.01 Alacak 8.725,00
-  - Hepsinde Evrak No `0047`, Evrak Tarihi `05/09/2026`, BT `ÖK`, Açıklama `örnek alabalık üretim çiftliği`.
+- [ ] Örnek fiş (Örnek Balık Lokantası, 0412, 08.09.2026, %10, toplam 6.480,00, KDV 589,09, kartla) şu üç satırı üretir:
+  - 770.08 Borç 5.890,91
+  - 191.03.10 Borç 589,09
+  - 331.01 Alacak 6.480,00
+  - Hepsinde Evrak No `0412`, Evrak Tarihi `08/09/2026`, BT `ÖK`, Açıklama `örnek balık lokantası`.
 - [ ] Matrah = KDV dahil tutar - fişteki KDV. Tüm hesap tam sayı kuruşla yapılır.
 - [ ] Çok oranlı fişte her oran için ayrı gider ve 191 satırı açılır.
 - [ ] Gider hesabı kategoriden, KDV hesabı orandan, alacak hesabı ödeme şeklinden kullanıcının kural tablosuna göre gelir. Model hesap kodu üretmez.
@@ -71,7 +71,7 @@ Onaylı fişleri Luca'ya tek seferde aktarmak istiyorum.
 - [ ] "Luca için indir" onaylı ve henüz aktarılmamış fişlerden `.xlsx` üretir.
 - [ ] Dosya Luca Excel veri aktarımı kolon düzenindedir; kolon adları kodda tek sabittedir.
 - [ ] Bir dosyada en fazla 50 fiş ve 400 satır olur; fazlası ek dosyalara bölünür, fiş ortadan bölünmez.
-- [ ] Evrak No ve Fiş No metin hücresidir (`0047` korunur), tarihler tarih hücresi, tutarlar sayı hücresidir.
+- [ ] Evrak No ve Fiş No metin hücresidir (`0412` korunur), tarihler tarih hücresi, tutarlar sayı hücresidir.
 - [ ] İndirilen fişler "Aktarıldı" olarak işaretlenir ve tekrar indirilebilir.
 - [ ] Tek fiş için Luca Fiş Detayı kolon sırasında satırları panoya kopyalayan "Kopyala" düğmesi vardır.
 - [ ] Ekranda Luca'daki adımlar kısa bir rehberle anlatılır: Muhasebe > Fiş İşlemleri > Excel veri aktarımı, dosya seç, doğrulama kodu, Yükle, Fiş Kes.
