@@ -1152,15 +1152,8 @@
 }
 /* Print and find-in-page see the end state of the signature, never a figure waiting for its flight. */
 @media print { .rule *, .rule [data-amt]::before { animation: none !important; } }
-/* Sections below the first screens are laid out only when near: the first layout is the hero's alone. */
-/* Not the routes: its sticky Excel card's lift runs past the section box, and paint containment would cut it (YON 23.15). */
-/* Placeholder heights near each section's real one per layout (measured 2026-11-05), so opening one does not move the page. */
-.path, .show, .feat, .faq, .cta { content-visibility: auto; }
-.path.is-near { content-visibility: visible; }
-.path { contain-intrinsic-size: auto 2545px; } .show { contain-intrinsic-size: auto 870px; } .feat { contain-intrinsic-size: auto 1090px; }
-.faq { contain-intrinsic-size: auto 660px; } .cta { contain-intrinsic-size: auto 845px; }
-@media (max-width: 1099px) { .path { contain-intrinsic-size: auto 1420px; } .show { contain-intrinsic-size: auto 960px; } .feat { contain-intrinsic-size: auto 1270px; } .faq { contain-intrinsic-size: auto 620px; } .cta { contain-intrinsic-size: auto 845px; } }
-@media (max-width: 640px) { .path { contain-intrinsic-size: auto 681px; } .show { contain-intrinsic-size: auto 1048px; } .feat { contain-intrinsic-size: auto 504px; } .faq { contain-intrinsic-size: auto 633px; } .cta { contain-intrinsic-size: auto 1200px; } } /* measured at 390 (jury tur 10: the old guesses made the page 669px shorter while scrolling) */
+/* No content-visibility on the sections: while off screen Chrome left their headings and FAQ out of the accessibility tree (jury tur 14,
+   WCAG 1.3.1); the first-layout saving was not worth hiding content from screen readers. */
 @media (prefers-reduced-motion: reduce) {
   .path-card { transition: none; transform: none !important; }
 }

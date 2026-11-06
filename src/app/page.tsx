@@ -367,7 +367,7 @@ export default function LandingPage() {
 
         {/* how-it-works: on desktop a sticky split story (four clauses, one card through four states, the field wiped in from
             below, YON.md 23.3.4); without script, below 1100px and with reduced motion the four cards stand in their own fields. */}
-        {/* HomeMotion may mark it (data-ready, is-near) before this boundary hydrates: those attributes are the client's own. */}
+        {/* HomeMotion may mark it (data-ready) before it hydrates: that attribute is the client's own. */}
         <section className="path" aria-labelledby="path-title" suppressHydrationWarning>
           <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2>
           {PATH.map((f, i) => (

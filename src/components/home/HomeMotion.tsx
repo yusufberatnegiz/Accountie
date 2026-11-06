@@ -94,16 +94,7 @@ export function HomeMotion() {
       io.observe(rule.querySelector(".rule-table") ?? rule);
       offs.push(() => { if (idle) cic(idle); near.disconnect(); cancelAnimationFrame(raf); removeEventListener("resize", onResize); io.disconnect(); delete rule.dataset.mode; });
     }
-
     const path = document.querySelector<HTMLElement>(".path");
-    // "Bir fişin yolu" is laid out (content-visibility) a screen and a half before it arrives, in an idle moment, not in the
-    // scroll frame that reaches it (a 122 ms task at 4x CPU, YON 23.24).
-    if (path) {
-      const ric = window.requestIdleCallback ?? ((f: () => void) => setTimeout(f, 1));
-      const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); ric(() => path.classList.add("is-near"), { timeout: 600 }); } }, { rootMargin: "150% 0px" });
-      io.observe(path);
-      offs.push(() => io.disconnect());
-    }
     const stage = path?.querySelector<HTMLElement>(".path-stage");
     if (path && stage) {
       const fields = [...path.querySelectorAll<HTMLElement>(".path-field")];

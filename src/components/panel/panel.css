@@ -659,3 +659,5 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 0s !important; animation-delay: 0s !important; }
 }
+/* The date field's calendar button is a Tab stop of its own; it shows the same ring as the field (jury tur 14). */
+.field[type="date"]::-webkit-calendar-picker-indicator:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
