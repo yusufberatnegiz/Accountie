@@ -93,9 +93,20 @@ export function Counter() {
 
   return (
     <div className="counter" data-ui data-touched={touched || undefined} suppressHydrationWarning>
-      {/* The pickers are the page's control for the picture, above the window, not inside the app (YON 23.28). */}
-      {controls}
+      {/* Source order is the phone's reading order (phone, card, pickers): a slow first paint never draws a later part where an
+          earlier one will land (jury tur 12: CLS 0.21). On desktop CSS lifts the pickers above the window (YON 23.28). */}
       <div className="counter-body">
+        <Phone className="counter-phone">
+          {/* "Fiş çekildi" turns to "Okundu" once in the load scenario (CSS, YON 23.28); the end state is the server's text. */}
+          <p className="phone-head"><span className="phone-state"><span aria-hidden="true">Fiş çekildi</span><span>Okundu</span></span><span>{sample.label}</span></p>
+          <div className="counter-slot" ref={slot}>
+            <Thermal sample={sample} printedPayment={PRINTED[payment]} hot={hot} />
+          </div>
+          <div className="phone-read">
+            <p><span>Okundu</span><span>Evrak No {sample.receipt.receiptNo}</span></p>
+            <p><span>{lines.length} satır hazır</span><span>{balanced ? "Dengede" : "Dengesiz"}</span></p>
+          </div>
+        </Phone>
         <AppWindow title={`Fiş ${sample.receipt.receiptNo}, Luca satırları`} className="counter-win">
           <div className="counter-app">
             <div className="counter-sheet">
@@ -136,19 +147,8 @@ export function Counter() {
             </div>
           </div>
         </AppWindow>
-
-        <Phone className="counter-phone">
-          {/* "Fiş çekildi" turns to "Okundu" once in the load scenario (CSS, YON 23.28); the end state is the server's text. */}
-          <p className="phone-head"><span className="phone-state"><span aria-hidden="true">Fiş çekildi</span><span>Okundu</span></span><span>{sample.label}</span></p>
-          <div className="counter-slot" ref={slot}>
-            <Thermal sample={sample} printedPayment={PRINTED[payment]} hot={hot} />
-          </div>
-          <div className="phone-read">
-            <p><span>Okundu</span><span>Evrak No {sample.receipt.receiptNo}</span></p>
-            <p><span>{lines.length} satır hazır</span><span>{balanced ? "Dengede" : "Dengesiz"}</span></p>
-          </div>
-        </Phone>
       </div>
+      {controls}
     </div>
   );
 }

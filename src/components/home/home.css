@@ -635,7 +635,7 @@
 .counter-app { height: 100%; }
 .counter-win .counter-sheet { height: 100%; padding: var(--s4) calc(48px + var(--s5)) var(--s5) calc(var(--ov) + var(--s5)); }
 /* The pickers sit above the window on the stage, outside the app (YON 23.28): two segmented tracks on the plate tone. */
-.counter > .counter-controls { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); align-items: center; padding-left: calc(var(--ph, 0px) - var(--ov, 0px)); }
+.counter > .counter-controls { order: -1; display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); align-items: center; padding-left: calc(var(--ph, 0px) - var(--ov, 0px)); }
 .counter > .counter-controls .segmented { background: var(--plate); padding: 3px; border-radius: calc(var(--radius-control) + 3px); gap: 2px; }
 .counter > .counter-controls .segmented legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .counter > .counter-controls .segmented label { min-height: var(--control-sm); }
@@ -672,10 +672,10 @@
   /* The card under the phone already says "Okundu, 3 satır": the phone's own read block went, so the receipt and its Luca lines
      meet on the first screen (jury tur 8: at 390 the card started under the cookie band). */
   .counter-phone .phone-read { display: none; }
-  /* The pickers sit under phone and card, so both keep the longest sample's height (Market): a choice above the thumb never
-     shifts them and the scroll (jury tur 10: 60-154px jumps). */
-  .counter-phone { min-height: 366px; }
-  .counter-win { min-height: 497px; }
+  /* The pickers sit under phone and card. No scroll anchoring inside the counter: a choice keeps scrollY and the phone where they
+     are and only the card's foot moves (jury tur 10: anchoring on the pickers jumped the phone 60-154px; tur 12: fixed heights left
+     empty bands in short samples). */
+  .counter { overflow-anchor: none; }
   .hero-copy { padding-bottom: var(--s5); gap: var(--s5); }
   .counter-phone .phone-screen { padding-top: 36px; }
   /* The item lines are in the card under it (as lines); the strip keeps its head and totals, so no shown sum disagrees with them. */
@@ -1039,7 +1039,7 @@
    one by one, the totals rise, Dengede pops, the file strip arrives. Once, about 2.3 s; the end state is the server's output. */
 @keyframes state-out { 0% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-100%); } }
 @keyframes state-in { from { opacity: 0; transform: translateY(100%); } }
-@keyframes odo-in-w { from { opacity: 0.4; transform: translateY(30%); } }
+@keyframes odo-in-w { from { opacity: 0.4; } }
 @keyframes pop { from { transform: scale(0.96); opacity: 0; } }
 @keyframes spot-open { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
 @keyframes rule-lit { from { opacity: 0; } }

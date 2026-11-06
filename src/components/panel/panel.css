@@ -212,7 +212,7 @@ details.side-block:not([open]) { gap: 0; }
 .read-values > [data-traced] dd { color: var(--ink); }
 /* Below 1100px: the receipt's three figures in one strip above the lines; the line in focus lights its figure here (YON 23.13). */
 .read-brief { display: flex; align-items: center; gap: var(--s3); padding: var(--s2); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); }
-.read-brief dl { display: flex; flex: 1; gap: var(--s1); min-width: 0; margin: 0; }
+.read-brief dl { display: flex; flex: 1; flex-wrap: wrap; gap: var(--s1) var(--s3); min-width: 0; margin: 0; } /* amounts never run together at 320 (jury tur 12) */
 .read-brief dl > div { flex: 1 1 0; display: grid; gap: 2px; padding: var(--s1) var(--s2); border-radius: var(--radius-chip); min-width: 0; transition: background-color var(--t-hover) ease; }
 .read-brief dt { font-size: var(--fs-small); color: var(--muted); }
 .read-brief dd { margin: 0; text-align: left; font-size: var(--fs-body); font-weight: var(--w-medium); color: var(--thermal-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
