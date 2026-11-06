@@ -790,7 +790,7 @@
 /* Paper at 15px and figures at 20px: the receipt is the window's height, the amounts sit next to their account names. */
 .rule-receipt .thermal { font-size: 15px; line-height: 1.75; }
 .rule-receipt .thermal-paper { padding: var(--s6) var(--s5) var(--s8); }
-.rule-ledger { --fs-ui: 20px; --fs-small: 15px; --fs-title: 28px; display: grid; gap: var(--s5); min-width: 0; }
+.rule-ledger { --fs-ui: 24px; --fs-small: 15px; --fs-title: 32px; display: grid; gap: var(--s5); min-width: 0; }
 .rule-table td { padding-block: var(--s4); vertical-align: top; }
 /* On a phone the chip comes down from the paper behind the header row (opaque, over it), so it never crosses its labels. */
 /* The chip is also clipped at the table's top edge, so it never shows half cut in the card's padding above the header (YON 23.32). */
@@ -1175,3 +1175,12 @@
 @media (prefers-reduced-motion: reduce) {
   .path-card { transition: none; transform: none !important; }
 }
+
+/* The material scene's card is the record that outlives the paper (jury tur 10): its total large, its codes as one quiet list. */
+.paper-luca-total { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4); margin: 0; }
+.paper-luca-total span { color: var(--muted); font-size: var(--fs-small); }
+.paper-luca-total strong { font-family: var(--font-head); font-weight: 300; font-size: clamp(2rem, 1.4rem + 1.6vw, 2.75rem); letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.paper-luca-codes { list-style: none; margin: 0; padding: var(--s3) 0 0; border-top: 1px solid var(--ui-rule); display: grid; gap: var(--s2); font-size: var(--fs-small); }
+.paper-luca-codes li { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: var(--s3); align-items: baseline; }
+.paper-luca-codes .code { font-weight: var(--w-medium); font-variant-numeric: tabular-nums; }
+.paper-luca-codes .code-name { color: var(--muted); }
