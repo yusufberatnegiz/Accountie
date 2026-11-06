@@ -428,12 +428,13 @@ main:focus, main:focus-visible { outline: none; }
    beside it; so no frame shows a partial figure or two figures (YON 23.24). */
 .odo-w[data-old]::before { content: none; }
 /* A changed digit is swapped in place, never moved: rolled digits (full or short travel) showed half glyphs above and below the
-   line and a clipped comma read as a point (jury tur 11-12). The old one is gone in 40% of the time, then the new one fades in. */
+   line and a clipped comma read as a point (jury tur 11-12). Old and new cross-fade in the same 160 ms with no stagger, so every frame shows a whole figure (jury tur 13: a sequential fade left
+   gaps like '77 .01', and quick clicks chained them). */
 @keyframes odo-in { from { opacity: 0; } }
 @keyframes odo-out { to { opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
-  :is(.odo-d, .roll-slot)[data-old] > span { animation: odo-in calc(var(--odo-t, var(--t-digit)) * 0.6) var(--ease-out) backwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms) + var(--odo-t, var(--t-digit)) * 0.4); }
-  :is(.odo-d, .roll-slot)[data-old]::before { animation: odo-out calc(var(--odo-t, var(--t-digit)) * 0.4) var(--ease-out) forwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms)); }
+  :is(.odo-d, .roll-slot)[data-old] > span { animation: odo-in 160ms var(--ease-out) backwards; }
+  :is(.odo-d, .roll-slot)[data-old]::before { animation: odo-out 160ms var(--ease-out) forwards; }
 }
 @media (prefers-reduced-motion: reduce) { :is(.odo-d, .roll-slot)[data-old]::before { content: none; } }
 /* A theme change is a jump, never a fade (YON 6.2): theme.ts sets this class for two frames around the switch. Only the

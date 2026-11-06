@@ -782,7 +782,7 @@
 }
 .rule-win::before { content: none; }
 .rule-win .win { height: auto; }
-/* The gutter (96px) is wider than the flying chip at its 1.15 lift, so its leg down the gutter never touches an account name. */
+/* The gutter (96px) is wider than the flying chip at its 1.05 lift, so its leg down the gutter never touches an account name. */
 .rule-body { height: 100%; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: var(--s9); padding: var(--s6) var(--s7); align-items: center; }
 /* Paper at 15px and figures at 20px: the receipt is the window's height, the amounts sit next to their account names. */
 .rule-receipt .thermal { font-size: 15px; line-height: 1.75; }
@@ -1030,7 +1030,7 @@
 }
 
 /* ---------- Motion ---------- */
-@keyframes home-swap { from { opacity: 0; transform: translateY(8px); } }
+@keyframes home-swap { from { opacity: 0.35; transform: translateY(8px); } } /* never an empty window on a tab change (jury tur 13) */
 /* The hero window arrives once from a laid-back plane and then rests flat at full size, so its text is sharp (YON 23.9). */
 @keyframes hero-tilt { from { transform: perspective(1600px) rotateX(7deg) translateY(40px) scale(0.96); } }
 @keyframes hero-phone { from { transform: translate(-24px, 72px); } }
@@ -1054,8 +1054,8 @@
    rounded arcs, not an L (YON 23.32). */
 @keyframes fly-gx { 0%, 4% { transform: translateX(var(--dx, 0)); animation-timing-function: var(--ease-out); } 18% { transform: translateX(var(--dxg, 0)); } 26% { transform: translateX(var(--dxg, 0)); animation-timing-function: var(--ease-in-out); } 80%, 100% { transform: none; } }
 @keyframes fly-gy { 0%, 15% { transform: translateY(var(--dy, 0)); animation-timing-function: var(--ease-in-out); } 30% { transform: translateY(var(--dg, 0)); } 72% { transform: translateY(var(--dg, 0)); animation-timing-function: var(--ease-in-out); } 94%, 100% { transform: none; } }
-/* The figure grows a little as it leaves the paper and settles to the cell's size: a lift, not a jump in size (1.15, YON 23.15). */
-@keyframes fly-s { from { transform: scale(var(--sc, 1)); } 30% { transform: scale(1.15); } to { transform: none; } }
+/* The figure grows a little as it leaves the paper and settles to the cell's size: a lift, not a jump in size (1.05: at 1.15 it brushed the account names on its leg, jury tur 13). */
+@keyframes fly-s { from { transform: scale(var(--sc, 1)); } 30% { transform: scale(1.05); } to { transform: none; } }
 /* Chip and source swap in the same 2%: never both printed, never neither. */
 /* The chip is gone before its figure shows: no frame has the chip over the landed figure. Opacity only (YON 23.30): a discrete
    visibility step kept the animation off the compositor; the landed figure is stacked above its resting copy instead (.fly-val). */
@@ -1087,11 +1087,11 @@
 
   /* The account name rolls with its code, in the same 240 ms, so code and name never disagree (YON 23.24). */
   .odo-code, .counter-lines .code-name { --odo-t: 240ms; }
-  /* The account name changes in two steps (jury tur 8: a simultaneous cross-fade showed both names over each other): the old one is
-     gone in 80 ms, then the new one fades in over 120 ms. */
+  /* The account name (long words) changes in two quick steps, done within the codes' 160 ms cross-fade: a simultaneous fade showed two
+     names over each other (jury tur 8). */
   .counter-lines .code-name .roll-slot[data-old] { clip-path: none; --odo-t: 120ms; }
-  .counter-lines .code-name .roll-slot[data-old] > span { animation-name: fade-in; animation-delay: 80ms; }
-  .counter-lines .code-name .roll-slot[data-old]::before { animation-name: fade-out; animation-duration: 80ms; animation-delay: 0ms; }
+  .counter-lines .code-name .roll-slot[data-old] > span { animation-name: fade-in; animation-duration: 120ms; animation-delay: 60ms; }
+  .counter-lines .code-name .roll-slot[data-old]::before { animation-name: fade-out; animation-duration: 60ms; }
   /* A figure that changes length rises from 30% of its box with some ink already on: no frame shows an empty cell (YON 23.28). */
   .counter .odo-w[data-old] > span { animation-name: odo-in-w; }
   .counter-state[data-pop] { display: inline-block; animation: pop 160ms var(--ease-out); }
