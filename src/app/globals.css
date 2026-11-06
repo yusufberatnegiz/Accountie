@@ -132,19 +132,19 @@
    Same block twice: the system preference without JS, and data-look, the one attribute the theme script sets (src/lib/theme.ts). ---------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-look]) {
-    --ground: #0e0d0b; --surface: #272522; --raised: #312f2b; --stage: #1d1b18; --active: #282623;
-    --border: #312f2c; --rule: #282623; --control-edge: #7f7c75;
+    --ground: #0e0d0b; --surface: #272522; --raised: #312f2b; --stage: #1d1b18; --active: #35322e;
+    --border: #403d38; --rule: #34322e; --control-edge: #7f7c75;
     --ink: #eeede9; --muted: #b6b3ac; --faint: #aaa7a0; --thermal-ink: #b6b3ac;
     --accent: #92b6f6; --accent-strong: #b3cbf8; --accent-soft: #1a2742; --on-accent-field: #eeede9;
     --primary: #eeede9; --primary-hover: #d9d7d1; --on-primary: #100f0d;
     --secondary: #34322e; --secondary-hover: #3d3a36; --bar-control: #3a3834;
     --chip-on: var(--accent); --on-chip-on: #100f0d; --lift-control: #3d3a36; --lift-control-hover: #47443f; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
-    --deep: #1d1b18; --deep-raised: #272522;
+    --deep: #131210; --deep-raised: #272522; /* phone screens: darker than the CTA field they stand on (jury tur 9) */
     --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
     --warn-ink: #e8c477; --warn-bg: #2a2412; --warn-edge: #8f7440;
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-    --plate: #1d1b18; --bezel: #2a2825; --edge-hi: rgb(255 255 255 / 0.07);
+    --plate: #1d1b18; --bezel: #3a3834; --edge-hi: rgb(255 255 255 / 0.07);
     --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
     --path-1: #1d1b18; --path-2: #23211e; --path-3: #2a2825; --path-4: #142a5a; --path-shell: #2c2a27;
     --show-ground: #1d1b18; --show-plate: #272522; --split: #1d1b18;
@@ -157,19 +157,19 @@
   }
 }
 :root[data-look="dark"] {
-  --ground: #0e0d0b; --surface: #272522; --raised: #312f2b; --stage: #1d1b18; --active: #282623;
-  --border: #312f2c; --rule: #282623; --control-edge: #7f7c75;
+  --ground: #0e0d0b; --surface: #272522; --raised: #312f2b; --stage: #1d1b18; --active: #35322e;
+  --border: #403d38; --rule: #34322e; --control-edge: #7f7c75;
   --ink: #eeede9; --muted: #b6b3ac; --faint: #aaa7a0; --thermal-ink: #b6b3ac;
   --accent: #92b6f6; --accent-strong: #b3cbf8; --accent-soft: #1a2742; --on-accent-field: #eeede9;
   --primary: #eeede9; --primary-hover: #d9d7d1; --on-primary: #100f0d;
   --secondary: #34322e; --secondary-hover: #3d3a36; --bar-control: #3a3834;
   --chip-on: var(--accent); --on-chip-on: #100f0d; --lift-control: #3d3a36; --lift-control-hover: #47443f; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
-  --deep: #1d1b18; --deep-raised: #272522;
+  --deep: #131210; --deep-raised: #272522; /* phone screens: darker than the CTA field they stand on (jury tur 9) */
   --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
   --warn-ink: #e8c477; --warn-bg: #2a2412; --warn-edge: #8f7440;
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-  --plate: #1d1b18; --bezel: #2a2825; --edge-hi: rgb(255 255 255 / 0.07);
+  --plate: #1d1b18; --bezel: #3a3834; --edge-hi: rgb(255 255 255 / 0.07);
   --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
   --path-1: #1d1b18; --path-2: #23211e; --path-3: #2a2825; --path-4: #142a5a; --path-shell: #2c2a27;
   --show-ground: #1d1b18; --show-plate: #272522; --split: #1d1b18;

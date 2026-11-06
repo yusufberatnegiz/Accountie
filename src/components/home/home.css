@@ -247,6 +247,8 @@
 .show-stage { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); row-gap: var(--s6); align-items: start; }
 /* Every piece sits in the same cell, so the stage is as tall as the tallest and nothing shifts; only the chosen one is shown. */
 .show-row { grid-column: 1 / -1; grid-row: 2; display: grid; align-items: start; min-width: 0; }
+/* As tall as the tallest tab (Fiş ve satırlar, 502px at 1440): a tab change never moves the window's foot or the section's edge (jury tur 9: 78px jump). */
+@media (min-width: 1100px) { .show-row { min-height: 502px; } }
 /* Only the chosen piece takes space, so the stage ends at the taller of the piece and the tabs (ShowRow cross-fades the change).
    Without script every piece is shown, one under the other (YON 23.15). */
 .show-row { gap: var(--s7); }
@@ -737,7 +739,7 @@
   /* The bodies: no card of their own, their head kept as space under the shell's head. The old one leaves in 120ms and the new
      one starts 60ms into that exit (YON 23.32, below). */
   /* As tall as the stage and stuck at the same line, so bodies and shell are released together at the section's end. */
-  .js .path-plate { position: sticky; top: var(--stage-top); height: var(--stage-h); margin-top: var(--s8); align-content: center; z-index: 1; grid-column: 6 / 13; grid-row: 1 / 7; align-self: start; justify-self: center; width: 640px; opacity: 0; transform: translateY(6px); transition: opacity 100ms var(--ease-exit), transform 0s linear 100ms; }
+  .js .path-plate { position: sticky; top: var(--stage-top); height: var(--stage-h); margin-top: var(--s8); align-content: center; z-index: 1; grid-column: 6 / 13; grid-row: 1 / 7; align-self: start; justify-self: center; width: 640px; opacity: 0; transform: translateY(6px); transition: opacity 140ms var(--ease-out), transform 0s linear 140ms; }
   .js .path-card { --fs-body: 16px; --fs-ui: 15px; --fs-small: 14px; width: 100%; height: var(--path-h); min-height: 0; padding: var(--s6); gap: var(--s4); background: none; border-color: transparent; color: var(--ink); }
   .js .path-card > .ui-card-head { visibility: hidden; }
   .js .path-card { justify-content: center; }
@@ -748,9 +750,10 @@
   .js .path-card .path-read-fields .ui-kv { font-size: 20px; padding-block: var(--s3); }
   .js .path-strip .thermal { font-size: 14px; }
   .js .path-field[data-on] .path-clause > span { opacity: 1; }
-  /* The new body starts as the old one reaches 0 (its 100ms exit): the two are never both legible (jury tur 8: at 60ms they were),
+  /* The old body drops fast (ease-out, ~20% left at 60ms) and the new one starts then: an overlap with one layer faint, so the card
+     is never empty (jury tur 9) and never shows two legible bodies (jury tur 8),
      and the shell stays, so the frame is never empty. */
-  .js .path-field[data-on] .path-plate { opacity: 1; transform: none; transition: opacity 220ms var(--ease-out) 100ms, transform 260ms var(--ease-out) 100ms; }
+  .js .path-field[data-on] .path-plate { opacity: 1; transform: none; transition: opacity 220ms var(--ease-out) 60ms, transform 260ms var(--ease-out) 60ms; }
   .js .path-field:hover .path-card { transform: none; }
   /* Until the first state is known nothing transitions, so a fast entry never plays a wipe from the server's state. */
   .path:not([data-ready]) :is(.path-bg, .path-plate, .path-pill > .status, .path-clause > span) { transition: none; }
