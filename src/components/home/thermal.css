@@ -19,6 +19,5 @@
 .thermal-row[data-lit] { background: var(--paper-lit); color: var(--paper-strong); }
 .thermal-compact { font-size: 12px; }
 .thermal-compact .thermal-paper { padding: var(--s4) var(--s3) var(--s6); }
-
-/* On a white window the paper needs its own edge (1.03:1 otherwise): a hairline and a short drop shadow that follow the torn edge. */
-.win .thermal { filter: drop-shadow(0 0 0.5px rgb(20 26 34 / 0.28)) drop-shadow(0 6px 10px rgb(20 26 34 / 0.08)); }
+/* On a white window the paper needs its own edge: warm stock (--paper) plus a hairline that follows the torn cut. */
+.win .thermal { filter: drop-shadow(0 0 0.5px rgb(20 26 34 / 0.32)); } /* taste-skill-ignore: a hairline edge on the paper, follows the torn cut */

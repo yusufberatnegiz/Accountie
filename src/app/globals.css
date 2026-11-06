@@ -85,7 +85,7 @@
   --ui-surface: var(--surface); --ui-raised: var(--raised); --ui-border: var(--border); --ui-rule: var(--rule);
   /* Thermal paper: a barely warm white in light, so it reads as an object on the white window; in dark a lowered warm grey,
      darker than the ink, so the paper is never the brightest thing on the screen (YON 23.27). */
-  --paper: #fbfaf7; --paper-ink: #3c3a36; --paper-strong: #14130f; --paper-lit: #d9e4f5;
+  --paper: #f5f2e9; --paper-ink: #3c3a36; /* warm thermal stock: on a white window #fbfaf7 read 1.02:1 (jury tur 10) */ --paper-strong: #14130f; --paper-lit: #d9e4f5;
   /* YON 23.19 depth ladder, one step each: ground < plate < window (--ui-surface) < a layer lifted over the window (--ui-lift).
      In light the window and the lifted layer are both white and the lift separates them; in dark the lifted layer is a clear tone step. */
   --ui-lift: var(--surface); --ui-lift-edge: var(--border);
@@ -126,58 +126,58 @@
    Depth is lightness plus a light edge plus the lift shadow, never a mid-grey slab; saturation stays low and warm:
    #100f0d ground; #181715 fields (stage, auth split, showcase, closing call, the first path field, plate);
    #1e1c19 app surface and phone screen, #1f1e1b a product window or card (always above its field, path cards one step above theirs);
-   #232220 a window lifted over another layer; #2a2825 a raised strip or control tray inside a window; #36342f a control on a window (1.3:1);
+   #232220 a window lifted over another layer; #262624 a raised strip or control tray inside a window; #36342f a control on a window (1.3:1);
    window and card edges are ink at 12-14% (rgba), so they read on every field. The app keeps #282623 raised and #312f2c border.
    Blue is the accent, the chosen chip, the Luca figures and the one Luca field (--path-4); no navy field in dark.
    Same block twice: the system preference without JS, and data-look, the one attribute the theme script sets (src/lib/theme.ts). ---------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-look]) {
-    --ground: #0e0d0b; --surface: #272522; --raised: #312f2b; --stage: #1d1b18; --active: #35322e;
-    --border: #403d38; --rule: #34322e; --control-edge: #7f7c75;
+    --ground: #0c0c0b; --surface: #222220; --raised: #2b2b29; --stage: #1a1a18; --active: #30302d;
+    --border: #3b3b38; --rule: #2e2e2b; --control-edge: #7f7c75;
     --ink: #eeede9; --muted: #b6b3ac; --faint: #aaa7a0; --thermal-ink: #b6b3ac;
     --accent: #92b6f6; --accent-strong: #b3cbf8; --accent-soft: #1a2742; --on-accent-field: #eeede9;
     --primary: #eeede9; --primary-hover: #d9d7d1; --on-primary: #100f0d;
-    --secondary: #34322e; --secondary-hover: #3d3a36; --bar-control: #3a3834;
-    --chip-on: var(--accent); --on-chip-on: #100f0d; --lift-control: #3d3a36; --lift-control-hover: #47443f; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
-    --deep: #131210; --deep-raised: #272522; /* phone screens: darker than the CTA field they stand on (jury tur 9) */
+    --secondary: #2e2e2b; --secondary-hover: #383835; --bar-control: #363633;
+    --chip-on: var(--accent); --on-chip-on: #100f0d; --lift-control: #383835; --lift-control-hover: #41413d; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
+    --deep: #111110; --deep-raised: #222220; /* phone screens: darker than the CTA field they stand on (jury tur 9) */
     --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
     --warn-ink: #e8c477; --warn-bg: #2a2412; --warn-edge: #8f7440;
     --scrim: rgb(0 0 0 / 0.6);
     --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-    --plate: #1d1b18; --bezel: #3a3834; --edge-hi: rgb(255 255 255 / 0.07);
+    --plate: #1a1a18; --bezel: #363633; --edge-hi: rgb(255 255 255 / 0.07);
     --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
-    --path-1: #1d1b18; --path-2: #23211e; --path-3: #2a2825; --path-4: #142a5a; --path-shell: #2c2a27;
-    --show-ground: #1d1b18; --show-plate: #272522; --split: #1d1b18;
-    --show-card: #272522; --show-card-edge: rgb(238 237 233 / 0.12); --show-tabs: #2a2825; --show-raised: #2a2825;
-    --lift: #272522; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #272522; --path-card-2: #2c2a27; --path-card-3: #312f2b; --path-card-4: #22314f; --foot-name: #c2bfb8;
-    --paper: #d0cdc6; --paper-ink: #3a3834; --paper-strong: #161513; --paper-lit: #b7c6e0;
-    --ui-surface: #272522; --ui-raised: #312f2b; --ui-border: rgb(238 237 233 / 0.12); --ui-rule: rgb(238 237 233 / 0.08);
-    --ui-lift: #2c2a27; --ui-lift-edge: rgb(238 237 233 / 0.14); --cta-field: #1d1b18; --photo-dim: 0.88;
+    --path-1: #1a1a18; --path-2: #1e1e1c; --path-3: #262624; --path-4: #142a5a; --path-shell: #292927;
+    --show-ground: #1a1a18; --show-plate: #222220; --split: #121211;
+    --show-card: #222220; --show-card-edge: rgb(238 237 233 / 0.12); --show-tabs: #262624; --show-raised: #262624;
+    --lift: #222220; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #222220; --path-card-2: #292927; --path-card-3: #2b2b29; --path-card-4: #22314f; --foot-name: #c2bfb8;
+    --paper: #d0cdc6; --paper-ink: #363633; --paper-strong: #161513; --paper-lit: #b7c6e0;
+    --ui-surface: #222220; --ui-raised: #2b2b29; --ui-border: rgb(238 237 233 / 0.12); --ui-rule: rgb(238 237 233 / 0.08);
+    --ui-lift: #292927; --ui-lift-edge: rgb(238 237 233 / 0.14); --cta-field: #1a1a18; --photo-dim: 0.88;
     color-scheme: dark;
   }
 }
 :root[data-look="dark"] {
-  --ground: #0e0d0b; --surface: #272522; --raised: #312f2b; --stage: #1d1b18; --active: #35322e;
-  --border: #403d38; --rule: #34322e; --control-edge: #7f7c75;
+  --ground: #0c0c0b; --surface: #222220; --raised: #2b2b29; --stage: #1a1a18; --active: #30302d;
+  --border: #3b3b38; --rule: #2e2e2b; --control-edge: #7f7c75;
   --ink: #eeede9; --muted: #b6b3ac; --faint: #aaa7a0; --thermal-ink: #b6b3ac;
   --accent: #92b6f6; --accent-strong: #b3cbf8; --accent-soft: #1a2742; --on-accent-field: #eeede9;
   --primary: #eeede9; --primary-hover: #d9d7d1; --on-primary: #100f0d;
-  --secondary: #34322e; --secondary-hover: #3d3a36; --bar-control: #3a3834;
-  --chip-on: var(--accent); --on-chip-on: #100f0d; --lift-control: #3d3a36; --lift-control-hover: #47443f; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
-  --deep: #131210; --deep-raised: #272522; /* phone screens: darker than the CTA field they stand on (jury tur 9) */
+  --secondary: #2e2e2b; --secondary-hover: #383835; --bar-control: #363633;
+  --chip-on: var(--accent); --on-chip-on: #100f0d; --lift-control: #383835; --lift-control-hover: #41413d; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
+  --deep: #111110; --deep-raised: #222220; /* phone screens: darker than the CTA field they stand on (jury tur 9) */
   --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
   --warn-ink: #e8c477; --warn-bg: #2a2412; --warn-edge: #8f7440;
   --scrim: rgb(0 0 0 / 0.6);
   --shadow-float: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border);
-  --plate: #1d1b18; --bezel: #3a3834; --edge-hi: rgb(255 255 255 / 0.07);
+  --plate: #1a1a18; --bezel: #363633; --edge-hi: rgb(255 255 255 / 0.07);
   --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
-  --path-1: #1d1b18; --path-2: #23211e; --path-3: #2a2825; --path-4: #142a5a; --path-shell: #2c2a27;
-  --show-ground: #1d1b18; --show-plate: #272522; --split: #1d1b18;
-  --show-card: #272522; --show-card-edge: rgb(238 237 233 / 0.12); --show-tabs: #2a2825; --show-raised: #2a2825;
-  --lift: #272522; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #272522; --path-card-2: #2c2a27; --path-card-3: #312f2b; --path-card-4: #22314f; --foot-name: #c2bfb8;
-  --paper: #d0cdc6; --paper-ink: #3a3834; --paper-strong: #161513; --paper-lit: #b7c6e0;
-  --ui-surface: #272522; --ui-raised: #312f2b; --ui-border: rgb(238 237 233 / 0.12); --ui-rule: rgb(238 237 233 / 0.08);
-  --ui-lift: #2c2a27; --ui-lift-edge: rgb(238 237 233 / 0.14); --cta-field: #1d1b18; --photo-dim: 0.88;
+  --path-1: #1a1a18; --path-2: #1e1e1c; --path-3: #262624; --path-4: #142a5a; --path-shell: #292927;
+  --show-ground: #1a1a18; --show-plate: #222220; --split: #121211;
+  --show-card: #222220; --show-card-edge: rgb(238 237 233 / 0.12); --show-tabs: #262624; --show-raised: #262624;
+  --lift: #222220; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #222220; --path-card-2: #292927; --path-card-3: #2b2b29; --path-card-4: #22314f; --foot-name: #c2bfb8;
+  --paper: #d0cdc6; --paper-ink: #363633; --paper-strong: #161513; --paper-lit: #b7c6e0;
+  --ui-surface: #222220; --ui-raised: #2b2b29; --ui-border: rgb(238 237 233 / 0.12); --ui-rule: rgb(238 237 233 / 0.08);
+  --ui-lift: #292927; --ui-lift-edge: rgb(238 237 233 / 0.14); --cta-field: #1a1a18; --photo-dim: 0.88;
   color-scheme: dark;
 }
 
