@@ -324,7 +324,7 @@ label .field { font-weight: 400; }
 .theme-switch label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 1px; }
 @media (pointer: coarse) { .theme-switch label { width: var(--touch); height: var(--touch); } }
 /* One-button theme control for narrow bars (ThemeCycle). */
-.theme-cycle { display: inline-grid; place-items: center; width: var(--touch); height: var(--touch); border: 0; border-radius: var(--radius-control); background: var(--active); color: var(--ink); cursor: pointer; transition: background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
+.theme-cycle { display: inline-grid; place-items: center; flex: none; width: var(--touch); height: var(--touch); border: 0; border-radius: var(--radius-control); background: var(--active); color: var(--ink); cursor: pointer; transition: background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
 .theme-cycle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .theme-cycle:active { transform: scale(0.96); }
 /* The icon follows the look the head script set; without it (no JS) the system preference picks. */
@@ -421,21 +421,19 @@ main:focus, main:focus-visible { outline: none; }
 /* The visible digits are what a selection copies; the screen-reader copy stays out of it, so the figure never pastes twice. */
 .odo > .visually-hidden { user-select: none; }
 .odo-d, .roll-slot { position: relative; display: inline-block; }
-/* Only a rolling slot clips (and so takes a layer); unchanged digits stay plain text. */
-:is(.odo-d, .roll-slot)[data-old] { clip-path: inset(0 -0.1em); }
 :is(.odo-d, .roll-slot) > span { display: inline-block; white-space: nowrap; }
 :is(.odo-d, .roll-slot)[data-old]::before { content: attr(data-old); position: absolute; left: 0; top: 0; white-space: nowrap; }
 /* A whole-figure roll (length changed): the old figure is not drawn at all and the new one rises into its box. A longer old figure
    cut to the new box read as a different amount (8.725,00 showed as 725,00), and one let out of the box printed over the label
    beside it; so no frame shows a partial figure or two figures (YON 23.24). */
 .odo-w[data-old]::before { content: none; }
-/* A short travel with the fade doing most of the work: a full-line roll left half digits sitting above or below the line, read as
-   super- and subscripts mid-roll (jury tur 11). */
-@keyframes odo-in { from { transform: translateY(40%); opacity: 0; } }
-@keyframes odo-out { to { transform: translateY(-40%); opacity: 0; } }
+/* A changed digit is swapped in place, never moved: rolled digits (full or short travel) showed half glyphs above and below the
+   line and a clipped comma read as a point (jury tur 11-12). The old one is gone in 40% of the time, then the new one fades in. */
+@keyframes odo-in { from { opacity: 0; } }
+@keyframes odo-out { to { opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
-  :is(.odo-d, .roll-slot)[data-old] > span { animation: odo-in var(--odo-t, var(--t-digit)) var(--ease-out) backwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms)); }
-  :is(.odo-d, .roll-slot)[data-old]::before { animation: odo-out calc(var(--odo-t, var(--t-digit)) * 0.5) var(--ease-out) forwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms)); }
+  :is(.odo-d, .roll-slot)[data-old] > span { animation: odo-in calc(var(--odo-t, var(--t-digit)) * 0.6) var(--ease-out) backwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms) + var(--odo-t, var(--t-digit)) * 0.4); }
+  :is(.odo-d, .roll-slot)[data-old]::before { animation: odo-out calc(var(--odo-t, var(--t-digit)) * 0.4) var(--ease-out) forwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms)); }
 }
 @media (prefers-reduced-motion: reduce) { :is(.odo-d, .roll-slot)[data-old]::before { content: none; } }
 /* A theme change is a jump, never a fade (YON 6.2): theme.ts sets this class for two frames around the switch. Only the
