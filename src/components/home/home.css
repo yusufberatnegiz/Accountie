@@ -1180,7 +1180,7 @@
 .paper-luca-total { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4); margin: 0; }
 .paper-luca-total span { color: var(--muted); font-size: var(--fs-small); }
 .paper-luca-total strong { font-family: var(--font-head); font-weight: 300; font-size: clamp(2rem, 1.4rem + 1.6vw, 2.75rem); letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
-.paper-luca-codes { list-style: none; margin: 0; padding: var(--s3) 0 0; border-top: 1px solid var(--ui-rule); display: grid; gap: var(--s2); font-size: var(--fs-small); }
+.paper-luca-codes { list-style: none; margin: var(--s2) 0 0; padding: 0; display: grid; gap: var(--s2); font-size: var(--fs-small); }
 .paper-luca-codes li { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: var(--s3); align-items: baseline; }
 .paper-luca-codes .code { font-weight: var(--w-medium); font-variant-numeric: tabular-nums; }
 .paper-luca-codes .code-name { color: var(--muted); }
