@@ -58,7 +58,7 @@
 .finding .link-button { padding: 4px 0 20px; margin-block: -4px -20px; }
 
 /* ---------- Canvas and title row ---------- */
-.canvas { display: grid; gap: var(--s4); align-content: start; padding: var(--s6) var(--s6) var(--s8); min-width: 0; max-width: 1504px; }
+.canvas { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); align-content: start; padding: var(--s6) var(--s6) var(--s8); min-width: 0; max-width: 1504px; }
 .title-row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s4); margin-bottom: var(--s2); }
 .title-text { display: grid; gap: var(--s1); min-width: 0; flex: 1 1 420px; }
 .title-text h1 { overflow-wrap: anywhere; }
@@ -509,6 +509,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   /* 320px: the code column gives up 12px so the amount shows whole beside the switch. */
   .journal tr { grid-template-columns: 6.5rem minmax(0, 1fr) auto; }
   .journal tr:not(:has(.col-del)) td.col-amount { grid-template-columns: 6.5rem minmax(0, 1fr); }
+  /* A nine-character code (191.03.10) is whole in 6.5rem only with tight padding and tabular figures (jury tur 11: cut at 320). */
+  .journal .field.tnum { padding-inline: var(--s2); letter-spacing: -0.01em; }
 }
 
 /* Luca upload steps, folded under the meter. */

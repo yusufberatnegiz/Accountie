@@ -72,9 +72,11 @@
   --shadow-lift: 0 24px 48px -12px rgb(20 26 34 / 0.18), 0 2px 6px rgb(20 26 34 / 0.06); /* taste-skill-ignore: lift layer, YON 23.1 */
 
   /* Bir fişin yolu (YON 23.18): three steps of stone, then the one Luca blue field (the file going to Luca); the shell card over them. */
-  --path-1: var(--plate); --path-2: #d3d1cc; --path-3: #bcbab5; --path-4: #132e63; --path-shell: var(--lift);
+  --path-1: var(--plate); --path-2: #e0ded9; --path-3: #d2cfc8; --path-4: #132e63; --path-shell: var(--lift);
   /* The showcase field and its plate. */
   --show-ground: var(--deep); --show-plate: var(--deep-raised);
+  /* On the navy field the chosen tab is a light chip (a blue one was 2.2:1 there, jury tur 11); dark keeps the blue chip. */
+  --show-chip-on: #e3e9f6; --show-on-chip-on: #121826;
   /* The auth screens: a clear second field beside the ground. */
   --split: #e2e0da;
   /* The showcase's product card and its tab tray (YON.md 16.5). */
@@ -147,9 +149,9 @@
     --plate: #1a1a18; --bezel: #363633; --edge-hi: rgb(255 255 255 / 0.07);
     --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
     --path-1: #1a1a18; --path-2: #1e1e1c; --path-3: #262624; --path-4: #142a5a; --path-shell: #292927;
-    --show-ground: #1a1a18; --show-plate: #222220; --split: #121211;
+    --show-chip-on: var(--accent); --show-on-chip-on: #0c0c0b; --show-ground: #1a1a18; --show-plate: #222220; --split: #161615;
     --show-card: #222220; --show-card-edge: rgb(238 237 233 / 0.12); --show-tabs: #262624; --show-raised: #262624;
-    --lift: #222220; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #222220; --path-card-2: #292927; --path-card-3: #2b2b29; --path-card-4: #22314f; --foot-name: #c2bfb8;
+    --lift: #222220; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #222220; --path-card-2: #2b2b29; --path-card-3: #333330; --path-card-4: #22314f; --foot-name: #c2bfb8;
     --paper: #d0cdc6; --paper-ink: #363633; --paper-strong: #161513; --paper-lit: #b7c6e0;
     --ui-surface: #222220; --ui-raised: #2b2b29; --ui-border: rgb(238 237 233 / 0.12); --ui-rule: rgb(238 237 233 / 0.08);
     --ui-lift: #292927; --ui-lift-edge: rgb(238 237 233 / 0.14); --cta-field: #1a1a18; --photo-dim: 0.88;
@@ -172,9 +174,9 @@
   --plate: #1a1a18; --bezel: #363633; --edge-hi: rgb(255 255 255 / 0.07);
   --shadow-lift: 0 0 0 1px rgb(0 0 0 / 0.5), 0 24px 48px -12px rgb(0 0 0 / 0.7), inset 0 1px 0 var(--edge-hi);
   --path-1: #1a1a18; --path-2: #1e1e1c; --path-3: #262624; --path-4: #142a5a; --path-shell: #292927;
-  --show-ground: #1a1a18; --show-plate: #222220; --split: #121211;
+  --show-chip-on: var(--accent); --show-on-chip-on: #0c0c0b; --show-ground: #1a1a18; --show-plate: #222220; --split: #161615;
   --show-card: #222220; --show-card-edge: rgb(238 237 233 / 0.12); --show-tabs: #262624; --show-raised: #262624;
-  --lift: #222220; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #222220; --path-card-2: #292927; --path-card-3: #2b2b29; --path-card-4: #22314f; --foot-name: #c2bfb8;
+  --lift: #222220; --lift-edge: rgb(238 237 233 / 0.12); --path-card-1: #222220; --path-card-2: #2b2b29; --path-card-3: #333330; --path-card-4: #22314f; --foot-name: #c2bfb8;
   --paper: #d0cdc6; --paper-ink: #363633; --paper-strong: #161513; --paper-lit: #b7c6e0;
   --ui-surface: #222220; --ui-raised: #2b2b29; --ui-border: rgb(238 237 233 / 0.12); --ui-rule: rgb(238 237 233 / 0.08);
   --ui-lift: #292927; --ui-lift-edge: rgb(238 237 233 / 0.14); --cta-field: #1a1a18; --photo-dim: 0.88;
@@ -427,11 +429,13 @@ main:focus, main:focus-visible { outline: none; }
    cut to the new box read as a different amount (8.725,00 showed as 725,00), and one let out of the box printed over the label
    beside it; so no frame shows a partial figure or two figures (YON 23.24). */
 .odo-w[data-old]::before { content: none; }
-@keyframes odo-in { from { transform: translateY(100%); opacity: 0; } }
-@keyframes odo-out { to { transform: translateY(-100%); opacity: 0; } }
+/* A short travel with the fade doing most of the work: a full-line roll left half digits sitting above or below the line, read as
+   super- and subscripts mid-roll (jury tur 11). */
+@keyframes odo-in { from { transform: translateY(40%); opacity: 0; } }
+@keyframes odo-out { to { transform: translateY(-40%); opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
   :is(.odo-d, .roll-slot)[data-old] > span { animation: odo-in var(--odo-t, var(--t-digit)) var(--ease-out) backwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms)); }
-  :is(.odo-d, .roll-slot)[data-old]::before { animation: odo-out var(--odo-t, var(--t-digit)) var(--ease-out) forwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms)); }
+  :is(.odo-d, .roll-slot)[data-old]::before { animation: odo-out calc(var(--odo-t, var(--t-digit)) * 0.5) var(--ease-out) forwards; animation-delay: calc(var(--k, 0) * var(--odo-stagger, 24ms)); }
 }
 @media (prefers-reduced-motion: reduce) { :is(.odo-d, .roll-slot)[data-old]::before { content: none; } }
 /* A theme change is a jump, never a fade (YON 6.2): theme.ts sets this class for two frames around the switch. Only the
