@@ -372,7 +372,7 @@ export default function LandingPage() {
           <h2 className="t-head path-title" id="path-title">Bir fişin yolu</h2>
           {PATH.map((f, i) => (
             <div className={`path-field path-field-${i + 1}`} key={f.clause} data-n={i + 1} data-on={i === 0 || undefined} role="group" aria-label={`Adım ${i + 1} / ${PATH.length}`}>
-              <p className="path-clause"><span className="path-step phone-only" aria-hidden="true">{i + 1} / {PATH.length}</span><span>{f.clause}</span></p>
+              <p className="path-clause"><span>{f.clause}</span></p>
               <div className="path-plate"><div className="ui-card path-card" data-ui>{f.card}</div></div>
             </div>
           ))}
