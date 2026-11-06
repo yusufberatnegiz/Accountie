@@ -6,7 +6,7 @@ import { clipboardText } from "./clipboard";
 import { buildWorkbook, chunkReceipts, LUCA_EXPORT_COLUMNS, type ExportReceipt } from "./export";
 
 const { lines } = buildJournalLines({
-  vendorName: "ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ",
+  vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ",
   receiptNo: "0047",
   date: "2026-09-05",
   vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }],
@@ -30,10 +30,10 @@ describe("buildWorkbook", () => {
     const row = (n: number) => Object.fromEntries(LUCA_EXPORT_COLUMNS.map((c, i) => [c, sheet.getRow(n).getCell(i + 1).value]));
     expect(row(2)).toMatchObject({
       "Fiş No": "1",
-      "Fiş Açıklama": "örnek alabalık üretim çiftliği",
+      "Fiş Açıklama": "örnek balık lokantası",
       "Hesap Kodu": "770.08",
       "Evrak No": "0047",
-      "Detay Açıklama": "örnek alabalık üretim çiftliği",
+      "Detay Açıklama": "örnek balık lokantası",
       Borç: 7931.82,
       Alacak: 0,
       "Belge Türü": "ÖK",
@@ -61,9 +61,9 @@ describe("chunkReceipts", () => {
 describe("clipboardText", () => {
   it("Fiş Detayı sırasında sekmeyle ayrılmış satırlar üretir", () => {
     expect(clipboardText(lines as JournalLine[])).toBe([
-      "770.08\t0047\t05/09/2026\tÖK\törnek alabalık üretim çiftliği\t7.931,82\t",
-      "191.03.10\t0047\t05/09/2026\tÖK\törnek alabalık üretim çiftliği\t793,18\t",
-      "331.01\t0047\t05/09/2026\tÖK\törnek alabalık üretim çiftliği\t\t8.725,00",
+      "770.08\t0047\t05/09/2026\tÖK\törnek balık lokantası\t7.931,82\t",
+      "191.03.10\t0047\t05/09/2026\tÖK\törnek balık lokantası\t793,18\t",
+      "331.01\t0047\t05/09/2026\tÖK\törnek balık lokantası\t\t8.725,00",
     ].join("\n"));
   });
 });

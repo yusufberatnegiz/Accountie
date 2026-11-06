@@ -18,7 +18,7 @@ type Selectors = { row: string; addRow: string | null; save?: string | null; sav
 const { AccountieFill: fill, AccountieSelectors: realSelectors } = globalThis as unknown as { AccountieFill: Fill; AccountieSelectors: Selectors };
 
 const { lines } = buildJournalLines({
-  vendorName: "ÖRNEK ALABALIK ÜRETİM ÇİFTLİĞİ VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
+  vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
   vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
 }, DEFAULT_RULES);
 const rows = lucaGridRows(lines);
@@ -43,9 +43,9 @@ function fakeDoc(rowCount: number, opts: { addRowText?: string; fields?: string[
 describe("lucaGridRows", () => {
   it("Fiş Detayı kolonlarını Luca biçiminde metne çevirir", () => {
     expect(rows).toEqual([
-      { accountCode: "770.08", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "örnek alabalık üretim çiftliği", debit: "7.931,82", credit: "" },
-      { accountCode: "191.03.10", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "örnek alabalık üretim çiftliği", debit: "793,18", credit: "" },
-      { accountCode: "331.01", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "örnek alabalık üretim çiftliği", debit: "", credit: "8.725,00" },
+      { accountCode: "770.08", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "örnek balık lokantası", debit: "7.931,82", credit: "" },
+      { accountCode: "191.03.10", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "örnek balık lokantası", debit: "793,18", credit: "" },
+      { accountCode: "331.01", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "örnek balık lokantası", debit: "", credit: "8.725,00" },
     ]);
   });
 });
