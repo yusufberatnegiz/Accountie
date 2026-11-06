@@ -354,8 +354,12 @@ export default function LandingPage() {
             {/* The fading print is a picture of the material; its text is in the card and the caption, so readers skip it (YON 23.32). */}
             <div className="paper-strip" data-ui aria-hidden="true"><Thermal sample={OTOPARK} printedPayment="KREDİ KARTI" /></div>
             <div className="ui-card paper-luca" data-ui>
-              <p className="ui-card-head"><span>Fiş 0768, Luca satırları</span><span className="status status-exported">Aktarıldı</span></p>
-              <MiniLines lines={LINES_OTOPARK} />
+              <p className="ui-card-head"><span>Fiş 0768, Luca kaydı</span><span className="status status-exported">Aktarıldı</span></p>
+              {/* Not the line table again (jury tur 10: it repeated ~8 times): what stays is the record, a total and its three codes. */}
+              <p className="paper-luca-total"><span>Luca’da kayıtlı</span><strong className="to-luca">{LINES_OTOPARK.find((l) => l.credit)?.credit} TL</strong></p>
+              <ul className="paper-luca-codes" aria-label="Hesap satırları">
+                {LINES_OTOPARK.map((l) => <li key={l.code}><span className="code" translate="no">{l.code}</span><span className="code-name">{l.name}</span></li>)}
+              </ul>
             </div>
             <figcaption>Fiş 0768: kâğıt solar, satırları Luca’da kalır.</figcaption>
           </figure>
