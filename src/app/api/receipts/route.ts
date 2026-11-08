@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createReceipt, getRules, hasDuplicateReceipt, listReceipts, type NewReceipt } from "@/db/queries";
+import { activeFirm } from "@/lib/firm";
 import { getSessionUser, getUserId } from "@/lib/auth/session";
 import { extractReceipt, locateReceipts, type ExtractResult } from "@/lib/extract/extract";
 import { toReceiptData } from "@/lib/extract/schema";
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
   // Counted only for valid photos that are about to reach the model.
   if (!(await allow("receiptGlobal", "all"))) return fail("Fiş okuma bugün için geçici olarak durduruldu. Yarın tekrar deneyin.", 503);
 
-  const { rules } = await getRules(userId);
+  const [{ rules }, { firm }] = await Promise.all([getRules(userId), activeFirm(userId)]);
   // Several receipts laid side by side in one photo: each is cut from the full-size upload and read on its own.
   const boxes = await locateReceipts(jpeg).catch(() => []);
   let images = [jpeg];
@@ -62,13 +63,13 @@ export async function POST(request: Request) {
     }
   }
   if (images.length === 0) images = [jpeg];
-  const saved = await Promise.all(images.map((image) => readAndSave(userId, image, rules)));
+  const saved = await Promise.all(images.map((image) => readAndSave(userId, firm.id, image, rules)));
   const ids = saved.flatMap((r) => (r ? [r.id] : []));
   if (ids.length === 0) return fail("Fiş kaydedilemedi. Tekrar deneyin.", 500);
   return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable) }, { status: 201 });
 }
 
-async function readAndSave(userId: string, jpeg: Buffer, rules: Rules): Promise<{ id: string; readable: boolean } | null> {
+async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: Rules): Promise<{ id: string; readable: boolean } | null> {
   let result: ExtractResult;
   try {
     result = await extractReceipt(jpeg);
@@ -103,7 +104,7 @@ async function readAndSave(userId: string, jpeg: Buffer, rules: Rules): Promise<
   };
   let id: string;
   try {
-    id = await createReceipt(userId, receipt, lines);
+    id = await createReceipt(userId, firmId, receipt, lines);
   } catch (err) {
     console.error("receipt save failed", { error: err instanceof Error ? err.name : "unknown" });
     return null;
@@ -116,5 +117,6 @@ export async function GET(request: Request) {
   if (!userId) return unauthorized();
   const status = new URL(request.url).searchParams.get("status");
   if (status !== null && status !== "draft" && status !== "approved" && status !== "exported") return fail("Geçersiz durum.", 400);
-  return NextResponse.json({ receipts: await listReceipts(userId, status ?? undefined) });
+  const { firm } = await activeFirm(userId);
+  return NextResponse.json({ receipts: await listReceipts(userId, firm.id, status ?? undefined) });
 }

@@ -7,7 +7,7 @@ import { PREVIEW_COOKIE, withStatuses } from "./preview-state";
 import { AppShell } from "@/components/AppShell";
 import { PanelLoading } from "@/components/PanelLoading";
 import { ReceiptListView, TABS } from "@/components/ReceiptListView";
-import { PREVIEW_LIST, PREVIEW_EMAIL } from "@/lib/preview-fixtures";
+import { PREVIEW_LIST, PREVIEW_EMAIL, PREVIEW_FIRM } from "@/lib/preview-fixtures";
 
 export default async function PreviewList({ searchParams }: { searchParams: Promise<{ durum?: string; bos?: string; yukleniyor?: string; tema?: string }> }) {
   const { durum = "", bos, yukleniyor, tema } = await searchParams;
@@ -18,7 +18,7 @@ export default async function PreviewList({ searchParams }: { searchParams: Prom
       <PreviewTheme tema={tema} />
       <PreviewApi approved={list.filter((r) => r.status === "approved").map((r) => r.id)} />
       <AppShell current="fisler" base="/onizleme/panel" email={PREVIEW_EMAIL}>
-        {yukleniyor ? <PanelLoading /> : <ReceiptListView receipts={bos ? [] : list} tab={tab} base="/onizleme/panel" />}
+        {yukleniyor ? <PanelLoading /> : <ReceiptListView receipts={bos ? [] : list} tab={tab} firm={PREVIEW_FIRM} base="/onizleme/panel" />}
       </AppShell>
     </>
   );

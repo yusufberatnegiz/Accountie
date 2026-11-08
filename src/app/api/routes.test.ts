@@ -10,6 +10,7 @@ vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(async () => false), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
   replaceLines: vi.fn(), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
 }));
+vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), clientIp: () => "203.0.113.9" }));
 vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(async () => []) }));
 vi.mock("@/lib/image", async (original) => ({ ...(await original<typeof import("@/lib/image")>()), normalizeImage: vi.fn(async () => Buffer.from("jpeg")) }));
@@ -82,8 +83,9 @@ describe("POST /api/receipts", () => {
     });
     const res = await receiptsRoute.POST(upload());
     expect(res.status).toBe(201);
-    const [userId, receipt, saved] = vi.mocked(q.createReceipt).mock.calls[0];
+    const [userId, firmId, receipt, saved] = vi.mocked(q.createReceipt).mock.calls[0];
     expect(userId).toBe(USER);
+    expect(firmId).toBe("firm-1");
     expect(receipt).toMatchObject({ receiptNo: "0047", receiptDate: "2026-09-05", totalKurus: 872500, model: "claude-haiku-5-5", inputTokens: 3000 });
     expect(saved.map((l) => [l.accountCode, l.debitKurus, l.creditKurus])).toEqual([["770.08", 793182, 0], ["191.03.10", 79318, 0], ["331.01", 0, 872500]]);
   });
@@ -93,7 +95,7 @@ describe("POST /api/receipts", () => {
     const res = await receiptsRoute.POST(upload());
     expect(res.status).toBe(201);
     expect(await res.json()).toMatchObject({ readable: false });
-    expect(vi.mocked(q.createReceipt).mock.calls[0][1].warnings.map((w) => w.code)).toContain("extraction_failed");
+    expect(vi.mocked(q.createReceipt).mock.calls[0][2].warnings.map((w) => w.code)).toContain("extraction_failed");
   });
 
   it("izin verilmeyen türü 415, 4 MB üstünü 413 ile reddeder", async () => {
@@ -175,7 +177,7 @@ describe("tek fiş", () => {
 
 describe("POST /api/exports", () => {
   it("dengeli fişlerden xlsx üretir ve aktarıldı işaretler", async () => {
-    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, lines }, { id: "bad", lines: lines.slice(0, 1) }]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", lines }, { id: "bad", firmName: "ÖRNEK FİRMA", lines: lines.slice(0, 1) }]);
     const res = await exportsRoute.POST(json({}, "POST"));
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("spreadsheetml");

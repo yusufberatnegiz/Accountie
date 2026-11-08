@@ -1,12 +1,18 @@
 // Sample data for the dev-only screen preview (/onizleme) and nothing else. Invented ÖRNEK vendor and tax number.
-import type { ReceiptDetail } from "@/db/queries";
+import type { Firm, ReceiptDetail } from "@/db/queries";
 import { DEFAULT_RULES, rulesToRows } from "./default-rules";
 import { buildJournalLines, warn, type ReceiptData } from "./journal";
+// A müşavir's mükellefs: invented ÖRNEK names, enough of them to show the search. The first holds the preview receipts.
+const FIRM_NAMES = ["BALIK LOKANTASI LTD.ŞTİ","İNŞAAT A.Ş.","KUAFÖR","MOBİLYA SAN.TİC.LTD.ŞTİ","ECZANE","OTO SERVİS","KIRTASİYE","DİŞ KLİNİĞİ","LOJİSTİK A.Ş.","FIRIN","YAZILIM LTD.ŞTİ","TEKSTİL","KAFE","NAKLİYAT","OPTİK","ÇİÇEKÇİLİK","MATBAA","ELEKTRİK MALZEMELERİ","HIRDAVAT","SPOR SALONU","VETERİNER KLİNİĞİ","TURİZM SEYAHAT","GIDA PAZARLAMA","OTO KİRALAMA","MİMARLIK OFİSİ","REKLAM AJANSI","KUYUMCU","BUTİK OTEL","PASTANE","BİLGİSAYAR TEKNİK","TEMİZLİK HİZMETLERİ","KASAP","EMLAK","DANIŞMANLIK LTD.ŞTİ","KREŞ","ZİRAAT ÜRÜNLERİ"];
+export const PREVIEW_FIRMS: Firm[] = FIRM_NAMES.map((name, i) => ({
+  id: `00000000-0000-4000-9000-${String(i + 1).padStart(12, "0")}`, name: `ÖRNEK ${name}`, taxNumber: i === 0 ? "1111111114" : null,
+})).sort((a, b) => a.name.localeCompare(b.name, "tr"));
+export const PREVIEW_FIRM = PREVIEW_FIRMS.find((f) => f.id.endsWith("000000000001"))!;
 
 const base = (id: string, data: ReceiptData, extra: Partial<ReceiptDetail> = {}): ReceiptDetail => {
   const { lines, warnings } = buildJournalLines(data, DEFAULT_RULES);
   return {
-    id, status: "draft", vendorName: data.vendorName, receiptNo: data.receiptNo, receiptDate: data.date, totalKurus: data.totalKurus,
+    id, firmId: PREVIEW_FIRM.id, status: "draft", vendorName: data.vendorName, receiptNo: data.receiptNo, receiptDate: data.date, totalKurus: data.totalKurus,
     createdAt: new Date("2026-09-05T17:30:00Z"), taxNumber: "1111111114", paymentMethod: data.paymentMethod, category: data.category,
     warnings, lines, ...extra,
   };

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(), getRules: vi.fn(), listReceipts: vi.fn() }));
 const session = vi.hoisted(() => ({ createdAt: new Date(0) }));
 vi.mock("@/lib/auth/session", () => ({ getUserId: async () => "user-1", getSessionUser: async () => ({ id: "user-1", createdAt: session.createdAt }) }));
+vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
 vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn() }));
 vi.mock("@/lib/image", async (orig) => ({ ...(await orig<typeof import("@/lib/image")>()), normalizeImage: async (b: Buffer) => b, cropReceipt: vi.fn(async () => Buffer.from("crop")) }));
 
@@ -67,7 +68,7 @@ describe("POST /api/receipts", () => {
     const res = await POST(jpeg());
     expect(res.status).toBe(201);
     expect(hasDuplicateReceipt).toHaveBeenCalledWith("user-1", "1111111114", "0047", "2026-09-05");
-    expect(vi.mocked(createReceipt).mock.calls[0][1].warnings.map((w) => w.code)).toContain("duplicate");
+    expect(vi.mocked(createReceipt).mock.calls[0][2].warnings.map((w) => w.code)).toContain("duplicate");
   });
 
   it("tek karedeki birden çok fişi ayrı ayrı okuyup her birini ayrı fiş olarak kaydeder", async () => {

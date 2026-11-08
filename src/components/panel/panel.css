@@ -661,3 +661,16 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 }
 /* The date field's calendar button is a Tab stop of its own; it shows the same ring as the field (jury tur 14). */
 .field[type="date"]::-webkit-calendar-picker-indicator:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+
+/* Firmalar: a searched list (hundreds of mükellefs) and the add form beside it on desktop, under it on the phone. */
+.canvas-firms { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; }
+.firms-panel { display: grid; gap: var(--s3); padding: var(--s4); }
+.firms-list { list-style: none; margin: 0; padding: 0; display: grid; max-height: min(70vh, 720px); overflow-y: auto; }
+.firms-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); min-height: var(--row); padding: var(--s2) var(--s2); border-top: 1px solid var(--rule); }
+.firms-row:first-child { border-top: 0; }
+.firms-row[data-active] { background: var(--active); border-radius: var(--radius-control); }
+.firms-name { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; font-weight: var(--w-medium); }
+.firms-vkn { font-size: var(--fs-small); font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+.firms-add { display: grid; gap: var(--s4); padding: var(--s5); }
+.firms-form { display: grid; gap: var(--s4); }
+@media (max-width: 900px) { .canvas-firms { grid-template-columns: minmax(0, 1fr); } .firms-list { max-height: none; } }

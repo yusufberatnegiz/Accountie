@@ -28,7 +28,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(session.getUserId).mockResolvedValue(USER);
   vi.mocked(q.userIdForTokenHash).mockImplementation(async (h) => (h === hashToken(TOKEN) ? USER : null));
-  vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, lines }]);
+  vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", lines }]);
 });
 
 describe("POST/DELETE /api/extension-tokens", () => {
@@ -77,17 +77,17 @@ describe("GET /api/extension/receipts", () => {
     const res = await listRoute.GET(bearer());
     expect(res.status).toBe(200);
     expect(res.headers.get("access-control-allow-origin")).toBeNull();
-    expect(q.listForExport).toHaveBeenCalledWith(USER);
+    expect(q.listForExport).toHaveBeenCalledWith(USER, null);
     const { receipts } = await res.json();
     expect(receipts).toEqual([{
-      id: ID, title: "örnek balık lokantası", documentNo: "0047", documentDate: "05/09/2026", total: "8.725,00",
+      id: ID, firm: "ÖRNEK FİRMA", title: "örnek balık lokantası", documentNo: "0047", documentDate: "05/09/2026", total: "8.725,00",
       rows: expect.arrayContaining([expect.objectContaining({ accountCode: "331.01", credit: "8.725,00", debit: "" })]),
     }]);
     expect(receipts[0].rows).toHaveLength(3);
   });
 
   it("dengesiz fişi göndermez", async () => {
-    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, lines: lines.slice(0, 2) }]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", lines: lines.slice(0, 2) }]);
     expect((await (await listRoute.GET(bearer())).json()).receipts).toEqual([]);
   });
 });

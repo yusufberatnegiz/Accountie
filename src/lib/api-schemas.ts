@@ -42,3 +42,10 @@ export const RulesPutSchema = z.object({
 }));
 
 export const idSchema = z.uuid();
+
+// A mükellef: its name as the user keeps it, and its VKN/TCKN when given (checked like a receipt's).
+export const FirmCreateSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  taxNumber: z.string().trim().regex(/^\d{10,11}$/).optional(),
+});
+export const FirmActiveSchema = z.object({ id: z.uuid() });

@@ -10,9 +10,23 @@ const ownerPolicy = (name: string) => pgPolicy(name, {
   withCheck: sql`user_id = current_setting('app.user_id', true)`,
 });
 
+// A mükellef the user keeps books for (a müşavir has hundreds). Receipts belong to one; rules stay the user's own for now.
+export const firms = pgTable("firms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  taxNumber: text("tax_number"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("firms_user_name_idx").on(t.userId, t.name),
+  ownerPolicy("firms_owner"),
+]);
+
 export const receipts = pgTable("receipts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
+  // Null only on receipts saved before firms existed; the app moves them to the user's first firm (queries.ts listFirms).
+  firmId: uuid("firm_id").references(() => firms.id),
   status: text("status", { enum: ["draft", "approved", "exported"] }).notNull().default("draft"),
   vendorName: text("vendor_name"),
   taxNumber: text("tax_number"),
@@ -31,6 +45,7 @@ export const receipts = pgTable("receipts", {
   exportedAt: timestamp("exported_at", { withTimezone: true }),
 }, (t) => [
   index("receipts_user_created_idx").on(t.userId, t.createdAt),
+  index("receipts_firm_created_idx").on(t.firmId, t.createdAt),
   ownerPolicy("receipts_owner"),
 ]);
 

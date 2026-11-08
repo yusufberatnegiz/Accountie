@@ -40,7 +40,8 @@ async function load() {
   const data = await api("/api/extension/receipts");
   receipts = data.receipts;
   $("receipt").replaceChildren(...receipts.map((r) => Object.assign(document.createElement("option"), {
-    value: r.id, textContent: `${r.documentNo} · ${r.documentDate} · ${r.title} · ${r.total} TL`,
+    // The firm first: Luca has one firm open, and a receipt must go into its own firm's ledger.
+    value: r.id, textContent: `${r.firm ? `${r.firm} — ` : ""}${r.documentNo} · ${r.documentDate} · ${r.title} · ${r.total} TL`,
   })));
   $("token-form").hidden = true;
   $("list-view").hidden = false;

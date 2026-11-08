@@ -1,9 +1,9 @@
 // The only module that talks to the database. Every function takes the session user's id and filters by it.
-import { and, asc, count, desc, eq, gt, inArray, lt, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import type { JournalLine, Warning } from "@/lib/journal";
 import { getDb } from "./index";
-import { accountRules, extensionTokens, journalLines, rateLimitHits, receipts } from "./schema";
+import { accountRules, extensionTokens, firms, journalLines, rateLimitHits, receipts } from "./schema";
 
 export type ReceiptStatus = "draft" | "approved" | "exported";
 
@@ -48,6 +48,27 @@ const summaryColumns = {
 const lineRows = (userId: string, receiptId: string, lines: readonly JournalLine[]) =>
   lines.map((l, i) => ({ ...l, userId, receiptId, lineNo: i + 1 }));
 
+export type Firm = { id: string; name: string; taxNumber: string | null };
+const firmColumns = { id: firms.id, name: firms.name, taxNumber: firms.taxNumber };
+
+/**
+ * The user's firms by name. A user with none gets a first one, and receipts saved before firms existed move into it, so no
+ * receipt is ever without a firm on screen.
+ */
+export async function listFirms(userId: string): Promise<Firm[]> {
+  const db = getDb();
+  const rows = await db.select(firmColumns).from(firms).where(eq(firms.userId, userId)).orderBy(asc(firms.name));
+  if (rows.length > 0) return rows;
+  const [first] = await db.insert(firms).values({ userId, name: "Firmam" }).returning(firmColumns);
+  await db.update(receipts).set({ firmId: first.id }).where(and(eq(receipts.userId, userId), isNull(receipts.firmId)));
+  return [first];
+}
+
+export async function createFirm(userId: string, name: string, taxNumber: string | null): Promise<Firm> {
+  const [row] = await getDb().insert(firms).values({ userId, name, taxNumber }).returning(firmColumns);
+  return row;
+}
+
 export async function getRules(userId: string): Promise<{ rules: Rules; rows: RuleRow[] }> {
   const db = getDb();
   let rows: RuleRow[] = await db.select({ kind: accountRules.kind, key: accountRules.key, label: accountRules.label, accountCode: accountRules.accountCode, accountName: accountRules.accountName })
@@ -86,11 +107,11 @@ export async function hitRateLimit(key: string, windows: readonly (readonly [lim
   return windows.every(([limit], i) => ((results[i] as { n: number }[])[0]?.n ?? 0) <= limit);
 }
 
-export async function createReceipt(userId: string, receipt: NewReceipt, lines: readonly JournalLine[]): Promise<string> {
+export async function createReceipt(userId: string, firmId: string, receipt: NewReceipt, lines: readonly JournalLine[]): Promise<string> {
   const db = getDb();
   const id = crypto.randomUUID();
   await db.batch([
-    db.insert(receipts).values({ ...receipt, id, userId }),
+    db.insert(receipts).values({ ...receipt, id, userId, firmId }),
     db.insert(journalLines).values(lineRows(userId, id, lines)),
   ]);
   return id;
@@ -115,15 +136,16 @@ const listColumns = {
   vatKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::int from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code like '191%')`,
 };
 
-export async function listReceipts(userId: string, status?: ReceiptStatus) {
+export async function listReceipts(userId: string, firmId: string, status?: ReceiptStatus) {
+  const mine = and(eq(receipts.userId, userId), eq(receipts.firmId, firmId));
   return getDb().select(listColumns).from(receipts)
-    .where(status ? and(eq(receipts.userId, userId), eq(receipts.status, status)) : eq(receipts.userId, userId))
+    .where(status ? and(mine, eq(receipts.status, status)) : mine)
     .orderBy(desc(receipts.createdAt)).limit(200);
 }
 
 export async function getReceipt(userId: string, id: string) {
   const db = getDb();
-  const [receipt] = await db.select({ ...summaryColumns, taxNumber: receipts.taxNumber, paymentMethod: receipts.paymentMethod, category: receipts.category, warnings: receipts.warnings })
+  const [receipt] = await db.select({ ...summaryColumns, firmId: receipts.firmId, taxNumber: receipts.taxNumber, paymentMethod: receipts.paymentMethod, category: receipts.category, warnings: receipts.warnings })
     .from(receipts).where(and(eq(receipts.id, id), eq(receipts.userId, userId)));
   if (!receipt) return null;
   const lines: JournalLine[] = await db.select(lineColumns).from(journalLines)
@@ -133,10 +155,10 @@ export async function getReceipt(userId: string, id: string) {
 
 export type ReceiptDetail = NonNullable<Awaited<ReturnType<typeof getReceipt>>>;
 
-/** The draft to open after this one (the newest other draft, as the list orders them) and how many other drafts wait. */
-export async function nextDraft(userId: string, exceptId: string): Promise<{ id: string; left: number } | null> {
+/** The firm's draft to open after this one (the newest other draft, as the list orders them) and how many other drafts wait. */
+export async function nextDraft(userId: string, firmId: string | null, exceptId: string): Promise<{ id: string; left: number } | null> {
   const [row] = await getDb().select({ id: receipts.id, left: sql<number>`count(*) over ()::int` }).from(receipts)
-    .where(and(eq(receipts.userId, userId), eq(receipts.status, "draft"), ne(receipts.id, exceptId)))
+    .where(and(eq(receipts.userId, userId), firmId ? eq(receipts.firmId, firmId) : isNull(receipts.firmId), eq(receipts.status, "draft"), ne(receipts.id, exceptId)))
     .orderBy(desc(receipts.createdAt)).limit(1);
   return row ?? null;
 }
@@ -166,19 +188,23 @@ export async function deleteDraft(userId: string, id: string): Promise<boolean> 
   return rows.length > 0;
 }
 
-/** Approved receipts (or the given approved/exported ones) with their lines, oldest first. */
-export async function listForExport(userId: string, ids?: readonly string[]) {
+/**
+ * Approved receipts (or the given approved/exported ones) with their lines, oldest first. One Luca file is one firm's, so
+ * `firmId` limits it; the extension passes null and gets every firm's, each tagged with its firm's name.
+ */
+export async function listForExport(userId: string, firmId: string | null, ids?: readonly string[]) {
   const db = getDb();
-  const rows = await db.select({ id: receipts.id }).from(receipts)
+  const mine = firmId ? and(eq(receipts.userId, userId), eq(receipts.firmId, firmId)) : eq(receipts.userId, userId);
+  const rows = await db.select({ id: receipts.id, firmName: firms.name }).from(receipts).leftJoin(firms, eq(firms.id, receipts.firmId))
     .where(ids?.length
-      ? and(eq(receipts.userId, userId), inArray(receipts.id, [...ids]), inArray(receipts.status, ["approved", "exported"]))
-      : and(eq(receipts.userId, userId), eq(receipts.status, "approved")))
+      ? and(mine, inArray(receipts.id, [...ids]), inArray(receipts.status, ["approved", "exported"]))
+      : and(mine, eq(receipts.status, "approved")))
     .orderBy(asc(receipts.receiptDate), asc(receipts.createdAt));
   if (rows.length === 0) return [];
   const lines = await db.select({ ...lineColumns, receiptId: journalLines.receiptId }).from(journalLines)
     .where(and(eq(journalLines.userId, userId), inArray(journalLines.receiptId, rows.map((r) => r.id))))
     .orderBy(asc(journalLines.lineNo));
-  return rows.map((r) => ({ id: r.id, lines: lines.filter((l) => l.receiptId === r.id).map(({ receiptId, ...l }) => l) }));
+  return rows.map((r) => ({ id: r.id, firmName: r.firmName, lines: lines.filter((l) => l.receiptId === r.id).map(({ receiptId, ...l }) => l) }));
 }
 
 export async function markExported(userId: string, ids: readonly string[]): Promise<void> {
