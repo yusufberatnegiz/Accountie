@@ -140,3 +140,13 @@ Sırayla yapın; ayrıntılı hali `README.md` içinde "Canlıya alma" bölümü
 - Okuma kartında "Satırlar hazır" ile "Hâlâ okunuyor" aynı anda görünüyor.
 - 768'de kontrol ekranında hesap adı alanı kesik. Açık temada engelli Onayla düğmesi tepside kayboluyor.
 - Bölüm giriş animasyonları ekranın kenarında bitiyor.
+
+## UI jüri döngüsü sonucu (2026-11-08)
+
+Yedi açılı jüri (animasyon, renk, görsel, premium, mobil, erişilebilirlik/performans, işlev) tur 15'te hepsi 9 ve üstü verdi (işlev 9,2). Tur 1-12 çok katı ölçütle 6,3'ten 7,5'e çıktı; kullanıcının kararıyla tur 13'ten itibaren normal zorlukta puanlandı (13: 8,8-9; 14: 8,5-9; 15: hepsi 9+).
+
+Son turlarda yapılanlar: gerçek fiş izleri örneklerden, dokümanlardan ve testlerden temizlendi (uydurma ÖRNEK BALIK LOKANTASI, 0412); koyu tema nötr ve katmanlı; hero telefon ve kart sırası yavaş ağda kaymıyor; odometre her karede tam rakam gösteriyor; JS kapalıyken ve ekran okuyucuda bütün bölümler görünür (Suspense ve content-visibility kaldırıldı); panel 320 px'te taşmıyor.
+
+Bilinen düşük öncelikli konular: tema düğmesi INP (4x CPU'da yüksek), hesap/borç/alacak tablosu kalıbının tekrarı, telefonda hydration uzun görevi. Git geçmişinde gerçek fiş görselleri ve VKN duruyor (herkese açık depo); temizlemek için geçmiş yeniden yazılmalı (kullanıcı kararı).
+
+Ekran görüntüleri: `.taste-skill/son/`.
