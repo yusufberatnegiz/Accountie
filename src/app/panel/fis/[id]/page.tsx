@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getReceipt, getRules, nextDraft } from "@/db/queries";
+import { getReceipt, getRules, getVendorRule, nextDraft } from "@/db/queries";
 import { AppShell } from "@/components/AppShell";
 import { ReceiptView } from "@/components/ReceiptView";
 import { idSchema } from "@/lib/api-schemas";
@@ -17,11 +17,16 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   if (!id.success) notFound();
   const [receipt, { rules }] = await Promise.all([getReceipt(userId, id.data), getRules(userId)]);
   if (!receipt) notFound();
-  const next = await nextDraft(userId, receipt.firmId, id.data);
+  const [next, vendor] = await Promise.all([
+    nextDraft(userId, receipt.firmId, id.data),
+    receipt.taxNumber && receipt.firmId ? getVendorRule(userId, receipt.firmId, receipt.taxNumber) : null,
+  ]);
+  // Named only while the receipt still carries it: a line changed since by hand is the user's own choice.
+  const learned = vendor && receipt.lines.some((l) => l.accountCode === vendor.accountCode && l.debitKurus > 0) ? vendor : null;
 
   return (
     <AppShell current="fis" email={user.email} firmId={receipt.firmId}>
-      <ReceiptView receipt={receipt} rules={rules} next={next} />
+      <ReceiptView receipt={receipt} rules={rules} next={next} learned={learned} />
     </AppShell>
   );
 }

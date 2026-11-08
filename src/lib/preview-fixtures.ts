@@ -1,5 +1,5 @@
 // Sample data for the dev-only screen preview (/onizleme) and nothing else. Invented ÖRNEK vendor and tax number.
-import type { Firm, ReceiptDetail } from "@/db/queries";
+import type { Firm, ReceiptDetail, VendorRule } from "@/db/queries";
 import { DEFAULT_RULES, rulesToRows } from "./default-rules";
 import { buildJournalLines, warn, type ReceiptData } from "./journal";
 // A müşavir's mükellefs: invented ÖRNEK names, enough of them to show the search. The first holds the preview receipts.
@@ -74,3 +74,10 @@ export const PREVIEW_LIST = PREVIEW_RECEIPTS.map(({ lines, taxNumber, paymentMet
   vatKurus: lines.reduce((n, l) => n + (l.accountCode.startsWith("191") ? l.debitKurus : 0), 0),
 }));
 
+
+/** Sellers the preview firm's approvals taught (invented ÖRNEK names; one without a readable name). */
+export const PREVIEW_VENDOR_RULES: VendorRule[] = [
+  { id: "00000000-0000-4000-a000-000000000001", taxNumber: "1111111114", vendorName: "ÖRNEK AKARYAKIT A.Ş.", accountCode: "770.05", accountName: "Ulaşım Giderleri" },
+  { id: "00000000-0000-4000-a000-000000000002", taxNumber: "2222222222", vendorName: "ÖRNEK KIRTASİYE", accountCode: "770.12", accountName: "Mutfak Giderleri" },
+  { id: "00000000-0000-4000-a000-000000000003", taxNumber: "3333333333", vendorName: null, accountCode: "760.01", accountName: "Pazarlama Satış ve Dağıtım Giderleri" },
+];

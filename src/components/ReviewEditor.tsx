@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition, ViewTransition } from "react";
-import type { ReceiptDetail } from "@/db/queries";
+import type { ReceiptDetail, VendorRule } from "@/db/queries";
 import { ACCOUNT_CODE_PATTERN, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type Account, type PaymentMethod, type Rules } from "@/lib/default-rules";
 import { approvalProblem, type JournalLine } from "@/lib/journal";
 import { clipboardText } from "@/lib/luca/clipboard";
@@ -81,7 +81,7 @@ function goTo(el: HTMLElement | null) {
 /** The other draft to open once this one is done, and how many drafts wait besides this one. */
 export type NextDraft = { id: string; left: number } | null;
 
-export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: { receipt: ReceiptDetail; rules: Rules; next?: NextDraft; base?: string }) {
+export function ReviewEditor({ receipt, rules, next = null, learned = null, base = "/panel" }: { receipt: ReceiptDetail; rules: Rules; next?: NextDraft; learned?: VendorRule | null; base?: string }) {
   const router = useRouter();
   const editable = receipt.status === "draft";
   const [lines, setLines] = useState(() => receipt.lines.map(toEdit));
@@ -464,6 +464,8 @@ export function ReviewEditor({ receipt, rules, next = null, base = "/panel" }: {
             <h2 id="okunan-baslik">Fişten okunan</h2>
             <dl className="read-values">
               <div><dt>Satıcı</dt><dd>{read(receipt.vendorName)}</dd></div>
+              {/* Why the expense account is not the category's: an earlier approval of this seller taught it (src/lib/vendor-rule.ts). */}
+              {learned ? <div className="read-learned"><dt>Gider hesabı</dt><dd>Bu satıcının önceki onayından: <span className="tnum" translate="no">{learned.accountCode}</span> {learned.accountName}. <Link href={`${base}/kurallar#satici-kurallari`}>Kurallarda</Link> kaldırabilirsiniz.</dd></div> : null}
               <div><dt>VKN</dt><dd className="tnum">{receipt.taxNumber ? <span className={vknUnsure ? "flagged" : undefined}>{receipt.taxNumber}{vknUnsure ? " (kontrol edin)" : ""}</span> : read(null)}</dd></div>
               <div><dt>Fiş No</dt><dd className="tnum" translate="no">{read(receipt.receiptNo)}</dd></div>
               <div><dt>Tarih</dt><dd className="tnum">{read(trDate(receipt.receiptDate))}</dd></div>

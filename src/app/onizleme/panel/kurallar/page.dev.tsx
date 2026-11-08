@@ -3,7 +3,7 @@ import { PreviewTheme } from "../PreviewTheme";
 import { PreviewApi } from "../PreviewApi";
 import { AppShell } from "@/components/AppShell";
 import { RulesView } from "@/components/RulesView";
-import { PREVIEW_RULE_ROWS, PREVIEW_EMAIL } from "@/lib/preview-fixtures";
+import { PREVIEW_RULE_ROWS, PREVIEW_EMAIL, PREVIEW_FIRM, PREVIEW_VENDOR_RULES } from "@/lib/preview-fixtures";
 
 export default async function PreviewRules({ searchParams }: { searchParams: Promise<{ tema?: string }> }) {
   const { tema } = await searchParams;
@@ -12,7 +12,7 @@ export default async function PreviewRules({ searchParams }: { searchParams: Pro
       <PreviewTheme tema={tema} />
       <PreviewApi approved={[]} />
       <AppShell current="kurallar" base="/onizleme/panel" email={PREVIEW_EMAIL}>
-        <RulesView rows={PREVIEW_RULE_ROWS} />
+        <RulesView rows={PREVIEW_RULE_ROWS} vendorRules={PREVIEW_VENDOR_RULES} firmName={PREVIEW_FIRM.name} />
       </AppShell>
     </>
   );

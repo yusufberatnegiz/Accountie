@@ -43,6 +43,13 @@
       "when": 1794167361286,
       "tag": "20261108194921_default_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794168361214,
+      "tag": "20261108200601_vendor_rules",
+      "breakpoints": true
     }
   ]
 }

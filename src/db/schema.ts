@@ -105,3 +105,20 @@ export const rateLimitHits = pgTable("rate_limit_hits", {
   index("rate_limit_hits_key_created_idx").on(t.key, t.createdAt),
   pgPolicy("rate_limit_hits_server_only", { for: "all", using: sql`false`, withCheck: sql`false` }),
 ]);
+
+// What a firm's approvals taught: this seller (VKN) goes to this expense account instead of its category's. Learned only when
+// the approved account differs from the category rule, and forgotten when an approval goes back to it.
+export const vendorRules = pgTable("vendor_rules", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id),
+  taxNumber: text("tax_number").notNull(),
+  vendorName: text("vendor_name"),
+  accountCode: text("account_code").notNull(),
+  accountName: text("account_name").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("vendor_rules_firm_tax_idx").on(t.firmId, t.taxNumber),
+  index("vendor_rules_user_idx").on(t.userId),
+  ownerPolicy("vendor_rules_owner"),
+]);

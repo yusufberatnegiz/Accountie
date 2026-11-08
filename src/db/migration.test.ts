@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const dir = join(process.cwd(), "drizzle");
-const NEW_TABLES = ["firms", "receipts", "journal_lines", "account_rules", "extension_tokens", "rate_limit_hits"];
+const NEW_TABLES = ["firms", "vendor_rules", "receipts", "journal_lines", "account_rules", "extension_tokens", "rate_limit_hits"];
 
 describe("migration dosyaları", () => {
   const files = readdirSync(dir).filter((f) => f.endsWith(".sql"));

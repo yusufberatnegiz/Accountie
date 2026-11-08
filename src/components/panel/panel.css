@@ -683,3 +683,15 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .firm-crumb { font-size: var(--fs-section); }
 .firm-crumb a { color: var(--ink); font-weight: var(--w-strong); text-decoration: none; }
 .firm-crumb a::after { content: " · Değiştir"; color: var(--muted); font-weight: 400; text-decoration: underline; text-underline-offset: 0.2em; }
+
+/* Satıcıya göre öğrenilenler (Kurallar) and the review screen's note on a learned account. */
+.vendor-rules { display: grid; gap: var(--s3); padding: var(--s5); }
+.vendor-rules-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.vendor-rules-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; align-items: center; gap: var(--s4); min-height: var(--row); padding: var(--s2) 0; border-top: 1px solid var(--rule); }
+.vendor-rules-row:first-child { border-top: 0; }
+.vendor-rules-who { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; font-weight: var(--w-medium); }
+.vendor-rules-who .tnum { font-size: var(--fs-small); font-weight: 400; color: var(--muted); }
+.vendor-rules-account { min-width: 0; overflow-wrap: anywhere; }
+.read-learned { display: grid !important; gap: 2px; } /* the note reads as a sentence under its label, not a right-aligned figure */
+.read-learned dd { text-align: left; color: var(--accent); font-weight: 400; }
+@media (max-width: 640px) { .vendor-rules-row { grid-template-columns: minmax(0, 1fr) auto; } .vendor-rules-account { grid-column: 1; } .vendor-rules-row .btn { grid-column: 2; grid-row: 1 / 3; } }

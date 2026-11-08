@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { createReceipt, getRules, hasDuplicateReceipt, listReceipts, type NewReceipt } from "@/db/queries";
+import { createReceipt, getRules, getVendorRule, hasDuplicateReceipt, listReceipts, type NewReceipt } from "@/db/queries";
+import { isValidTaxNumber } from "@/lib/checks";
+import { withVendorAccount } from "@/lib/vendor-rule";
 import { activeFirm } from "@/lib/firm";
 import { getSessionUser, getUserId } from "@/lib/auth/session";
 import { extractReceipt, locateReceipts, type ExtractResult } from "@/lib/extract/extract";
@@ -80,10 +82,12 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
   }
 
   const data = result.ok ? toReceiptData(result.extraction) : EMPTY;
-  const { lines, warnings } = buildJournalLines(data, rules);
+  const taxNumber = result.ok ? result.extraction.taxNumber : null;
+  // A seller this firm has corrected before gets its learned expense account (src/lib/vendor-rule.ts); a failed lookup falls back.
+  const learned = taxNumber && isValidTaxNumber(taxNumber) ? await getVendorRule(userId, firmId, taxNumber).catch(() => null) : null;
+  const { lines, warnings } = buildJournalLines(data, withVendorAccount(rules, data.category, learned && { code: learned.accountCode, name: learned.accountName }));
   const extra = result.ok ? result.problems : ["extraction_failed"];
   const allWarnings: Warning[] = [...warnings, ...extra.filter((c) => !warnings.some((w) => w.code === c)).map(warn)];
-  const taxNumber = result.ok ? result.extraction.taxNumber : null;
   // Warn only, never block: the user decides. A failed lookup must not lose the upload.
   if (taxNumber && data.receiptNo && data.date && (await hasDuplicateReceipt(userId, taxNumber, data.receiptNo, data.date).catch(() => false))) {
     allWarnings.unshift(warn("duplicate"));

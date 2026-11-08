@@ -3,7 +3,7 @@ import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "dri
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import type { JournalLine, Warning } from "@/lib/journal";
 import { getDb } from "./index";
-import { accountRules, extensionTokens, firms, journalLines, rateLimitHits, receipts } from "./schema";
+import { accountRules, extensionTokens, firms, journalLines, rateLimitHits, receipts, vendorRules } from "./schema";
 
 export type ReceiptStatus = "draft" | "approved" | "exported";
 
@@ -228,4 +228,35 @@ export async function userIdForTokenHash(tokenHash: string): Promise<string | nu
   const [row] = await getDb().select({ userId: extensionTokens.userId }).from(extensionTokens)
     .where(and(eq(extensionTokens.tokenHash, tokenHash), gt(extensionTokens.expiresAt, new Date())));
   return row?.userId ?? null;
+}
+
+export type VendorRule = { id: string; taxNumber: string; vendorName: string | null; accountCode: string; accountName: string };
+const vendorRuleColumns = { id: vendorRules.id, taxNumber: vendorRules.taxNumber, vendorName: vendorRules.vendorName, accountCode: vendorRules.accountCode, accountName: vendorRules.accountName };
+
+/** The expense account this firm's approvals taught for a seller, or null. */
+export async function getVendorRule(userId: string, firmId: string, taxNumber: string): Promise<VendorRule | null> {
+  const [row] = await getDb().select(vendorRuleColumns).from(vendorRules)
+    .where(and(eq(vendorRules.userId, userId), eq(vendorRules.firmId, firmId), eq(vendorRules.taxNumber, taxNumber))).limit(1);
+  return row ?? null;
+}
+
+/** Remembers the approved expense account for a seller, or forgets it when the approval went back to the category rule (`account` null). */
+export async function learnVendorRule(userId: string, firmId: string, taxNumber: string, vendorName: string | null, account: { code: string; name: string } | null): Promise<void> {
+  const db = getDb();
+  if (!account) {
+    await db.delete(vendorRules).where(and(eq(vendorRules.userId, userId), eq(vendorRules.firmId, firmId), eq(vendorRules.taxNumber, taxNumber)));
+    return;
+  }
+  await db.insert(vendorRules).values({ userId, firmId, taxNumber, vendorName, accountCode: account.code, accountName: account.name })
+    .onConflictDoUpdate({ target: [vendorRules.firmId, vendorRules.taxNumber], set: { vendorName, accountCode: account.code, accountName: account.name, updatedAt: new Date() }, setWhere: eq(vendorRules.userId, userId) });
+}
+
+export async function listVendorRules(userId: string, firmId: string): Promise<VendorRule[]> {
+  return getDb().select(vendorRuleColumns).from(vendorRules)
+    .where(and(eq(vendorRules.userId, userId), eq(vendorRules.firmId, firmId))).orderBy(asc(vendorRules.vendorName)).limit(1000);
+}
+
+export async function deleteVendorRule(userId: string, id: string): Promise<boolean> {
+  const rows = await getDb().delete(vendorRules).where(and(eq(vendorRules.id, id), eq(vendorRules.userId, userId))).returning({ id: vendorRules.id });
+  return rows.length > 0;
 }

@@ -8,6 +8,7 @@ vi.mock("@/lib/auth/session", () => {
 });
 vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(async () => false), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
+  getVendorRule: vi.fn(async () => null), learnVendorRule: vi.fn(async () => {}),
   replaceLines: vi.fn(), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
@@ -72,6 +73,22 @@ describe("oturum", () => {
 });
 
 describe("POST /api/receipts", () => {
+  it("öğrenilmiş satıcının fişi kategori yerine öğrenilen gider hesabıyla hazırlanır", async () => {
+    vi.mocked(q.getVendorRule).mockResolvedValueOnce({ id: "v1", taxNumber: "1111111114", vendorName: null, accountCode: "770.05", accountName: "Ulaşım Giderleri" });
+    vi.mocked(extractReceipt).mockResolvedValue({
+      ok: true, model: "claude-haiku-5-5", problems: [], inputTokens: 1, outputTokens: 1,
+      extraction: {
+        vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
+        receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
+        paymentMethod: "card", category: "meal", unreadableFields: [],
+      },
+    });
+    expect((await receiptsRoute.POST(upload())).status).toBe(201);
+    expect(q.getVendorRule).toHaveBeenCalledWith(USER, "firm-1", "1111111114");
+    const saved = vi.mocked(q.createReceipt).mock.calls[0][3];
+    expect(saved.map((l) => l.accountCode)).toEqual(["770.05", "191.03.10", "331.01"]);
+  });
+
   it("örnek fişi okuyup üç satırla kaydeder", async () => {
     vi.mocked(extractReceipt).mockResolvedValue({
       ok: true, model: "claude-haiku-5-5", problems: [], inputTokens: 3000, outputTokens: 300,
@@ -172,6 +189,26 @@ describe("tek fiş", () => {
     vi.mocked(q.transitionReceipt).mockResolvedValue(true);
     expect((await approveRoute.POST(new Request("http://test"), params())).status).toBe(200);
     expect(q.transitionReceipt).toHaveBeenCalledWith(USER, ID, "draft", "approved");
+  });
+
+  it("onay, satıcının düzeltilmiş gider hesabını o firmada öğrenir; varsayılana dönen onay öğrenileni unutur", async () => {
+    vi.mocked(q.transitionReceipt).mockResolvedValue(true);
+    vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [] });
+    const seller = { taxNumber: "1111111114", firmId: "firm-1", vendorName: "ÖRNEK BALIK LOKANTASI", category: "meal" };
+    const corrected = lines.map((l, i) => (i === 0 ? { ...l, accountCode: "770.05", accountName: "Ulaşım Giderleri" } : l));
+    vi.mocked(q.getReceipt).mockResolvedValueOnce({ ...draft!, ...seller, lines: corrected });
+    expect((await approveRoute.POST(new Request("http://test"), params())).status).toBe(200);
+    expect(q.learnVendorRule).toHaveBeenLastCalledWith(USER, "firm-1", "1111111114", "ÖRNEK BALIK LOKANTASI", { code: "770.05", name: "Ulaşım Giderleri" });
+    vi.mocked(q.getReceipt).mockResolvedValueOnce({ ...draft!, ...seller });
+    await approveRoute.POST(new Request("http://test"), params());
+    expect(q.learnVendorRule).toHaveBeenLastCalledWith(USER, "firm-1", "1111111114", "ÖRNEK BALIK LOKANTASI", null);
+  });
+
+  it("VKN'siz fiş onayı hiçbir şey öğrenmez", async () => {
+    vi.mocked(q.transitionReceipt).mockResolvedValue(true);
+    vi.mocked(q.getReceipt).mockResolvedValueOnce({ ...draft!, taxNumber: null, firmId: "firm-1" });
+    expect((await approveRoute.POST(new Request("http://test"), params())).status).toBe(200);
+    expect(q.learnVendorRule).not.toHaveBeenCalled();
   });
 });
 
