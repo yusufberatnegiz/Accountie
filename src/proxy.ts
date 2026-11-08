@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { nonceCsp } from "@/lib/csp";
-import { authConfig } from "@/lib/auth/server";
+import { AUTH_COOKIE_OPTIONS, authConfig } from "@/lib/auth/server";
 import { AFTER_LOGIN } from "@/lib/auth/next-path";
 import { safeNextPath } from "@/lib/auth/next-path";
 
@@ -57,6 +57,7 @@ async function panelSession(request: NextRequest, headers: Headers): Promise<Nex
   const { url, key } = authConfig();
   let response = NextResponse.next({ request: { headers } });
   const supabase = createServerClient(url, key, {
+    cookieOptions: AUTH_COOKIE_OPTIONS,
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (list) => {

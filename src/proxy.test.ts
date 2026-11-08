@@ -6,7 +6,10 @@ import { authConfig } from "@/lib/auth/server";
 import proxy, { config } from "./proxy";
 
 const CONFIG = { url: "https://proje.supabase.co", key: "sb_publishable_test" };
-vi.mock("@/lib/auth/server", () => ({ authConfig: vi.fn(() => ({ url: "https://proje.supabase.co", key: "sb_publishable_test" })) }));
+vi.mock("@/lib/auth/server", async (original) => ({
+  AUTH_COOKIE_OPTIONS: (await original<typeof import("@/lib/auth/server")>()).AUTH_COOKIE_OPTIONS,
+  authConfig: vi.fn(() => ({ url: "https://proje.supabase.co", key: "sb_publishable_test" })),
+}));
 vi.mock("@supabase/ssr", () => ({ createServerClient: vi.fn() }));
 
 /** Supabase answers getUser() with this user (null: no session). */
@@ -146,6 +149,8 @@ describe("proxy panel CSP", () => {
     })) as unknown as typeof createServerClient);
     const res = await proxy(new NextRequest("http://localhost/panel"));
     expect(res.headers.get("set-cookie")).toMatch(/sb-proje-auth-token=yeni.*HttpOnly/i);
+    // The session cookies are HttpOnly and SameSite=Lax by our options, not the library's (which are neither HttpOnly nor fixed).
+    expect(vi.mocked(createServerClient).mock.lastCall?.[2]).toMatchObject({ cookieOptions: { httpOnly: true, sameSite: "lax", path: "/" } });
     expect(res.headers.get("content-security-policy")).toMatch(/'strict-dynamic'/);
   });
 });
