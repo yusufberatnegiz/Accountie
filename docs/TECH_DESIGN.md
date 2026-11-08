@@ -9,9 +9,9 @@ Telefon / masaüstü tarayıcı (Next.js PWA)
   input capture -> canvas ile küçültme -> POST /api/receipts (multipart)
                                             |
 Vercel, Next.js App Router (Node runtime)   v
-  Neon Auth oturumu doğrula -> sharp normalize -> Claude Haiku 5.5 (structured output)
+  Supabase Auth oturumu doğrula -> sharp normalize -> Claude Haiku 5.5 (structured output)
   -> parse (TR sayı -> kuruş) -> kontroller -> gerekirse Sonnet 5.5 ile bir kez daha
-  -> buildJournalLines (saf fonksiyon, kural tablosu) -> Neon Postgres (Drizzle)
+  -> buildJournalLines (saf fonksiyon, kural tablosu) -> Supabase Postgres (Frankfurt, transaction pooler) (Drizzle)
                                             |
 Kontrol ekranı <- GET/PATCH/approve --------+
 "Luca için indir" -> POST /api/exports -> .xlsx (exceljs) -> muhasebeci Luca'ya elle yükler
@@ -26,8 +26,8 @@ Kontrol ekranı <- GET/PATCH/approve --------+
 | Alan | Seçim |
 |---|---|
 | Uygulama | Next.js (App Router), TypeScript strict |
-| Veritabanı | Neon Postgres, Drizzle ORM, `drizzle-kit generate` |
-| Oturum | Neon Auth (`@neondatabase/auth`), HttpOnly çerez |
+| Veritabanı | Supabase Postgres (Frankfurt, transaction pooler), Drizzle ORM, `drizzle-kit generate` |
+| Oturum | Supabase Auth (`@supabase/ssr`, yalnız sunucuda), HttpOnly çerez |
 | Yapay zeka | `@anthropic-ai/sdk`, `claude-haiku-5-5`, yükseltme `claude-sonnet-5-5` |
 | Görüntü | `sharp` (sunucu), canvas (istemci) |
 | Doğrulama | `zod` (API girdisi ve model çıktısı aynı kütüphane) |
@@ -63,7 +63,7 @@ Eski tablolar silinmez ve değiştirilmez. Yeni tablolar eklenir. Migration yaln
 | Kolon | Tip | Not |
 |---|---|---|
 | `id` | uuid pk | `gen_random_uuid()` |
-| `user_id` | text not null | Neon Auth kullanıcı kimliği, index |
+| `user_id` | text not null | Supabase Auth kullanıcı kimliği, index |
 | `status` | text not null | `draft`, `approved`, `exported` |
 | `vendor_name` | text | Fişteki unvan |
 | `tax_number` | text | VKN / TCKN |
@@ -198,7 +198,15 @@ Veritabanı ve yapay zeka testlerde her zaman mock'lanır. Gerçek model doğrul
 | Konu | Varsayım | Sonraki adım |
 |---|---|---|
 | Luca şablon kolonları | 14 kolon | Resmi şablonla `LUCA_EXPORT_COLUMNS` kilitlenecek |
-| RLS'nin etkin olması | Sorgu filtresi asıl koruma, RLS açık | Neon'da sahip olmayan uygulama rolü ve `set_config('app.user_id')` |
+| RLS'nin etkin olması | Sorgu filtresi asıl koruma, RLS açık | Supabase'te sahip olmayan uygulama rolü ve `set_config('app.user_id')` |
 | Kayıt formunda bot koruması | Giriş ve kayıtta Turnstile sunucuda doğrulanır; `/api/auth` giriş/kayıt uçları kapalı | Vercel'e `TURNSTILE_SITE_KEY` ve `TURNSTILE_SECRET_KEY` eklenecek (önerilir; yoksa doğrulama atlanır, canlıda logda uyarı çıkar) |
 | Thinking ayarı | `disabled` | 10 ila 20 fişte `adaptive` + `low` ile karşılaştırma |
 | KVKK aydınlatma metni | Yurt dışı hizmet sağlayıcı (Anthropic) belirtilecek | Yayına çıkmadan önce metin |
+
+## Supabase'e geçiş (2026-11-08)
+
+Veritabanı ve oturum Neon'dan Supabase'e taşındı (eu-central-1). Veri yoktu, sıfırdan kuruldu.
+- Bağlantı: `postgres` sürücüsü ve `drizzle-orm/postgres-js`, transaction pooler (6543, `prepare: false`). Neon'un `batch` çağrıları `transaction`'a çevrildi.
+- Oturum: `@supabase/ssr` ile yalnız sunucuda (server action, route handler, proxy); tarayıcı Supabase'e bağlanmaz, CSP değişmedi. E-posta bağlantıları `/auth/callback`'e döner (PKCE kodu oturuma çevrilir; şifre yenilemede `?tur=sifre`). Neon'un `/api/auth` aracı rotası kaldırıldı.
+- Güvenlik: Data API kapalı; tablolarda RLS açık ve `anon`/`authenticated` rollerinin izinleri geri alındı (`20261108192201_revoke_api_roles.sql`). Uygulama tablo sahibi rolüyle sunucudan bağlanır; her sorgu `user_id` ile süzülür.
+- Göçler bu kez onaylı adım olarak uygulandı (kullanıcı geçişi istedi). Ortam: `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (son ikisi tasarım gereği herkese açık).

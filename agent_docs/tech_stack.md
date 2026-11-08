@@ -8,8 +8,8 @@ Son doğrulama: henüz yok (kod iskeleti kurulmadı). Ayrıntı: `docs/TECH_DESI
 |---|---|---|
 | Ön yüz | Next.js App Router, TypeScript strict, PWA manifest | Telefon ve masaüstü tek uygulama |
 | Sunucu | Next.js route handler'lar, Node runtime | `sharp` ve Anthropic SDK Edge'de çalışmaz |
-| Veritabanı | Neon Postgres + Drizzle ORM | Yeni tablolar: `receipts`, `journal_lines`, `account_rules`. Eski tablolara dokunulmaz |
-| Oturum | Neon Auth (`@neondatabase/auth`) | HttpOnly çerez; her route sunucuda doğrular |
+| Veritabanı | Supabase Postgres (Frankfurt, transaction pooler) + Drizzle ORM | Yeni tablolar: `receipts`, `journal_lines`, `account_rules`. Eski tablolara dokunulmaz |
+| Oturum | Supabase Auth (`@supabase/ssr`, yalnız sunucuda) | HttpOnly çerez; her route sunucuda doğrular |
 | Yapay zeka | `@anthropic-ai/sdk`, `claude-haiku-5-5`, yükseltme `claude-sonnet-5-5` | Structured outputs, `messages.parse` + `zodOutputFormat` |
 | Görüntü | İstemcide canvas, sunucuda `sharp` | Uzun kenar 1568 px, JPEG 80, EXIF silinir |
 | Excel | `exceljs` | Luca Excel veri aktarımı |

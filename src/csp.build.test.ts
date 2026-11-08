@@ -15,7 +15,7 @@ describe.skipIf(!built)("production build CSP", () => {
     server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", String(PORT)], {
       stdio: "ignore",
       // Placeholders: with no session cookie the auth client never calls out; the page only needs them to exist.
-      env: { ...process.env, NODE_ENV: "production", NEON_AUTH_BASE_URL: "http://127.0.0.1:9/auth", NEON_AUTH_COOKIE_SECRET: "csp-build-test-placeholder-secret-0123456789" },
+      env: { ...process.env, NODE_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:9", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_csp_build_test" },
     });
     for (let i = 0; i < 100; i++) {
       if (await fetch(`${base}/gizlilik`).then((r) => r.ok, () => false)) return;
@@ -57,7 +57,7 @@ describe.skipIf(!built)("production build CSP", () => {
     // Empty counts as missing (src/lib/auth/server.ts), whatever the developer's shell has set.
     const bare = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", String(PORT + 1)], {
       stdio: "ignore",
-      env: { ...process.env, NODE_ENV: "production", NEON_AUTH_BASE_URL: "", NEON_AUTH_COOKIE_SECRET: "" },
+      env: { ...process.env, NODE_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "" },
     });
     try {
       let res: Response | undefined;

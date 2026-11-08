@@ -1,6 +1,8 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { nonceCsp } from "@/lib/csp";
-import { getAuth } from "@/lib/auth/server";
+import { authConfig } from "@/lib/auth/server";
+import { AFTER_LOGIN } from "@/lib/auth/next-path";
 import { safeNextPath } from "@/lib/auth/next-path";
 
 // Missing auth config (or the auth client failing): fail closed with our own response, so it still gets the CSP here
@@ -18,7 +20,7 @@ function unavailable(api: boolean, error: unknown) {
 // public addresses (which must 404, not bounce to /giris) stay outside.
 export default async function proxy(incoming: NextRequest) {
   if (incoming.nextUrl.pathname.startsWith("/api/")) {
-    try { getAuth(); } catch (error) { return unavailable(true, error); }
+    try { authConfig(); } catch (error) { return unavailable(true, error); }
     return NextResponse.next();
   }
   // Next reads the nonce from the request's CSP header and puts it on its own scripts; the auth middleware forwards request headers.
@@ -27,7 +29,7 @@ export default async function proxy(incoming: NextRequest) {
   headers.set("content-security-policy", csp);
   const request = new NextRequest(incoming, { headers });
   if (!/^\/panel(\/|$)/.test(request.nextUrl.pathname)) {
-    try { getAuth(); } catch (error) {
+    try { authConfig(); } catch (error) {
       const closed = unavailable(false, error);
       closed.headers.set("content-security-policy", csp);
       return closed;
@@ -38,22 +40,39 @@ export default async function proxy(incoming: NextRequest) {
   }
   let response: NextResponse;
   try {
-    response = await getAuth().middleware({ loginUrl: "/giris" })(request);
+    response = await panelSession(request, headers);
   } catch (error) {
     response = unavailable(false, error);
   }
   response.headers.set("content-security-policy", csp);
-  // A panel deep link (a shared fiş, the extension, the PWA shortcut) survives the login: /giris?sonra=/panel/fis/...
-  const location = response?.headers.get("location");
-  const back = safeNextPath(request.nextUrl.pathname);
-  if (location && back && back !== "/panel") {
-    const to = new URL(location, request.url);
-    if (to.origin === request.nextUrl.origin && to.pathname === "/giris") {
-      to.searchParams.set("sonra", back);
-      response.headers.set("location", to.toString());
-    }
-  }
   return response;
+}
+
+/**
+ * The panel needs a verified Supabase session. getUser() checks the token with Supabase and refreshes it; the refreshed
+ * cookies go on both the request (for the page about to render) and the response. Without a user: /giris, keeping a panel
+ * deep link (a shared fiş, the extension, the PWA shortcut) as /giris?sonra=/panel/fis/...
+ */
+async function panelSession(request: NextRequest, headers: Headers): Promise<NextResponse> {
+  const { url, key } = authConfig();
+  let response = NextResponse.next({ request: { headers } });
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (list) => {
+        for (const { name, value } of list) request.cookies.set(name, value);
+        headers.set("cookie", request.headers.get("cookie") ?? ""); // the page renders with the refreshed session
+        response = NextResponse.next({ request: { headers } });
+        for (const { name, value, options } of list) response.cookies.set(name, value, options);
+      },
+    },
+  });
+  const { data } = await supabase.auth.getUser();
+  if (data?.user) return response;
+  const to = new URL("/giris", request.url);
+  const back = safeNextPath(request.nextUrl.pathname);
+  if (back && back !== AFTER_LOGIN) to.searchParams.set("sonra", back);
+  return NextResponse.redirect(to);
 }
 
 export const config = {

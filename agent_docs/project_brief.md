@@ -26,7 +26,7 @@
 - Muhasebe doğruluğu her şeyden önce: kuruş tam sayı, borç = alacak, fişteki KDV esas.
 - Belirsiz olan uydurulmaz: okunamayan alan boş ve işaretli kalır.
 - Muhasebecinin dili ve Luca'nın terimleri kullanılır (Hesap Kodu, Evrak No, BT, Borç, Alacak).
-- Sıkıcı ve bakımı kolay seçimler; mevcut Vercel + Neon altyapısı.
+- Sıkıcı ve bakımı kolay seçimler; Vercel + Supabase altyapısı.
 
 ## Yapay zekanın yeri
 

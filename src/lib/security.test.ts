@@ -3,24 +3,25 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn() }));
-vi.mock("@/lib/auth/server", () => {
-  const signIn = { email: vi.fn(async () => ({ error: null })) };
-  const POST = vi.fn(async () => new Response("ok"));
-  const signUp = { email: vi.fn(async () => ({ error: null })) };
-  type Reply = (body: unknown) => Promise<{ error: null | { status: number } }>;
-  const requestPasswordReset = vi.fn<Reply>(async () => ({ error: null }));
-  const resetPassword = vi.fn<Reply>(async () => ({ error: null }));
-  return { getAuth: () => ({ signIn, signUp, requestPasswordReset, resetPassword, handler: () => ({ GET: vi.fn(), POST }) }) };
-});
+// Supabase Auth as the server actions see it (getAuth() resolves to the auth client).
+type Reply = (...args: unknown[]) => Promise<{ data?: unknown; error: null | { status: number } }>;
+const A = vi.hoisted(() => ({
+  signInWithPassword: vi.fn(async () => ({ error: null })),
+  signUp: vi.fn(async () => ({ data: { session: null }, error: null })),
+  resetPasswordForEmail: vi.fn(async () => ({ error: null })),
+  updateUser: vi.fn(async () => ({ error: null })),
+  signOut: vi.fn(async () => ({ error: null })),
+  exchangeCodeForSession: vi.fn(async () => ({ error: null })),
+}));
+vi.mock("@/lib/auth/server", () => ({ getAuth: async () => A }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": "203.0.113.9, 10.0.0.1", origin: "https://accountie.test" }) }));
 vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error(`REDIRECT ${url}`); } }));
 
 const { hitRateLimit } = await import("@/db/queries");
-const { getAuth } = await import("@/lib/auth/server");
 const { sniffImageType } = await import("./image");
 const { clientIp, ipBucket, LIMITS } = await import("./rate-limit");
 const actions = await import("@/app/giris/actions");
-const authRoute = await import("@/app/api/auth/[...path]/route");
+const callback = await import("@/app/auth/callback/route");
 
 const bytes = (...b: (number | string)[]) => Uint8Array.from(b.flatMap((x) => typeof x === "string" ? [...x].map((c) => c.charCodeAt(0)) : [x]));
 const form = (fields: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(fields)) f.set(k, v); return f; };
@@ -79,33 +80,21 @@ describe("oran sınırı", () => {
   it("sınır aşılınca giriş denenmez", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(false);
     expect(await redirectOf(actions.login(undefined, form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=cok-deneme");
-    expect(getAuth().signIn.email).not.toHaveBeenCalled();
+    expect(A.signInWithPassword).not.toHaveBeenCalled();
   });
 
   it("sınır aşılınca kayıt denenmez", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(false);
     const res = await redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678" })));
     expect(res).toContain("hata=kayit-cok");
-    expect(getAuth().signUp.email).not.toHaveBeenCalled();
+    expect(A.signUp).not.toHaveBeenCalled();
   });
 
-  it("/api/auth giriş ve kayıt uçları kapalı, şifre uçları sınırlı, diğerleri açık", async () => {
-    const post = (path: string) => authRoute.POST(new Request(`http://test/api/auth/${path}`, { method: "POST" }) as never, { params: Promise.resolve({ path: path.split("/").map(decodeURIComponent) }) } as never);
-    // Next decodes each catch-all segment; encoded, double-encoded and upper-case variants must not slip past.
-    for (const p of ["sign-in/email", "sign-up/email", "sign%2Din/email", "sign-in%2Femail", "sign%252Dup/email", "SIGN-IN/email", "x/..%2Fsign-in/email"]) {
-      expect((await post(p)).status, p).toBe(404);
-    }
-    expect(getAuth().handler().POST).not.toHaveBeenCalled();
-    vi.mocked(hitRateLimit).mockResolvedValue(false);
-    expect((await post("request-password-reset")).status).toBe(429);
-    expect((await post("send-verification-email")).status).toBe(429);
-    expect((await post("sign-out")).status).toBe(200);
-  });
 });
 
 describe("giriş ve kayıt formu", () => {
   it("hatalı giriş e-postayı geri verir, şifreyi hiç döndürmez", async () => {
-    vi.mocked(getAuth().signIn.email).mockResolvedValueOnce({ error: { message: "x" } } as never);
+    vi.mocked(A.signInWithPassword as unknown as Reply).mockResolvedValueOnce({ error: { message: "x" } } as never);
     const state = await actions.login(undefined, form({ email: "a@ornek.com", password: "gizli-sifre-123" }));
     expect(state).toEqual({ error: "kimlik", field: "password", email: "a@ornek.com", name: undefined });
     expect(JSON.stringify(state)).not.toContain("gizli-sifre-123");
@@ -117,7 +106,7 @@ describe("giriş ve kayıt formu", () => {
     expect(await actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "kisa" }))).toMatchObject({ error: "bicim-sifre", field: "password" });
     // Every invalid field comes back at once; focus goes to the first.
     expect(await actions.signup(undefined, form({ name: "", email: "abc", password: "" }))).toMatchObject({ field: "name", fields: ["name", "email", "password"] });
-    expect(getAuth().signUp.email).not.toHaveBeenCalled();
+    expect(A.signUp).not.toHaveBeenCalled();
   });
 });
 
@@ -137,8 +126,8 @@ describe("giriş sonrası dönüş", () => {
 describe("şifre yenileme", () => {
   it("hesap olsun olmasın aynı yanıtı verir ve bağlantıyı bu siteye döndürür", async () => {
     expect(await actions.requestReset(undefined, form({ email: "a@ornek.com" }))).toEqual({ sent: true, email: "a@ornek.com" });
-    expect(getAuth().requestPasswordReset).toHaveBeenCalledWith({ email: "a@ornek.com", redirectTo: "https://accountie.test/giris/sifre/yeni" });
-    vi.mocked(getAuth().requestPasswordReset).mockResolvedValueOnce({ error: { status: 400 } });
+    expect(A.resetPasswordForEmail).toHaveBeenCalledWith("a@ornek.com", { redirectTo: "https://accountie.test/auth/callback?tur=sifre" });
+    vi.mocked(A.resetPasswordForEmail as unknown as Reply).mockResolvedValueOnce({ error: { status: 400 } });
     expect(await actions.requestReset(undefined, form({ email: "yok@ornek.com" }))).toEqual({ sent: true, email: "yok@ornek.com" });
   });
 
@@ -149,15 +138,18 @@ describe("şifre yenileme", () => {
     vi.stubEnv("TURNSTILE_SECRET_KEY", "test-secret");
     expect(await actions.requestReset(undefined, form({ email: "a@ornek.com" }))).toMatchObject({ error: "bot" });
     vi.unstubAllEnvs();
-    expect(getAuth().requestPasswordReset).not.toHaveBeenCalled();
+    expect(A.resetPasswordForEmail).not.toHaveBeenCalled();
   });
 
-  it("geçersiz bağlantı ve kısa şifre yeni şifreyi kaydetmez", async () => {
-    expect(await actions.resetPassword(undefined, form({ token: "", password: "12345678" }))).toEqual({ error: "sifre-baglanti" });
-    expect(await actions.resetPassword(undefined, form({ token: "t", password: "kisa" }))).toEqual({ error: "bicim-sifre", field: "password" });
-    vi.mocked(getAuth().resetPassword).mockResolvedValueOnce({ error: { status: 400 } });
-    expect(await actions.resetPassword(undefined, form({ token: "t", password: "12345678" }))).toEqual({ error: "sifre-baglanti" });
-    await expect(redirectOf(actions.resetPassword(undefined, form({ token: "t", password: "12345678" })))).resolves.toBe("REDIRECT /giris?mesaj=sifre-yeni");
+  it("geçersiz bağlantı ve kısa şifre yeni şifreyi kaydetmez; başarıda kurtarma oturumu kapanır", async () => {
+    expect(await actions.resetPassword(undefined, form({ password: "kisa" }))).toEqual({ error: "bicim-sifre", field: "password" });
+    expect(A.updateUser).not.toHaveBeenCalled();
+    // No recovery session (an expired or foreign link): Supabase refuses the update.
+    vi.mocked(A.updateUser as unknown as Reply).mockResolvedValueOnce({ error: { status: 401 } });
+    expect(await actions.resetPassword(undefined, form({ password: "12345678" }))).toEqual({ error: "sifre-baglanti" });
+    await expect(redirectOf(actions.resetPassword(undefined, form({ password: "12345678" })))).resolves.toBe("REDIRECT /giris?mesaj=sifre-yeni");
+    expect(A.updateUser).toHaveBeenLastCalledWith({ password: "12345678" });
+    expect(A.signOut).toHaveBeenCalled();
   });
 });
 
@@ -167,11 +159,11 @@ describe("bot koruması", () => {
   it("Turnstile açıkken token olmadan giriş ve kayıt denenmez", async () => {
     vi.stubEnv("TURNSTILE_SECRET_KEY", "test-secret");
     expect(await redirectOf(actions.login(undefined, form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=bot");
-    expect(getAuth().signIn.email).not.toHaveBeenCalled();
+    expect(A.signInWithPassword).not.toHaveBeenCalled();
     expect(hitRateLimit).not.toHaveBeenCalled(); // Turnstile'sız deneme kurbanın e-posta limitini dolduramaz
     const res = await redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678" })));
     expect(res).toContain("hata=bot");
-    expect(getAuth().signUp.email).not.toHaveBeenCalled();
+    expect(A.signUp).not.toHaveBeenCalled();
   });
 
   it("e-posta başına sınır Turnstile olsa da olmasa da uygulanır", async () => {
@@ -216,5 +208,28 @@ describe("yapılandırma", () => {
     expect(env).not.toMatch(/^NEXT_PUBLIC_/m);
     expect(env).not.toMatch(/sk-ant-api|npg_/);
     for (const line of env.split("\n").filter((l) => /^[A-Z_]+=/.test(l))) expect(line).toMatch(/ornek|yer-tutucu|kullanici:sifre|rastgele/);
+  });
+});
+
+describe("e-posta bağlantısı dönüşü (/auth/callback)", () => {
+  const go = async (query: string) => new URL((await callback.GET(new Request(`https://accountie.test/auth/callback${query}`))).headers.get("location")!);
+
+  it("kodu oturuma çevirir, yalnız aynı sitenin panel yoluna ya da şifre sayfasına döner", async () => {
+    expect((await go("?code=abc")).pathname).toBe("/panel");
+    expect((await go("?code=abc&sonra=/panel/fis/abc-1")).pathname).toBe("/panel/fis/abc-1");
+    for (const bad of ["//evil.example", "https://evil.example/panel", "/giris/../panel"]) {
+      const to = await go(`?code=abc&sonra=${encodeURIComponent(bad)}`);
+      expect(to.origin, bad).toBe("https://accountie.test");
+      expect(to.pathname, bad).toBe("/panel");
+    }
+    expect((await go("?code=abc&tur=sifre")).pathname).toBe("/giris/sifre/yeni");
+    expect(A.exchangeCodeForSession).toHaveBeenCalledWith("abc");
+  });
+
+  it("kodsuz ya da reddedilen bağlantıda oturum açmaz", async () => {
+    expect((await go("")).search).toBe("?mesaj=baglanti");
+    vi.mocked(A.exchangeCodeForSession as unknown as Reply).mockResolvedValueOnce({ error: { status: 400 } });
+    const reset = await go("?code=eski&tur=sifre");
+    expect(reset.pathname + reset.search).toBe("/giris/sifre/yeni?hata=1");
   });
 });

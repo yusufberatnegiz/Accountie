@@ -17,11 +17,12 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.4.0",
-    "@neondatabase/auth": "^0.7.0-beta",
-    "@neondatabase/serverless": "^1.1.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
     "drizzle-orm": "^0.45.2",
     "exceljs": "^4.4.0",
     "next": "16.4.4",
+    "postgres": "^4.1.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sharp": "^0.35.5",
@@ -36,14 +37,5 @@
     "eslint-config-next": "16.4.4",
     "typescript": "^5",
     "vitest": "^4.1.11"
-  },
-  "overrides": {
-    "better-auth": "^1.7.15",
-    "@better-auth/core": "^1.7.15",
-    "@better-auth/oauth-provider": "^1.7.15",
-    "@better-auth/passkey": "^1.7.15",
-    "@neondatabase/auth": {
-      "zod": "$zod"
-    }
   }
 }

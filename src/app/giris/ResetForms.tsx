@@ -29,8 +29,8 @@ export function RequestResetForm({ turnstileSiteKey }: { turnstileSiteKey?: stri
   );
 }
 
-/** /giris/sifre/yeni: the new password, with the token from the e-mailed link. */
-export function NewPasswordForm({ token }: { token: string }) {
+/** /giris/sifre/yeni: the new password, set in the recovery session the e-mailed link opened. */
+export function NewPasswordForm() {
   const [state, action] = useActionState<ResetState, FormData>(resetPassword, undefined);
   const alertRef = useAfterAttempt(state);
   const text = state?.error ? ERRORS[state.error] : undefined;
@@ -41,7 +41,6 @@ export function NewPasswordForm({ token }: { token: string }) {
           {text} <Link href="/giris/sifre">Yeni bağlantı isteyin</Link>
         </p>
       ) : null}
-      <input type="hidden" name="token" value={token} />
       <PasswordField label="Yeni şifre" name="password" autoComplete="new-password" hint="En az 8 karakter" error={state?.field === "password" ? text : undefined} />
       <SubmitButton label="Şifreyi kaydet" pendingLabel="Kaydediliyor…" />
     </form>

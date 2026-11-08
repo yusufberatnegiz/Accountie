@@ -1,4 +1,4 @@
-// The only module that talks to the database. Every function takes the session user's id and filters by it.
+// The only module that talks to the database (Supabase Postgres through its pooler). Every function takes the session user's id and filters by it.
 import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import type { JournalLine, Warning } from "@/lib/journal";
@@ -81,11 +81,13 @@ export async function getRules(userId: string): Promise<{ rules: Rules; rows: Ru
 }
 
 export async function saveRules(userId: string, rows: readonly RuleRow[]): Promise<void> {
-  const db = getDb();
-  const [first, ...rest] = rows.map((r) =>
-    db.insert(accountRules).values({ ...r, userId })
-      .onConflictDoUpdate({ target: [accountRules.userId, accountRules.kind, accountRules.key], set: { accountCode: r.accountCode, accountName: r.accountName, label: r.label } }));
-  if (first) await db.batch([first, ...rest]);
+  if (rows.length === 0) return;
+  await getDb().transaction(async (tx) => {
+    for (const r of rows) {
+      await tx.insert(accountRules).values({ ...r, userId })
+        .onConflictDoUpdate({ target: [accountRules.userId, accountRules.kind, accountRules.key], set: { accountCode: r.accountCode, accountName: r.accountName, label: r.label } });
+    }
+  });
 }
 
 /**
@@ -93,27 +95,24 @@ export async function saveRules(userId: string, rows: readonly RuleRow[]): Promi
  * The attempt is stored before the work starts, so parallel requests count against each other.
  */
 export async function hitRateLimit(key: string, windows: readonly (readonly [limit: number, windowMs: number])[]): Promise<boolean> {
-  const db = getDb();
   const now = Date.now();
-  const counts = windows.map(([, ms]) =>
-    db.select({ n: count() }).from(rateLimitHits).where(and(eq(rateLimitHits.key, key), gt(rateLimitHits.createdAt, new Date(now - ms)))));
-  const [, , ...results] = await db.batch([
+  const results = await getDb().transaction(async (tx) => {
     // Global sweep so one-off keys (other e-mails/IPs) do not pile up; no LIMITS window is longer than a day.
     // shortcut: no index on created_at alone, so this scans the (one day of hits) table; add one if it grows large.
-    db.delete(rateLimitHits).where(lt(rateLimitHits.createdAt, new Date(now - 24 * 60 * 60_000))),
-    db.insert(rateLimitHits).values({ key }),
-    ...counts,
-  ]);
-  return windows.every(([limit], i) => ((results[i] as { n: number }[])[0]?.n ?? 0) <= limit);
+    await tx.delete(rateLimitHits).where(lt(rateLimitHits.createdAt, new Date(now - 24 * 60 * 60_000)));
+    await tx.insert(rateLimitHits).values({ key });
+    return Promise.all(windows.map(([, ms]) =>
+      tx.select({ n: count() }).from(rateLimitHits).where(and(eq(rateLimitHits.key, key), gt(rateLimitHits.createdAt, new Date(now - ms))))));
+  });
+  return windows.every(([limit], i) => (results[i][0]?.n ?? 0) <= limit);
 }
 
 export async function createReceipt(userId: string, firmId: string, receipt: NewReceipt, lines: readonly JournalLine[]): Promise<string> {
-  const db = getDb();
   const id = crypto.randomUUID();
-  await db.batch([
-    db.insert(receipts).values({ ...receipt, id, userId, firmId }),
-    db.insert(journalLines).values(lineRows(userId, id, lines)),
-  ]);
+  await getDb().transaction(async (tx) => {
+    await tx.insert(receipts).values({ ...receipt, id, userId, firmId });
+    await tx.insert(journalLines).values(lineRows(userId, id, lines));
+  });
   return id;
 }
 
@@ -165,11 +164,10 @@ export async function nextDraft(userId: string, firmId: string | null, exceptId:
 
 /** Replaces all lines of a draft. Caller must have checked the receipt is the user's draft. */
 export async function replaceLines(userId: string, id: string, lines: readonly JournalLine[]): Promise<void> {
-  const db = getDb();
-  await db.batch([
-    db.delete(journalLines).where(and(eq(journalLines.receiptId, id), eq(journalLines.userId, userId))),
-    db.insert(journalLines).values(lineRows(userId, id, lines)),
-  ]);
+  await getDb().transaction(async (tx) => {
+    await tx.delete(journalLines).where(and(eq(journalLines.receiptId, id), eq(journalLines.userId, userId)));
+    await tx.insert(journalLines).values(lineRows(userId, id, lines));
+  });
 }
 
 /** Moves one receipt between states; false when it is not the user's or not in `from`. */
@@ -215,11 +213,10 @@ export async function markExported(userId: string, ids: readonly string[]): Prom
 
 /** Replaces the user's extension token: creating a new one revokes the old. */
 export async function createExtensionToken(userId: string, tokenHash: string, expiresAt: Date): Promise<void> {
-  const db = getDb();
-  await db.batch([
-    db.delete(extensionTokens).where(eq(extensionTokens.userId, userId)),
-    db.insert(extensionTokens).values({ userId, tokenHash, expiresAt }),
-  ]);
+  await getDb().transaction(async (tx) => {
+    await tx.delete(extensionTokens).where(eq(extensionTokens.userId, userId));
+    await tx.insert(extensionTokens).values({ userId, tokenHash, expiresAt });
+  });
 }
 
 export async function revokeExtensionTokens(userId: string): Promise<void> {

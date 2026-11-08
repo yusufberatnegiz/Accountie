@@ -11,6 +11,7 @@ import "./auth.css";
 const MESSAGES: Record<string, string> = {
   "kayit-tamam": "Hesabınız oluşturuldu. E-postanıza gelen bağlantıyla adresinizi doğrulayın, sonra burada giriş yapın.",
   "sifre-yeni": "Şifreniz değişti. Yeni şifrenizle giriş yapın.",
+  baglanti: "Bu bağlantı geçersiz ya da süresi dolmuş. Giriş yapın ya da yeniden kayıt bağlantısı isteyin.",
 };
 
 // A café receipt, not the homepage counter's 0412: each product picture reads its own fiş (YON 23.15).

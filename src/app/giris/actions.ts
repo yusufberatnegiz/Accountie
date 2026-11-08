@@ -28,7 +28,7 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
   if (!(await allow("loginIp", ip))) return { error: "cok-deneme", ...typed };
   // Always on: the IP limit alone is bypassed by rotating addresses. Sized in LIMITS so one IP cannot fill it.
   if (!(await allow("loginEmail", input.data.email))) return { error: "cok-deneme", ...typed };
-  const { error } = await getAuth().signIn.email(input.data);
+  const { error } = await (await getAuth()).signInWithPassword(input.data);
   if (error) return { error: "kimlik", field: "password", ...typed };
   // A deep link (?sonra=) is honoured only when it is a plain same-site panel path (no open redirect).
   redirect(safeNextPath(formData.get("sonra")) ?? AFTER_LOGIN);
@@ -44,10 +44,12 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   if (!(await verifyTurnstile(formData.get(BOT_FIELD), ip))) return { error: "bot", ...typed };
   if (!(await allow("signupIp", ip))) return { error: "kayit-cok", ...typed };
   const { name, email, password } = input.data;
-  const { data, error } = await getAuth().signUp.email({ name, email, password });
+  // The confirmation link comes back to /auth/callback on this origin (Next has matched Origin to Host for this action).
+  const origin = (await headers()).get("origin");
+  const { data, error } = await (await getAuth()).signUp({ email, password, options: { data: { name }, ...(origin ? { emailRedirectTo: `${origin}/auth/callback` } : {}) } });
   if (error) return { error: "kayit", field: "email", ...typed };
-  // A session exists right away unless e-mail verification is on; then the user verifies the address and signs in.
-  if (data?.token) redirect(safeNextPath(formData.get("sonra")) ?? AFTER_LOGIN);
+  // A session exists right away unless e-mail confirmation is on; then the user confirms the address and signs in.
+  if (data?.session) redirect(safeNextPath(formData.get("sonra")) ?? AFTER_LOGIN);
   // The deep link survives the verification detour: /giris carries it to the login form.
   const next = safeNextPath(formData.get("sonra"));
   back({ mesaj: "kayit-tamam", ...(next ? { sonra: next } : {}) });
@@ -57,11 +59,12 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
 export type ResetState = { error?: string; field?: AuthField; email?: string; sent?: boolean } | undefined;
 
 const emailSchema = z.object({ email: z.email().max(200) });
-const newPasswordSchema = z.object({ token: z.string().min(1).max(512), password: z.string().min(8).max(128) });
+const newPasswordSchema = z.object({ password: z.string().min(8).max(128) });
 
 /**
  * Step 1 (/giris/sifre): send the reset link. The answer is the same whether or not an account exists (no account probing).
- * Turnstile first, then per network and per address limits, as for login. The link returns to /giris/sifre/yeni on this origin.
+ * Turnstile first, then per network and per address limits, as for login. The link returns through /auth/callback (which turns
+ * its one-time code into a short recovery session) to /giris/sifre/yeni on this origin.
  */
 export async function requestReset(_prev: ResetState, formData: FormData): Promise<ResetState> {
   const raw = formData.get("email");
@@ -72,28 +75,29 @@ export async function requestReset(_prev: ResetState, formData: FormData): Promi
   const ip = clientIp(h);
   if (!(await verifyTurnstile(formData.get(BOT_FIELD), ip))) return { error: "bot", email };
   if (!(await allow("resetIp", ip)) || !(await allow("resetEmail", input.data.email))) return { error: "sifre-cok", email };
-  // Next.js has already matched Origin to Host for this server action; Neon Auth also checks redirectTo against its trusted domains.
+  // Next.js has already matched Origin to Host for this server action; Supabase also checks redirectTo against its allowed URLs.
   const origin = h.get("origin");
   if (!origin) return { error: "sunucu", email };
-  const { error } = await getAuth().requestPasswordReset({ email: input.data.email, redirectTo: `${origin}/giris/sifre/yeni` });
+  const { error } = await (await getAuth()).resetPasswordForEmail(input.data.email, { redirectTo: `${origin}/auth/callback?tur=sifre` });
   // A 4xx (for example an unknown address) gets the same answer as success, so the form cannot tell who has an account.
   if (error && (error.status ?? 500) >= 500) return { error: "sunucu", email };
   return { sent: true, email: input.data.email };
 }
 
-/** Step 2 (/giris/sifre/yeni?token=…): set the new password, then sign in with it on /giris. */
+/** Step 2 (/giris/sifre/yeni, in the recovery session the link opened): set the new password, then sign in with it on /giris. */
 export async function resetPassword(_prev: ResetState, formData: FormData): Promise<ResetState> {
-  const input = newPasswordSchema.safeParse({ token: formData.get("token"), password: formData.get("password") });
-  if (!input.success) {
-    return input.error.issues.some((i) => i.path[0] === "password") ? { error: "bicim-sifre", field: "password" } : { error: "sifre-baglanti" };
-  }
+  const input = newPasswordSchema.safeParse({ password: formData.get("password") });
+  if (!input.success) return { error: "bicim-sifre", field: "password" };
   if (!(await allow("resetIp", clientIp(await headers())))) return { error: "sifre-cok" };
-  const { error } = await getAuth().resetPassword({ newPassword: input.data.password, token: input.data.token });
+  const auth = await getAuth();
+  const { error } = await auth.updateUser({ password: input.data.password });
   if (error) return { error: "sifre-baglanti" };
+  // The recovery session ends here: the user signs in again with the new password.
+  await auth.signOut();
   back({ mesaj: "sifre-yeni" });
 }
 
 export async function logout() {
-  await getAuth().signOut();
+  await (await getAuth()).signOut();
   redirect("/giris");
 }
