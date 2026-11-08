@@ -53,7 +53,7 @@ export function ReceiptListView({ receipts: all, tab, firm, base = "/panel" }: {
       <div className="title-row">
         <div className="title-text">
           {/* The firm these receipts are for; a müşavir switches between hundreds, so it is always named above the list. */}
-          {firm ? <p className="crumb"><Link href={`${base}/firmalar`} aria-label={`Firma: ${firm.name}. Firma değiştir`}>{firm.name}</Link></p> : null}
+          {firm ? <p className="crumb firm-crumb"><Link href={`${base}/firmalar`} aria-label={`Firma: ${firm.name}. Firma değiştir`}>{firm.name}</Link></p> : null}
           <h1>Fişler</h1>
           {/* Excel and the extension are desktop tasks; on the phone the finding says where the file is downloaded. */}
           <p className="finding">{listFinding(drafts, ready.length)}{ready.length ? <span className="phone-only-inline"> Dosyayı bilgisayardan indirin.</span> : null}</p>

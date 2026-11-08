@@ -69,6 +69,8 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       setStage(1);
       const form = new FormData();
       form.set("image", blob, "fis.jpg");
+      const firm = document.querySelector<HTMLElement>(".app")?.dataset.firm;
+      if (firm) form.set("firma", firm);
       let failure = "Bağlantı kurulamadı. Tekrar deneyin.";
       const res = await fetch("/api/receipts", { method: "POST", body: form, signal: AbortSignal.timeout(TIMEOUT_MS) }).catch((e: unknown) => {
         if (e instanceof DOMException && e.name === "TimeoutError") failure = "Fiş bir dakikada okunamadı. Bağlantınızı kontrol edip tekrar deneyin.";

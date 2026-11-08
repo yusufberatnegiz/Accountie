@@ -48,7 +48,8 @@ export async function POST(request: Request) {
   // Counted only for valid photos that are about to reach the model.
   if (!(await allow("receiptGlobal", "all"))) return fail("Fiş okuma bugün için geçici olarak durduruldu. Yarın tekrar deneyin.", 503);
 
-  const [{ rules }, { firm }] = await Promise.all([getRules(userId), activeFirm(userId)]);
+  const wanted = form?.get("firma");
+  const [{ rules }, { firm }] = await Promise.all([getRules(userId), activeFirm(userId, typeof wanted === "string" ? wanted : null)]);
   // Several receipts laid side by side in one photo: each is cut from the full-size upload and read on its own.
   const boxes = await locateReceipts(jpeg).catch(() => []);
   let images = [jpeg];

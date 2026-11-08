@@ -20,7 +20,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const next = await nextDraft(userId, receipt.firmId, id.data);
 
   return (
-    <AppShell current="fis" email={user.email}>
+    <AppShell current="fis" email={user.email} firmId={receipt.firmId}>
       <ReceiptView receipt={receipt} rules={rules} next={next} />
     </AppShell>
   );

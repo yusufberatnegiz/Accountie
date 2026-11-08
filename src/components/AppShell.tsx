@@ -20,14 +20,16 @@ const Icon = ({ name }: { name: keyof typeof ICONS }) => <svg className="rail-ic
  * (Fişler, Fiş çek, Kurallar, Firmalar, Hesap). Theme and Çıkış live in the Hesap sheet.
  * `base` lets the dev preview (/onizleme/panel) keep its links inside the preview.
  */
-export function AppShell({ current, base = "/panel", email, children }: { current: Current; base?: string; email?: string; children: ReactNode }) {
+export function AppShell({ current, base = "/panel", email, firmId, children }: { current: Current; base?: string; email?: string; firmId?: string | null; children: ReactNode }) {
   const item = (href: string, label: string, icon: keyof typeof ICONS, active: boolean) => (
     <Link className="rail-item" href={href} aria-current={active ? "page" : undefined}>
       <Icon name={icon} /><span className="rail-label">{label}</span>
     </Link>
   );
   return (
-    <div className="app" data-screen={current}>
+    // data-firm: the firm this page shows. Uploads and downloads send it, so a page left open in another tab never writes into
+    // the firm chosen later (the cookie is only the default for the next page).
+    <div className="app" data-screen={current} data-firm={firmId ?? undefined}>
       <nav className="rail" aria-label="Panel">
         <Link className="rail-mark" href={base} translate="no"><BrandMark /><span className="visually-hidden">Accountie, fiş listesi</span></Link>
         {item(base, "Fişler", "receipt", current === "fisler" || current === "fis")}

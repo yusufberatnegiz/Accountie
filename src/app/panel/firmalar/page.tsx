@@ -13,7 +13,7 @@ export default async function FirmsPage() {
   if (!user) redirect("/giris");
   const { firms, firm } = await activeFirm(user.id);
   return (
-    <AppShell current="firmalar" email={user.email}>
+    <AppShell current="firmalar" email={user.email} firmId={firm.id}>
       <FirmsView firms={firms} activeId={firm.id} />
     </AppShell>
   );

@@ -20,7 +20,7 @@ export default async function PanelPage({ searchParams }: { searchParams: Promis
   const receipts = await listReceipts(userId, firm.id);
 
   return (
-    <AppShell current="fisler" email={user.email}>
+    <AppShell current="fisler" email={user.email} firmId={firm.id}>
       <ReceiptListView receipts={receipts} tab={tab} firm={firm} />
     </AppShell>
   );

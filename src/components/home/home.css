@@ -1002,7 +1002,12 @@
 .cta-chips { position: absolute; z-index: 2; right: calc(100% - 20px); top: 210px; margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s2); justify-items: end; }
 .cta-chips li { display: flex; justify-content: space-between; gap: var(--s5); min-width: 13em; padding: var(--s2) var(--s4); border-radius: var(--radius-control); background: var(--ui-lift); color: var(--ink); border: 1px solid var(--ui-lift-edge); /* taste-skill-ignore: data-ui chip edge */ font-size: var(--step-body); font-weight: var(--w-medium); font-variant-numeric: tabular-nums; }
 .cta-chips li.balance-ok { min-width: 0; color: var(--positive); }
-@media (max-width: 960px) { .cta-figure { grid-column: 1 / -1; } }
+@media (max-width: 960px) {
+  .cta-figure { grid-column: 1 / -1; }
+  /* Under the phone, in the flow, up to 960 (not only 640): beside a centred phone at 768 they lost the page margin. */
+  .cta-chips { position: relative; right: auto; top: auto; margin-top: var(--s4); justify-items: stretch; width: min(300px, 100%); }
+  .cta-chips li { min-width: 0; }
+}
 @media (max-width: 640px) {
   .cta-phone { width: 260px; }
   .cam .thermal-items { display: none; }
