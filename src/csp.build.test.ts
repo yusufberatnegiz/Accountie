@@ -15,7 +15,7 @@ describe.skipIf(!built)("production build CSP", () => {
     server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", String(PORT)], {
       stdio: "ignore",
       // Placeholders: with no session cookie the auth client never calls out; the page only needs them to exist.
-      env: { ...process.env, NODE_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:9", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_csp_build_test" },
+      env: { ...process.env, NODE_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:9", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_csp_build_test_placeholder" },
     });
     for (let i = 0; i < 100; i++) {
       if (await fetch(`${base}/gizlilik`).then((r) => r.ok, () => false)) return;
@@ -54,10 +54,10 @@ describe.skipIf(!built)("production build CSP", () => {
   });
 
   it("keeps the security headers on the fail-closed 503 of the panel, auth pages and API when the auth config is missing", async () => {
-    // Empty counts as missing (src/lib/auth/server.ts), whatever the developer's shell has set.
+    // Malformed counts as missing (src/lib/auth/server.ts); empty would be refilled from .env.local by next start.
     const bare = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", String(PORT + 1)], {
       stdio: "ignore",
-      env: { ...process.env, NODE_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "" },
+      env: { ...process.env, NODE_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "eksik", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "eksik" },
     });
     try {
       let res: Response | undefined;

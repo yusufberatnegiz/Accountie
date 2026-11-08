@@ -203,9 +203,11 @@ describe("yapılandırma", () => {
     expect(config.poweredByHeader).toBe(false);
   });
 
-  it(".env.example yalnızca yer tutucu içerir ve NEXT_PUBLIC_ sır yok", () => {
+  it(".env.example yalnızca yer tutucu içerir; NEXT_PUBLIC_ yalnız Supabase'in herkese açık iki değeri", () => {
     const env = readFileSync(join(process.cwd(), ".env.example"), "utf8");
-    expect(env).not.toMatch(/^NEXT_PUBLIC_/m);
+    const exposed = [...env.matchAll(/^(NEXT_PUBLIC_[A-Z_]+)=/gm)].map((m) => m[1]);
+    expect(exposed).toEqual(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"]);
+    expect(env).not.toMatch(/sb_secret_|service_role/);
     expect(env).not.toMatch(/sk-ant-api|npg_/);
     for (const line of env.split("\n").filter((l) => /^[A-Z_]+=/.test(l))) expect(line).toMatch(/ornek|yer-tutucu|kullanici:sifre|rastgele/);
   });
