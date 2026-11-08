@@ -209,4 +209,4 @@ Veritabanı ve oturum Neon'dan Supabase'e taşındı (eu-central-1). Veri yoktu,
 - Bağlantı: `postgres` sürücüsü ve `drizzle-orm/postgres-js`, transaction pooler (6543, `prepare: false`). Neon'un `batch` çağrıları `transaction`'a çevrildi.
 - Oturum: `@supabase/ssr` ile yalnız sunucuda (server action, route handler, proxy); tarayıcı Supabase'e bağlanmaz, CSP değişmedi. E-posta bağlantıları `/auth/callback`'e döner (PKCE kodu oturuma çevrilir; şifre yenilemede `?tur=sifre`). Neon'un `/api/auth` aracı rotası kaldırıldı.
 - Güvenlik: Data API kapalı; tablolarda RLS açık ve `anon`/`authenticated` rollerinin izinleri geri alındı (`20261108192201_revoke_api_roles.sql`). Uygulama tablo sahibi rolüyle sunucudan bağlanır; her sorgu `user_id` ile süzülür.
-- Göçler bu kez onaylı adım olarak uygulandı (kullanıcı geçişi istedi). Ortam: `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (son ikisi tasarım gereği herkese açık).
+- Göçler bu kez onaylı adım olarak uygulandı (kullanıcı geçişi istedi). Ortam: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (hepsi yalnız sunucuda okunur, `NEXT_PUBLIC_` yok).

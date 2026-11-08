@@ -12,7 +12,7 @@ vi.mock("@supabase/ssr", () => ({ createServerClient: vi.fn() }));
 /** Supabase answers getUser() with this user (null: no session). */
 const session = (user: { id: string } | null) =>
   vi.mocked(createServerClient).mockReturnValue({ auth: { getUser: async () => ({ data: { user }, error: null }) } } as unknown as ReturnType<typeof createServerClient>);
-const configMissing = () => vi.mocked(authConfig).mockImplementation(() => { throw new Error("NEXT_PUBLIC_SUPABASE_URL ortam değişkeni eksik."); });
+const configMissing = () => vi.mocked(authConfig).mockImplementation(() => { throw new Error("SUPABASE_URL ortam değişkeni eksik."); });
 const configBack = () => vi.mocked(authConfig).mockReset().mockReturnValue(CONFIG);
 
 const guarded = (url: string) => unstable_doesMiddlewareMatch({ config, url });

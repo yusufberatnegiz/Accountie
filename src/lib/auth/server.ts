@@ -1,16 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-/** Supabase project URL and publishable key. Both are public by design (RLS guards the data); throws when either is missing. */
+/** Supabase project URL and publishable key, read on the server only; throws when either is missing or malformed. */
 export function authConfig(): { url: string; key: string } {
-  // Read at run time, not inlined at build (a literal process.env.NEXT_PUBLIC_* would be): server code only, and a missing value
-  // in production fails closed instead of being baked into the bundle.
-  const read = (name: string) => process.env[`NEXT_PUBLIC_SUPABASE_${name}`]; // a computed name: the bundler cannot inline it
+  // Server-only names (no NEXT_PUBLIC_): the browser never talks to Supabase, so nothing is inlined into a bundle.
+  const read = (name: string) => process.env[`SUPABASE_${name}`];
   const url = read("URL");
   const key = read("PUBLISHABLE_KEY");
   // A malformed value counts as missing: fail closed (503) rather than send sessions to a wrong address.
   if (!url || !/^https?:\/\/[^/\s]+$/.test(url) || !key || key.length < 20) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL veya NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ortam değişkeni eksik ya da geçersiz.");
+    throw new Error("SUPABASE_URL veya SUPABASE_PUBLISHABLE_KEY ortam değişkeni eksik ya da geçersiz.");
   }
   return { url, key };
 }
