@@ -44,6 +44,15 @@ export function Counter() {
   const credit = lines.reduce((s, l) => s + l.creditKurus, 0);
   const vat = sample.receipt.vatLines;
   const slot = useRef<HTMLDivElement>(null);
+  // On a phone the pickers sit under the card, whose height follows the sample: after a choice the page scrolls by what the
+  // tapped picker moved, so it stays under the finger (jury tur 18: 60-154px jumps, a quick second tap hit the wrong chip).
+  const anchor = useRef<{ el: HTMLElement; top: number } | null>(null);
+  const hold = (el: HTMLElement) => { anchor.current = { el, top: el.getBoundingClientRect().top }; };
+  useLayoutEffect(() => {
+    const a = anchor.current;
+    anchor.current = null;
+    if (a) { const moved = a.el.getBoundingClientRect().top - a.top; if (Math.abs(moved) > 1) window.scrollBy(0, moved); }
+  }, [sampleId, payment]);
   // "Dengede" pops only when the balance itself changes (YON 23.3.3), not on the first choice.
   const [bal, setBal] = useState(balanced);
   const [flips, setFlips] = useState(0);
@@ -74,7 +83,7 @@ export function Counter() {
         {SAMPLES.map((s) => (
           <label key={s.id}>
             <input type="radio" name="ornek-fis" value={s.id} autoComplete="off" defaultChecked={s.id === SAMPLES[0].id}
-              onChange={() => startTransition(() => { setKept(lines.length); setSampleId(s.id); setCopy(""); setHot(null); setTouched(true); })} />
+              onChange={(e) => { hold(e.currentTarget); startTransition(() => { setKept(lines.length); setSampleId(s.id); setCopy(""); setHot(null); setTouched(true); }); }} />
             <span>{s.label}</span>
           </label>
         ))}
@@ -83,7 +92,7 @@ export function Counter() {
         <legend>Ödeme</legend>
         {PAYMENTS.map((p) => (
           <label key={p.id}>
-            <input type="radio" name="odeme" value={p.id} autoComplete="off" defaultChecked={p.id === defaultPayment(SAMPLES[0])} onChange={() => startTransition(() => { setPayment(p.id); setCopy(""); setTouched(true); })} />
+            <input type="radio" name="odeme" value={p.id} autoComplete="off" defaultChecked={p.id === defaultPayment(SAMPLES[0])} onChange={(e) => { hold(e.currentTarget); startTransition(() => { setPayment(p.id); setCopy(""); setTouched(true); }); }} />
             <span>{p.label}</span>
           </label>
         ))}

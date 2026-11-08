@@ -81,3 +81,8 @@ export const PREVIEW_VENDOR_RULES: VendorRule[] = [
   { id: "00000000-0000-4000-a000-000000000002", taxNumber: "2222222222", vendorName: "ÖRNEK KIRTASİYE", accountCode: "770.12", accountName: "Mutfak Giderleri" },
   { id: "00000000-0000-4000-a000-000000000003", taxNumber: "3333333333", vendorName: null, accountCode: "760.01", accountName: "Pazarlama Satış ve Dağıtım Giderleri" },
 ];
+
+/** A month close spread for the preview firms: most done, some still open, a few without receipts (fixed by position). */
+export const PREVIEW_MONTH_COUNTS: Record<string, { draft: number; approved: number; exported: number }> = Object.fromEntries(
+  PREVIEW_FIRMS.map((f, i) => [f.id, i % 5 === 0 ? { draft: 3, approved: 4, exported: 3 } : i % 7 === 3 ? { draft: 0, approved: 0, exported: 0 } : i % 4 === 1 ? { draft: 0, approved: 2, exported: 5 } : { draft: 0, approved: 0, exported: 4 + (i % 9) }]),
+);

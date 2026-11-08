@@ -8,6 +8,8 @@ import { ListTabs } from "@/components/ListTabs";
 import { RowPending } from "@/components/RowPending";
 import { LucaMeter } from "@/components/LucaMeter";
 import { MoveTransition } from "@/components/MoveTransition";
+import { MonthPicker } from "@/components/MonthPicker";
+import { monthLabel } from "@/lib/month";
 import { CATEGORIES } from "@/lib/default-rules";
 import { MAX_LINES_PER_FILE, MAX_RECEIPTS_PER_FILE } from "@/lib/luca/export";
 import { formatTrAmount } from "@/lib/money";
@@ -31,7 +33,9 @@ type Row = Awaited<ReturnType<typeof listReceipts>>[number];
 const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : null);
 
 /** Receipt list screen; the page and the dev preview both render it. Rows hold every status, the table shows `tab`. */
-export function ReceiptListView({ receipts: all, tab, firm, base = "/panel" }: { receipts: Row[]; tab: (typeof TABS)[number]; firm?: { name: string }; base?: string }) {
+export function ReceiptListView({ receipts: all, tab, firm, month = "", months, base = "/panel" }: { receipts: Row[]; tab: (typeof TABS)[number]; firm?: { name: string }; month?: string; months?: string[]; base?: string }) {
+  // The tabs keep the chosen month, and the month picker keeps the tab.
+  const withMonth = (q: string) => { const p = new URLSearchParams(q); if (month) p.set("ay", month); const s = p.toString(); return s ? `${base}?${s}` : base; };
   const count = (s?: ReceiptStatus) => (s ? all.filter((r) => r.status === s).length : all.length);
   const receipts = tab.status ? all.filter((r) => r.status === tab.status) : all;
   const ready = all.filter((r) => r.status === "approved");
@@ -58,15 +62,18 @@ export function ReceiptListView({ receipts: all, tab, firm, base = "/panel" }: {
           {/* Excel and the extension are desktop tasks; on the phone the finding says where the file is downloaded. */}
           <p className="finding">{listFinding(drafts, ready.length)}{ready.length ? <span className="phone-only-inline"> Dosyayı bilgisayardan indirin.</span> : null}</p>
         </div>
-        {all.length ? <CaptureButton base={base} /> : null}
+        <div className="title-actions">
+          {months ? <MonthPicker months={months} value={month} path={base} /> : null}
+          {all.length || month ? <CaptureButton base={base} /> : null}
+        </div>
       </div>
 
       <section className="panel list-panel" aria-labelledby="liste-baslik">
         <h2 id="liste-baslik" className="visually-hidden">Fiş listesi</h2>
-        <ListTabs active={tab.slug} tabs={TABS.map((t) => ({ slug: t.slug, label: t.label, href: t.slug ? `${base}?durum=${t.slug}` : base, count: count(t.status) }))} />
+        <ListTabs active={tab.slug} tabs={TABS.map((t) => ({ slug: t.slug, label: t.label, href: withMonth(t.slug ? `durum=${t.slug}` : ""), count: count(t.status) }))} />
         {receipts.length === 0 ? (
           <div className="empty-row">
-            {all.length ? <p>{tab.label} durumunda fiş yok.</p> : (
+            {month && !all.length ? <p>{monthLabel(month)} için fiş yok.</p> : all.length ? <p>{tab.label} durumunda fiş yok.</p> : (
               <>
                 <h3>Henüz fiş yok</h3>
                 <p>İlk fişin fotoğrafını çekin. Satırlar hesap kurallarınıza göre hazırlanır ve burada kontrolünüzü bekler.</p>

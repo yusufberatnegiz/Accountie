@@ -135,10 +135,13 @@ const listColumns = {
   vatKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::int from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code like '191%')`,
 };
 
-export async function listReceipts(userId: string, firmId: string, status?: ReceiptStatus) {
-  const mine = and(eq(receipts.userId, userId), eq(receipts.firmId, firmId));
+// A receipt's month (src/lib/month.ts): its date, or the Turkey-time upload day when the date was not read.
+const RECEIPT_MONTH = sql<string>`to_char(coalesce(${receipts.receiptDate}, (${receipts.createdAt} at time zone 'Europe/Istanbul')::date), 'YYYY-MM')`;
+
+/** The firm's receipts, newest first; `month` ("2026-09") keeps one month's. */
+export async function listReceipts(userId: string, firmId: string, { status, month }: { status?: ReceiptStatus; month?: string } = {}) {
   return getDb().select(listColumns).from(receipts)
-    .where(status ? and(mine, eq(receipts.status, status)) : mine)
+    .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), status ? eq(receipts.status, status) : undefined, month ? eq(RECEIPT_MONTH, month) : undefined))
     .orderBy(desc(receipts.createdAt)).limit(200);
 }
 
@@ -259,4 +262,18 @@ export async function listVendorRules(userId: string, firmId: string): Promise<V
 export async function deleteVendorRule(userId: string, id: string): Promise<boolean> {
   const rows = await getDb().delete(vendorRules).where(and(eq(vendorRules.id, id), eq(vendorRules.userId, userId))).returning({ id: vendorRules.id });
   return rows.length > 0;
+}
+
+/** One month across all of the user's firms: receipts per firm and status, for the month close on the Firmalar screen. */
+export async function monthCounts(userId: string, month: string): Promise<Map<string, { draft: number; approved: number; exported: number }>> {
+  const rows = await getDb().select({ firmId: receipts.firmId, status: receipts.status, n: count() }).from(receipts)
+    .where(and(eq(receipts.userId, userId), eq(RECEIPT_MONTH, month))).groupBy(receipts.firmId, receipts.status);
+  const out = new Map<string, { draft: number; approved: number; exported: number }>();
+  for (const r of rows) {
+    if (!r.firmId) continue;
+    const c = out.get(r.firmId) ?? { draft: 0, approved: 0, exported: 0 };
+    c[r.status] = Number(r.n);
+    out.set(r.firmId, c);
+  }
+  return out;
 }

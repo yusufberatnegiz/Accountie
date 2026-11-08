@@ -431,7 +431,7 @@
 .cta-figure { grid-column: 7 / 13; align-self: start; display: grid; gap: var(--s4); justify-items: center; align-self: start; }
 .cta-figure figcaption { order: -1; font-size: var(--step-small); color: var(--muted); }
 /* The section's foot cuts the phone under its shutter, so the camera's control is in the picture (YON 23.32). */
-.cta .cta-figure { margin: 0 0 calc(var(--s9) * -1 - 40px); }
+.cta .cta-figure { margin: 0 0 calc(var(--s9) * -1 - 86px); } /* the section edge cuts the phone above its last card, never through a line of text (jury tur 18) */
 
 /* ---------- footer: the name returns at full width ---------- */
 .foot, .rule-after { container-type: inline-size; }
@@ -1004,6 +1004,8 @@
 .cta-chips li.balance-ok { min-width: 0; color: var(--positive); }
 @media (max-width: 960px) {
   .cta-figure { grid-column: 1 / -1; }
+  /* Below 960 the phone is whole (no bleed): the chips under it would otherwise run past the clipped section edge. */
+  .cta .cta-figure { margin-bottom: 0; }
   /* Under the phone, in the flow, up to 960 (not only 640): beside a centred phone at 768 they lost the page margin. */
   .cta-chips { position: relative; right: auto; top: auto; margin-top: var(--s4); justify-items: stretch; width: min(300px, 100%); }
   .cta-chips li { min-width: 0; }

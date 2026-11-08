@@ -123,5 +123,5 @@ export async function GET(request: Request) {
   const status = new URL(request.url).searchParams.get("status");
   if (status !== null && status !== "draft" && status !== "approved" && status !== "exported") return fail("Geçersiz durum.", 400);
   const { firm } = await activeFirm(userId);
-  return NextResponse.json({ receipts: await listReceipts(userId, firm.id, status ?? undefined) });
+  return NextResponse.json({ receipts: await listReceipts(userId, firm.id, { status: status ?? undefined }) });
 }
