@@ -165,7 +165,9 @@ describe("proxy cross-site API guard", () => {
     expect((await api("POST", { origin: "null" })).status).toBe(403);
     expect((await api("PUT", { origin: "http://accountie.test" })).status).toBe(200);
     expect((await api("POST", {})).status).toBe(200); // no Origin (server-to-server, old clients): the cookie rules still apply
-    expect((await api("POST", { origin: "chrome-extension://abc", authorization: "Bearer acx_x" })).status).toBe(200);
+    expect((await api("PUT", { origin: "https://kotu.example", authorization: "Bearer x" })).status).toBe(403); // Bearer only exempts the extension's routes
+    const ext = await proxy(new NextRequest("http://accountie.test/api/extension/receipts/1/transferred", { method: "POST", headers: { host: "accountie.test", origin: "chrome-extension://abc", authorization: "Bearer acx_x" } }));
+    expect(ext.status).toBe(200);
     expect((await api("GET", { origin: "https://kotu.example" })).status).toBe(200);
   });
 });

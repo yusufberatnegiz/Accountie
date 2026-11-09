@@ -30,6 +30,9 @@ export const LIMITS = {
   // Failed GİB logins per GİB user code, across every Accountie user: the app can never be used to guess or lock someone's
   // GİB login. Only failures count, so nobody can use up the bucket of a code someone else has stored and verified.
   gibCodeFail: [[2, 60 * MIN], [3, 24 * 60 * MIN]],
+  // Counted (atomically) before the call: parallel requests for one code cannot all pass the failure check at once.
+  gibCodeTry: [[1, MIN]],
+  gibUserFail: [[5, 24 * 60 * MIN]], // failed GİB checks per Accountie user: no checking of leaked code/password lists
   gibPull: [[10, 60 * MIN], [40, 24 * 60 * MIN]], // per user and stored code
   gibPullFail: [[2, 24 * 60 * MIN]], // a stored login failing a third time in a day is removed, whatever GİB said
   gibNew: [[3, 24 * 60 * MIN]], // logins saved by accounts younger than a day
@@ -58,11 +61,13 @@ export function ipBucket(ip: string): string {
   return groups.slice(0, 4).map((g) => parseInt(g, 16).toString(16)).join(":") + "::/64";
 }
 
-// GİB user codes are short numbers a plain hash would give back: they are keyed with the server's secret instead.
+// GİB user codes are short numbers a plain hash would give back: they are keyed with a key derived from the server's secret
+// (its own key, not the one that seals logins).
 const keyOf = (kind: keyof typeof LIMITS, subject: string) => {
   const value = (kind.endsWith("Ip") ? ipBucket(subject) : subject).toLowerCase();
   const secret = kind.startsWith("gib") ? secretKey() : null;
-  return `${kind}:${secret ? createHmac("sha256", secret).update(value).digest("hex").slice(0, 32) : hash(value)}`;
+  const mac = secret && createHmac("sha256", createHmac("sha256", secret).update("accountie:ratelimit:v1").digest());
+  return `${kind}:${mac ? mac.update(value).digest("hex").slice(0, 32) : hash(value)}`;
 };
 
 /** true when allowed (and counts this attempt). Keys are hashed so the table never holds an e-mail address, IP or GİB code. */

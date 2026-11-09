@@ -56,6 +56,7 @@ export function parseInvoice(xml: string): Invoice {
   let elements = 0;
   parser.on("opentag", (node) => {
     if (++elements > MAX_ELEMENTS) throw new InvoiceError("XML'de çok fazla öğe var; fatura değil.");
+    if (node.name.length > 100) throw new InvoiceError("XML'de geçersiz öğe adı; fatura değil."); // UBL's longest is under 40
     if (path.length >= MAX_DEPTH) throw new InvoiceError("XML çok derin; fatura değil.");
     path.push(local(node.name));
     attrs.push(node.attributes as Record<string, string>);
@@ -87,6 +88,7 @@ export function parseInvoice(xml: string): Invoice {
       if (sub.code === "0015") {
         const taxable = decimalKurus(sub.taxable ?? ""), amount = decimalKurus(sub.amount ?? ""), rate = Number(sub.percent);
         if (taxable === null || amount === null || !Number.isFinite(rate)) throw new InvoiceError("KDV tutarları okunamadı.");
+        if (Math.abs(taxable) > 1e12 || Math.abs(amount) > 1e12 || rate < 0 || rate > 100) throw new InvoiceError("KDV tutarları gerçek dışı.");
         vat.push({ rate, taxableKurus: taxable, vatKurus: amount });
       } else if (Number(sub.amount ?? 0) !== 0) otherTax = true;
     }

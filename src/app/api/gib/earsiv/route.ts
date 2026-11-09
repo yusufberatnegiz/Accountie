@@ -17,7 +17,7 @@ export const maxDuration = 60;
 
 const Schema = z.object({ firma: z.uuid().optional(), ay: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) });
 const MAX_INVOICES = 300;
-const BUDGET_MS = 30_000; // stop downloading in time to import what came (up to 300 saves) within maxDuration; a second run skips what is already in
+const BUDGET_MS = 25_000; // stop downloading in time to import what came (up to 300 saves) within maxDuration; a second run skips what is already in
 const ZIP_LIMITS = { maxFiles: 10, maxFileBytes: 5 * 1024 * 1024, maxTotalBytes: 10 * 1024 * 1024 };
 const MAX_XML_BYTES = 40 * 1024 * 1024; // all invoices of one pull held at once
 

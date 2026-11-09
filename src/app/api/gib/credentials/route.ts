@@ -35,8 +35,9 @@ export async function PUT(request: Request) {
   if (body.data.firma && body.data.firma !== firm.id) return fail("Firma bulunamadı.", 404);
   if (!firm.taxNumber) return fail("Önce Firmalar'da bu firmanın VKN'sini girin.", 422);
   const isNew = !(Date.now() - user.createdAt.getTime() >= 24 * 60 * 60_000);
-  if (!(await under("gibCodeFail", body.data.kullaniciKodu)) || !(await allow("gib", userId)) || !(await allow("gibFirm", firm.id))
-    || (isNew && !(await allow("gibNew", userId))) || !(await allow("gibGlobal", "all"))) {
+  if (!(await under("gibCodeFail", body.data.kullaniciKodu)) || !(await under("gibUserFail", userId)) || !(await allow("gib", userId))
+    || !(await allow("gibFirm", firm.id)) || (isNew && !(await allow("gibNew", userId))) || !(await allow("gibCodeTry", body.data.kullaniciKodu))
+    || !(await allow("gibGlobal", "all"))) {
     return fail("Çok fazla deneme yapıldı. Bir süre bekleyin; GİB hesabı kilitlenmesin.", 429);
   }
 
@@ -44,8 +45,9 @@ export async function PUT(request: Request) {
     await logout(await login(body.data.kullaniciKodu, body.data.sifre));
   } catch (e) {
     if (!(e instanceof PortalError)) throw e;
-    if (e.kind !== "portal") await allow("gibCodeFail", body.data.kullaniciKodu); // only failures fill the shared bucket
-    return fail(e.message, e.kind === "portal" ? 502 : 422);
+    // Only GİB's refusals fill the shared and the per-user failure buckets (a network error is nobody's guess).
+    if (e.kind !== "portal") { await allow("gibCodeFail", body.data.kullaniciKodu); await allow("gibUserFail", userId); }
+    return fail(e.message, e.kind === "auth" || e.kind === "locked" ? 422 : 502);
   }
   try {
     await saveGibCredential(userId, firm.id, seal(key, body.data.kullaniciKodu, secretContext(userId, firm.id, "kullanici")), seal(key, body.data.sifre, secretContext(userId, firm.id, "sifre")));
@@ -63,7 +65,7 @@ export async function DELETE(request: Request) {
   if (!(await signedInWithin(RECENT_SIGN_IN_MS))) return fail(SIGN_IN_AGAIN, 403);
   const wanted = new URL(request.url).searchParams.get("firma");
   const { firm } = await activeFirm(userId, wanted);
-  if (wanted && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never fall back to another firm's login
+  if (wanted !== null && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never fall back to another firm's login
   await deleteGibCredential(userId, firm.id);
   return new NextResponse(null, { status: 204 });
 }

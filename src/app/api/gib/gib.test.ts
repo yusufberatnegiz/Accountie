@@ -105,6 +105,7 @@ describe("PUT /api/gib/credentials", () => {
     expect(open(KEY, u, secretContext("user-a", FIRM.id, "kullanici"))).toBe("12345678");
     expect(calls.map((c) => c.form?.get("assoscmd"))).toEqual(["anologin", "logout"]);
     expect(vi.mocked(allow).mock.calls.map(([kind]) => kind)).not.toContain("gibCodeFail");
+    expect(vi.mocked(allow).mock.calls).toContainEqual(["gibCodeTry", "12345678"]); // counted atomically before GİB is called
     expect(calls.every((c) => c.url.startsWith("https://earsivportal.efatura.gov.tr/earsiv-services/"))).toBe(true);
   });
 
@@ -128,14 +129,16 @@ describe("PUT /api/gib/credentials", () => {
 });
 
 describe("GİB giriş reddinin sınıflandırılması", () => {
-  it("yalnız şifre/kullanıcı hatası 'auth', kilit 'locked'; bakım, doğrulama kodu ve bilinmeyen 'portal' (kayıt korunur)", async () => {
+  it("yalnız şifre/kullanıcı hatası 'auth', kilit 'locked'; bakım, doğrulama kodu ve bilinmeyen ret 'refused' (kayıt korunur)", async () => {
     const { loginRefusal } = await import("@/lib/gib/earsiv");
     const kind = (text: string) => loginRefusal({ error: "1", messages: [{ type: "4", text }] }).kind;
     expect(kind("Kullanıcı adı veya şifre hatalı")).toBe("auth");
     expect(kind("Hesabınız kilitlenmiştir")).toBe("locked");
-    expect(kind("Sistem bakımda, lütfen daha sonra deneyiniz")).toBe("portal");
-    expect(kind("Güvenlik kodu hatalı")).toBe("portal");
-    expect(loginRefusal({}).kind).toBe("portal");
+    expect(kind("Şifre hatalı")).toBe("auth");
+    expect(kind("Sistem bakımda, lütfen daha sonra deneyiniz")).toBe("refused");
+    expect(kind("Güvenlik kodu hatalı")).toBe("refused");
+    expect(kind("Geçersiz oturum")).toBe("refused"); // not a password message: the stored login is kept
+    expect(loginRefusal({}).kind).toBe("refused");
   });
 });
 
