@@ -8,9 +8,9 @@
 <!-- Served by public/sw.js when a page cannot load offline. Self-contained: no fonts or scripts from the build, tokens copied from globals.css. -->
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <style>
-:root { --ground: #f5f5f3; --stage: #e8e7e3; --ink: #121211; --muted: #4e4d48; --faint: #5e5d57; --accent: #2b5a9a; --primary: #171716; --primary-hover: #2c2b29; --on-primary: #ffffff; color-scheme: light; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ground: #0c0c0b; --stage: #1d1d1b; --ink: #f0efec; --muted: #aeada7; --faint: #9c9a94; --accent: #8db0e0; --primary: #f0efec; --primary-hover: #d9d8d3; --on-primary: #0f0f0e; color-scheme: dark; } }
-:root[data-theme="dark"] { --ground: #0c0c0b; --stage: #1d1d1b; --ink: #f0efec; --muted: #aeada7; --faint: #9c9a94; --accent: #8db0e0; --primary: #f0efec; --primary-hover: #d9d8d3; --on-primary: #0f0f0e; color-scheme: dark; }
+:root { --ground: #dde6ed; --stage: #cfdae3; --ink: #27374d; --muted: #45596b; --faint: #475d70; --accent: #526d82; --primary: #27374d; --primary-hover: #34475f; --on-primary: #ffffff; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ground: #27374d; --stage: #223146; --ink: #dde6ed; --muted: #b4c5d0; --faint: #b4c5d0; --accent: #9db2bf; --primary: #dde6ed; --primary-hover: #c7d4de; --on-primary: #27374d; color-scheme: dark; } }
+:root[data-theme="dark"] { --ground: #27374d; --stage: #223146; --ink: #dde6ed; --muted: #b4c5d0; --faint: #b4c5d0; --accent: #9db2bf; --primary: #dde6ed; --primary-hover: #c7d4de; --on-primary: #27374d; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--ground); color: var(--ink); }
 body { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); font: 16px/1.5 Arial, Helvetica, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }

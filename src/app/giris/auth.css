@@ -33,7 +33,7 @@
 .auth-reveal:focus-visible { outline-offset: -2px; }
 .auth-fields .btn { margin-top: var(--s2); min-height: var(--touch); }
 .auth-switch, .auth-consent { margin: 0; font-size: var(--fs-body); color: var(--muted); }
-.auth-consent a, .auth-switch a { color: var(--accent); }
+.auth-consent a, .auth-switch a { color: var(--ink); }
 /* After the form the thumb goes here: a 44px target, not an 18px line. */
 .auth-switch a { display: inline-flex; align-items: center; min-height: var(--touch); padding-inline: var(--s1); margin-inline: calc(var(--s1) * -1); font-weight: var(--w-medium); }
 
