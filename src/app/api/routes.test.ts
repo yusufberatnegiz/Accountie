@@ -221,6 +221,13 @@ describe("POST /api/exports", () => {
     expect(q.markExported).toHaveBeenCalledWith(USER, [ID]);
   });
 
+  it("ay seçiliyken yalnız o ayın onaylı fişleri istenir; bozuk ay 400", async () => {
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", lines }]);
+    expect((await exportsRoute.POST(json({ month: "2026-10" }, "POST"))).status).toBe(200);
+    expect(q.listForExport).toHaveBeenCalledWith(USER, "firm-1", undefined, "2026-10");
+    expect((await exportsRoute.POST(json({ month: "2026-13" }, "POST"))).status).toBe(400);
+  });
+
   it("onaylı fiş yoksa 404", async () => {
     vi.mocked(q.listForExport).mockResolvedValue([]);
     expect((await exportsRoute.POST(json({}, "POST"))).status).toBe(404);

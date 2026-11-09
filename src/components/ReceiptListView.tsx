@@ -140,7 +140,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
           </div>
           <LucaMeter label="Fiş" value={ready.length} max={MAX_RECEIPTS_PER_FILE} />
           <LucaMeter label="Satır" value={readyLines} max={MAX_LINES_PER_FILE} />
-          {ready.length ? <ExportButton label="Luca için indir" /> : <p className="muted small">Onayladığınız fişler bu dosyaya girer.</p>}
+          {ready.length ? <ExportButton label="Luca için indir" month={month} /> : <p className="muted small">Onayladığınız fişler bu dosyaya girer.</p>}
           <details className="howto" open={all.length === 0 || undefined}>
             <summary>Luca&apos;da yükleme adımları</summary>
             <ol className="guide">
@@ -150,6 +150,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
             </ol>
             <p className="muted small">İndirilen fişler Aktarıldı olur. Luca dosyayı reddederse Aktarıldı sekmesinden tekrar indirin. Dosya düzeni Luca&apos;nın resmi şablonuyla henüz doğrulanmadı; ilk yüklemede önizlemedeki kodları ve tutarları fişle karşılaştırın.</p>
           </details>
+          <Link className="btn btn-ghost" href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link>
         </section>
 
         {byAccount.length ? (

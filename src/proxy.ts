@@ -71,7 +71,8 @@ async function panelSession(request: NextRequest, headers: Headers): Promise<Nex
   const { data } = await supabase.auth.getUser();
   if (data?.user) return response;
   const to = new URL("/giris", request.url);
-  const back = safeNextPath(request.nextUrl.pathname);
+  const ay = request.nextUrl.searchParams.get("ay");
+  const back = safeNextPath(request.nextUrl.pathname + (ay ? `?ay=${ay}` : "")) ?? safeNextPath(request.nextUrl.pathname);
   if (back && back !== AFTER_LOGIN) to.searchParams.set("sonra", back);
   return NextResponse.redirect(to);
 }

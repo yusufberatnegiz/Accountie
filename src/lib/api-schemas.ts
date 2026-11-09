@@ -17,7 +17,7 @@ export const LineInputSchema = z.object({
 
 export const PatchReceiptSchema = z.object({ lines: z.array(LineInputSchema).min(1).max(100) });
 
-export const ExportSchema = z.object({ receiptIds: z.array(z.uuid()).max(500).optional(), firmId: z.uuid().optional() });
+export const ExportSchema = z.object({ receiptIds: z.array(z.uuid()).max(500).optional(), firmId: z.uuid().optional(), month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional() });
 
 const ALLOWED_RULE_KEYS = new Map(
   [...rulesToRows(DEFAULT_RULES), { kind: "vat", key: "8", label: "%8 KDV" }, { kind: "vat", key: "18", label: "%18 KDV" }]

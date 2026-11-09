@@ -193,13 +193,13 @@ export async function deleteDraft(userId: string, id: string): Promise<boolean> 
  * Approved receipts (or the given approved/exported ones) with their lines, oldest first. One Luca file is one firm's, so
  * `firmId` limits it; the extension passes null and gets every firm's, each tagged with its firm's name.
  */
-export async function listForExport(userId: string, firmId: string | null, ids?: readonly string[]) {
+export async function listForExport(userId: string, firmId: string | null, ids?: readonly string[], month?: string) {
   const db = getDb();
   const mine = firmId ? and(eq(receipts.userId, userId), eq(receipts.firmId, firmId)) : eq(receipts.userId, userId);
   const rows = await db.select({ id: receipts.id, firmName: firms.name }).from(receipts).leftJoin(firms, eq(firms.id, receipts.firmId))
     .where(ids?.length
       ? and(mine, inArray(receipts.id, [...ids]), inArray(receipts.status, ["approved", "exported"]))
-      : and(mine, eq(receipts.status, "approved")))
+      : and(mine, eq(receipts.status, "approved"), month ? eq(RECEIPT_MONTH, month) : undefined))
     .orderBy(asc(receipts.receiptDate), asc(receipts.createdAt));
   if (rows.length === 0) return [];
   const lines = await db.select({ ...lineColumns, receiptId: journalLines.receiptId }).from(journalLines)
@@ -276,4 +276,19 @@ export async function monthCounts(userId: string, month: string): Promise<Map<st
     out.set(r.firmId, c);
   }
   return out;
+}
+
+/** The firm's receipts sent to Luca in one month, with the lines the muavin should show (Evrak No as written to Luca). */
+export async function listExportedForCheck(userId: string, firmId: string, month: string) {
+  const db = getDb();
+  const rows = await db.select({ id: receipts.id, vendorName: receipts.vendorName }).from(receipts)
+    .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), eq(receipts.status, "exported"), eq(RECEIPT_MONTH, month)))
+    .orderBy(asc(receipts.receiptDate), asc(receipts.createdAt)).limit(2000);
+  if (rows.length === 0) return [];
+  const lines = await db.select({ receiptId: journalLines.receiptId, accountCode: journalLines.accountCode, debitKurus: journalLines.debitKurus, creditKurus: journalLines.creditKurus, documentNo: journalLines.documentNo })
+    .from(journalLines).where(and(eq(journalLines.userId, userId), inArray(journalLines.receiptId, rows.map((r) => r.id)))).orderBy(asc(journalLines.lineNo));
+  return rows.map((r) => {
+    const own = lines.filter((l) => l.receiptId === r.id);
+    return { id: r.id, vendorName: r.vendorName, documentNo: own[0]?.documentNo ?? "", lines: own.map(({ accountCode, debitKurus, creditKurus }) => ({ accountCode, debitKurus, creditKurus })) };
+  });
 }

@@ -693,7 +693,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .vendor-rules-who .tnum { font-size: var(--fs-small); font-weight: 400; color: var(--muted); }
 .vendor-rules-account { min-width: 0; overflow-wrap: anywhere; }
 .read-learned { display: grid !important; gap: 2px; } /* the note reads as a sentence under its label, not a right-aligned figure */
-.read-learned dd { text-align: left; color: var(--accent); font-weight: 400; }
+.read-learned dd { text-align: left; color: var(--muted); font-weight: 400; } /* blue stays for figures that go to Luca; only the link is a link */
 @media (max-width: 640px) { .vendor-rules-row { grid-template-columns: minmax(0, 1fr) auto; } .vendor-rules-account { grid-column: 1; } .vendor-rules-row .btn { grid-column: 2; grid-row: 1 / 3; } }
 
 /* Month: the picker beside the title, and the month close on each firm row. */
@@ -707,3 +707,17 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .firms-month { flex: 0 1 auto; font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; }
 .firms-month[data-state="bekleyen"] { color: var(--warn-ink); font-weight: var(--w-medium); }
 .firms-month[data-state="tamam"] { color: var(--positive); }
+
+/* Muavin karşılaştırması: the upload, then the summary and only what needs a look in Luca. Reads at measure, not full width. */
+.canvas-reconcile { max-width: 920px; }
+.reconcile-upload, .reconcile-result { display: grid; gap: var(--s3); padding: var(--s5); }
+.reconcile-form { display: grid; gap: var(--s4); justify-items: start; }
+.reconcile-form .stack { display: grid; gap: var(--s2); width: 100%; max-width: 480px; }
+.reconcile-summary { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); margin: 0; font-size: var(--fs-section); font-variant-numeric: tabular-nums; color: var(--muted); }
+.reconcile-summary [data-state="tamam"] { color: var(--positive); }
+.reconcile-summary [data-state="bekleyen"] { color: var(--warn-ink); font-weight: var(--w-medium); }
+.reconcile-group { display: grid; gap: var(--s2); padding-top: var(--s4); border-top: 1px solid var(--rule); }
+.reconcile-group h3 { margin: 0; font-size: var(--fs-body); font-weight: var(--w-strong); }
+.reconcile-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.reconcile-group ul ul { padding-left: var(--s4); color: var(--muted); font-size: var(--fs-small); gap: 2px; }
+.reconcile-group a { color: var(--ink); overflow-wrap: anywhere; }

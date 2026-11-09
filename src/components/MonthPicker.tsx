@@ -17,6 +17,7 @@ export function MonthPicker({ months, value, path, allLabel = "Bütün aylar" }:
         router.push(q ? `${path}?${q}` : path);
       }}>
         {allLabel ? <option value="">{allLabel}</option> : null}
+        {value && !months.includes(value) ? <option value={value}>{monthLabel(value)}</option> : null}
         {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
       </select>
     </label>

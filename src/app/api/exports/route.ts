@@ -15,9 +15,9 @@ export async function POST(request: Request) {
   if (!body.success) return fail("Geçersiz istek.", 400);
 
   // Unbalanced receipts never reach a file, even if approved earlier.
-  // One file is one firm: chosen receipts are the user's own ids (one receipt's screen, one list page); otherwise the page's firm.
+  // One file is one firm: chosen receipts are the user's own ids (one receipt's screen, one list page); otherwise the page's firm, in the month the list shows.
   const firmId = body.data.receiptIds?.length ? null : (await activeFirm(userId, body.data.firmId)).firm.id;
-  const receipts = (await listForExport(userId, firmId, body.data.receiptIds)).filter((r) => !approvalProblem(r.lines));
+  const receipts = (await listForExport(userId, firmId, body.data.receiptIds, body.data.month)).filter((r) => !approvalProblem(r.lines));
   if (receipts.length === 0) return fail("Aktarılacak onaylı fiş yok.", 404);
 
   // shortcut: one file per request (Luca limit 50 fiş / 400 satır); the client asks again while X-Remaining-Receipts > 0. Upgrade to a zip if users want one download.

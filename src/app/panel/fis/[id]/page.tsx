@@ -21,8 +21,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     nextDraft(userId, receipt.firmId, id.data),
     receipt.taxNumber && receipt.firmId ? getVendorRule(userId, receipt.firmId, receipt.taxNumber) : null,
   ]);
-  // Named only while the receipt still carries it: a line changed since by hand is the user's own choice.
-  const learned = vendor && receipt.lines.some((l) => l.accountCode === vendor.accountCode && l.debitKurus > 0) ? vendor : null;
+  // Named only on a draft that still carries it: an approved receipt's account is its own approval, a line changed by hand the user's choice.
+  const learned = vendor && receipt.status === "draft" && receipt.lines.some((l) => l.accountCode === vendor.accountCode && l.debitKurus > 0) ? vendor : null;
 
   return (
     <AppShell current="fis" email={user.email} firmId={receipt.firmId}>

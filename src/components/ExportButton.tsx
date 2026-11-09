@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { addTransitionType, startTransition, useState } from "react";
 
-export function ExportButton({ receiptIds, label = "Luca için indir", primary = false }: { receiptIds?: string[]; label?: string; primary?: boolean }) {
+export function ExportButton({ receiptIds, month, label = "Luca için indir", primary = false }: { receiptIds?: string[]; month?: string; label?: string; primary?: boolean }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -11,7 +11,7 @@ export function ExportButton({ receiptIds, label = "Luca için indir", primary =
   async function download() {
     setBusy(true);
     setMessage("");
-    const res = await fetch("/api/exports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(receiptIds ? { receiptIds } : { firmId: document.querySelector<HTMLElement>(".app")?.dataset.firm }) }).catch(() => null);
+    const res = await fetch("/api/exports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(receiptIds ? { receiptIds } : { firmId: document.querySelector<HTMLElement>(".app")?.dataset.firm, month: month || undefined }) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) {
       const body = res ? await res.json().catch(() => null) : null;
