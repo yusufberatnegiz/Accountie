@@ -1,6 +1,6 @@
 // New tables only. The live database also holds older app tables (profiles, notes, favorites...); never touch them.
 import { sql } from "drizzle-orm";
-import { bigint, boolean, date, index, integer, jsonb, pgPolicy, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { bigint, boolean, date, index, integer, jsonb, pgPolicy, pgTable, text, timestamp, uniqueIndex, uuid, smallint } from "drizzle-orm/pg-core";
 import type { Warning } from "@/lib/journal";
 
 // Defense in depth: the app connects as table owner (bypasses RLS), so every query also filters by user_id.
@@ -137,6 +137,8 @@ export const gibCredentials = pgTable("gib_credentials", {
   passwordSealed: text("password_sealed").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  // GİB refusals since the last successful login, whatever the day: two in a row remove the login (src/app/api/gib/earsiv).
+  failedLogins: smallint("failed_logins").notNull().default(0),
 }, (t) => [
   uniqueIndex("gib_credentials_firm_idx").on(t.firmId),
   index("gib_credentials_user_idx").on(t.userId),

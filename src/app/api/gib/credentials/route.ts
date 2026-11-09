@@ -7,7 +7,7 @@ import { activeFirm } from "@/lib/firm";
 import { login, logout, PortalError } from "@/lib/gib/earsiv";
 import { seal, secretContext, secretKey } from "@/lib/gib/secret";
 import { fail, readJson, unauthorized } from "@/lib/http";
-import { allow, under } from "@/lib/rate-limit";
+import { allow, clientIp, under } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -23,6 +23,7 @@ const SaveSchema = z.object({
  * stored, so it is never retried into a lockout. The login is sealed before it reaches the database and never sent back.
  */
 export async function PUT(request: Request) {
+  const net = clientIp(request.headers);
   const user = await getSessionUser();
   if (!user) return unauthorized();
   const userId = user.id;
@@ -35,9 +36,9 @@ export async function PUT(request: Request) {
   if (body.data.firma && body.data.firma !== firm.id) return fail("Firma bulunamadı.", 404);
   if (!firm.taxNumber) return fail("Önce Firmalar'da bu firmanın VKN'sini girin.", 422);
   const isNew = !(Date.now() - user.createdAt.getTime() >= 24 * 60 * 60_000);
-  if (!(await under("gibCodeFail", body.data.kullaniciKodu)) || !(await under("gibUserFail", userId)) || !(await allow("gib", userId))
-    || !(await allow("gibFirm", firm.id)) || (isNew && !(await allow("gibNew", userId))) || !(await allow("gibUserTry", userId)) || !(await allow("gibCodeTry", body.data.kullaniciKodu))
-    || !(await allow("gibGlobal", "all"))) {
+  if (!(await under("gibCodeFail", body.data.kullaniciKodu)) || !(await under("gibUserFail", userId)) || !(await under("gibIp", net)) || !(await under("gibGlobal", "all"))
+    || !(await allow("gib", userId)) || !(await allow("gibFirm", firm.id)) || (isNew && !(await allow("gibNew", userId))) || !(await allow("gibIpTry", net))
+    || !(await allow("gibUserTry", userId)) || !(await allow("gibCodeTry", body.data.kullaniciKodu))) {
     return fail("Çok fazla deneme yapıldı. Bir süre bekleyin; GİB hesabı kilitlenmesin.", 429);
   }
 
@@ -46,7 +47,9 @@ export async function PUT(request: Request) {
   } catch (e) {
     if (!(e instanceof PortalError)) throw e;
     // Only GİB's refusals fill the shared and the per-user failure buckets (a network error is nobody's guess).
-    if (e.kind !== "portal") { await allow("gibCodeFail", body.data.kullaniciKodu); await allow("gibUserFail", userId); }
+    if (e.kind !== "portal") {
+      for (const [kind, subject] of [["gibCodeFail", body.data.kullaniciKodu], ["gibUserFail", userId], ["gibIp", net], ["gibGlobal", "all"]] as const) await allow(kind, subject);
+    }
     return fail(e.message, e.kind === "auth" || e.kind === "locked" ? 422 : 502);
   }
   try {

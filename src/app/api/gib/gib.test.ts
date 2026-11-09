@@ -10,10 +10,10 @@ vi.mock("@/lib/auth/session", () => ({
 }));
 vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), getRules: vi.fn(), getVendorRule: vi.fn(), hasDuplicateReceipt: vi.fn(),
-  getGibCredential: vi.fn(), saveGibCredential: vi.fn(), deleteGibCredential: vi.fn(), touchGibCredential: vi.fn(),
+  getGibCredential: vi.fn(), saveGibCredential: vi.fn(), deleteGibCredential: vi.fn(), touchGibCredential: vi.fn(), countGibFailure: vi.fn(),
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: vi.fn() }));
-vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), under: vi.fn() }));
+vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), under: vi.fn(), clientIp: () => "203.0.113.9" }));
 
 const session = await import("@/lib/auth/session");
 const q = await import("@/db/queries");
@@ -159,7 +159,7 @@ describe("POST /api/gib/earsiv", () => {
     expect(q.touchGibCredential).toHaveBeenCalledWith("user-a", FIRM.id);
   });
 
-  it("eski oturumla çekilmez (403); ağ hatası sayılmaz, GİB'in her reddi sayılır ve günün ikinci reddi bağlantıyı siler", async () => {
+  it("eski oturumla çekilmez (403); ağ hatası sayılmaz, GİB'in her reddi kalıcı olarak sayılır ve arada başarı olmadan ikinci ret bağlantıyı siler", async () => {
     const calls = portal();
     vi.mocked(session.signedInWithin).mockResolvedValueOnce(false);
     expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(403);
@@ -170,7 +170,10 @@ describe("POST /api/gib/earsiv", () => {
     expect(q.deleteGibCredential).not.toHaveBeenCalled();
     // A refusal GİB worded otherwise (maintenance) counts; the second one in a day removes the login.
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: "1", messages: [{ text: "Sistem bakımda" }] }), { status: 200 })));
-    vi.mocked(allow).mockImplementation(async (kind) => kind !== "gibPullFail");
+    vi.mocked(q.countGibFailure).mockResolvedValueOnce(1); // the first refusal: kept
+    expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(502);
+    expect(q.deleteGibCredential).not.toHaveBeenCalled();
+    vi.mocked(q.countGibFailure).mockResolvedValueOnce(2); // a second one with no success between, on any day: removed
     expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(422);
     expect(q.deleteGibCredential).toHaveBeenCalledWith("user-a", FIRM.id);
   });

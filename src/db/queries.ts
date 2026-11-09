@@ -294,7 +294,14 @@ export async function deleteGibCredential(userId: string, firmId: string): Promi
 }
 
 export async function touchGibCredential(userId: string, firmId: string): Promise<void> {
-  await getDb().update(gibCredentials).set({ lastUsedAt: new Date() }).where(and(eq(gibCredentials.userId, userId), eq(gibCredentials.firmId, firmId)));
+  await getDb().update(gibCredentials).set({ lastUsedAt: new Date(), failedLogins: 0 }).where(and(eq(gibCredentials.userId, userId), eq(gibCredentials.firmId, firmId)));
+}
+
+/** One more GİB refusal for the stored login; returns the count since its last successful login. */
+export async function countGibFailure(userId: string, firmId: string): Promise<number> {
+  const [row] = await getDb().update(gibCredentials).set({ failedLogins: sql`${gibCredentials.failedLogins} + 1` })
+    .where(and(eq(gibCredentials.userId, userId), eq(gibCredentials.firmId, firmId))).returning({ n: gibCredentials.failedLogins });
+  return row?.n ?? 0;
 }
 
 /** One month across all of the user's firms: receipts per firm and status, for the month close on the Firmalar screen. */

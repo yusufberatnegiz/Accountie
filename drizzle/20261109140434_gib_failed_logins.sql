@@ -1,0 +1,1 @@
+ALTER TABLE "gib_credentials" ADD COLUMN "failed_logins" smallint DEFAULT 0 NOT NULL;

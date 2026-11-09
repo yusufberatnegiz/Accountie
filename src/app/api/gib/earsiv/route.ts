@@ -1,7 +1,7 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { deleteGibCredential, getGibCredential, getRules, touchGibCredential } from "@/db/queries";
+import { countGibFailure, deleteGibCredential, getGibCredential, getRules, touchGibCredential } from "@/db/queries";
 import { getUserId, RECENT_SIGN_IN_MS, SIGN_IN_AGAIN, signedInWithin } from "@/lib/auth/session";
 import { importInvoiceFiles, type Skipped } from "@/lib/efatura-import";
 import { activeFirm } from "@/lib/firm";
@@ -75,16 +75,16 @@ export async function POST(request: Request) {
   } catch (e) {
     if (!(e instanceof PortalError)) throw e;
     if (e.kind === "portal") return fail(e.message, 502); // no answer from GİB: nobody's guess, nothing counted or deleted
-    // Any refusal from GİB counts; a stored login refused twice in a day is removed before it can lock the client's account.
+    // Any refusal from GİB counts; a stored login refused twice with no success between is removed, however far apart.
     await allow("gibCodeFail", username);
-    const again = !(await allow("gibPullFail", firm.id));
+    const again = (await countGibFailure(userId, firm.id)) >= 2;
     if (e.kind === "auth" || e.kind === "locked") {
       await deleteGibCredential(userId, firm.id);
       return fail(e.kind === "locked" ? "GİB bu hesabın kilitli olduğunu bildirdi; bağlantı silindi. Hesabı GİB'de açtıktan sonra yeniden girin." : "GİB kayıtlı şifreyi kabul etmedi; hesap kilitlenmesin diye bağlantı silindi. Yeni şifreyi girin.", 422);
     }
     if (again) {
       await deleteGibCredential(userId, firm.id);
-      return fail("GİB girişi bugün art arda başarısız oldu; hesap kilitlenmesin diye bağlantı kaldırıldı. Şifreyi kontrol edip yeniden girin.", 422);
+      return fail("GİB girişi art arda iki kez reddedildi; hesap kilitlenmesin diye bağlantı kaldırıldı. Şifreyi kontrol edip yeniden girin.", 422);
     }
     return fail(e.message, 502);
   }

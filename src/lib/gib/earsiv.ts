@@ -64,6 +64,11 @@ async function postForm(path: string, form: Record<string, string>): Promise<Rec
 export async function login(username: string, password: string): Promise<string> {
   const json = await postForm("/earsiv-services/assos-login", { assoscmd: portalHost() === HOSTS.test ? "login" : "anologin", rtype: "json", userid: username, sifre: password, sifre2: password, parola: "1" });
   if (typeof json.token === "string" && /^[A-Za-z0-9._-]{8,512}$/.test(json.token)) return json.token;
+  if (typeof json.token === "string" && json.token.length <= 4096) {
+    // GİB let us in but the token looks new: close that session and stop, without counting a refusal.
+    await postForm("/earsiv-services/assos-login", { assoscmd: "logout", rtype: "json", token: json.token }).catch(() => undefined);
+    throw new PortalError("GİB e-Arşiv portalı değişmiş görünüyor; çekim şimdilik yapılamıyor.", "portal");
+  }
   throw loginRefusal(json);
 }
 
