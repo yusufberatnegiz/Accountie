@@ -12,8 +12,8 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait",
     // A manifest has one splash colour and cannot follow the theme; any value flashes for one of the two looks.
     // Light ground kept on purpose: the system default for most phones, and the splash lasts only until the first paint.
-    background_color: "#fbf5ea",
-    theme_color: "#fbf5ea",
+    background_color: "#f8f4ed",
+    theme_color: "#f8f4ed",
     lang: "tr",
     dir: "ltr",
     categories: ["business", "finance", "productivity"],

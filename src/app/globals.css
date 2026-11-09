@@ -26,13 +26,13 @@
   /* Control heights */
   --control-sm: 32px; --control: 40px; --touch: 44px; --row: 44px;
 
-  /* Colour roles (YON 23.27): neutrals are a low-chroma warm stone (R > G > B, saturation under 16% so no surface reads as cream),
-     ink is ledger blue-black (the logo's #141a22), ledger blue is the one accent. */
-  --ground: #fbf5ea;
+  /* Colour roles (YON 23.27): neutrals are a calm cream (owner 2026-11-09, from talkd; toned down after jury tur 25), white cards, sand fields;
+     ink is brown-black, secondary tones mixed from it; ledger blue is the one accent. */
+  --ground: #f8f4ed;
   --surface: #ffffff;
-  --raised: #fdf9f2;
-  --stage: #f3e8d8;
-  --active: #ece0cd;
+  --raised: #fcfaf6;
+  --stage: #efe9df;
+  --active: #ebe4d8;
   --border: #d3cbc0;
   --rule: #e5ded3;
   --control-edge: #8a7f72; /* 4:1 on white, WCAG 1.4.11 */
@@ -48,7 +48,7 @@
   --primary-hover: #3a322a;
   --on-primary: #ffffff;
   --secondary: var(--stage);
-  --secondary-hover: #e7d8c3; --bar-control: var(--surface); /* a secondary control in the bar over the auth split field (1.03:1 there as --secondary) */
+  --secondary-hover: #e4dccf; --bar-control: var(--surface); /* a secondary control in the bar over the auth split field (1.03:1 there as --secondary) */
   /* A chosen chip (hero pickers, showcase tabs), and a secondary button on a lifted card (--lift). */
   --chip-on: var(--accent); --on-chip-on: var(--on-accent-field);
   --lift-control: var(--secondary); --lift-control-hover: var(--secondary-hover);
@@ -61,25 +61,26 @@
   --negative-soft: #fbeceb;
   --warn-ink: #8a4b00;
   --warn-bg: #fbecd0;
-  --warn-edge: #b08540; /* 3.2:1 on --raised: #fdf9f2;
+  --warn-edge: #b08540; /* 3.2:1 on --raised: the edge is the note's only mark */
+  --focus: var(--accent);
   --scrim: rgb(36 30 24 / 0.5);
   --shadow-float: 0 8px 24px rgb(36 30 24 / 0.12), 0 1px 3px rgb(36 30 24 / 0.08);  /* taste-skill-ignore: only for floating menus, dialogs, skip link */
   /* Depth (YON 23.1): ground > plate > surface > raised, one tone step each. --plate is the slab a product window sits on;
      --bezel the phone frame (dark in both themes); --edge-hi a 1px top inner light on raised dark surfaces (none in light). */
-  --plate: #f5ecdf; --bezel: #17130f; --edge-hi: transparent;
+  --plate: #f3eee6; --bezel: #17130f; --edge-hi: transparent;
   /* Only for the one layer per screen that overlaps another (YON 23.1); everything else separates by tone. */
   --shadow-lift: 0 24px 48px -12px rgb(36 30 24 / 0.18), 0 2px 6px rgb(36 30 24 / 0.06); /* taste-skill-ignore: lift layer, YON 23.1 */
 
   /* Bir fişin yolu (YON 23.18): three steps of stone, then the one Luca blue field (the file going to Luca); the shell card over them. */
-  --path-1: var(--plate); --path-2: #efe3d1; --path-3: #e7d8c3; --path-4: #132e63; --path-shell: var(--lift);
+  --path-1: var(--plate); --path-2: #ebe5da; --path-3: #e4dccf; --path-4: #132e63; --path-shell: var(--lift);
   /* The showcase field and its plate. */
   --show-ground: var(--deep); --show-plate: var(--deep-raised);
   /* On the navy field the chosen tab is a light chip (a blue one was 2.2:1 there, jury tur 11); dark keeps the blue chip. */
-  --show-chip-on: #f3e8d8; --show-on-chip-on: #17130f;
+  --show-chip-on: #efe9df; --show-on-chip-on: #17130f;
   /* The auth screens: a clear second field beside the ground. */
-  --split: #f3e8d8;
+  --split: #efe9df;
   /* The showcase's product card and its tab tray (YON.md 16.5). */
-  --show-field: var(--stage); --show-card: var(--surface); --show-card-edge: var(--border); --show-tabs: #e7d8c3; --show-raised: var(--raised); --show-ink: var(--ink);
+  --show-field: var(--stage); --show-card: var(--surface); --show-card-edge: var(--border); --show-tabs: #e4dccf; --show-raised: var(--raised); --show-ink: var(--ink);
   /* Product cards on a field (hero, auth stage, the four path fields): white in light; in dark one tone above their field (colour.md 6). */
   --lift: var(--surface); --lift-edge: var(--border); --path-card-1: var(--surface); --path-card-2: var(--surface); --path-card-3: var(--surface); --path-card-4: var(--surface); --foot-name: var(--ink);
   /* Inside a product fragment ([data-ui]): the same surfaces in light; in dark a step above the plate, so a window sits on its plate as in light (YON 23.14). */
@@ -91,7 +92,7 @@
      In light the window and the lifted layer are both white and the lift separates them; in dark the lifted layer is a clear tone step. */
   --ui-lift: var(--surface); --ui-lift-edge: var(--border);
   /* The closing call: a stone field (the page has one blue field, the Luca file in the path). */
-  --cta-field: #efe3d1;
+  --cta-field: #ebe5da;
   /* Photographs (YON 23.19): square corners (6.5), a mat in the plate tone while loading and around letterboxing, the lift only
      when the photo overlaps another layer, and a lowered white point in dark (--photo-dim is opacity over the mat). */
   --photo-radius: 0px; --photo-mat: var(--plate); --photo-shadow: var(--shadow-lift); --photo-dim: 1;
