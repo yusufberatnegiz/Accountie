@@ -1,6 +1,6 @@
 // Accountie service worker: only an offline page for navigations. Nothing else is cached,
 // so receipts, rules and session pages always come from the server (no user data in Cache Storage).
-const CACHE = "cevrimdisi-v3";
+const CACHE = "cevrimdisi-v4";
 const OFFLINE = "/cevrimdisi.html";
 
 self.addEventListener("install", (event) => {
