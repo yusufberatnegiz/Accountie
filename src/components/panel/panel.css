@@ -26,7 +26,7 @@
 .rail-item[aria-current="page"] { background: color-mix(in srgb, var(--ink) 10%, var(--ground)); color: var(--ink); }
 .rail-item[aria-current="page"] .rail-label { font-weight: var(--w-strong); }
 /* And a ledger-blue mark, so the current tab outranks the filled "Fiş çek" pill beside it (jury tur 8: 1.1:1 band only). */
-.rail-item[aria-current="page"]::before { content: ""; position: absolute; inset-inline: 20px; top: 3px; height: 2px; border-radius: 2px; background: var(--accent-strong); }
+.rail-item[aria-current="page"]::before { content: ""; position: absolute; inset-inline: 20px; top: 3px; height: 2px; border-radius: 2px; background: var(--accent); }
 .rail-item:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
 .rail-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 /* The label is always shown under the icon, on desktop and phone alike: nothing to hover for, nothing to dismiss. */
@@ -243,7 +243,7 @@ details.side-block:not([open]) { gap: 0; }
 .journal .col-del { width: 64px; }
 .journal .col-del .btn { min-height: var(--control); }
 @media (pointer: coarse) { .journal .col-del .btn { min-height: var(--touch); min-width: var(--touch); } }
-.journal .field.to-luca { color: var(--accent-strong); font-weight: var(--w-strong); }
+.journal .field.to-luca { color: var(--accent); }
 .journal .field.num { text-align: right; }
 /* Account name: a one-line value in a textarea, so a long name wraps (two lines on the phone) instead of being cut. */
 .journal .name-field { display: block; min-height: var(--control); padding-block: 8px; line-height: 1.4; resize: none; overflow: hidden; field-sizing: content; }
@@ -532,7 +532,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 /* Locked (approved) lines read as plain text on the column edges, and what goes to Luca stays ledger blue. */
 /* The edge goes in the same frame as the padding (no 180ms fade), so no frame shows text against a still-drawn border. */
 .journal .field:disabled, .form-grid .field:disabled { padding-left: 0; padding-right: 0; transition: none; }
-.journal .field.to-luca:disabled { color: var(--accent-strong); }
+.journal .field.to-luca:disabled { color: var(--accent); }
 
 /* ---------- Motion (docs/design/YON.md 15): feedback 120-200ms, stamp and view transitions at most 320ms ---------- */
 @media (prefers-reduced-motion: no-preference) {
@@ -672,7 +672,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .firms-row[data-active] { background: var(--accent-soft); border-radius: var(--radius-control); border-top-color: transparent; }
 .firms-row[data-active] + .firms-row { border-top-color: transparent; }
 /* The open firm carries the system's selection blue, like the rail's current item and the chosen tab. */
-.firms-on { flex: none; font-size: var(--fs-small); font-weight: var(--w-strong); color: var(--accent-strong); }
+.firms-on { flex: none; font-size: var(--fs-small); font-weight: var(--w-strong); color: var(--accent); }
 .firms-name { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; font-weight: var(--w-medium); }
 .firms-vkn { font-size: var(--fs-small); font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 .firms-add { display: grid; gap: var(--s4); padding: var(--s5); grid-column: 2; grid-row: 2; }

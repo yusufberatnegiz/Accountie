@@ -183,57 +183,6 @@
   color-scheme: dark;
 }
 
-/* ---------- The slate palette inside the product pictures (owner, 2026-11-09): the page and the app keep the warm stone and
-   near-black above; the windows, phone, paper card, path and showcase fields ([data-ui] and their field tokens) use
-   #27374D #526D82 #9DB2BF #DDE6ED, light in light theme and the reverse amounts in dark. ---------- */
-:root {
-  --deep: #27374d; --deep-raised: #34475f; --bezel: #1b2636; --plate: #d3dde6;
-  --path-1: #dde6ed; --path-2: #c9d5df; --path-3: #9db2bf; --path-4: #27374d; --path-shell: #f4f7fa;
-  --path-card-1: #f4f7fa; --path-card-2: #f4f7fa; --path-card-3: #f4f7fa; --path-card-4: #f4f7fa;
-  --show-ground: #27374d; --show-plate: #34475f; --show-chip-on: #dde6ed; --show-on-chip-on: #27374d;
-  --show-field: #dde6ed; --show-card: #f4f7fa; --show-card-edge: #c3d0da; --show-tabs: #c9d5df; --show-raised: #eaf0f4; --show-ink: #27374d;
-  --paper-lit: #cfdae3;
-}
-[data-ui] {
-  --surface: #f4f7fa; --raised: #eaf0f4; --stage: #dde6ed; --active: #d6e0e8; --border: #9db2bf; --rule: #c6d3dc; --control-edge: #526d82;
-  --ink: #27374d; --muted: #45596b; --faint: #475d70; --accent: #526d82; --accent-strong: #27374d; --accent-soft: #cfdae3;
-  --primary: #27374d; --primary-hover: #34475f; --on-primary: #ffffff; --secondary: #cfdae3; --secondary-hover: #b9c9d4;
-  --chip-on: #27374d; --on-chip-on: #ffffff; --lift: #f4f7fa; --lift-edge: #c3d0da; --lift-control: #cfdae3; --lift-control-hover: #b9c9d4;
-  --ui-surface: #f4f7fa; --ui-raised: #eaf0f4; --ui-border: #c3d0da; --ui-rule: #dbe4eb; --ui-lift: #f4f7fa; --ui-lift-edge: #c3d0da;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-look]) {
-    --deep: #1d2a3b; --deep-raised: #2d3f57; --bezel: #526d82; --plate: #223146;
-    --path-1: #1d2a3b; --path-2: #223146; --path-3: #2d3f57; --path-4: #34485f; --path-shell: #34485f;
-    --path-card-1: #2d3f57; --path-card-2: #34485f; --path-card-3: #3a4f68; --path-card-4: #3a4f68;
-    --show-ground: #223146; --show-plate: #2d3f57; --show-chip-on: #9db2bf; --show-on-chip-on: #27374d;
-    --show-field: #223146; --show-card: #2d3f57; --show-card-edge: rgb(221 230 237 / 0.14); --show-tabs: #34485f; --show-raised: #34485f; --show-ink: #dde6ed;
-    --paper-lit: #b8c7d2;
-  }
-  :root:not([data-look]) [data-ui] {
-    --surface: #2d3f57; --raised: #34485f; --stage: #223146; --active: #3a4f68; --border: #526d82; --rule: #3a4f68; --control-edge: #8aa1b1;
-    --ink: #dde6ed; --muted: #b4c5d0; --faint: #b4c5d0; --accent: #9db2bf; --accent-strong: #dde6ed; --accent-soft: #3a4f68;
-    --primary: #dde6ed; --primary-hover: #c7d4de; --on-primary: #27374d; --secondary: #3a4f68; --secondary-hover: #445b75;
-    --chip-on: #9db2bf; --on-chip-on: #27374d; --lift: #2d3f57; --lift-edge: rgb(221 230 237 / 0.14); --lift-control: #3a4f68; --lift-control-hover: #445b75;
-    --ui-surface: #2d3f57; --ui-raised: #34485f; --ui-border: rgb(221 230 237 / 0.14); --ui-rule: rgb(221 230 237 / 0.09); --ui-lift: #34485f; --ui-lift-edge: rgb(221 230 237 / 0.16);
-  }
-}
-:root[data-look="dark"] {
-  --deep: #1d2a3b; --deep-raised: #2d3f57; --bezel: #526d82; --plate: #223146;
-  --path-1: #1d2a3b; --path-2: #223146; --path-3: #2d3f57; --path-4: #34485f; --path-shell: #34485f;
-  --path-card-1: #2d3f57; --path-card-2: #34485f; --path-card-3: #3a4f68; --path-card-4: #3a4f68;
-  --show-ground: #223146; --show-plate: #2d3f57; --show-chip-on: #9db2bf; --show-on-chip-on: #27374d;
-  --show-field: #223146; --show-card: #2d3f57; --show-card-edge: rgb(221 230 237 / 0.14); --show-tabs: #34485f; --show-raised: #34485f; --show-ink: #dde6ed;
-  --paper-lit: #b8c7d2;
-}
-:root[data-look="dark"] [data-ui] {
-  --surface: #2d3f57; --raised: #34485f; --stage: #223146; --active: #3a4f68; --border: #526d82; --rule: #3a4f68; --control-edge: #8aa1b1;
-  --ink: #dde6ed; --muted: #b4c5d0; --faint: #b4c5d0; --accent: #9db2bf; --accent-strong: #dde6ed; --accent-soft: #3a4f68;
-  --primary: #dde6ed; --primary-hover: #c7d4de; --on-primary: #27374d; --secondary: #3a4f68; --secondary-hover: #445b75;
-  --chip-on: #9db2bf; --on-chip-on: #27374d; --lift: #2d3f57; --lift-edge: rgb(221 230 237 / 0.14); --lift-control: #3a4f68; --lift-control-hover: #445b75;
-  --ui-surface: #2d3f57; --ui-raised: #34485f; --ui-border: rgb(221 230 237 / 0.14); --ui-rule: rgb(221 230 237 / 0.09); --ui-lift: #34485f; --ui-lift-edge: rgb(221 230 237 / 0.16);
-}
-
 @media (max-width: 1100px) { :root { --page-margin: 32px; } }
 @media (max-width: 640px) { :root { --page-margin: 16px; --section-gap: var(--s8); } } /* 96px left half-empty screens between sections on a phone (jury tur 8) */
 
@@ -280,8 +229,7 @@ h3 { font-size: var(--fs-body); font-weight: var(--w-strong); }
 .num, .num-font, .tnum { font-variant-numeric: tabular-nums; }
 .num { text-align: right; }
 /* The product's colour rule: what goes to Luca is ledger blue. */
-/* What goes to Luca stands out by the darkest tone and weight, not by another hue (the palette has four colours). */
-.to-luca { color: var(--accent-strong); font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
+.to-luca { color: var(--accent); font-variant-numeric: tabular-nums; }
 .from-receipt { color: var(--thermal-ink); font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); }
 .faint { color: var(--faint); }
