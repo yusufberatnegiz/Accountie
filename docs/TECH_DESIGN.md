@@ -127,8 +127,11 @@ Tümü oturum ister (yoksa 401), girdiyi Zod ile doğrular, başka kullanıcın�
 | `POST /api/receipts/[id]/approve` | | Dengesizse 422 |
 | `POST /api/receipts/[id]/reopen` | | `approved` -> `draft` |
 | `DELETE /api/receipts/[id]` | | Sadece `draft` |
-| `POST /api/exports` | `{ receiptIds?: uuid[] }` (boşsa tüm onaylılar) | `.xlsx` veya birden çok dosya için `.zip`; fişler `exported` |
+| `POST /api/exports` | `{ receiptIds?: uuid[], firmId?, month? }` (boşsa firmanın onaylıları, `month` verilirse yalnız o ay) | `.xlsx` veya birden çok dosya için `.zip`; fişler `exported` |
 | `GET /api/account-rules`, `PUT /api/account-rules` | Kural listesi | |
+| `POST /api/reconcile` | multipart `dosya` (Luca muavin `.xlsx`, en fazla 4 MB, açılmış 60 MB), `ay`, `firma` | Ayın aktarılan fişleri muavinle: uyuyor / tutar farkı / Luca'da yok / Accountie'de yok. Dosya saklanmaz. Dakikada 30. |
+| `POST /api/efatura` | multipart `dosya` (UBL-TR `.xml` ya da `.zip`, en fazla 4 MB, 300 fatura), `firma` | Bu firmaya kesilmiş TRY satış faturaları taslak fiş olur (320.01 alacak, BT FT); diğerleri nedeniyle `skipped`. GİB'e bağlanılmaz; DOCTYPE/ENTITY reddedilir; zip `zlib maxOutputLength` ile açılır. Dakikada 10, günde 50. |
+| `DELETE /api/vendor-rules/[id]` | | Kullanıcının öğrenilmiş satıcı kuralını siler |
 | `POST /api/extension-tokens` | Oturum | Yeni eklenti anahtarı (`acx_...`, 12 saat). Önceki anahtar silinir. Anahtar bir kez gösterilir, veritabanında SHA-256 özeti tutulur. |
 | `DELETE /api/extension-tokens` | Oturum | Kullanıcının anahtarını iptal eder (204) |
 | `GET /api/extension/receipts` | `Authorization: Bearer acx_...` (çerez kabul edilmez) | Anahtar sahibinin onaylı, dengeli fişleri (en fazla 50), satırlar Luca Fiş Detayı biçiminde metin |
