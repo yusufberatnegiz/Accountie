@@ -10,7 +10,7 @@ const RESULT = {
   created: 14,
   skipped: [
     { file: "ABC2026000000398.xml", number: "ABC2026000000398", reason: "Firmanın kendi kestiği fatura (satış); gider olarak alınmadı." },
-    { file: "XYZ2026000001207.xml", number: "XYZ2026000001207", reason: "TEVKIFAT faturası; elle girin." },
+    { file: "XYZ2026000001207.xml", number: "XYZ2026000001207", reason: "Tevkifatlı fatura; elle girin." },
     { file: "ABC2026000000412.xml", number: "ABC2026000000412", reason: "Bu fatura zaten yüklü." },
   ],
 };

@@ -21,7 +21,7 @@ export default async function PreviewReconcile({ searchParams }: { searchParams:
       <PreviewTheme tema={tema} />
       <PreviewApi approved={[]} />
       <AppShell current="fisler" base="/onizleme/panel" email={PREVIEW_EMAIL} firmId={PREVIEW_FIRM.id}>
-        <ReconcileView key={month} firmName={PREVIEW_FIRM.name} month={month} months={recentMonths(new Date("2026-09-15"))} base="/onizleme/panel" preview={bos || month !== "2026-09" ? undefined : result} />
+        <ReconcileView firmName={PREVIEW_FIRM.name} month={month} months={recentMonths(new Date("2026-09-15"))} base="/onizleme/panel" preview={bos || month !== "2026-09" ? undefined : result} />
       </AppShell>
     </>
   );

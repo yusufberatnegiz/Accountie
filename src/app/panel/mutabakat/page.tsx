@@ -18,8 +18,7 @@ export default async function ReconcilePage({ searchParams }: { searchParams: Pr
   const month = isMonth(ay) ? ay : currentMonth(now);
   return (
     <AppShell current="fisler" email={user.email} firmId={firm.id}>
-      {/* Keyed by month: a comparison never stays on screen under another month. */}
-      <ReconcileView key={month} firmName={firm.name} month={month} months={recentMonths(now)} />
+      <ReconcileView firmName={firm.name} month={month} months={recentMonths(now)} />
     </AppShell>
   );
 }

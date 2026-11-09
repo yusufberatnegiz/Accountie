@@ -72,7 +72,7 @@ describe("hangi faturalar taslak olur", () => {
     expect(skipReason(parseInvoice(invoiceXml({ supplier: FIRM, customer: "2222222224" })), FIRM)).toMatch(/satış/);
     expect(skipReason(parseInvoice(invoiceXml({ customer: "3333333339" })), FIRM)).toMatch(/Alıcı/);
     expect(skipReason(parseInvoice(invoiceXml({ currency: "USD" })), FIRM)).toMatch(/Döviz/);
-    expect(skipReason(parseInvoice(invoiceXml({ type: "IADE" })), FIRM)).toMatch(/IADE/);
+    expect(skipReason(parseInvoice(invoiceXml({ type: "IADE" })), FIRM)).toMatch(/İade faturası/);
     expect(skipReason(parseInvoice(invoiceXml({ extra: "<cac:WithholdingTaxTotal><cbc:TaxAmount>20</cbc:TaxAmount></cac:WithholdingTaxTotal>" })), FIRM)).toMatch(/Tevkifat/);
   });
 

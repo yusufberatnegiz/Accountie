@@ -17,6 +17,9 @@ export function ReconcileView({ firmName, month, months, base = "/panel", previe
   const [result, setResult] = useState<Result | null>(preview ?? null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Another month: its own comparison starts empty (reset during render, so the month picker is not rebuilt and keeps focus).
+  const [forMonth, setForMonth] = useState(month);
+  if (forMonth !== month) { setForMonth(month); setResult(null); setError(""); }
 
   async function check(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -52,10 +55,10 @@ export function ReconcileView({ firmName, month, months, base = "/panel", previe
       <section className="panel reconcile-upload" aria-labelledby="muavin-yukle">
         <h2 id="muavin-yukle">Muavin dosyası</h2>
         <p className="muted">Luca&apos;da bu firmanın {monthLabel(month)} muavinini (191, 770 ya da hepsi) Excel olarak indirin ve buraya yükleyin. Dosya saklanmaz.</p>
-        <form className="reconcile-form" onSubmit={check} aria-describedby={error ? "muavin-hata" : undefined}>
-          <label className="stack"><span>Excel dosyası (.xlsx, en fazla 4 MB)</span><input className="field field-file" type="file" aria-invalid={error ? true : undefined} name="dosya" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required /></label>
+        <form key={month} className="reconcile-form" onSubmit={check}>
+          <label className="stack"><span>Excel dosyası (.xlsx, en fazla 4 MB)</span><input className="field field-file" type="file" aria-invalid={error ? true : undefined} aria-describedby={error ? "muavin-hata" : undefined} name="dosya" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required /></label>
           {error ? <p id="muavin-hata" className="alert alert-error" role="alert">{error}</p> : null}
-          <button type="submit" className="btn btn-primary" aria-disabled={busy || undefined}>{busy ? "Karşılaştırılıyor…" : "Karşılaştır"}</button>
+          <button type="submit" className="btn btn-primary" aria-busy={busy || undefined}>{busy ? <>Karşılaştırılıyor <span className="wait-dots" aria-hidden="true"><i /><i /><i /></span></> : "Karşılaştır"}</button>
         </form>
         {/* Present from the start so screen readers announce the outcome; the result panel itself appears all at once. */}
         <p className="visually-hidden" role="status">{busy ? "Karşılaştırılıyor" : result ? `Karşılaştırma bitti: ${ok.length} fiş uyuyor, ${off.length} tutar farkı, ${missing.length} fiş Luca'da yok, ${result.extra.length} kayıt Accountie'de yok.` : ""}</p>

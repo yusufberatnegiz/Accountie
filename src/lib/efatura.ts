@@ -118,6 +118,11 @@ export function parseInvoice(xml: string): Invoice {
   };
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  IADE: "İade faturası", TEVKIFAT: "Tevkifatlı fatura", ISTISNA: "İstisna faturası", OZELMATRAH: "Özel matrahlı fatura",
+  IHRACKAYITLI: "İhraç kayıtlı fatura", SGK: "SGK faturası", KOMISYONCU: "Komisyoncu faturası", TEVKIFATIADE: "Tevkifat iade faturası",
+};
+
 /**
  * Why an invoice is not turned into a draft, or null when it is. Only plain TRY purchase invoices addressed to this firm:
  * returns, withholding and special types need a müşavir's hand, and a sales invoice of the firm's own must never become an expense.
@@ -126,7 +131,7 @@ export function skipReason(inv: Invoice, firmTaxNumber: string | null): string |
   if (firmTaxNumber && inv.supplier.taxNumber === firmTaxNumber) return "Firmanın kendi kestiği fatura (satış); gider olarak alınmadı.";
   if (firmTaxNumber && inv.customerTaxNumber !== firmTaxNumber) return "Alıcı VKN'si bu firmanınki değil.";
   if (inv.currency !== "TRY") return `Döviz faturası (${inv.currency || "para birimi yok"}); elle girin.`;
-  if (inv.type !== "SATIS") return `${inv.type || "Tipi belirsiz"} faturası; elle girin.`;
+  if (inv.type !== "SATIS") return `${TYPE_LABELS[inv.type] ?? (inv.type ? `${inv.type} tipli fatura` : "Tipi belirsiz fatura")}; elle girin.`;
   if (inv.withholding) return "Tevkifatlı fatura; elle girin.";
   if (inv.payableKurus <= 0) return "Ödenecek tutar yok.";
   return null;
