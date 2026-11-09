@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
-import { MuavinError, readMuavin, reconcile, unzippedSize, type ReceiptForCheck } from "./muavin";
+import { unzippedSize } from "../zip";
+import { MuavinError, readMuavin, reconcile, type ReceiptForCheck } from "./muavin";
 
 const book = async (rows: (string | number | Date | null)[][]) => {
   const b = new ExcelJS.Workbook();

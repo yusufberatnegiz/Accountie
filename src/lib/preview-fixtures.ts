@@ -9,12 +9,13 @@ export const PREVIEW_FIRMS: Firm[] = FIRM_NAMES.map((name, i) => ({
 })).sort((a, b) => a.name.localeCompare(b.name, "tr"));
 export const PREVIEW_FIRM = PREVIEW_FIRMS.find((f) => f.id.endsWith("000000000001"))!;
 
-const base = (id: string, data: ReceiptData, extra: Partial<ReceiptDetail> = {}): ReceiptDetail => {
+const base = (id: string, data: ReceiptData, extra: Partial<ReceiptDetail> = {}): ReceiptDetail => ({ ...baseFields(id, data), ...extra } as ReceiptDetail);
+const baseFields = (id: string, data: ReceiptData) => {
   const { lines, warnings } = buildJournalLines(data, DEFAULT_RULES);
   return {
     id, firmId: PREVIEW_FIRM.id, status: "draft", vendorName: data.vendorName, receiptNo: data.receiptNo, receiptDate: data.date, totalKurus: data.totalKurus,
     createdAt: new Date("2026-09-05T17:30:00Z"), taxNumber: "1111111114", paymentMethod: data.paymentMethod, category: data.category,
-    warnings, lines, ...extra,
+    warnings, lines, model: null as string | null,
   };
 };
 

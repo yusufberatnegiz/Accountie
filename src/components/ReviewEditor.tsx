@@ -185,6 +185,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     const nextLink = document.querySelector<HTMLElement>(".bar-next-draft");
     (nextLink?.offsetParent ? nextLink : statusLine.current)?.focus({ preventScroll: true });
   }, [receipt.status]);
+  const invoice = receipt.model === "e-fatura"; // imported from GİB XML (src/app/api/efatura): there is no photo to compare
   // Photo exists only in this tab; server render has none.
   const photo = useSyncExternalStore(noSubscribe, () => getPhoto(receipt.id), () => undefined);
   // Below 1100px the photo is a thumbnail over the lines that opens in place, so a line and the receipt share one screen.
@@ -461,7 +462,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           ) : null}
           {/* The receipt as read; the journal line in focus lights the figure it came from. */}
           <section className="panel read" id="fis-kaynak" aria-labelledby="okunan-baslik">
-            <h2 id="okunan-baslik">Fişten okunan</h2>
+            <h2 id="okunan-baslik">{invoice ? "e-Faturadan alınan" : "Fişten okunan"}</h2>
             <dl className="read-values">
               <div><dt>Satıcı</dt><dd>{read(receipt.vendorName)}</dd></div>
               {/* Why the expense account is not the category's: an earlier approval of this seller taught it (src/lib/vendor-rule.ts). */}
@@ -473,7 +474,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
               <div className="read-sum" data-src="vat" {...traced("vat")}><dt>KDV</dt><dd className="num">{formatTrAmount(readVat)}</dd></div>
               <div className="read-sum read-total" data-src="total" {...traced("total")}><dt>Toplam</dt><dd className="num">{readTotal !== null ? <>{formatTrAmount(readTotal)}<span className="formula">{PAYMENT_LABELS[receipt.paymentMethod as PaymentMethod] ?? "Ödeme okunamadı"}</span></> : read(null)}</dd></div>
             </dl>
-            <p className="muted small">{photo ? "Fotoğraf yalnızca bu cihazda, bu oturumda görünür." : "Fotoğraf bu cihazda değil; sunucu fotoğrafı saklamaz. Satırları kâğıt fişle karşılaştırın."}</p>
+            <p className="muted small">{invoice ? "Faturanın XML'inden alındı; satırları faturayla karşılaştırın." : photo ? "Fotoğraf yalnızca bu cihazda, bu oturumda görünür." : "Fotoğraf bu cihazda değil; sunucu fotoğrafı saklamaz. Satırları kâğıt fişle karşılaştırın."}</p>
           </section>
         </div>
 

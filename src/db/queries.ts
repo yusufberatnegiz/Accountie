@@ -147,7 +147,7 @@ export async function listReceipts(userId: string, firmId: string, { status, mon
 
 export async function getReceipt(userId: string, id: string) {
   const db = getDb();
-  const [receipt] = await db.select({ ...summaryColumns, firmId: receipts.firmId, taxNumber: receipts.taxNumber, paymentMethod: receipts.paymentMethod, category: receipts.category, warnings: receipts.warnings })
+  const [receipt] = await db.select({ ...summaryColumns, firmId: receipts.firmId, taxNumber: receipts.taxNumber, paymentMethod: receipts.paymentMethod, category: receipts.category, warnings: receipts.warnings, model: receipts.model })
     .from(receipts).where(and(eq(receipts.id, id), eq(receipts.userId, userId)));
   if (!receipt) return null;
   const lines: JournalLine[] = await db.select(lineColumns).from(journalLines)
