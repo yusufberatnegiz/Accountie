@@ -11,6 +11,7 @@ export type Cell = string | number | null;
 export class XlsxError extends Error {}
 
 const MAX_COLUMNS = 200;
+const MAX_CELLS = 400_000; // across all sheets: a month's muavin has a few thousand
 const MAX_TEXT = 1000; // per string and per cell: a muavin cell is a code, a date, a description or an amount
 
 function parse(xml: string, on: { open: (name: string, attrs: Record<string, string>) => void; text: (t: string) => void; close: (name: string) => void }) {
@@ -32,7 +33,7 @@ const columnOf = (ref: string | undefined, fallback: number) => {
   return n - 1;
 };
 
-/** Each worksheet's rows (in sheet order), each row its cells by column (A = 0). Throws XlsxError on anything unreadable. */
+/** Each worksheet's rows (in sheet order), each row its cells by column (A = 0; sparse). Throws XlsxError on anything unreadable. */
 export function readSheets(file: Buffer, { maxBytes, maxRows }: { maxBytes: number; maxRows: number }): Cell[][][] {
   let files: { name: string; data: Buffer }[];
   try {
@@ -59,6 +60,7 @@ export function readSheets(file: Buffer, { maxBytes, maxRows }: { maxBytes: numb
     .filter(([, n]) => n).sort((a, b) => Number(a[1]) - Number(b[1]));
   if (sheets.length === 0) throw new XlsxError("sheet");
 
+  let rowCount = 0, cellCount = 0; // budgets for the whole workbook, not per sheet
   return sheets.map(([name]) => {
     const rows: Cell[][] = [];
     let row: Cell[] | null = null, col = 0, type = "", value = "", reading = false;
@@ -66,9 +68,10 @@ export function readSheets(file: Buffer, { maxBytes, maxRows }: { maxBytes: numb
       parse(byName.get(name)!, {
         open: (n, a) => {
           if (n === "row") {
-            if (rows.length >= maxRows) throw new XlsxError("rows");
+            if (++rowCount > maxRows) throw new XlsxError("rows");
             row = []; rows.push(row); col = 0;
           } else if (n === "c") {
+            if (++cellCount > MAX_CELLS) throw new XlsxError("rows");
             col = columnOf(a.r, row ? row.length : 0); type = a.t ?? ""; value = "";
           } else if (n === "v" || (n === "t" && type === "inlineStr")) reading = true;
         },
@@ -86,7 +89,7 @@ export function readSheets(file: Buffer, { maxBytes, maxRows }: { maxBytes: numb
     } catch (e) {
       throw e instanceof XlsxError ? e : new XlsxError("sheet");
     }
-    return rows.map((r) => Array.from(r, (c) => c ?? null));
+    return rows; // sparse: a cell never written is a hole, never a filled slot
   });
 }
 

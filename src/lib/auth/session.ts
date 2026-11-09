@@ -28,7 +28,8 @@ export async function inRecovery(now = Date.now()): Promise<boolean> {
 }
 
 /** Actions on a client's GİB account ask for a sign-in within this window. */
-export const RECENT_SIGN_IN_MS = 12 * 60 * 60_000;
+export const RECENT_SIGN_IN_MS = 12 * 60 * 60_000; // pulling invoices
+export const FRESH_SIGN_IN_MS = 30 * 60_000; // saving or removing a client's GİB login
 export const SIGN_IN_AGAIN = "Güvenlik için yeniden giriş yapın: Hesap menüsünden çıkış yapıp tekrar girin, sonra bu işlemi yineleyin.";
 
 /**

@@ -22,7 +22,7 @@ export type Invoice = {
 
 export class InvoiceError extends Error {}
 
-const MAX_DEPTH = 40;
+const MAX_DEPTH = 24; // UBL with its XAdES signature nests about 13 deep
 const MAX_ELEMENTS = 20_000; // a real UBL invoice has a few thousand at most
 const MAX_TEXT = 1000;
 
@@ -58,18 +58,18 @@ export function parseInvoice(xml: string): Invoice {
     if (++elements > MAX_ELEMENTS) throw new InvoiceError("XML'de çok fazla öğe var; fatura değil.");
     if (node.name.length > 100) throw new InvoiceError("XML'de geçersiz öğe adı; fatura değil."); // UBL's longest is under 40
     if (path.length >= MAX_DEPTH) throw new InvoiceError("XML çok derin; fatura değil.");
-    path.push(local(node.name));
+    path.push(path.length ? `${path[path.length - 1]}/${local(node.name)}` : local(node.name)); // each depth keeps its full path
     attrs.push(node.attributes as Record<string, string>);
     text = "";
     if (path.length === 1 && path[0] !== "Invoice") throw new InvoiceError("Dosya bir e-Fatura (UBL Invoice) değil.");
-    if (path.join("/") === "Invoice/WithholdingTaxTotal") withholding = true;
-    if (path.join("/") === "Invoice/TaxTotal/TaxSubtotal") sub = {};
+    if (path[path.length - 1] === "Invoice/WithholdingTaxTotal") withholding = true;
+    if (path[path.length - 1] === "Invoice/TaxTotal/TaxSubtotal") sub = {};
   });
   parser.on("text", (t) => {
     if (text.length < MAX_TEXT) text += t.slice(0, MAX_TEXT - text.length);
   });
   parser.on("closetag", () => {
-    const p = path.join("/");
+    const p = path[path.length - 1];
     const value = text.trim();
     const scheme = (attrs[attrs.length - 1]?.schemeID ?? "").toUpperCase();
     if (["Invoice/ID", "Invoice/IssueDate", "Invoice/InvoiceTypeCode", "Invoice/DocumentCurrencyCode", "Invoice/LegalMonetaryTotal/PayableAmount",

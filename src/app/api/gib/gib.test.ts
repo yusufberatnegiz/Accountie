@@ -6,7 +6,7 @@ import { invoiceXml } from "@/lib/efatura.test";
 import { open, seal, secretContext } from "@/lib/gib/secret";
 
 vi.mock("@/lib/auth/session", () => ({
-  getUserId: vi.fn(), getSessionUser: vi.fn(), signedInWithin: vi.fn(), RECENT_SIGN_IN_MS: 1, SIGN_IN_AGAIN: "yeniden giriş",
+  getUserId: vi.fn(), getSessionUser: vi.fn(), signedInWithin: vi.fn(), RECENT_SIGN_IN_MS: 1, FRESH_SIGN_IN_MS: 2, SIGN_IN_AGAIN: "yeniden giriş",
 }));
 vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), getRules: vi.fn(), getVendorRule: vi.fn(), hasDuplicateReceipt: vi.fn(),

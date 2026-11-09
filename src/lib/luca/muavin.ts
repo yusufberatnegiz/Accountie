@@ -11,6 +11,7 @@ export type MuavinRow = { accountCode: string | null; documentNo: string; date: 
 export class MuavinError extends Error {}
 
 const MAX_ROWS = 20_000;
+const HEADER_ROWS = 50;
 const key = (s: string) => s.toLocaleLowerCase("tr").replace(/[^a-zçğıöşü]/g, "").replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u");
 // Header names per field, best first. Luca's own "Fiş No" is its journal number, not the receipt's Evrak No, so it is never used.
 const HEADERS = {
@@ -55,9 +56,10 @@ export async function readMuavin(file: Buffer): Promise<MuavinRow[]> {
     let cols: Partial<Record<keyof typeof HEADERS, number>> | null = null;
     let account: string | null = null;
     const rows: MuavinRow[] = [];
-    for (const cells of sheet) {
+    for (const [index, cells] of sheet.entries()) {
       if (!cols) {
-        const keys = cells.map((c) => key(text(c)));
+        if (index >= HEADER_ROWS) break; // a header is near the top; past it this sheet is not a muavin
+        const keys = cells.map((c) => (c == null ? "" : key(text(c))));
         const found: Partial<Record<keyof typeof HEADERS, number>> = {};
         for (const [field, names] of Object.entries(HEADERS) as [keyof typeof HEADERS, readonly string[]][]) {
           const i = names.map((name) => keys.indexOf(name)).find((x) => x >= 0);

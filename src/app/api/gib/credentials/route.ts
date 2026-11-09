@@ -2,7 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { deleteGibCredential, saveGibCredential } from "@/db/queries";
-import { getSessionUser, getUserId, RECENT_SIGN_IN_MS, SIGN_IN_AGAIN, signedInWithin } from "@/lib/auth/session";
+import { FRESH_SIGN_IN_MS, getSessionUser, getUserId, SIGN_IN_AGAIN, signedInWithin } from "@/lib/auth/session";
 import { activeFirm } from "@/lib/firm";
 import { login, logout, PortalError } from "@/lib/gib/earsiv";
 import { seal, secretContext, secretKey } from "@/lib/gib/secret";
@@ -26,7 +26,7 @@ export async function PUT(request: Request) {
   const user = await getSessionUser();
   if (!user) return unauthorized();
   const userId = user.id;
-  if (!(await signedInWithin(RECENT_SIGN_IN_MS))) return fail(SIGN_IN_AGAIN, 403);
+  if (!(await signedInWithin(FRESH_SIGN_IN_MS))) return fail(SIGN_IN_AGAIN, 403);
   const key = secretKey();
   if (!key) return fail("e-Arşiv bağlantısı bu sunucuda açık değil.", 503);
   const body = SaveSchema.safeParse(await readJson(request));
@@ -62,10 +62,11 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   const userId = await getUserId();
   if (!userId) return unauthorized();
-  if (!(await signedInWithin(RECENT_SIGN_IN_MS))) return fail(SIGN_IN_AGAIN, 403);
+  if (!(await signedInWithin(FRESH_SIGN_IN_MS))) return fail(SIGN_IN_AGAIN, 403);
   const wanted = new URL(request.url).searchParams.get("firma");
   const { firm } = await activeFirm(userId, wanted);
   if (wanted !== null && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never fall back to another firm's login
+  if (!(await allow("gib", userId))) return fail("Çok fazla işlem yapıldı. Bir süre bekleyin.", 429);
   await deleteGibCredential(userId, firm.id);
   return new NextResponse(null, { status: 204 });
 }

@@ -107,6 +107,20 @@ describe("muavin okuyucusu yapısal bombalara karşı", () => {
   });
 });
 
+describe("seyrek hücre bombası", () => {
+  it("her satırda tek uzak hücre: satırlar şişirilmez, başlık 50 satırda aranır, hızla reddedilir", async () => {
+    const { deflateRawSync } = await import("node:zlib");
+    const sheet = `<worksheet><sheetData>${'<row><c r="GR1" t="inlineStr"><is><t>x</t></is></c></row>'.repeat(19_000)}</sheetData></worksheet>`;
+    const data = Buffer.from(sheet), body = deflateRawSync(data), name = Buffer.from("xl/worksheets/sheet1.xml");
+    const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(8, 8); lh.writeUInt32LE(body.length, 18); lh.writeUInt32LE(data.length, 22); lh.writeUInt16LE(name.length, 26);
+    const ch = Buffer.alloc(46); ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(8, 10); ch.writeUInt32LE(body.length, 20); ch.writeUInt32LE(data.length, 24); ch.writeUInt16LE(name.length, 28);
+    const e = Buffer.alloc(22); e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(1, 8); e.writeUInt16LE(1, 10); e.writeUInt32LE(46 + name.length, 12); e.writeUInt32LE(30 + name.length + body.length, 16);
+    const started = Date.now();
+    await expect(readMuavin(Buffer.concat([lh, name, body, ch, name, e]))).rejects.toThrow(MuavinError);
+    expect(Date.now() - started).toBeLessThan(1500);
+  });
+});
+
 describe("mutabakat", () => {
   const r = (id: string, documentNo: string, lines: [string, number, number][]): ReceiptForCheck =>
     ({ id, vendorName: `ÖRNEK ${id}`, documentNo, lines: lines.map(([accountCode, debitKurus, creditKurus]) => ({ accountCode, debitKurus, creditKurus })) });
