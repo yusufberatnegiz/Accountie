@@ -1,6 +1,5 @@
 import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
-import { unzippedSize } from "../zip";
 import { MuavinError, readMuavin, reconcile, type ReceiptForCheck } from "./muavin";
 
 const book = async (rows: (string | number | Date | null)[][]) => {
@@ -44,12 +43,9 @@ describe("muavin okuma", () => {
 
   it("açılınca sınırı aşan ya da dizini bozuk zip'i ayrıştırmadan reddeder", async () => {
     const ok = await book([["Evrak No", "Borç", "Alacak"]]);
-    expect(unzippedSize(ok)).toBeGreaterThan(0);
-    expect(unzippedSize(ok)).toBeLessThan(1_000_000);
     const huge = Buffer.from(ok);
     const end = huge.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
     huge.writeUInt32LE(0xfffffff0, huge.readUInt32LE(end + 16) + 24); // first entry claims ~4 GB unpacked
-    expect(unzippedSize(huge)).toBeGreaterThan(60 * 1024 * 1024);
     await expect(readMuavin(huge)).rejects.toThrow(MuavinError);
     // A header that understates the size: the capped inflate still stops it before exceljs sees the file.
     const { deflateRawSync } = await import("node:zlib");
@@ -58,7 +54,16 @@ describe("muavin okuma", () => {
     const cd = Buffer.alloc(46); cd.writeUInt32LE(0x02014b50, 0); cd.writeUInt16LE(8, 10); cd.writeUInt32LE(body.length, 20); cd.writeUInt32LE(10, 24); cd.writeUInt16LE(1, 28);
     const eocd = Buffer.alloc(22); eocd.writeUInt32LE(0x06054b50, 0); eocd.writeUInt16LE(1, 8); eocd.writeUInt16LE(1, 10); eocd.writeUInt32LE(47, 12); eocd.writeUInt32LE(31 + body.length, 16);
     await expect(readMuavin(Buffer.concat([lie, Buffer.from("x"), body, cd, Buffer.from("x"), eocd]))).rejects.toThrow(MuavinError);
-    expect(unzippedSize(Buffer.from([0x50, 0x4b, 3, 4]))).toBe(Infinity);
+    // A folder name in the central directory and a file name in the local header: JSZip would inflate it, so it is refused.
+    const two = (central: string, localName: string) => {
+      const c = Buffer.from(central), l = Buffer.from(localName);
+      const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(8, 8); lh.writeUInt32LE(body.length, 18); lh.writeUInt32LE(0, 22); lh.writeUInt16LE(l.length, 26);
+      const ch = Buffer.alloc(46); ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(8, 10); ch.writeUInt32LE(body.length, 20); ch.writeUInt32LE(0, 24); ch.writeUInt16LE(c.length, 28);
+      const e = Buffer.alloc(22); e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(1, 8); e.writeUInt16LE(1, 10); e.writeUInt32LE(46 + c.length, 12); e.writeUInt32LE(30 + l.length + body.length, 16);
+      return Buffer.concat([lh, l, body, ch, c, e]);
+    };
+    await expect(readMuavin(two("xl/", "xl/worksheets/sheet1.xml"))).rejects.toThrow(MuavinError);
+    await expect(readMuavin(two("xl/", "xl/"))).rejects.toThrow(MuavinError); // a "folder" that inflates to 20 MB is still capped
   });
 });
 

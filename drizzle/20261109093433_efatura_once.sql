@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "receipts_efatura_once_idx" ON "receipts" USING btree ("user_id","tax_number","receipt_no","receipt_date") WHERE model = 'e-fatura' and tax_number is not null;

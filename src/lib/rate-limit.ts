@@ -1,5 +1,6 @@
-import { createHash } from "node:crypto";
-import { hitRateLimit } from "@/db/queries";
+import { createHash, createHmac } from "node:crypto";
+import { hitRateLimit, rateLimitOk } from "@/db/queries";
+import { secretKey } from "@/lib/gib/secret";
 
 const MIN = 60_000;
 
@@ -26,8 +27,13 @@ export const LIMITS = {
   // GİB logins: per user, and per firm so repeated tries never lock a client's GİB account.
   gib: [[5, MIN], [60, 24 * 60 * MIN]],
   gibFirm: [[3, 10 * MIN], [12, 24 * 60 * MIN]],
-  // Per GİB user code across every Accountie user: the app can never become a way to guess or lock someone's GİB login.
-  gibCode: [[3, 60 * MIN], [6, 24 * 60 * MIN]],
+  // Failed GİB logins per GİB user code, across every Accountie user: the app can never be used to guess or lock someone's
+  // GİB login. Only failures count, so nobody can use up the bucket of a code someone else has stored and verified.
+  gibCodeFail: [[2, 60 * MIN], [3, 24 * 60 * MIN]],
+  gibPull: [[10, 60 * MIN], [40, 24 * 60 * MIN]], // per user and stored code
+  gibPullFail: [[2, 24 * 60 * MIN]], // a stored login failing a third time in a day is removed, whatever GİB said
+  gibNew: [[3, 24 * 60 * MIN]], // logins saved by accounts younger than a day
+  gibGlobal: [[3000, 24 * 60 * MIN]], // every login check the app sends to GİB in a day
 } as const;
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex").slice(0, 32);
@@ -52,8 +58,15 @@ export function ipBucket(ip: string): string {
   return groups.slice(0, 4).map((g) => parseInt(g, 16).toString(16)).join(":") + "::/64";
 }
 
-/** true when allowed. Keys are hashed so the table never holds an e-mail address or IP. */
-export const allow = (kind: keyof typeof LIMITS, subject: string) => {
-  const key = kind.endsWith("Ip") ? ipBucket(subject) : subject;
-  return hitRateLimit(`${kind}:${hash(key.toLowerCase())}`, LIMITS[kind]);
+// GİB user codes are short numbers a plain hash would give back: they are keyed with the server's secret instead.
+const keyOf = (kind: keyof typeof LIMITS, subject: string) => {
+  const value = (kind.endsWith("Ip") ? ipBucket(subject) : subject).toLowerCase();
+  const secret = kind.startsWith("gib") ? secretKey() : null;
+  return `${kind}:${secret ? createHmac("sha256", secret).update(value).digest("hex").slice(0, 32) : hash(value)}`;
 };
+
+/** true when allowed (and counts this attempt). Keys are hashed so the table never holds an e-mail address, IP or GİB code. */
+export const allow = (kind: keyof typeof LIMITS, subject: string) => hitRateLimit(keyOf(kind, subject), LIMITS[kind]);
+
+/** true while under the limit, without counting an attempt (for buckets that only failures fill). */
+export const under = (kind: keyof typeof LIMITS, subject: string) => rateLimitOk(keyOf(kind, subject), LIMITS[kind]);

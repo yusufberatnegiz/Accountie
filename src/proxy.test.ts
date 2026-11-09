@@ -154,3 +154,18 @@ describe("proxy panel CSP", () => {
     expect(res.headers.get("content-security-policy")).toMatch(/'strict-dynamic'/);
   });
 });
+
+describe("proxy cross-site API guard", () => {
+  const api = (method: string, headers: Record<string, string>) =>
+    proxy(new NextRequest("http://accountie.test/api/gib/credentials", { method, headers: { host: "accountie.test", ...headers } }));
+
+  it("refuses a change sent from another site's page, lets the app, the extension and reads through", async () => {
+    configBack();
+    expect((await api("PUT", { origin: "https://kotu.example" })).status).toBe(403);
+    expect((await api("POST", { origin: "null" })).status).toBe(403);
+    expect((await api("PUT", { origin: "http://accountie.test" })).status).toBe(200);
+    expect((await api("POST", {})).status).toBe(200); // no Origin (server-to-server, old clients): the cookie rules still apply
+    expect((await api("POST", { origin: "chrome-extension://abc", authorization: "Bearer acx_x" })).status).toBe(200);
+    expect((await api("GET", { origin: "https://kotu.example" })).status).toBe(200);
+  });
+});

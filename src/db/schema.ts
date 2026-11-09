@@ -46,6 +46,8 @@ export const receipts = pgTable("receipts", {
 }, (t) => [
   index("receipts_user_created_idx").on(t.userId, t.createdAt),
   index("receipts_firm_created_idx").on(t.firmId, t.createdAt),
+  // An imported invoice is saved once even when two uploads or pulls race (src/lib/efatura-import.ts); photos are not limited.
+  uniqueIndex("receipts_efatura_once_idx").on(t.userId, t.taxNumber, t.receiptNo, t.receiptDate).where(sql`model = 'e-fatura' and tax_number is not null`),
   ownerPolicy("receipts_owner"),
 ]);
 

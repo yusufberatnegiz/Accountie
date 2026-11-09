@@ -58,6 +58,9 @@ export async function importInvoiceFiles(userId: string, firm: Firm, rules: Rule
     try {
       ids.push(await createReceipt(userId, firm.id, receipt, lines));
     } catch (err) {
+      // The unique index caught a parallel upload of the same invoice.
+      const code = (err as { code?: string; cause?: { code?: string } }).cause?.code ?? (err as { code?: string }).code;
+      if (code === "23505") { skipped.push({ file: name(f), number: inv.number, reason: "Bu fatura zaten yüklü." }); continue; }
       console.error("e-fatura save failed", { error: err instanceof Error ? err.name : "unknown" });
       skipped.push({ file: name(f), number: inv.number, reason: "Kaydedilemedi; tekrar yükleyin." });
     }

@@ -53,9 +53,10 @@ describe("POST /api/reconcile", () => {
   });
 
   it("yalnız kullanıcının seçili firmasının o ayını karşılaştırır", async () => {
-    const res = await POST(post(await xlsx(), "2026-09", "f2"));
+    expect((await POST(post(await xlsx(), "2026-09", "baskasinin-firmasi"))).status).toBe(404);
+    const res = await POST(post(await xlsx(), "2026-09", "firm-1"));
     expect(res.status).toBe(200);
-    expect(activeFirm).toHaveBeenCalledWith("user-a", "f2");
+    expect(activeFirm).toHaveBeenCalledWith("user-a", "firm-1");
     expect(q.listExportedForCheck).toHaveBeenCalledWith("user-a", "firm-1", "2026-09");
     const body = await res.json();
     expect(body.results.map((r: { kind: string }) => r.kind)).toEqual(["uyuyor"]);

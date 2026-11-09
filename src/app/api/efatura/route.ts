@@ -12,7 +12,7 @@ export const maxDuration = 60;
 
 const MAX_BYTES = 4 * 1024 * 1024; // under Vercel's 4.5 MB request body limit
 const MAX_INVOICES = 300;
-const ZIP_LIMITS = { maxFiles: 1000, maxFileBytes: 5 * 1024 * 1024, maxTotalBytes: 100 * 1024 * 1024 };
+const ZIP_LIMITS = { maxFiles: 1000, maxFileBytes: 5 * 1024 * 1024, maxTotalBytes: 25 * 1024 * 1024 };
 
 /**
  * Turns e-Fatura / e-Arşiv XML the user downloaded (one .xml, or the GİB portal's / integrator's .zip) into draft receipts of
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
 
   const wanted = form?.get("firma");
   const [{ rules }, { firm }] = await Promise.all([getRules(userId), activeFirm(userId, typeof wanted === "string" ? wanted : null)]);
+  if (typeof wanted === "string" && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's data
   // Without the firm's VKN its own sales invoices and other clients' invoices could not be told apart: refuse, don't guess.
   if (!firm.taxNumber) return fail("Önce Firmalar'da bu firmanın VKN'sini girin; faturaların bu firmaya kesildiği VKN ile doğrulanır.", 422);
   const { ids, skipped } = await importInvoiceFiles(userId, firm, rules, files);

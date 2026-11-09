@@ -30,6 +30,7 @@ export async function POST(request: Request) {
   if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) return fail("Dosya Excel (.xlsx) değil. Luca'dan muavini Excel olarak indirin.", 415);
   const wanted = form?.get("firma");
   const { firm } = await activeFirm(userId, typeof wanted === "string" ? wanted : null);
+  if (typeof wanted === "string" && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's data
   try {
     const [rows, receipts] = await Promise.all([readMuavin(bytes), listExportedForCheck(userId, firm.id, month)]);
     return NextResponse.json({ firm: firm.name, month, rowCount: rows.length, ...reconcile(receipts, rows) }, { headers: { "Cache-Control": "no-store" } });

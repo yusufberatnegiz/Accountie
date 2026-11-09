@@ -5,18 +5,20 @@ import { DEFAULT_RULES } from "@/lib/default-rules";
 import { invoiceXml } from "@/lib/efatura.test";
 import { open, seal, secretContext } from "@/lib/gib/secret";
 
-vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
+vi.mock("@/lib/auth/session", () => ({
+  getUserId: vi.fn(), getSessionUser: vi.fn(), signedInWithin: vi.fn(), RECENT_SIGN_IN_MS: 1, SIGN_IN_AGAIN: "yeniden giriş",
+}));
 vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), getRules: vi.fn(), getVendorRule: vi.fn(), hasDuplicateReceipt: vi.fn(),
   getGibCredential: vi.fn(), saveGibCredential: vi.fn(), deleteGibCredential: vi.fn(), touchGibCredential: vi.fn(),
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: vi.fn() }));
-vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn() }));
+vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), under: vi.fn() }));
 
 const session = await import("@/lib/auth/session");
 const q = await import("@/db/queries");
 const { activeFirm } = await import("@/lib/firm");
-const { allow } = await import("@/lib/rate-limit");
+const { allow, under } = await import("@/lib/rate-limit");
 const credentials = await import("./credentials/route");
 const earsiv = await import("./earsiv/route");
 
@@ -53,7 +55,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.GIB_SECRET_KEY = KEY.toString("base64");
   vi.mocked(session.getUserId).mockResolvedValue("user-a");
+  vi.mocked(session.getSessionUser).mockResolvedValue({ id: "user-a", email: "a@ornek.com", createdAt: new Date("2026-01-01") });
+  vi.mocked(session.signedInWithin).mockResolvedValue(true);
   vi.mocked(allow).mockResolvedValue(true);
+  vi.mocked(under).mockResolvedValue(true);
   vi.mocked(activeFirm).mockResolvedValue({ firms: [FIRM], firm: FIRM });
   vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [] });
   vi.mocked(q.getVendorRule).mockResolvedValue(null);
@@ -69,8 +74,10 @@ afterEach(() => { vi.unstubAllGlobals(); delete process.env.GIB_SECRET_KEY; });
 describe("PUT /api/gib/credentials", () => {
   it("oturumsuz 401, anahtar yoksa 503, bozuk girdi 400; GİB'e hiç gidilmez", async () => {
     const calls = portal();
-    vi.mocked(session.getUserId).mockResolvedValueOnce(null);
+    vi.mocked(session.getSessionUser).mockResolvedValueOnce(null);
     expect((await credentials.PUT(json({ kullaniciKodu: "12345678", sifre: "x" }, "PUT"))).status).toBe(401);
+    vi.mocked(session.signedInWithin).mockResolvedValueOnce(false); // an old session cookie is not enough
+    expect((await credentials.PUT(json({ kullaniciKodu: "12345678", sifre: "x" }, "PUT"))).status).toBe(403);
     delete process.env.GIB_SECRET_KEY;
     expect((await credentials.PUT(json({ kullaniciKodu: "12345678", sifre: "x" }, "PUT"))).status).toBe(503);
     process.env.GIB_SECRET_KEY = KEY.toString("base64");
@@ -79,10 +86,11 @@ describe("PUT /api/gib/credentials", () => {
     expect(calls).toHaveLength(0);
   });
 
-  it("GİB kabul etmezse saklamaz (422)", async () => {
+  it("GİB kabul etmezse saklamaz (422) ve yalnız başarısızlık ortak koda yazılır", async () => {
     portal({ loginOk: false });
     expect((await credentials.PUT(json({ kullaniciKodu: "12345678", sifre: "yanlis" }, "PUT"))).status).toBe(422);
     expect(q.saveGibCredential).not.toHaveBeenCalled();
+    expect(vi.mocked(allow).mock.calls).toContainEqual(["gibCodeFail", "12345678"]);
   });
 
   it("GİB kabul edince mühürlü saklar, oturumu kapatır, şifreyi geri göndermez", async () => {
@@ -96,15 +104,15 @@ describe("PUT /api/gib/credentials", () => {
     expect(open(KEY, p, secretContext("user-a", FIRM.id, "sifre"))).toBe("Gizli-Şifre1");
     expect(open(KEY, u, secretContext("user-a", FIRM.id, "kullanici"))).toBe("12345678");
     expect(calls.map((c) => c.form?.get("assoscmd"))).toEqual(["anologin", "logout"]);
+    expect(vi.mocked(allow).mock.calls.map(([kind]) => kind)).not.toContain("gibCodeFail");
     expect(calls.every((c) => c.url.startsWith("https://earsivportal.efatura.gov.tr/earsiv-services/"))).toBe(true);
   });
 
-  it("deneme sınırı GİB kullanıcı kodunun kendisine de bağlı (bütün kullanıcılar için ortak); firması VKN'siz ya da başkasınınsa GİB'e gitmez", async () => {
+  it("bir kod için ortak başarısızlık kovası doluysa kimse GİB'e gidemez; başarılı kayıt kovayı doldurmaz; firması VKN'siz ya da başkasınınsa GİB'e gitmez", async () => {
     const calls = portal();
-    vi.mocked(allow).mockImplementation(async (kind) => kind !== "gibCode");
+    vi.mocked(under).mockResolvedValueOnce(false);
     expect((await credentials.PUT(json({ kullaniciKodu: "12345678", sifre: "x" }, "PUT"))).status).toBe(429);
-    expect(vi.mocked(allow).mock.calls).toContainEqual(["gibCode", "12345678"]);
-    vi.mocked(allow).mockResolvedValue(true);
+    expect(vi.mocked(under).mock.calls).toContainEqual(["gibCodeFail", "12345678"]);
     vi.mocked(activeFirm).mockResolvedValueOnce({ firms: [FIRM], firm: { ...FIRM, taxNumber: null } });
     expect((await credentials.PUT(json({ kullaniciKodu: "12345678", sifre: "x" }, "PUT"))).status).toBe(422);
     expect((await credentials.PUT(json({ firma: "00000000-0000-4000-8000-000000000009", kullaniciKodu: "12345678", sifre: "x" }, "PUT"))).status).toBe(404);
@@ -144,6 +152,17 @@ describe("POST /api/gib/earsiv", () => {
     expect(calls.filter((c) => c.url.includes("/download?"))).toHaveLength(1); // the malformed ETTN is never requested
     expect(calls.at(-1)?.form?.get("assoscmd")).toBe("logout");
     expect(q.touchGibCredential).toHaveBeenCalledWith("user-a", FIRM.id);
+  });
+
+  it("eski oturumla çekilmez (403); başka hata türünde de günün üçüncü başarısız girişi bağlantıyı siler", async () => {
+    const calls = portal();
+    vi.mocked(session.signedInWithin).mockResolvedValueOnce(false);
+    expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(403);
+    expect(calls).toHaveLength(0);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>bakım</html>", { status: 200 })));
+    vi.mocked(allow).mockImplementation(async (kind) => kind !== "gibPullFail");
+    expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(422);
+    expect(q.deleteGibCredential).toHaveBeenCalledWith("user-a", FIRM.id);
   });
 
   it("GİB kayıtlı şifreyi reddederse bağlantıyı siler ve tekrar denemez", async () => {

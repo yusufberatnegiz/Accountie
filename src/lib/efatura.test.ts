@@ -56,6 +56,7 @@ describe("e-Fatura okuma", () => {
     expect(() => parseInvoice(`<CreditNote><ID>1</ID></CreditNote>`)).toThrow(/e-Fatura/);
     expect(() => parseInvoice(`<Invoice><ID>1`)).toThrow(InvoiceError);
     expect(() => parseInvoice("<a>".repeat(100))).toThrow(InvoiceError);
+    expect(() => parseInvoice(`<Invoice>${"<a/>".repeat(25_000)}</Invoice>`)).toThrow(/çok fazla öğe/);
     const many = "<cac:TaxSubtotal><cbc:TaxableAmount>1</cbc:TaxableAmount><cbc:TaxAmount>0.2</cbc:TaxAmount><cbc:Percent>20</cbc:Percent><cac:TaxCategory><cac:TaxScheme><cbc:TaxTypeCode>0015</cbc:TaxTypeCode></cac:TaxScheme></cac:TaxCategory></cac:TaxSubtotal>".repeat(25);
     expect(() => parseInvoice(invoiceXml().replace("<cac:TaxTotal>", `<cac:TaxTotal>${many}`))).toThrow(/vergi satırı/);
   });

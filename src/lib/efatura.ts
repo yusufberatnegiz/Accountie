@@ -23,6 +23,7 @@ export type Invoice = {
 export class InvoiceError extends Error {}
 
 const MAX_DEPTH = 40;
+const MAX_ELEMENTS = 20_000; // a real UBL invoice has a few thousand at most
 const MAX_TEXT = 1000;
 
 /** "1234.5" -> 123450; a third decimal rounds half up. null when it is not a plain decimal. */
@@ -52,7 +53,9 @@ export function parseInvoice(xml: string): Invoice {
   const person: string[] = [];
 
   const parser = new SaxesParser({ xmlns: false });
+  let elements = 0;
   parser.on("opentag", (node) => {
+    if (++elements > MAX_ELEMENTS) throw new InvoiceError("XML'de çok fazla öğe var; fatura değil.");
     if (path.length >= MAX_DEPTH) throw new InvoiceError("XML çok derin; fatura değil.");
     path.push(local(node.name));
     attrs.push(node.attributes as Record<string, string>);

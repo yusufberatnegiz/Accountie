@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import type { EInvoiceResult } from "@/components/EInvoiceView";
 import { monthLabel } from "@/lib/month";
 
 export type GibState = { enabled: boolean; connected: boolean; lastUsed: string | null };
 
+const noSubscribe = () => () => {};
 const firmId = () => document.querySelector<HTMLElement>(".app")?.dataset.firm;
 
 /**
@@ -18,6 +19,8 @@ export function GibConnection({ gib, months, onResult }: { gib: GibState; months
   const [busy, setBusy] = useState<"" | "kaydet" | "cek" | "kaldir">("");
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
+  // Until React handles the form, a submit would be the browser's own (a GET with the password in the address).
+  const ready = useSyncExternalStore(noSubscribe, () => true, () => false);
 
   async function send(kind: "kaydet" | "cek" | "kaldir", init: RequestInit & { url: string }) {
     if (busy) return null;
@@ -64,7 +67,7 @@ export function GibConnection({ gib, months, onResult }: { gib: GibState; months
       {!gib.enabled ? <p className="muted">Bu sunucuda e-Arşiv bağlantısı kapalı. Faturaları dosya olarak yükleyebilirsiniz.</p> : gib.connected ? (
         <>
           <p className="muted small">Bu firma bağlı{gib.lastUsed ? `; son çekiş ${gib.lastUsed}` : ""}. Şifre şifreli saklanıyor ve hiçbir ekranda gösterilmiyor.</p>
-          <form className="reconcile-form gib-pull" onSubmit={pull}>
+          <form className="reconcile-form gib-pull" method="post" onSubmit={pull}>
             <label className="stack"><span>Ay</span>
               <select className="field" name="ay" defaultValue={months[0]}>{months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}</select>
             </label>
@@ -77,10 +80,10 @@ export function GibConnection({ gib, months, onResult }: { gib: GibState; months
       ) : (
         <>
           <p className="muted small">Firmanın e-Arşiv portalı kullanıcı kodu ve şifresi. GİB önce doğrular; yanlışsa saklanmaz. Doğruysa şifrelenerek saklanır ve bir daha gösterilmez. GİB yanlış denemelerde hesabı kilitleyebilir, bu yüzden deneme sayısı sınırlıdır. Tarayıcının bu şifreyi kaydetmesine izin vermeyin.</p>
-          <form className="reconcile-form" onSubmit={save} autoComplete="off">
+          <form className="reconcile-form" method="post" onSubmit={save} autoComplete="off">
             <label className="stack"><span>Kullanıcı kodu</span><input className="field" name="kullaniciKodu" inputMode="numeric" autoComplete="off" spellCheck={false} required pattern="[0-9A-Za-z]{4,20}" maxLength={20} /></label>
             <label className="stack"><span>Şifre</span><input className="field" name="sifre" type="password" autoComplete="off" data-1p-ignore="" data-lpignore="true" data-bwignore="" required maxLength={64} /></label>
-            <button type="submit" className="btn btn-primary" aria-disabled={busy !== "" || undefined}>{busy === "kaydet" ? "GİB ile doğrulanıyor…" : "Kaydet ve doğrula"}</button>
+            <button type="submit" className="btn btn-primary" disabled={!ready} aria-disabled={busy !== "" || undefined}>{busy === "kaydet" ? "GİB ile doğrulanıyor…" : "Kaydet ve doğrula"}</button>
           </form>
         </>
       )}

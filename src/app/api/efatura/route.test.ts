@@ -61,9 +61,10 @@ describe("POST /api/efatura", () => {
   });
 
   it("tek XML'i seçili firmanın taslağı yapar: 320 alacak, BT FT, satıcı VKN'si, uyarı", async () => {
-    const res = await POST(post(invoiceXml(), "f2"));
+    expect((await POST(post(invoiceXml(), "baskasinin-firmasi"))).status).toBe(404); // never falls back to another firm
+    const res = await POST(post(invoiceXml(), "firm-1"));
     expect(res.status).toBe(201);
-    expect(activeFirm).toHaveBeenCalledWith("user-a", "f2");
+    expect(activeFirm).toHaveBeenCalledWith("user-a", "firm-1");
     const [user, firm, receipt, lines] = vi.mocked(q.createReceipt).mock.calls[0];
     expect([user, firm, receipt.taxNumber, receipt.receiptNo, receipt.receiptDate, receipt.totalKurus, receipt.model]).toEqual(["user-a", "firm-1", "2222222224", "ABC2026000000412", "2026-09-08", 131000, "e-fatura"]);
     expect(lines.at(-1)).toMatchObject({ accountCode: "320.01", creditKurus: 131000, documentType: "FT" });
@@ -82,6 +83,12 @@ describe("POST /api/efatura", () => {
     const body = await res.json();
     expect(body.created).toBe(1);
     expect(body.skipped.map((s: { file: string; reason: string }) => [s.file, s.reason.slice(0, 12)])).toEqual([["2.xml", "Bu fatura za"], ["3.xml", "Firmanın ken"], ["4.xml", "XML okunamad"]]);
+  });
+
+  it("aynı anda yüklenen aynı fatura benzersiz indekse takılınca 'zaten yüklü' sayılır", async () => {
+    vi.mocked(q.createReceipt).mockRejectedValueOnce(Object.assign(new Error("Failed query"), { cause: { code: "23505" } }));
+    const body = await (await POST(post(invoiceXml()))).json();
+    expect([body.created, body.skipped[0]?.reason]).toEqual([0, "Bu fatura zaten yüklü."]);
   });
 
   it("firmanın VKN'si yoksa hiçbir faturayı almaz (kendi satışı ayırt edilemez)", async () => {

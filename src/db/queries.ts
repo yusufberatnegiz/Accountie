@@ -109,6 +109,14 @@ export async function hitRateLimit(key: string, windows: readonly (readonly [lim
   return windows.every(([limit], i) => (results[i][0]?.n ?? 0) <= limit);
 }
 
+/** Whether every window still has room for `key`, without recording an attempt. */
+export async function rateLimitOk(key: string, windows: readonly (readonly [limit: number, windowMs: number])[]): Promise<boolean> {
+  const now = Date.now();
+  const counts = await Promise.all(windows.map(([, ms]) =>
+    getDb().select({ n: count() }).from(rateLimitHits).where(and(eq(rateLimitHits.key, key), gt(rateLimitHits.createdAt, new Date(now - ms))))));
+  return windows.every(([limit], i) => (counts[i][0]?.n ?? 0) < limit);
+}
+
 export async function createReceipt(userId: string, firmId: string, receipt: NewReceipt, lines: readonly JournalLine[]): Promise<string> {
   const id = crypto.randomUUID();
   await getDb().transaction(async (tx) => {

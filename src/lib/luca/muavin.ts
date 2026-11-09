@@ -25,7 +25,7 @@ const ACCOUNT_TITLE = /^\s*(\d{3}(?:\.\d{1,3}){0,4})\b/;
 
 function text(v: ExcelJS.CellValue): string {
   if (v == null) return "";
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? "" : v.toISOString().slice(0, 10);
   if (typeof v === "object") {
     if ("result" in v && v.result != null) return text(v.result as ExcelJS.CellValue);
     if ("richText" in v) return v.richText.map((r) => r.text).join("");
@@ -45,13 +45,13 @@ function kurus(v: ExcelJS.CellValue): number | null {
 }
 
 function isoDate(v: ExcelJS.CellValue): string | null {
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
   const m = /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/.exec(text(v));
   return m ? `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}` : null;
 }
 
 // exceljs keeps an object per cell, so the sheet XML is capped well under what a function can hold.
-const MAX_UNZIPPED = 15 * 1024 * 1024;
+const MAX_UNZIPPED = 4 * 1024 * 1024; // one month of one firm is far below this
 /** The rows of the first sheet that carries an Evrak No, Borç and Alacak header. Throws MuavinError (Turkish) when none does. */
 export async function readMuavin(file: Buffer): Promise<MuavinRow[]> {
   // exceljs (JSZip) inflates an entry fully before checking its declared size: inflate it here first with a hard cap.
