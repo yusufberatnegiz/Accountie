@@ -6,7 +6,7 @@ import { activeFirm } from "@/lib/firm";
 import { getSessionUser, getUserId } from "@/lib/auth/session";
 import { extractReceipt, locateReceipts, type ExtractResult } from "@/lib/extract/extract";
 import { toReceiptData } from "@/lib/extract/schema";
-import { fail, unauthorized } from "@/lib/http";
+import { NO_STORE, fail, unauthorized } from "@/lib/http";
 import { ALLOWED_IMAGE_TYPES, cropReceipt, MAX_UPLOAD_BYTES, normalizeImage, sniffImageType } from "@/lib/image";
 import { allow, clientIp } from "@/lib/rate-limit";
 import type { Rules } from "@/lib/default-rules";
@@ -124,5 +124,5 @@ export async function GET(request: Request) {
   const status = new URL(request.url).searchParams.get("status");
   if (status !== null && status !== "draft" && status !== "approved" && status !== "exported") return fail("Geçersiz durum.", 400);
   const { firm } = await activeFirm(userId);
-  return NextResponse.json({ receipts: await listReceipts(userId, firm.id, { status: status ?? undefined }) });
+  return NextResponse.json({ receipts: await listReceipts(userId, firm.id, { status: status ?? undefined }) }, { headers: NO_STORE });
 }

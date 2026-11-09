@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuth } from "@/lib/auth/server";
-import { inRecovery } from "@/lib/auth/session";
+import { getUserId, inRecovery } from "@/lib/auth/session";
+import { revokeExtensionTokens } from "@/db/queries";
 import { AFTER_LOGIN, safeNextPath } from "@/lib/auth/next-path";
 import { allow, clientIp } from "@/lib/rate-limit";
 import { verifyTurnstile } from "@/lib/turnstile";
@@ -94,12 +95,16 @@ export async function resetPassword(_prev: ResetState, formData: FormData): Prom
   const auth = await getAuth();
   const { error } = await auth.updateUser({ password: input.data.password });
   if (error) return { error: "sifre-baglanti" };
-  // The recovery session ends here: the user signs in again with the new password.
+  // The recovery session ends here: the user signs in again with the new password, and extension keys made before it stop working.
+  const userId = await getUserId();
+  if (userId) await revokeExtensionTokens(userId);
   await auth.signOut();
   back({ mesaj: "sifre-yeni" });
 }
 
 export async function logout() {
+  const userId = await getUserId();
+  if (userId) await revokeExtensionTokens(userId);
   await (await getAuth()).signOut();
   redirect("/giris");
 }

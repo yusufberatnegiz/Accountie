@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn() }));
+vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), revokeExtensionTokens: vi.fn() }));
 // Supabase Auth as the server actions see it (getAuth() resolves to the auth client).
 type Reply = (...args: unknown[]) => Promise<{ data?: unknown; error: null | { status: number } }>;
 const A = vi.hoisted(() => ({
@@ -12,13 +12,14 @@ const A = vi.hoisted(() => ({
   updateUser: vi.fn(async () => ({ error: null })),
   signOut: vi.fn(async () => ({ error: null })),
   exchangeCodeForSession: vi.fn(async () => ({ error: null })),
+  getUser: vi.fn(async () => ({ data: { user: { id: "kullanici-1", email: "a@ornek.com", created_at: "2026-01-01T00:00:00Z" } }, error: null })),
   getClaims: vi.fn(async () => ({ data: { claims: { amr: [{ method: "recovery", timestamp: Math.floor(Date.now() / 1000) - 60 }] } }, error: null })),
 }));
 vi.mock("@/lib/auth/server", () => ({ getAuth: async () => A }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": "203.0.113.9, 10.0.0.1", origin: "https://accountie.test" }) }));
 vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error(`REDIRECT ${url}`); } }));
 
-const { hitRateLimit } = await import("@/db/queries");
+const { hitRateLimit, revokeExtensionTokens } = await import("@/db/queries");
 const { sniffImageType } = await import("./image");
 const { clientIp, ipBucket, LIMITS } = await import("./rate-limit");
 const actions = await import("@/app/giris/actions");
@@ -156,6 +157,7 @@ describe("şifre yenileme", () => {
     await expect(redirectOf(actions.resetPassword(undefined, form({ password: "12345678" })))).resolves.toBe("REDIRECT /giris?mesaj=sifre-yeni");
     expect(A.updateUser).toHaveBeenLastCalledWith({ password: "12345678" });
     expect(A.signOut).toHaveBeenCalled();
+    expect(vi.mocked(revokeExtensionTokens)).toHaveBeenCalledWith("kullanici-1");
   });
 });
 
@@ -175,11 +177,9 @@ describe("bot koruması", () => {
   it("e-posta başına sınır Turnstile olsa da olmasa da uygulanır", async () => {
     const kinds = () => vi.mocked(hitRateLimit).mock.calls.map(([k]) => k.split(":")[0]);
     vi.stubEnv("TURNSTILE_SECRET_KEY", "");
-    vi.stubEnv("VERCEL_ENV", "production");
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("VERCEL_ENV", "preview");
     await redirectOf(actions.login(undefined, form({ email: "kurban@ornek.com", password: "yanlis-sifre" })));
     expect(kinds()).toEqual(["loginIp", "loginEmail"]);
-    warn.mockRestore();
 
     vi.clearAllMocks();
     vi.mocked(hitRateLimit).mockResolvedValue(true);

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { deleteDraft, getReceipt, replaceLines } from "@/db/queries";
 import { idSchema, PatchReceiptSchema } from "@/lib/api-schemas";
 import { getUserId } from "@/lib/auth/session";
-import { fail, notFound, readJson, unauthorized } from "@/lib/http";
+import { NO_STORE, fail, notFound, readJson, unauthorized } from "@/lib/http";
 import { isBalanced } from "@/lib/journal";
 
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ export async function GET(_request: Request, { params }: Ctx) {
   if (!userId) return unauthorized();
   const id = idSchema.safeParse((await params).id);
   const receipt = id.success ? await getReceipt(userId, id.data) : null;
-  return receipt ? NextResponse.json({ receipt, balanced: isBalanced(receipt.lines) }) : notFound();
+  return receipt ? NextResponse.json({ receipt, balanced: isBalanced(receipt.lines) }, { headers: NO_STORE }) : notFound();
 }
 
 export async function PATCH(request: Request, { params }: Ctx) {
@@ -26,7 +26,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
   if (receipt.status !== "draft") return fail("Sadece taslak fiş düzenlenebilir. Önce taslağa alın.", 409);
   const body = PatchReceiptSchema.safeParse(await readJson(request));
   if (!body.success) return fail("Satırlarda geçersiz değer var.", 400);
-  await replaceLines(userId, receipt.id, body.data.lines);
+  if (!(await replaceLines(userId, receipt.id, body.data.lines))) return fail("Sadece taslak fiş düzenlenebilir. Önce taslağa alın.", 409);
   return NextResponse.json({ balanced: isBalanced(body.data.lines) });
 }
 

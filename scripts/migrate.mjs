@@ -9,7 +9,8 @@ if (!url) {
   console.log("HATA: DATABASE_URL yok. .env.local dosyasında tanımlı olmalı.");
   process.exit(1);
 }
-const sql = postgres(url, { prepare: false, max: 1, ssl: "require", onnotice: () => {} });
+const ca = process.env.DATABASE_CA_CERT;
+const sql = postgres(url, { prepare: false, max: 1, ssl: ca ? { ca, rejectUnauthorized: true } : "require", onnotice: () => {} });
 try {
   await migrate(drizzle(sql), { migrationsFolder: "drizzle" });
   const t = await sql`select tablename, rowsecurity from pg_tables where schemaname = 'public' order by 1`;

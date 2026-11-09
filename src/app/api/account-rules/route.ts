@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { getRules, saveRules } from "@/db/queries";
 import { RulesPutSchema } from "@/lib/api-schemas";
 import { getUserId } from "@/lib/auth/session";
-import { fail, readJson, unauthorized } from "@/lib/http";
+import { NO_STORE, fail, readJson, unauthorized } from "@/lib/http";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   const userId = await getUserId();
   if (!userId) return unauthorized();
-  return NextResponse.json({ rows: (await getRules(userId)).rows });
+  return NextResponse.json({ rows: (await getRules(userId)).rows }, { headers: NO_STORE });
 }
 
 export async function PUT(request: Request) {

@@ -9,7 +9,7 @@ vi.mock("@/lib/auth/session", () => {
 vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(async () => false), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
   getVendorRule: vi.fn(async () => null), learnVendorRule: vi.fn(async () => {}),
-  replaceLines: vi.fn(), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
+  replaceLines: vi.fn(async () => true), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), clientIp: () => "203.0.113.9" }));
@@ -148,6 +148,12 @@ describe("tek fiş", () => {
   it("geçersiz kimlik 404 döner, veritabanına gitmez", async () => {
     expect((await receiptRoute.GET(new Request("http://test"), params("../x"))).status).toBe(404);
     expect(q.getReceipt).not.toHaveBeenCalled();
+  });
+
+  it("PATCH, onay aynı anda gelip fişi taslaktan çıkarırsa satırları yazmaz ve 409 döner", async () => {
+    vi.mocked(q.replaceLines).mockResolvedValueOnce(false);
+    const res = await receiptRoute.PATCH(json({ lines }), params());
+    expect(res.status).toBe(409);
   });
 
   it("PATCH beyaz liste dışındaki alanları yok sayar", async () => {

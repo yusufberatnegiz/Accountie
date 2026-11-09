@@ -177,10 +177,15 @@ export async function nextDraft(userId: string, firmId: string | null, exceptId:
 }
 
 /** Replaces all lines of a draft. Caller must have checked the receipt is the user's draft. */
-export async function replaceLines(userId: string, id: string, lines: readonly JournalLine[]): Promise<void> {
-  await getDb().transaction(async (tx) => {
+/** Rewrites a draft's lines; false when the receipt is no longer a draft (the row is locked, so a parallel approve waits). */
+export async function replaceLines(userId: string, id: string, lines: readonly JournalLine[]): Promise<boolean> {
+  return getDb().transaction(async (tx) => {
+    const [draft] = await tx.select({ id: receipts.id }).from(receipts)
+      .where(and(eq(receipts.id, id), eq(receipts.userId, userId), eq(receipts.status, "draft"))).for("update");
+    if (!draft) return false;
     await tx.delete(journalLines).where(and(eq(journalLines.receiptId, id), eq(journalLines.userId, userId)));
     await tx.insert(journalLines).values(lineRows(userId, id, lines));
+    return true;
   });
 }
 
