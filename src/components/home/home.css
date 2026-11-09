@@ -216,7 +216,7 @@
 .path-cam { min-height: 260px; padding: var(--s4); }
 .path-totals dd { font-size: var(--fs-title); }
 /* In the four small cards the read is the strip's head and totals over the fields it gave (no empty top half, YON 23.24) and the
-   sheet drops its date column; the sticky desktop card, wide enough, sets the whole paper beside the fields and every column. */
+   sheet drops its Evrak No and date columns (the account code and amounts never cut); the sticky desktop card, wide enough, sets the whole paper beside the fields and every column. */
 .path-read { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); align-items: center; }
 .path-xl .path-xl-date { display: none; }
 /* Each read field is a line of the form with its value at full ink: the read is a form, not a second picture of the paper. */
@@ -230,9 +230,11 @@
 .path-xl thead td, .path-xl tbody th { width: 2.5em; }
 .path-xl .path-xl-head td { font-weight: var(--w-medium); }
 .path-xl .num { text-align: right; }
+.path-xl tr > :nth-child(2) { width: 40%; } /* the account code column (A) takes the room; amounts share the rest */
 @media (min-width: 1100px) and (prefers-reduced-motion: no-preference) {
   .js .path-xl .path-xl-date { display: table-cell; }
   .js .path-xl :is(th, td) { padding: 0 var(--s2); }
+  .js .path-xl tr > :nth-child(2) { width: auto; } /* every column shows on the wide card: equal shares fit */
 }
 .path-file { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) var(--s3); background: color-mix(in srgb, var(--card), var(--ink) 6%); border-radius: var(--radius-control); font-size: var(--fs-small); }
 
@@ -515,10 +517,10 @@
 
   /* Phones: the four fields side by side in one row the thumb scrolls (the next one peeks in), not four screens stacked:
      the page is a quarter shorter (YON 23.28). The title stays at the row's left. */
-  .path { grid-template-columns: repeat(4, calc(100% - 24px)); grid-template-rows: auto auto; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .path { grid-template-columns: repeat(4, calc(100% - 56px)); grid-template-rows: auto auto; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
   .path::-webkit-scrollbar { display: none; }
   /* The next field fades in at the edge rather than standing as a grey strip of another height (no 1/4 counter: house rule). */
-  .path { mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); } /* taste-skill-ignore: an alpha mask on the sideways row, nothing painted */
+  .path { mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); } /* taste-skill-ignore: an alpha mask on the sideways row, nothing painted */
   .path-title { grid-column: 1; position: sticky; left: 0; }
   /* Each field as tall as its own card (YON 23.32): equal heights left 189px of empty field under the first card. */
   .path-field, .path-field-3, .path-field-4 { grid-row: 2; grid-template-rows: none; align-content: start; align-self: start; row-gap: var(--s5); padding: var(--s6) var(--s6); scroll-snap-align: start; }

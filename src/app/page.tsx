@@ -301,11 +301,11 @@ const PATH = [
       <p className="path-file" data-step><span className="ui-file-name">luca-fisler-20260901.xlsx</span><span>1 fiş, 3 satır</span></p>
       {/* The file as a spreadsheet opens it: column letters, row numbers, the export's header row and the lines (no empty filler rows). */}
       <table className="path-xl" data-step>
-        <thead><tr><td />{["A", "B", "C", "D", "E"].map((c) => <th scope="col" key={c} className={c === "C" ? "path-xl-date" : undefined}>{c}</th>)}</tr></thead>
+        <thead><tr><td />{["A", "B", "C", "D", "E"].map((c) => <th scope="col" key={c} className={c === "B" || c === "C" ? "path-xl-date" : undefined}>{c}</th>)}</tr></thead>
         <tbody>
-          <tr className="path-xl-head"><th scope="row">1</th><td>Hesap Kodu</td><td>Evrak No</td><td className="path-xl-date">Fiş Tarihi</td><td className="num">Borç</td><td className="num">Alacak</td></tr>
+          <tr className="path-xl-head"><th scope="row">1</th><td>Hesap Kodu</td><td className="path-xl-date">Evrak No</td><td className="path-xl-date">Fiş Tarihi</td><td className="num">Borç</td><td className="num">Alacak</td></tr>
           {LINES_KAFE.map((l, i) => (
-            <tr key={l.code}><th scope="row">{i + 2}</th><td translate="no">{l.code}</td><td>0331</td><td className="path-xl-date">01.09.2026</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td></tr>
+            <tr key={l.code}><th scope="row">{i + 2}</th><td translate="no">{l.code}</td><td className="path-xl-date">0331</td><td className="path-xl-date">01.09.2026</td><td className="num to-luca">{l.debit}</td><td className="num to-luca">{l.credit}</td></tr>
           ))}
         </tbody>
       </table>

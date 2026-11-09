@@ -691,7 +691,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .firms-add { display: grid; gap: var(--s4); padding: var(--s5); grid-column: 2; grid-row: 2; }
 .firms-panel { grid-column: 1; grid-row: 2; }
 .firms-form { display: grid; gap: var(--s4); }
-@media (max-width: 900px) { .canvas-firms { grid-template-columns: minmax(0, 1fr); } .firms-add, .firms-panel { grid-column: 1; grid-row: auto; } .firms-panel { order: -1; } .firms-list { max-height: none; } }
+@media (max-width: 900px) { .canvas-firms { grid-template-columns: minmax(0, 1fr); } .firms-add, .firms-panel { grid-column: 1; grid-row: auto; } .firms-list { max-height: 60vh; } }
 /* The firm the list is for: the screen's main context for a müşavir, in ink and weight, with the way to switch beside it. */
 .firm-crumb { font-size: var(--fs-section); }
 .firm-crumb a { color: var(--ink); font-weight: var(--w-strong); text-decoration: none; }

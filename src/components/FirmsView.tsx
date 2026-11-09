@@ -78,17 +78,6 @@ export function FirmsView({ firms, activeId, month, months, counts, base = "/pan
         <div className="title-actions"><MonthPicker months={months} value={month} path={`${base}/firmalar`} allLabel={null} /></div>
       </div>
 
-      {/* Before the list in the source and on a phone: with hundreds of firms a form after the list would be screens away. */}
-      <section className="panel firms-add" aria-labelledby="firma-ekle">
-        <h2 id="firma-ekle">Firma ekle</h2>
-        <form className="firms-form" onSubmit={add} aria-describedby={error?.at === "form" ? "firma-hata" : undefined}>
-          <label className="stack"><span>Firma adı</span><input className="field" name="ad" required minLength={2} maxLength={120} autoComplete="off" /></label>
-          <label className="stack"><span>VKN ya da TCKN (isteğe bağlı)</span><input className="field tnum" name="vkn" inputMode="numeric" pattern="\d{10,11}" maxLength={11} autoComplete="off" /></label>
-          {error?.at === "form" ? <p id="firma-hata" className="alert alert-error" role="alert">{error.text}</p> : null}
-          <button type="submit" className="btn btn-primary" aria-disabled={busy !== null || undefined}>{busy === "yeni" ? "Ekleniyor…" : "Ekle ve seç"}</button>
-        </form>
-      </section>
-
       <section className="panel firms-panel" aria-labelledby="firma-liste">
         <h2 id="firma-liste" className="visually-hidden">Firma listesi</h2>
         <label className="firms-search">
@@ -112,14 +101,25 @@ export function FirmsView({ firms, activeId, month, months, counts, base = "/pan
               <span className="firms-name">{f.name}{f.taxNumber ? <span className="firms-vkn">VKN {f.taxNumber}</span> : null}</span>
               <span className="firms-month" data-state={monthState(of(f))}>{stateText(of(f))}</span>
               {f.id === activeId ? <span className="firms-on">Açık firma</span> : (
-                <button type="button" className="btn btn-sm" aria-label={`${f.name} firmasına geç`} aria-disabled={busy === f.id || undefined} onClick={() => send("/api/firms/active", { id: f.id }, f.id)}>
+                <button type="button" className="btn btn-sm" aria-label={`${f.name} firmasını seç`} aria-disabled={busy === f.id || undefined} onClick={() => send("/api/firms/active", { id: f.id }, f.id)}>
                   {busy === f.id ? "Açılıyor…" : "Seç"}
                 </button>
               )}
             </li>
           ))}
-          {shown.length === 0 ? <li className="firms-row"><span className="firms-name">{q ? <>“{query.trim()}” ile eşleşen firma yok. Yukarıdan ekleyebilirsiniz.</> : "Bu durumda firma yok."}</span></li> : null}
+          {shown.length === 0 ? <li className="firms-row"><span className="firms-name">{q ? <>“{query.trim()}” ile eşleşen firma yok. Firma ekle formundan ekleyebilirsiniz.</> : "Bu durumda firma yok."}</span></li> : null}
         </ul>
+      </section>
+
+      {/* After the list in the source and on a phone (search first; the list scrolls inside its panel there, so the form stays near); beside it on desktop. */}
+      <section className="panel firms-add" aria-labelledby="firma-ekle">
+        <h2 id="firma-ekle">Firma ekle</h2>
+        <form className="firms-form" onSubmit={add} aria-describedby={error?.at === "form" ? "firma-hata" : undefined}>
+          <label className="stack"><span>Firma adı</span><input className="field" name="ad" required minLength={2} maxLength={120} autoComplete="off" /></label>
+          <label className="stack"><span>VKN ya da TCKN (isteğe bağlı)</span><input className="field tnum" name="vkn" inputMode="numeric" pattern="\d{10,11}" maxLength={11} autoComplete="off" /></label>
+          {error?.at === "form" ? <p id="firma-hata" className="alert alert-error" role="alert">{error.text}</p> : null}
+          <button type="submit" className="btn btn-primary" aria-disabled={busy !== null || undefined}>{busy === "yeni" ? "Ekleniyor…" : "Ekle ve seç"}</button>
+        </form>
       </section>
     </main>
   );
