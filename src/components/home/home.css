@@ -387,7 +387,7 @@
 .faq-chev { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; color: var(--muted); transform: rotate(-90deg); transition: transform var(--t-ui) var(--ease-out), color var(--t-hover) ease; }
 .faq-list li[data-open] .faq-q { font-weight: var(--w-strong); }
 .faq-list li[data-open] .faq-chev { color: var(--accent); }
-@media (hover: hover) and (pointer: fine) { .faq-q:hover { color: var(--accent); } }
+@media (hover: hover) and (pointer: fine) { .faq-q:hover { color: var(--ink); } } /* the row's tone carries the hover; the question never fades */
 .faq-a-inline { font-size: var(--step-body); padding: 0 0 var(--s3); max-width: 48ch; margin: 0; }
 /* The pane is as tall as its answer and travels with the list, level with its first question. */
 .faq-pane { display: none; }
