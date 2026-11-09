@@ -9,7 +9,7 @@ import { download, issuedToMe, login, logout, PortalError } from "@/lib/gib/ears
 import { open, secretContext, secretKey, SecretError } from "@/lib/gib/secret";
 import { fail, readJson, unauthorized } from "@/lib/http";
 import { currentMonth } from "@/lib/month";
-import { allow, under } from "@/lib/rate-limit";
+import { allow } from "@/lib/rate-limit";
 import { unzip, ZipError } from "@/lib/zip";
 
 export const runtime = "nodejs";
@@ -53,8 +53,9 @@ export async function POST(request: Request) {
     await deleteGibCredential(userId, firm.id);
     return fail("Kayıtlı bağlantı bozulmuş ve silindi. Kullanıcı kodunu ve şifreyi yeniden girin.", 409);
   }
-  // The same shared guards as saving: no pull logs in while this code has failed elsewhere, and one GİB login per code a minute.
-  if (!(await under("gibCodeFail", username)) || !(await allow("gibPull", `${userId}:${username}`)) || !(await allow("gibCodeTry", username))) {
+  // A stored login GİB itself accepted is not gated by other users' failures with the same code (that would let anyone block
+  // it); it keeps its own limits and one GİB login per code a minute.
+  if (!(await allow("gibPull", `${userId}:${username}`)) || !(await allow("gibCodeTry", username))) {
     return fail("Bu GİB hesabı için çok fazla deneme yapıldı. Bir süre bekleyin; hesap kilitlenmesin.", 429);
   }
 
@@ -110,7 +111,7 @@ export async function POST(request: Request) {
   await touchGibCredential(userId, firm.id);
 
   const { rules } = await getRules(userId);
-  const result = await importInvoiceFiles(userId, firm, rules, files);
+  const result = await importInvoiceFiles(userId, firm, rules, files, { fromGib: true });
   return NextResponse.json({ firm: firm.name, created: result.ids.length, ids: result.ids, skipped: [...skipped, ...result.skipped], remaining },
     { status: result.ids.length ? 201 : 200, headers: { "Cache-Control": "no-store" } });
 }

@@ -36,7 +36,7 @@ export async function PUT(request: Request) {
   if (!firm.taxNumber) return fail("Önce Firmalar'da bu firmanın VKN'sini girin.", 422);
   const isNew = !(Date.now() - user.createdAt.getTime() >= 24 * 60 * 60_000);
   if (!(await under("gibCodeFail", body.data.kullaniciKodu)) || !(await under("gibUserFail", userId)) || !(await allow("gib", userId))
-    || !(await allow("gibFirm", firm.id)) || (isNew && !(await allow("gibNew", userId))) || !(await allow("gibCodeTry", body.data.kullaniciKodu))
+    || !(await allow("gibFirm", firm.id)) || (isNew && !(await allow("gibNew", userId))) || !(await allow("gibUserTry", userId)) || !(await allow("gibCodeTry", body.data.kullaniciKodu))
     || !(await allow("gibGlobal", "all"))) {
     return fail("Çok fazla deneme yapıldı. Bir süre bekleyin; GİB hesabı kilitlenmesin.", 429);
   }

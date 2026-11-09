@@ -12,7 +12,7 @@ export type Skipped = { file: string; number: string | null; reason: string };
  * invoices addressed to the firm (its VKN is required by the callers) become drafts; a duplicate, an unreadable file or a
  * failed save is listed in `skipped` and the rest go on.
  */
-export async function importInvoiceFiles(userId: string, firm: Firm, rules: Rules, files: readonly { name: string; data: Buffer }[]): Promise<{ ids: string[]; skipped: Skipped[] }> {
+export async function importInvoiceFiles(userId: string, firm: Firm, rules: Rules, files: readonly { name: string; data: Buffer }[], { fromGib = false } = {}): Promise<{ ids: string[]; skipped: Skipped[] }> {
   const ids: string[] = [];
   const skipped: Skipped[] = [];
   const seen = new Set<string>();
@@ -40,7 +40,7 @@ export async function importInvoiceFiles(userId: string, firm: Firm, rules: Rule
     const data = invoiceData(inv);
     const learned = vkn ? await getVendorRule(userId, firm.id, vkn).catch(() => null) : null;
     const { lines, warnings } = buildJournalLines(data, withVendorAccount(invoiceRules(rules), data.category, learned && { code: learned.accountCode, name: learned.accountName }));
-    const extra = [warn("efatura"), ...(inv.otherTax ? [warn("efatura_other_tax")] : []), ...(vkn ? [] : [warn("tax_number_invalid")])];
+    const extra = [warn("efatura"), ...(fromGib ? [] : [warn("efatura_unsigned")]), ...(inv.otherTax ? [warn("efatura_other_tax")] : []), ...(vkn ? [] : [warn("tax_number_invalid")])];
     const receipt: NewReceipt = {
       vendorName: data.vendorName,
       taxNumber: vkn,

@@ -8,8 +8,8 @@ import "server-only";
  * shortcut: unofficial endpoints, verified against the open-source client only; move to an integrator's official API if they break.
  */
 export class PortalError extends Error {
-  // auth: wrong code/password; locked: GİB says the account is locked; refused: any other answer that turned the login down
-  // (maintenance, a captcha); portal: no readable answer at all (network, an HTML page).
+  // auth: wrong code/password; locked: GİB says the account is locked; refused: any other answer from GİB that turned the
+  // request down (maintenance, a captcha, an HTTP error, an unreadable page); portal: no answer at all (network, timeout).
   constructor(message: string, readonly kind: "auth" | "locked" | "refused" | "portal") { super(message); }
 }
 
@@ -41,7 +41,8 @@ async function call(path: string, init: RequestInit, max: number): Promise<Buffe
     const res = await fetch(`${portalHost()}${path}`, { ...init, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(TIMEOUT_MS) });
     if (!res.ok) {
       await res.body?.cancel().catch(() => undefined);
-      throw new PortalError("GİB e-Arşiv portalı isteği kabul etmedi. Biraz sonra tekrar deneyin.", "portal");
+      // GİB answered (it may well have counted a login try): "refused", so a stored login answered this way is not retried forever.
+      throw new PortalError("GİB e-Arşiv portalı isteği kabul etmedi. Biraz sonra tekrar deneyin.", "refused");
     }
     return await capped(res, max); // the timeout also cuts a body that trickles in
   } catch (e) {
@@ -56,7 +57,7 @@ async function postForm(path: string, form: Record<string, string>): Promise<Rec
     const json = JSON.parse(body.toString("utf8"));
     if (json && typeof json === "object") return json as Record<string, unknown>;
   } catch { /* fall through */ }
-  throw new PortalError("GİB e-Arşiv portalının yanıtı okunamadı; portal değişmiş olabilir.", "portal");
+  throw new PortalError("GİB e-Arşiv portalının yanıtı okunamadı; portal değişmiş olabilir.", "refused");
 }
 
 /** The portal session token, or PortalError("auth") when GİB turns the login down. */
@@ -71,7 +72,8 @@ export async function login(username: string, password: string): Promise<string>
  * deleted) and a lock message as locked; maintenance, captcha or anything unrecognised is the portal's problem and keeps it.
  */
 export function loginRefusal(json: Record<string, unknown>): PortalError {
-  const text = JSON.stringify(json.messages ?? json.error ?? "").toLocaleLowerCase("tr");
+  let text = "";
+  try { text = JSON.stringify(json.messages ?? json.error ?? "").slice(0, 2000).toLocaleLowerCase("tr"); } catch { /* deeply nested: unrecognised */ }
   if (/kilit|bloke|askıya/.test(text)) return new PortalError("GİB bu hesabın kilitli olduğunu bildirdi.", "locked");
   const who = "(şifre|sifre|parola|kullanıcı (adı|kodu)|kullanici (adi|kodu))", bad = "(hatalı|hatali|yanlış|yanlis|geçersiz|gecersiz|bulunamadı)";
   if (new RegExp(`${who}.{0,40}${bad}|${bad}.{0,40}${who}`).test(text)) {

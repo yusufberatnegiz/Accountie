@@ -11,6 +11,7 @@ export type Cell = string | number | null;
 export class XlsxError extends Error {}
 
 const MAX_COLUMNS = 200;
+const MAX_TEXT = 1000; // per string and per cell: a muavin cell is a code, a date, a description or an amount
 
 function parse(xml: string, on: { open: (name: string, attrs: Record<string, string>) => void; text: (t: string) => void; close: (name: string) => void }) {
   if (/<!DOCTYPE|<!ENTITY/i.test(xml)) throw new XlsxError("dtd");
@@ -48,7 +49,7 @@ export function readSheets(file: Buffer, { maxBytes, maxRows }: { maxBytes: numb
     try {
       parse(strings, {
         open: (n) => { if (n === "si") current = ""; if (n === "t") inT = true; },
-        text: (t) => { if (inT) current += t; },
+        text: (t) => { if (inT && current.length < MAX_TEXT) current += t.slice(0, MAX_TEXT - current.length); },
         close: (n) => { if (n === "t") inT = false; if (n === "si") shared.push(current); },
       });
     } catch { throw new XlsxError("strings"); }
@@ -71,7 +72,7 @@ export function readSheets(file: Buffer, { maxBytes, maxRows }: { maxBytes: numb
             col = columnOf(a.r, row ? row.length : 0); type = a.t ?? ""; value = "";
           } else if (n === "v" || (n === "t" && type === "inlineStr")) reading = true;
         },
-        text: (t) => { if (reading && value.length < 10_000) value += t; },
+        text: (t) => { if (reading && value.length < MAX_TEXT) value += t.slice(0, MAX_TEXT - value.length); },
         close: (n) => {
           if (n === "v" || n === "t") reading = false;
           if (n !== "c" || !row || col >= MAX_COLUMNS) return;

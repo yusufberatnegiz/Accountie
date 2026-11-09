@@ -83,6 +83,28 @@ describe("muavin okuyucusu yapısal bombalara karşı", () => {
     expect(Date.now() - started).toBeLessThan(500);
     expect(rows).toEqual([{ accountCode: null, documentNo: "0412", date: null, debitKurus: 58909, creditKurus: 0 }]);
   });
+
+  it("dev bir paylaşılan dizeyi binlerce hücrede tekrar işlemez", async () => {
+    const { readSheets } = await import("./xlsx-cells");
+    const { deflateRawSync } = await import("node:zlib");
+    const entry = (n: string, d: string) => ({ name: Buffer.from(n), data: Buffer.from(d) });
+    const files = [entry("xl/sharedStrings.xml", `<sst><si><t>${"A".repeat(2_000_000)}</t></si></sst>`),
+      entry("xl/worksheets/sheet1.xml", `<worksheet><sheetData>${`<row>${'<c t="s"><v>0</v></c>'.repeat(200)}</row>`.repeat(400)}</sheetData></worksheet>`)];
+    let offset = 0; const locals: Buffer[] = [], centrals: Buffer[] = [];
+    for (const f of files) {
+      const body = deflateRawSync(f.data);
+      const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(8, 8); lh.writeUInt32LE(body.length, 18); lh.writeUInt32LE(f.data.length, 22); lh.writeUInt16LE(f.name.length, 26);
+      const ch = Buffer.alloc(46); ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(8, 10); ch.writeUInt32LE(body.length, 20); ch.writeUInt32LE(f.data.length, 24); ch.writeUInt16LE(f.name.length, 28); ch.writeUInt32LE(offset, 42);
+      locals.push(lh, f.name, body); centrals.push(ch, f.name); offset += 30 + f.name.length + body.length;
+    }
+    const cd = Buffer.concat(centrals), e = Buffer.alloc(22);
+    e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(2, 8); e.writeUInt16LE(2, 10); e.writeUInt32LE(cd.length, 12); e.writeUInt32LE(offset, 16);
+    const file = Buffer.concat([...locals, cd, e]);
+    expect((readSheets(file, { maxBytes: 4 * 1024 * 1024, maxRows: 20_000 })[0][0][0] as string).length).toBe(1000);
+    const started = Date.now();
+    await expect(readMuavin(file)).rejects.toThrow(MuavinError); // no header: refused, and fast
+    expect(Date.now() - started).toBeLessThan(3000);
+  });
 });
 
 describe("mutabakat", () => {

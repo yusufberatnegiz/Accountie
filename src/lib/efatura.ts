@@ -89,6 +89,7 @@ export function parseInvoice(xml: string): Invoice {
         const taxable = decimalKurus(sub.taxable ?? ""), amount = decimalKurus(sub.amount ?? ""), rate = Number(sub.percent);
         if (taxable === null || amount === null || !/^\d{1,3}(\.\d{1,2})?$/.test(sub.percent ?? "")) throw new InvoiceError("KDV tutarları okunamadı.");
         if (rate === 0 && amount !== 0) throw new InvoiceError("KDV oranı ile tutarı uyuşmuyor.");
+        if (taxable < 0 || amount < 0) throw new InvoiceError("Faturada eksi tutar var; iade faturası gibi elle girin.");
         if (Math.abs(taxable) > 1e12 || Math.abs(amount) > 1e12 || rate < 0 || rate > 100) throw new InvoiceError("KDV tutarları gerçek dışı.");
         vat.push({ rate, taxableKurus: taxable, vatKurus: amount });
       } else if (Number(sub.amount ?? 0) !== 0) otherTax = true;

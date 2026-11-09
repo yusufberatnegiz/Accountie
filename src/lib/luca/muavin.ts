@@ -24,7 +24,7 @@ const ACCOUNT_TITLE = /^\s*(\d{3}(?:\.\d{1,3}){0,4})\b/;
 
 function text(v: Cell | undefined): string {
   if (v == null) return "";
-  return typeof v === "number" ? String(v) : v.trim();
+  return typeof v === "number" ? String(v) : v.slice(0, 200).trim();
 }
 
 function kurus(v: Cell | undefined): number | null {
@@ -67,7 +67,7 @@ export async function readMuavin(file: Buffer): Promise<MuavinRow[]> {
         else { const title = ACCOUNT_TITLE.exec(text(cells[0])); if (title) account = title[1]; }
         continue;
       }
-      const doc = text(cells[cols.documentNo!]);
+      const doc = text(cells[cols.documentNo!]).slice(0, 64);
       const debit = kurus(cells[cols.debit!]);
       const credit = kurus(cells[cols.credit!]);
       // A title row of the next account (grouped exports), or a total line: no evrak no, so not a posting.

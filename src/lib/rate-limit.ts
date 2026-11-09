@@ -32,6 +32,7 @@ export const LIMITS = {
   gibCodeFail: [[2, 60 * MIN], [3, 24 * 60 * MIN]],
   // Counted (atomically) before the call: parallel requests for one code cannot all pass the failure check at once.
   gibCodeTry: [[1, MIN]],
+  gibUserTry: [[1, MIN]], // one GİB check at a time per user, so parallel saves cannot pass the failure count together
   gibUserFail: [[5, 24 * 60 * MIN]], // failed GİB checks per Accountie user: no checking of leaked code/password lists
   gibPull: [[10, 60 * MIN], [40, 24 * 60 * MIN]], // per user and stored code
   gibPullFail: [[1, 24 * 60 * MIN]], // a stored login GİB refuses a second time in a day is removed, whatever the message

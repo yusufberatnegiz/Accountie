@@ -8,6 +8,7 @@ import { isMonth } from "@/lib/month";
 import { allow } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 const MAX_BYTES = 4 * 1024 * 1024; // under Vercel's 4.5 MB request body limit
 
