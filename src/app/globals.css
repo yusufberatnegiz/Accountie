@@ -52,7 +52,7 @@
   --secondary: var(--stage);
   --secondary-hover: #b9c9d4; --bar-control: var(--surface); /* a secondary control in the bar over the auth split field (1.03:1 there as --secondary) */
   /* A chosen chip (hero pickers, showcase tabs), and a secondary button on a lifted card (--lift). */
-  --chip-on: var(--accent); --on-chip-on: var(--on-accent-field);
+  --chip-on: var(--accent-strong); --on-chip-on: var(--on-accent-field);
   --lift-control: var(--secondary); --lift-control-hover: var(--secondary-hover);
   /* The ink field: the showcase and the phone screens. Navy in light; in dark the same warm stone as everything else (YON 23.27). */
   --deep: #27374d;
@@ -231,7 +231,8 @@ h3 { font-size: var(--fs-body); font-weight: var(--w-strong); }
 .num, .num-font, .tnum { font-variant-numeric: tabular-nums; }
 .num { text-align: right; }
 /* The product's colour rule: what goes to Luca is ledger blue. */
-.to-luca { color: var(--accent); font-variant-numeric: tabular-nums; }
+/* What goes to Luca stands out by the darkest tone and weight, not by another hue (the palette has four colours). */
+.to-luca { color: var(--accent-strong); font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
 .from-receipt { color: var(--thermal-ink); font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); }
 .faint { color: var(--faint); }
