@@ -8,9 +8,9 @@
 <!-- Served by public/sw.js when a page cannot load offline. Self-contained: no fonts or scripts from the build, tokens copied from globals.css. -->
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <style>
-:root { --ground: #f8f4ed; --stage: #efe9df; --ink: #241e18; --muted: #58524a; --faint: #655e57; --accent: #1f4d9e; --primary: #241e18; --primary-hover: #3a322a; --on-primary: #ffffff; color-scheme: light; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ground: #0e0d0c; --stage: #171513; --ink: #f5efe5; --muted: #b4b0a8; --faint: #a29e97; --accent: #92b6f6; --primary: #f5efe5; --primary-hover: #ded8ce; --on-primary: #0e0d0c; color-scheme: dark; } }
-:root[data-theme="dark"] { --ground: #0e0d0c; --stage: #171513; --ink: #f5efe5; --muted: #b4b0a8; --faint: #a29e97; --accent: #92b6f6; --primary: #f5efe5; --primary-hover: #ded8ce; --on-primary: #0e0d0c; color-scheme: dark; }
+:root { --ground: #f8f4ed; --stage: #efe9df; --ink: #241e18; --muted: #58524a; --faint: #655e57; --accent: #8f5718; --primary: #241e18; --primary-hover: #3a322a; --on-primary: #ffffff; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ground: #0e0d0c; --stage: #171513; --ink: #f5efe5; --muted: #b4b0a8; --faint: #a29e97; --accent: #e8b57a; --primary: #f5efe5; --primary-hover: #ded8ce; --on-primary: #0e0d0c; color-scheme: dark; } }
+:root[data-theme="dark"] { --ground: #0e0d0c; --stage: #171513; --ink: #f5efe5; --muted: #b4b0a8; --faint: #a29e97; --accent: #e8b57a; --primary: #f5efe5; --primary-hover: #ded8ce; --on-primary: #0e0d0c; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--ground); color: var(--ink); }
 body { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); font: 16px/1.5 Arial, Helvetica, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
