@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { GibConnection, type GibState } from "@/components/GibConnection";
 
 export type EInvoiceResult = { created: number; skipped: { file: string; number: string | null; reason: string }[] };
 
@@ -10,7 +11,7 @@ export type EInvoiceResult = { created: number; skipped: { file: string; number:
  * e-Fatura / e-Arşiv import: the müşavir downloads the firm's incoming invoices (XML, or the zip GİB and integrators give) and
  * uploads them here; each plain purchase invoice becomes a draft to check like a receipt. Accountie never signs in to GİB.
  */
-export function EInvoiceView({ firmName, base = "/panel", preview }: { firmName: string; base?: string; preview?: EInvoiceResult }) {
+export function EInvoiceView({ firmName, gib, months, base = "/panel", preview }: { firmName: string; gib: GibState; months: string[]; base?: string; preview?: EInvoiceResult }) {
   const router = useRouter();
   const [result, setResult] = useState<EInvoiceResult | null>(preview ?? null);
   const [error, setError] = useState("");
@@ -39,17 +40,19 @@ export function EInvoiceView({ firmName, base = "/panel", preview }: { firmName:
         <div className="title-text">
           <p className="crumb firm-crumb"><Link href={`${base}/firmalar`} aria-label={`Firma: ${firmName}. Firma değiştir`}>{firmName}</Link></p>
           <h1>e-Fatura ve e-Arşiv</h1>
-          <p className="finding">Firmaya gelen faturaları XML ya da zip olarak yükleyin; her alış faturası kontrol edeceğiniz bir taslak olur.</p>
+          <p className="finding">Firmaya gelen faturaları GİB e-Arşiv portalından çekin ya da XML/zip olarak yükleyin; her alış faturası kontrol edeceğiniz bir taslak olur.</p>
         </div>
       </div>
 
+      <GibConnection gib={gib} months={months} onResult={setResult} />
+
       <section className="panel reconcile-upload" aria-labelledby="fatura-yukle">
-        <h2 id="fatura-yukle">Fatura dosyası</h2>
+        <h2 id="fatura-yukle">Ya da dosya yükleyin</h2>
         <ol className="guide">
           <li>GİB e-Arşiv portalında ya da entegratörünüzde gelen faturaları seçin.</li>
           <li>XML olarak (birden çoksa zip) indirin ve buraya yükleyin.</li>
         </ol>
-        <p className="muted small">GİB şifreniz Accountie&apos;ye gelmez, Accountie GİB&apos;e bağlanmaz. Dosya saklanmaz; yalnız taslaklar kaydedilir. Faturanın bu firmaya kesildiği firmanın VKN&apos;siyle doğrulanır; satış, iade, tevkifatlı ve döviz faturaları atlanır.</p>
+        <p className="muted small">Dosya saklanmaz; yalnız taslaklar kaydedilir. Faturanın bu firmaya kesildiği firmanın VKN&apos;siyle doğrulanır; satış, iade, tevkifatlı ve döviz faturaları atlanır.</p>
         <form className="reconcile-form" onSubmit={upload} aria-describedby={error ? "fatura-hata" : undefined}>
           <label className="stack"><span>XML ya da zip (en fazla 4 MB, 300 fatura)</span><input className="field field-file" type="file" aria-invalid={error ? true : undefined} name="dosya" accept=".xml,.zip,application/xml,text/xml,application/zip" required /></label>
           {error ? <p id="fatura-hata" className="alert alert-error" role="alert">{error}</p> : null}

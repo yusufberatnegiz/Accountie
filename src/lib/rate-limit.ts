@@ -23,6 +23,9 @@ export const LIMITS = {
   // Muavin check: parsing an uploaded Excel costs CPU, nothing else; generous for a müşavir closing many firms.
   reconcile: [[30, MIN], [600, 24 * 60 * MIN]],
   efatura: [[10, MIN], [50, 24 * 60 * MIN]], // up to 300 drafts per upload
+  // GİB logins: per user, and per firm so repeated tries never lock a client's GİB account.
+  gib: [[5, MIN], [60, 24 * 60 * MIN]],
+  gibFirm: [[3, 10 * MIN], [12, 24 * 60 * MIN]],
 } as const;
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex").slice(0, 32);

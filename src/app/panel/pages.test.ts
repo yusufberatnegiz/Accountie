@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
   notFound: vi.fn(() => { throw new Error("NEXT_NOT_FOUND"); }),
 }));
 vi.mock("@/lib/auth/session", () => ({ getSessionUser: vi.fn() }));
-vi.mock("@/db/queries", () => ({ listReceipts: vi.fn(), getReceipt: vi.fn(), getRules: vi.fn(), nextDraft: vi.fn() }));
+vi.mock("@/db/queries", () => ({ listReceipts: vi.fn(), getReceipt: vi.fn(), getRules: vi.fn(), nextDraft: vi.fn(), getGibCredential: vi.fn() }));
 vi.mock("@/components/AppShell", () => ({ AppShell: () => null }));
 vi.mock("@/components/ReceiptListView", () => ({ ReceiptListView: () => null, TABS: [{ slug: "" }] }));
 vi.mock("@/components/ReceiptView", () => ({ ReceiptView: () => null }));
@@ -40,5 +40,6 @@ describe("panel pages without a session", () => {
     expect(q.getReceipt).not.toHaveBeenCalled();
     expect(q.getRules).not.toHaveBeenCalled();
     expect(q.nextDraft).not.toHaveBeenCalled();
+    expect(q.getGibCredential).not.toHaveBeenCalled();
   });
 });

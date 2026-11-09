@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import { createReceipt, getRules, getVendorRule, hasDuplicateReceipt, type NewReceipt } from "@/db/queries";
+import { getRules } from "@/db/queries";
 import { getUserId } from "@/lib/auth/session";
-import { isValidTaxNumber } from "@/lib/checks";
-import { InvoiceError, invoiceData, invoiceRules, parseInvoice, skipReason } from "@/lib/efatura";
+import { importInvoiceFiles } from "@/lib/efatura-import";
 import { activeFirm } from "@/lib/firm";
 import { fail, unauthorized } from "@/lib/http";
-import { buildJournalLines, warn } from "@/lib/journal";
 import { allow } from "@/lib/rate-limit";
-import { withVendorAccount } from "@/lib/vendor-rule";
 import { unzip, ZipError } from "@/lib/zip";
 
 export const runtime = "nodejs";
@@ -16,8 +13,6 @@ export const maxDuration = 60;
 const MAX_BYTES = 4 * 1024 * 1024; // under Vercel's 4.5 MB request body limit
 const MAX_INVOICES = 300;
 const ZIP_LIMITS = { maxFiles: 1000, maxFileBytes: 5 * 1024 * 1024, maxTotalBytes: 100 * 1024 * 1024 };
-
-type Skipped = { file: string; number: string | null; reason: string };
 
 /**
  * Turns e-Fatura / e-Arşiv XML the user downloaded (one .xml, or the GİB portal's / integrator's .zip) into draft receipts of
@@ -56,54 +51,6 @@ export async function POST(request: Request) {
   const [{ rules }, { firm }] = await Promise.all([getRules(userId), activeFirm(userId, typeof wanted === "string" ? wanted : null)]);
   // Without the firm's VKN its own sales invoices and other clients' invoices could not be told apart: refuse, don't guess.
   if (!firm.taxNumber) return fail("Önce Firmalar'da bu firmanın VKN'sini girin; faturaların bu firmaya kesildiği VKN ile doğrulanır.", 422);
-  const ids: string[] = [];
-  const skipped: Skipped[] = [];
-  const seen = new Set<string>();
-  const name = (f: { name: string }) => f.name.split(/[\\/]/).pop()!.slice(0, 120);
-
-  for (const f of files) {
-    let inv;
-    try {
-      inv = parseInvoice(f.data.toString("utf8"));
-    } catch (e) {
-      if (!(e instanceof InvoiceError)) throw e;
-      skipped.push({ file: name(f), number: null, reason: e.message });
-      continue;
-    }
-    const reason = skipReason(inv, firm.taxNumber);
-    if (reason) { skipped.push({ file: name(f), number: inv.number, reason }); continue; }
-    const vkn = inv.supplier.taxNumber && isValidTaxNumber(inv.supplier.taxNumber) ? inv.supplier.taxNumber : null;
-    const key = `${vkn}|${inv.number}|${inv.date}`;
-    if (seen.has(key) || (vkn && (await hasDuplicateReceipt(userId, vkn, inv.number, inv.date)))) {
-      skipped.push({ file: name(f), number: inv.number, reason: "Bu fatura zaten yüklü." });
-      continue;
-    }
-    seen.add(key);
-
-    const data = invoiceData(inv);
-    const learned = vkn ? await getVendorRule(userId, firm.id, vkn).catch(() => null) : null;
-    const { lines, warnings } = buildJournalLines(data, withVendorAccount(invoiceRules(rules), data.category, learned && { code: learned.accountCode, name: learned.accountName }));
-    const extra = [warn("efatura"), ...(inv.otherTax ? [warn("efatura_other_tax")] : []), ...(vkn ? [] : [warn("tax_number_invalid")])];
-    const receipt: NewReceipt = {
-      vendorName: data.vendorName,
-      taxNumber: vkn,
-      receiptNo: data.receiptNo,
-      receiptDate: data.date,
-      totalKurus: data.totalKurus,
-      paymentMethod: data.paymentMethod,
-      category: data.category,
-      extraction: { source: "e-fatura", ...inv },
-      warnings: [...extra, ...warnings.filter((w) => !extra.some((x) => x.code === w.code))],
-      model: "e-fatura",
-      inputTokens: 0,
-      outputTokens: 0,
-    };
-    try {
-      ids.push(await createReceipt(userId, firm.id, receipt, lines));
-    } catch (err) {
-      console.error("e-fatura save failed", { error: err instanceof Error ? err.name : "unknown" });
-      skipped.push({ file: name(f), number: inv.number, reason: "Kaydedilemedi; tekrar yükleyin." });
-    }
-  }
+  const { ids, skipped } = await importInvoiceFiles(userId, firm, rules, files);
   return NextResponse.json({ firm: firm.name, created: ids.length, ids, skipped }, { status: ids.length ? 201 : 200, headers: { "Cache-Control": "no-store" } });
 }

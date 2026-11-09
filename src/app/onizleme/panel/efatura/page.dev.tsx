@@ -3,6 +3,7 @@ import { PreviewTheme } from "../PreviewTheme";
 import { PreviewApi } from "../PreviewApi";
 import { AppShell } from "@/components/AppShell";
 import { EInvoiceView } from "@/components/EInvoiceView";
+import { recentMonths } from "@/lib/month";
 import { PREVIEW_EMAIL, PREVIEW_FIRM } from "@/lib/preview-fixtures";
 
 const RESULT = {
@@ -14,14 +15,16 @@ const RESULT = {
   ],
 };
 
-export default async function PreviewEInvoice({ searchParams }: { searchParams: Promise<{ tema?: string; bos?: string }> }) {
-  const { tema, bos } = await searchParams;
+export default async function PreviewEInvoice({ searchParams }: { searchParams: Promise<{ tema?: string; bos?: string; gib?: string }> }) {
+  const { tema, bos, gib } = await searchParams;
+  // ?gib=yok (no login stored), bagli (stored), kapali (no server key)
+  const state = { enabled: gib !== "kapali", connected: gib === "bagli", lastUsed: gib === "bagli" ? "02.11.2026" : null };
   return (
     <>
       <PreviewTheme tema={tema} />
       <PreviewApi approved={[]} />
       <AppShell current="fisler" base="/onizleme/panel" email={PREVIEW_EMAIL} firmId={PREVIEW_FIRM.id}>
-        <EInvoiceView firmName={PREVIEW_FIRM.name} base="/onizleme/panel" preview={bos ? undefined : RESULT} />
+        <EInvoiceView firmName={PREVIEW_FIRM.name} gib={state} months={recentMonths(new Date("2026-11-09"))} base="/onizleme/panel" preview={bos ? undefined : RESULT} />
       </AppShell>
     </>
   );

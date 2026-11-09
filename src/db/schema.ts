@@ -122,3 +122,20 @@ export const vendorRules = pgTable("vendor_rules", {
   index("vendor_rules_user_idx").on(t.userId),
   ownerPolicy("vendor_rules_owner"),
 ]);
+
+// A firm's GİB e-Arşiv portal login, sealed with AES-256-GCM (src/lib/gib/secret.ts). The key lives only in the server's
+// environment, never here; each value is bound to its user, firm and field, so a row copied elsewhere does not open.
+// Nothing ever sends these back to a browser.
+export const gibCredentials = pgTable("gib_credentials", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id),
+  usernameSealed: text("username_sealed").notNull(),
+  passwordSealed: text("password_sealed").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("gib_credentials_firm_idx").on(t.firmId),
+  index("gib_credentials_user_idx").on(t.userId),
+  ownerPolicy("gib_credentials_owner"),
+]);
