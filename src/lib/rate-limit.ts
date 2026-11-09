@@ -38,7 +38,8 @@ export const LIMITS = {
   gibNew: [[3, 24 * 60 * MIN]], // logins saved by accounts younger than a day
   gibGlobal: [[3000, 24 * 60 * MIN]], // GİB refusals across the app in a day (only failures fill it, so valid saves cannot use it up)
   gibIp: [[10, 24 * 60 * MIN]], // GİB refusals per network a day: no credential-list checking from a farm of accounts
-  gibIpTry: [[20, 24 * 60 * MIN]], // GİB checks per network a day
+  gibDelete: [[30, MIN]], // removing a stored login is never blocked by the pull/save budget
+  gibTryIp: [[20, 24 * 60 * MIN]], // GİB checks per network a day (an *Ip kind: IPv6 counts per /64)
 } as const;
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex").slice(0, 32);

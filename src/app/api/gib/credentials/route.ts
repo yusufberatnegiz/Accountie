@@ -37,7 +37,7 @@ export async function PUT(request: Request) {
   if (!firm.taxNumber) return fail("Önce Firmalar'da bu firmanın VKN'sini girin.", 422);
   const isNew = !(Date.now() - user.createdAt.getTime() >= 24 * 60 * 60_000);
   if (!(await under("gibCodeFail", body.data.kullaniciKodu)) || !(await under("gibUserFail", userId)) || !(await under("gibIp", net)) || !(await under("gibGlobal", "all"))
-    || !(await allow("gib", userId)) || !(await allow("gibFirm", firm.id)) || (isNew && !(await allow("gibNew", userId))) || !(await allow("gibIpTry", net))
+    || !(await allow("gib", userId)) || !(await allow("gibFirm", firm.id)) || (isNew && !(await allow("gibNew", userId))) || !(await allow("gibTryIp", net))
     || !(await allow("gibUserTry", userId)) || !(await allow("gibCodeTry", body.data.kullaniciKodu))) {
     return fail("Çok fazla deneme yapıldı. Bir süre bekleyin; GİB hesabı kilitlenmesin.", 429);
   }
@@ -69,7 +69,7 @@ export async function DELETE(request: Request) {
   const wanted = new URL(request.url).searchParams.get("firma");
   const { firm } = await activeFirm(userId, wanted);
   if (wanted !== null && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never fall back to another firm's login
-  if (!(await allow("gib", userId))) return fail("Çok fazla işlem yapıldı. Bir süre bekleyin.", 429);
+  if (!(await allow("gibDelete", userId))) return fail("Çok fazla işlem yapıldı. Bir süre bekleyin.", 429);
   await deleteGibCredential(userId, firm.id);
   return new NextResponse(null, { status: 204 });
 }

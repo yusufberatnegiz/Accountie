@@ -284,7 +284,7 @@ export async function getGibCredential(userId: string, firmId: string): Promise<
 
 export async function saveGibCredential(userId: string, firmId: string, usernameSealed: string, passwordSealed: string): Promise<void> {
   const rows = await getDb().insert(gibCredentials).values({ userId, firmId, usernameSealed, passwordSealed })
-    .onConflictDoUpdate({ target: gibCredentials.firmId, set: { usernameSealed, passwordSealed, updatedAt: new Date(), lastUsedAt: null }, setWhere: eq(gibCredentials.userId, userId) })
+    .onConflictDoUpdate({ target: gibCredentials.firmId, set: { usernameSealed, passwordSealed, updatedAt: new Date(), lastUsedAt: null, failedLogins: 0 }, setWhere: eq(gibCredentials.userId, userId) })
     .returning({ id: gibCredentials.id });
   if (rows.length === 0) throw new Error("gib credential not saved"); // another user's row for this firm id: never report success
 }
