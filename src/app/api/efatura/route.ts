@@ -54,6 +54,8 @@ export async function POST(request: Request) {
 
   const wanted = form?.get("firma");
   const [{ rules }, { firm }] = await Promise.all([getRules(userId), activeFirm(userId, typeof wanted === "string" ? wanted : null)]);
+  // Without the firm's VKN its own sales invoices and other clients' invoices could not be told apart: refuse, don't guess.
+  if (!firm.taxNumber) return fail("Önce Firmalar'da bu firmanın VKN'sini girin; faturaların bu firmaya kesildiği VKN ile doğrulanır.", 422);
   const ids: string[] = [];
   const skipped: Skipped[] = [];
   const seen = new Set<string>();
@@ -81,7 +83,7 @@ export async function POST(request: Request) {
     const data = invoiceData(inv);
     const learned = vkn ? await getVendorRule(userId, firm.id, vkn).catch(() => null) : null;
     const { lines, warnings } = buildJournalLines(data, withVendorAccount(invoiceRules(rules), data.category, learned && { code: learned.accountCode, name: learned.accountName }));
-    const extra = [warn("efatura"), ...(firm.taxNumber ? [] : [warn("efatura_unverified")]), ...(inv.otherTax ? [warn("efatura_other_tax")] : []), ...(vkn ? [] : [warn("tax_number_invalid")])];
+    const extra = [warn("efatura"), ...(inv.otherTax ? [warn("efatura_other_tax")] : []), ...(vkn ? [] : [warn("tax_number_invalid")])];
     const receipt: NewReceipt = {
       vendorName: data.vendorName,
       taxNumber: vkn,
@@ -96,7 +98,12 @@ export async function POST(request: Request) {
       inputTokens: 0,
       outputTokens: 0,
     };
-    ids.push(await createReceipt(userId, firm.id, receipt, lines));
+    try {
+      ids.push(await createReceipt(userId, firm.id, receipt, lines));
+    } catch (err) {
+      console.error("e-fatura save failed", { error: err instanceof Error ? err.name : "unknown" });
+      skipped.push({ file: name(f), number: inv.number, reason: "Kaydedilemedi; tekrar yükleyin." });
+    }
   }
   return NextResponse.json({ firm: firm.name, created: ids.length, ids, skipped }, { status: ids.length ? 201 : 200, headers: { "Cache-Control": "no-store" } });
 }

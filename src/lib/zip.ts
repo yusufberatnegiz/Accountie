@@ -33,6 +33,7 @@ export function unzip(file: Buffer, { maxFiles, maxFileBytes, maxTotalBytes }: {
   if (count > maxFiles) throw new ZipError("files");
   let at = file.readUInt32LE(end + 16);
   let total = 0;
+  let packed = 0; // entries pointing at the same bytes would inflate them again and again
   const out: { name: string; data: Buffer }[] = [];
   for (let i = 0; i < count; i++) {
     if (at + 46 > file.length || file.readUInt32LE(at) !== 0x02014b50) throw new ZipError("zip");
@@ -45,7 +46,7 @@ export function unzip(file: Buffer, { maxFiles, maxFileBytes, maxTotalBytes }: {
     if (name.endsWith("/")) continue;
     if (local + 30 > file.length || file.readUInt32LE(local) !== 0x04034b50) throw new ZipError("zip");
     const start = local + 30 + file.readUInt16LE(local + 26) + file.readUInt16LE(local + 28);
-    if (start + compressed > file.length) throw new ZipError("zip");
+    if (start + compressed > file.length || (packed += compressed) > file.length) throw new ZipError("zip");
     const raw = file.subarray(start, start + compressed);
     let data: Buffer;
     try {

@@ -80,6 +80,7 @@ export function parseInvoice(xml: string): Invoice {
     if (p === "Invoice/TaxTotal/TaxSubtotal/Percent") sub.percent = value;
     if (p === "Invoice/TaxTotal/TaxSubtotal/TaxCategory/TaxScheme/TaxTypeCode") sub.code = value;
     if (p === "Invoice/TaxTotal/TaxSubtotal") {
+      if (vat.length >= 20) throw new InvoiceError("Faturada çok fazla vergi satırı var.");
       if (sub.code === "0015") {
         const taxable = decimalKurus(sub.taxable ?? ""), amount = decimalKurus(sub.amount ?? ""), rate = Number(sub.percent);
         if (taxable === null || amount === null || !Number.isFinite(rate)) throw new InvoiceError("KDV tutarları okunamadı.");
@@ -98,6 +99,7 @@ export function parseInvoice(xml: string): Invoice {
   }
 
   const number = got["Invoice/ID"], date = got["Invoice/IssueDate"], payable = decimalKurus(got["Invoice/LegalMonetaryTotal/PayableAmount"] ?? "");
+  if (payable !== null && Math.abs(payable) > 1e12) throw new InvoiceError("Fatura tutarı gerçek dışı.");
   if (!number || !/^\d{4}-\d{2}-\d{2}$/.test(date ?? "") || payable === null) throw new InvoiceError("Fatura no, tarih ya da ödenecek tutar yok.");
   return {
     number: number.slice(0, 40),

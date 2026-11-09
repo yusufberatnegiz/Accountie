@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { parseTrAmount } from "../money";
-import { unzippedSize } from "../zip";
+import { unzip } from "../zip";
 
 /**
  * Luca muavin (sub-ledger) export, read without knowing its exact layout: the header row is found by its column names, and the
@@ -50,10 +50,14 @@ function isoDate(v: ExcelJS.CellValue): string | null {
   return m ? `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}` : null;
 }
 
-const MAX_UNZIPPED = 60 * 1024 * 1024;
+// exceljs keeps an object per cell, so the sheet XML is capped well under what a function can hold.
+const MAX_UNZIPPED = 15 * 1024 * 1024;
 /** The rows of the first sheet that carries an Evrak No, Borç and Alacak header. Throws MuavinError (Turkish) when none does. */
 export async function readMuavin(file: Buffer): Promise<MuavinRow[]> {
-  if (unzippedSize(file) > MAX_UNZIPPED) throw new MuavinError("Dosya açılamadı ya da çok büyük. Luca'dan tek ayın muavinini Excel (.xlsx) olarak indirin.");
+  // exceljs (JSZip) inflates an entry fully before checking its declared size: inflate it here first with a hard cap.
+  try { unzip(file, { maxFiles: 2000, maxFileBytes: MAX_UNZIPPED, maxTotalBytes: MAX_UNZIPPED }); } catch {
+    throw new MuavinError("Dosya açılamadı ya da çok büyük. Luca'dan tek ayın muavinini Excel (.xlsx) olarak indirin.");
+  }
   const book = new ExcelJS.Workbook();
   try {
     await book.xlsx.load(file as unknown as ArrayBuffer);
@@ -122,7 +126,7 @@ export function reconcile(receipts: readonly ReceiptForCheck[], rows: readonly M
   const accounts = [...new Set(rows.flatMap((r) => (r.accountCode ? [r.accountCode] : [])))].sort();
   const covered = (code: string) => accounts.length === 0 || accounts.some((a) => sameAccount(code, a));
   const byDoc = new Map<string, MuavinRow[]>();
-  for (const r of rows) byDoc.set(docKey(r.documentNo), [...(byDoc.get(docKey(r.documentNo)) ?? []), r]);
+  for (const r of rows) { const k = docKey(r.documentNo); const list = byDoc.get(k); if (list) list.push(r); else byDoc.set(k, [r]); }
   const seen = new Set<string>();
 
   const results: CheckResult[] = receipts.map((receipt) => {
@@ -138,6 +142,7 @@ export function reconcile(receipts: readonly ReceiptForCheck[], rows: readonly M
     const off = lines.filter((l) => l.foundKurus !== l.expectedKurus);
     return off.length ? { kind: "fark", receipt, lines: off } : { kind: "uyuyor", receipt };
   });
-  const extra = rows.filter((r) => !seen.has(docKey(r.documentNo)) && !receipts.some((x) => docKey(x.documentNo) === docKey(r.documentNo)));
+  const ours = new Set(receipts.map((x) => docKey(x.documentNo)));
+  const extra = rows.filter((r) => !ours.has(docKey(r.documentNo)));
   return { results, extra, accounts };
 }

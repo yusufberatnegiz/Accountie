@@ -48,7 +48,7 @@ export function EInvoiceView({ firmName, base = "/panel", preview }: { firmName:
           <li>GİB e-Arşiv portalında ya da entegratörünüzde gelen faturaları seçin.</li>
           <li>XML olarak (birden çoksa zip) indirin ve buraya yükleyin.</li>
         </ol>
-        <p className="muted small">GİB şifreniz Accountie&apos;ye gelmez, Accountie GİB&apos;e bağlanmaz. Dosya saklanmaz; yalnız taslaklar kaydedilir. Satış, iade, tevkifatlı ve döviz faturaları atlanır.</p>
+        <p className="muted small">GİB şifreniz Accountie&apos;ye gelmez, Accountie GİB&apos;e bağlanmaz. Dosya saklanmaz; yalnız taslaklar kaydedilir. Faturanın bu firmaya kesildiği firmanın VKN&apos;siyle doğrulanır; satış, iade, tevkifatlı ve döviz faturaları atlanır.</p>
         <form className="reconcile-form" onSubmit={upload} aria-describedby={error ? "fatura-hata" : undefined}>
           <label className="stack"><span>XML ya da zip (en fazla 4 MB, 300 fatura)</span><input className="field" type="file" name="dosya" accept=".xml,.zip,application/xml,text/xml,application/zip" required /></label>
           {error ? <p id="fatura-hata" className="alert alert-error" role="alert">{error}</p> : null}

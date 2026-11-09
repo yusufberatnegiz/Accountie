@@ -51,6 +51,13 @@ describe("muavin okuma", () => {
     huge.writeUInt32LE(0xfffffff0, huge.readUInt32LE(end + 16) + 24); // first entry claims ~4 GB unpacked
     expect(unzippedSize(huge)).toBeGreaterThan(60 * 1024 * 1024);
     await expect(readMuavin(huge)).rejects.toThrow(MuavinError);
+    // A header that understates the size: the capped inflate still stops it before exceljs sees the file.
+    const { deflateRawSync } = await import("node:zlib");
+    const body = deflateRawSync(Buffer.alloc(20 * 1024 * 1024, 0x20)), lie = Buffer.alloc(30);
+    lie.writeUInt32LE(0x04034b50, 0); lie.writeUInt16LE(8, 8); lie.writeUInt32LE(body.length, 18); lie.writeUInt32LE(10, 22); lie.writeUInt16LE(1, 26);
+    const cd = Buffer.alloc(46); cd.writeUInt32LE(0x02014b50, 0); cd.writeUInt16LE(8, 10); cd.writeUInt32LE(body.length, 20); cd.writeUInt32LE(10, 24); cd.writeUInt16LE(1, 28);
+    const eocd = Buffer.alloc(22); eocd.writeUInt32LE(0x06054b50, 0); eocd.writeUInt16LE(1, 8); eocd.writeUInt16LE(1, 10); eocd.writeUInt32LE(47, 12); eocd.writeUInt32LE(31 + body.length, 16);
+    await expect(readMuavin(Buffer.concat([lie, Buffer.from("x"), body, cd, Buffer.from("x"), eocd]))).rejects.toThrow(MuavinError);
     expect(unzippedSize(Buffer.from([0x50, 0x4b, 3, 4]))).toBe(Infinity);
   });
 });

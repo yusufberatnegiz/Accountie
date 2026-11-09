@@ -84,6 +84,22 @@ describe("POST /api/efatura", () => {
     expect(body.skipped.map((s: { file: string; reason: string }) => [s.file, s.reason.slice(0, 12)])).toEqual([["2.xml", "Bu fatura za"], ["3.xml", "Firmanın ken"], ["4.xml", "XML okunamad"]]);
   });
 
+  it("firmanın VKN'si yoksa hiçbir faturayı almaz (kendi satışı ayırt edilemez)", async () => {
+    vi.mocked(activeFirm).mockResolvedValueOnce({ firms: [FIRM], firm: { ...FIRM, taxNumber: null } });
+    expect((await POST(post(invoiceXml()))).status).toBe(422);
+    expect(q.createReceipt).not.toHaveBeenCalled();
+  });
+
+  it("aynı sıkıştırılmış veriyi gösteren girdileri yeniden açmaz", async () => {
+    const one = zip([{ name: "a.xml", data: Buffer.from(invoiceXml()) }]);
+    const end = one.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+    const cdStart = one.readUInt32LE(end + 16), central = one.subarray(cdStart, end);
+    const copies = Buffer.concat(Array(50).fill(central)), tail = Buffer.from(one.subarray(end));
+    tail.writeUInt16LE(50, 8); tail.writeUInt16LE(50, 10); tail.writeUInt32LE(copies.length, 12);
+    expect((await POST(post(Buffer.concat([one.subarray(0, cdStart), copies, tail]))))).toMatchObject({ status: 422 });
+    expect(q.createReceipt).not.toHaveBeenCalled();
+  });
+
   it("açılınca sınırı aşan zip'i (boyutu yalan söylese de) açmadan reddeder", async () => {
     const bomb = zip([{ name: "b.xml", data: Buffer.alloc(6 * 1024 * 1024, 0x20), declared: 100 }]);
     expect(bomb.length).toBeLessThan(100_000);
