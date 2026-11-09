@@ -91,22 +91,23 @@ export async function saveRules(userId: string, rows: readonly RuleRow[]): Promi
 }
 
 /**
- * Records one attempt for `key` and says whether every `[limit, windowMs]` still holds.
- * The attempt is stored before the work starts, so parallel requests count against each other.
+ * Says whether every `[limit, windowMs]` still has room for `key` and, if so, records this attempt. A refused request writes
+ * nothing, so a flood of refused calls cannot grow the table. Counting and recording happen under one lock per key.
  */
 export async function hitRateLimit(key: string, windows: readonly (readonly [limit: number, windowMs: number])[]): Promise<boolean> {
   const now = Date.now();
   const results = await getDb().transaction(async (tx) => {
     // One key at a time: under READ COMMITTED parallel requests would not see each other's uncommitted hit and all pass.
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${key}))`);
-    // Global sweep so one-off keys (other e-mails/IPs) do not pile up; no LIMITS window is longer than a day.
-    // shortcut: no index on created_at alone, so this scans the (one day of hits) table; add one if it grows large.
-    await tx.delete(rateLimitHits).where(lt(rateLimitHits.createdAt, new Date(now - 24 * 60 * 60_000)));
-    await tx.insert(rateLimitHits).values({ key });
-    return Promise.all(windows.map(([, ms]) =>
+    // Sweep of rows older than any window (a day), on the created_at index, now and then rather than on every call.
+    if (Math.random() < 0.05) await tx.delete(rateLimitHits).where(lt(rateLimitHits.createdAt, new Date(now - 24 * 60 * 60_000)));
+    const counts = await Promise.all(windows.map(([, ms]) =>
       tx.select({ n: count() }).from(rateLimitHits).where(and(eq(rateLimitHits.key, key), gt(rateLimitHits.createdAt, new Date(now - ms))))));
+    const ok = windows.every(([limit], i) => (counts[i][0]?.n ?? 0) < limit);
+    if (ok) await tx.insert(rateLimitHits).values({ key });
+    return ok;
   });
-  return windows.every(([limit], i) => (results[i][0]?.n ?? 0) <= limit);
+  return results;
 }
 
 /** Whether every window still has room for `key`, without recording an attempt. */
@@ -282,8 +283,10 @@ export async function getGibCredential(userId: string, firmId: string): Promise<
 }
 
 export async function saveGibCredential(userId: string, firmId: string, usernameSealed: string, passwordSealed: string): Promise<void> {
-  await getDb().insert(gibCredentials).values({ userId, firmId, usernameSealed, passwordSealed })
-    .onConflictDoUpdate({ target: gibCredentials.firmId, set: { usernameSealed, passwordSealed, updatedAt: new Date(), lastUsedAt: null }, setWhere: eq(gibCredentials.userId, userId) });
+  const rows = await getDb().insert(gibCredentials).values({ userId, firmId, usernameSealed, passwordSealed })
+    .onConflictDoUpdate({ target: gibCredentials.firmId, set: { usernameSealed, passwordSealed, updatedAt: new Date(), lastUsedAt: null }, setWhere: eq(gibCredentials.userId, userId) })
+    .returning({ id: gibCredentials.id });
+  if (rows.length === 0) throw new Error("gib credential not saved"); // another user's row for this firm id: never report success
 }
 
 export async function deleteGibCredential(userId: string, firmId: string): Promise<void> {

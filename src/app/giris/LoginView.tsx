@@ -3,9 +3,7 @@ import type { ReactNode } from "react";
 import { AuthForm } from "./AuthForm";
 import { CookieNote } from "@/components/site/CookieNote";
 import { SiteBar } from "@/components/site/SiteBar";
-import { Thermal } from "@/components/home/Thermal";
-import { defaultPayment, journalFor, KAFE, shownAccountName } from "@/components/home/samples";
-import { formatTrAmount } from "@/lib/money";
+import { BrandMark } from "@/components/BrandMark";
 import "./auth.css";
 
 const MESSAGES: Record<string, string> = {
@@ -14,40 +12,10 @@ const MESSAGES: Record<string, string> = {
   baglanti: "Bu bağlantı geçersiz ya da süresi dolmuş. Giriş yapın ya da yeniden kayıt bağlantısı isteyin.",
 };
 
-// A café receipt, not the homepage counter's 0412: each product picture reads its own fiş (YON 23.15).
-const SAMPLE = KAFE;
-const { lines } = journalFor(SAMPLE, defaultPayment(SAMPLE));
-const total = lines.reduce((s, l) => s + l.debitKurus, 0);
-
-/** The product's own face beside the form: the Luca lines card on its plate, the thermal strip riding over its top-left corner (YON.md 23.2; no photo, no user data). */
-function Stage() {
-  return (
-    <aside className="auth-stage" aria-label="Örnek: bir fiş ve Luca satırları">
-      <div className="auth-piece" data-ui>
-        <div className="auth-strip"><Thermal sample={SAMPLE} printedPayment="KREDİ KARTI" /></div>
-        <div className="auth-plate"><div className="auth-sheet">
-          <p className="auth-sheet-head"><span>Luca Fiş Detayı</span><span className="status status-approved">Onaylandı</span><span className="auth-sheet-meta">Evrak No {SAMPLE.receipt.receiptNo}, BT ÖK</span></p>
-          <table>
-            <thead><tr><th scope="col">Hesap</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
-            <tbody>
-              {lines.map((l) => (
-                <tr key={l.accountCode}>
-                  <td><span className="auth-code" translate="no">{l.accountCode}</span><span className="auth-code-name">{shownAccountName(l.accountName)}</span></td>
-                  <td className="num to-luca">{l.debitKurus ? formatTrAmount(l.debitKurus) : ""}</td>
-                  <td className="num to-luca">{l.creditKurus ? formatTrAmount(l.creditKurus) : ""}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="auth-balance">Borç {formatTrAmount(total)} = Alacak {formatTrAmount(total)} · <span className="balance-ok">Dengede</span></p>
-          <p className="auth-file"><span>luca-fisler-20260901.xlsx</span><span className="auth-sheet-meta">1 fiş, 3 satır</span></p>
-        </div></div>
-      </div>
-    </aside>
-  );
-}
-
-/** Shared frame of the auth screens: the public bar, the form column in <main>, the product piece on the stage tone. */
+/**
+ * Shared frame of the auth screens: the public bar and one centred column (the mark, the title, the form), as Linear, Vercel
+ * and Paraşüt do it. Nothing beside the form: the person came here to sign in, the homepage already shows the product.
+ */
 export function AuthShell({ title, lead, current, children }: { title: string; lead: string; current?: "giris" | "kayit"; children: ReactNode }) {
   return (
     <div className="auth">
@@ -55,13 +23,13 @@ export function AuthShell({ title, lead, current, children }: { title: string; l
       <main id="icerik" tabIndex={-1} className="auth-main">
         <section className="auth-form" aria-labelledby="auth-title">
           <div className="auth-head">
+            <span className="auth-mark" aria-hidden="true"><BrandMark /></span>
             <h1 id="auth-title">{title}</h1>
             <p>{lead}</p>
           </div>
           {children}
         </section>
       </main>
-      <Stage />
       {/* After the content: the strip is fixed, so this only puts it last in reading and Tab order (WCAG 2.4.3). */}
       <CookieNote />
     </div>
@@ -78,7 +46,7 @@ export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey, next }: { h
     <AuthShell
       current={isSignup ? "kayit" : "giris"}
       title={isSignup ? "Hesap oluşturun" : "Giriş yapın"}
-      lead={isSignup ? "Fiş fotoğrafından Luca yevmiye kaydı hazırlayın. Varsayılan hesap planı kural tablonuza kopyalanır." : "Fiş listenize ve hesap kurallarınıza dönün."}>
+      lead={isSignup ? "Fiş fotoğraflarından Luca yevmiye kaydı hazırlayın." : "Fiş listenize ve hesap kurallarınıza dönün."}>
       {message ? <p className="alert alert-ok" role="status">{message}</p> : null}
       <AuthForm isSignup={isSignup} initialError={hata} turnstileSiteKey={turnstileSiteKey} next={next} />
       <p className="auth-switch">

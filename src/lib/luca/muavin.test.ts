@@ -46,7 +46,7 @@ describe("muavin okuma", () => {
     const huge = Buffer.from(ok);
     const end = huge.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
     huge.writeUInt32LE(0xfffffff0, huge.readUInt32LE(end + 16) + 24); // first entry claims ~4 GB unpacked
-    await expect(readMuavin(huge)).rejects.toThrow(MuavinError);
+    await expect(readMuavin(huge)).resolves.toEqual([]); // the reader goes by the inflated bytes, a lying size header changes nothing
     // A header that understates the size: the capped inflate still stops it before exceljs sees the file.
     const { deflateRawSync } = await import("node:zlib");
     const body = deflateRawSync(Buffer.alloc(20 * 1024 * 1024, 0x20)), lie = Buffer.alloc(30);
@@ -64,6 +64,24 @@ describe("muavin okuma", () => {
     };
     await expect(readMuavin(two("xl/", "xl/worksheets/sheet1.xml"))).rejects.toThrow(MuavinError);
     await expect(readMuavin(two("xl/", "xl/"))).rejects.toThrow(MuavinError); // a "folder" that inflates to 20 MB is still capped
+  });
+});
+
+describe("muavin okuyucusu yapısal bombalara karşı", () => {
+  it("dev birleştirme, doğrulama ve sütun tanımlarını hiç işlemez; değerleri hızla okur", async () => {
+    const { deflateRawSync } = await import("node:zlib");
+    const sheet = `<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="16384" width="9"/></cols><sheetData>`
+      + `<row r="1"><c r="A1" t="inlineStr"><is><t>Evrak No</t></is></c><c r="B1" t="inlineStr"><is><t>Borç</t></is></c><c r="C1" t="inlineStr"><is><t>Alacak</t></is></c></row>`
+      + `<row r="2"><c r="A2" t="inlineStr"><is><t>0412</t></is></c><c r="B2"><v>589.09</v></c><c r="C2"><v>0</v></c></row></sheetData>`
+      + `<mergeCells count="1"><mergeCell ref="A1:XFD1048576"/></mergeCells><dataValidations count="1"><dataValidation sqref="A1:XFD1048576"/></dataValidations></worksheet>`;
+    const data = Buffer.from(sheet), body = deflateRawSync(data), name = Buffer.from("xl/worksheets/sheet1.xml");
+    const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(8, 8); lh.writeUInt32LE(body.length, 18); lh.writeUInt32LE(data.length, 22); lh.writeUInt16LE(name.length, 26);
+    const ch = Buffer.alloc(46); ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(8, 10); ch.writeUInt32LE(body.length, 20); ch.writeUInt32LE(data.length, 24); ch.writeUInt16LE(name.length, 28);
+    const e = Buffer.alloc(22); e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(1, 8); e.writeUInt16LE(1, 10); e.writeUInt32LE(46 + name.length, 12); e.writeUInt32LE(30 + name.length + body.length, 16);
+    const started = Date.now();
+    const rows = await readMuavin(Buffer.concat([lh, name, body, ch, name, e]));
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(rows).toEqual([{ accountCode: null, documentNo: "0412", date: null, debitKurus: 58909, creditKurus: 0 }]);
   });
 });
 

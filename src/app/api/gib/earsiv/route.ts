@@ -9,7 +9,7 @@ import { download, issuedToMe, login, logout, PortalError } from "@/lib/gib/ears
 import { open, secretContext, secretKey, SecretError } from "@/lib/gib/secret";
 import { fail, readJson, unauthorized } from "@/lib/http";
 import { currentMonth } from "@/lib/month";
-import { allow } from "@/lib/rate-limit";
+import { allow, under } from "@/lib/rate-limit";
 import { unzip, ZipError } from "@/lib/zip";
 
 export const runtime = "nodejs";
@@ -53,7 +53,10 @@ export async function POST(request: Request) {
     await deleteGibCredential(userId, firm.id);
     return fail("Kayıtlı bağlantı bozulmuş ve silindi. Kullanıcı kodunu ve şifreyi yeniden girin.", 409);
   }
-  if (!(await allow("gibPull", `${userId}:${username}`))) return fail("Bu GİB hesabı için çok fazla çekim yapıldı. Bir süre bekleyin.", 429);
+  // The same shared guards as saving: no pull logs in while this code has failed elsewhere, and one GİB login per code a minute.
+  if (!(await under("gibCodeFail", username)) || !(await allow("gibPull", `${userId}:${username}`)) || !(await allow("gibCodeTry", username))) {
+    return fail("Bu GİB hesabı için çok fazla deneme yapıldı. Bir süre bekleyin; hesap kilitlenmesin.", 429);
+  }
 
   const month = body.data.ay;
   const today = new Date(Date.now() + 3 * 3600_000).toISOString().slice(0, 10);
@@ -70,14 +73,15 @@ export async function POST(request: Request) {
     token = await login(username, password);
   } catch (e) {
     if (!(e instanceof PortalError)) throw e;
-    // Whatever GİB said, a stored login that keeps failing is removed before it can lock the client's account.
-    const third = !(await allow("gibPullFail", firm.id));
+    if (e.kind === "portal") return fail(e.message, 502); // no answer from GİB: nobody's guess, nothing counted or deleted
+    // Any refusal from GİB counts; a stored login refused twice in a day is removed before it can lock the client's account.
+    await allow("gibCodeFail", username);
+    const again = !(await allow("gibPullFail", firm.id));
     if (e.kind === "auth" || e.kind === "locked") {
-      await allow("gibCodeFail", username);
       await deleteGibCredential(userId, firm.id);
       return fail(e.kind === "locked" ? "GİB bu hesabın kilitli olduğunu bildirdi; bağlantı silindi. Hesabı GİB'de açtıktan sonra yeniden girin." : "GİB kayıtlı şifreyi kabul etmedi; hesap kilitlenmesin diye bağlantı silindi. Yeni şifreyi girin.", 422);
     }
-    if (third) {
+    if (again) {
       await deleteGibCredential(userId, firm.id);
       return fail("GİB girişi bugün art arda başarısız oldu; hesap kilitlenmesin diye bağlantı kaldırıldı. Şifreyi kontrol edip yeniden girin.", 422);
     }

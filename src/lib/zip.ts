@@ -15,7 +15,7 @@ export function unzip(file: Buffer, { maxFiles, maxFileBytes, maxTotalBytes }: {
   const cdSize = file.readUInt32LE(end + 12);
   let at = file.readUInt32LE(end + 16);
   if (file.readUInt16LE(end + 4) !== 0 || file.readUInt16LE(end + 6) !== 0 || file.readUInt16LE(end + 8) !== count || count === 0xffff
-    || at + cdSize !== end || file.includes(Buffer.from([0x50, 0x4b, 0x06, 0x07])) || file.includes(Buffer.from([0x50, 0x4b, 0x06, 0x06]))) throw new ZipError("zip");
+    || at + cdSize !== end || (end >= 20 && file.readUInt32LE(end - 20) === 0x07064b50)) throw new ZipError("zip"); // ZIP64 locator right before the end record
   if (count > maxFiles) throw new ZipError("files");
   let total = 0;
   let packed = 0; // entries pointing at the same bytes would inflate them again and again

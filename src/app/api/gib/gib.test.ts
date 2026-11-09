@@ -135,6 +135,8 @@ describe("GİB giriş reddinin sınıflandırılması", () => {
     expect(kind("Kullanıcı adı veya şifre hatalı")).toBe("auth");
     expect(kind("Hesabınız kilitlenmiştir")).toBe("locked");
     expect(kind("Şifre hatalı")).toBe("auth");
+    expect(kind("Hatalı kullanıcı adı veya şifre")).toBe("auth");
+    expect(kind("Kullanıcı kodu veya şifre hatalı. Doğrulama kodunu giriniz")).toBe("auth");
     expect(kind("Sistem bakımda, lütfen daha sonra deneyiniz")).toBe("refused");
     expect(kind("Güvenlik kodu hatalı")).toBe("refused");
     expect(kind("Geçersiz oturum")).toBe("refused"); // not a password message: the stored login is kept
@@ -157,12 +159,17 @@ describe("POST /api/gib/earsiv", () => {
     expect(q.touchGibCredential).toHaveBeenCalledWith("user-a", FIRM.id);
   });
 
-  it("eski oturumla çekilmez (403); başka hata türünde de günün üçüncü başarısız girişi bağlantıyı siler", async () => {
+  it("eski oturumla çekilmez (403); ağ hatası sayılmaz, GİB'in her reddi sayılır ve günün ikinci reddi bağlantıyı siler", async () => {
     const calls = portal();
     vi.mocked(session.signedInWithin).mockResolvedValueOnce(false);
     expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(403);
     expect(calls).toHaveLength(0);
+    // No readable answer (an HTML page): nothing counted, nothing deleted.
     vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>bakım</html>", { status: 200 })));
+    expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(502);
+    expect(q.deleteGibCredential).not.toHaveBeenCalled();
+    // A refusal GİB worded otherwise (maintenance) counts; the second one in a day removes the login.
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: "1", messages: [{ text: "Sistem bakımda" }] }), { status: 200 })));
     vi.mocked(allow).mockImplementation(async (kind) => kind !== "gibPullFail");
     expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(422);
     expect(q.deleteGibCredential).toHaveBeenCalledWith("user-a", FIRM.id);

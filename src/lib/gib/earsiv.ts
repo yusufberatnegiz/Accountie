@@ -73,7 +73,8 @@ export async function login(username: string, password: string): Promise<string>
 export function loginRefusal(json: Record<string, unknown>): PortalError {
   const text = JSON.stringify(json.messages ?? json.error ?? "").toLocaleLowerCase("tr");
   if (/kilit|bloke|askıya/.test(text)) return new PortalError("GİB bu hesabın kilitli olduğunu bildirdi.", "locked");
-  if (/(şifre|sifre|parola|kullanıcı (adı|kodu)|kullanici (adi|kodu)).{0,40}(hatalı|hatali|yanlış|yanlis|geçersiz|gecersiz|bulunamadı)/.test(text) && !/doğrulama kodu|captcha|güvenlik kodu/.test(text)) {
+  const who = "(şifre|sifre|parola|kullanıcı (adı|kodu)|kullanici (adi|kodu))", bad = "(hatalı|hatali|yanlış|yanlis|geçersiz|gecersiz|bulunamadı)";
+  if (new RegExp(`${who}.{0,40}${bad}|${bad}.{0,40}${who}`).test(text)) {
     return new PortalError("GİB kullanıcı kodunu ya da şifresini kabul etmedi.", "auth");
   }
   return new PortalError("GİB e-Arşiv portalı şu an girişe izin vermedi (bakım ya da doğrulama kodu olabilir). Biraz sonra tekrar deneyin.", "refused");

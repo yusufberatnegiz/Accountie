@@ -1,0 +1,1 @@
+CREATE INDEX "rate_limit_hits_created_idx" ON "rate_limit_hits" USING btree ("created_at");

@@ -1,6 +1,5 @@
-import ExcelJS from "exceljs";
 import { parseTrAmount } from "../money";
-import { unzip } from "../zip";
+import { readSheets, serialDate, XlsxError, type Cell } from "./xlsx-cells";
 
 /**
  * Luca muavin (sub-ledger) export, read without knowing its exact layout: the header row is found by its column names, and the
@@ -23,55 +22,40 @@ const HEADERS = {
 } as const;
 const ACCOUNT_TITLE = /^\s*(\d{3}(?:\.\d{1,3}){0,4})\b/;
 
-function text(v: ExcelJS.CellValue): string {
+function text(v: Cell | undefined): string {
   if (v == null) return "";
-  if (v instanceof Date) return Number.isNaN(v.getTime()) ? "" : v.toISOString().slice(0, 10);
-  if (typeof v === "object") {
-    if ("result" in v && v.result != null) return text(v.result as ExcelJS.CellValue);
-    if ("richText" in v) return v.richText.map((r) => r.text).join("");
-    if ("text" in v) return String(v.text);
-    return "";
-  }
-  return String(v).trim();
+  return typeof v === "number" ? String(v) : v.trim();
 }
 
-function kurus(v: ExcelJS.CellValue): number | null {
+function kurus(v: Cell | undefined): number | null {
   if (v == null || v === "") return 0;
   if (typeof v === "number") return Math.round(v * 100);
-  if (typeof v === "object" && v !== null && "result" in v) return kurus(v.result as ExcelJS.CellValue);
-  const t = text(v);
+  const t = v.trim();
   if (!t) return 0;
   try { return parseTrAmount(t.replace(/^-/, "")); } catch { return null; }
 }
 
-function isoDate(v: ExcelJS.CellValue): string | null {
-  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
+function isoDate(v: Cell | undefined): string | null {
+  if (typeof v === "number") return serialDate(v);
   const m = /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/.exec(text(v));
   return m ? `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}` : null;
 }
 
-// exceljs keeps an object per cell, so the sheet XML is capped well under what a function can hold.
 const MAX_UNZIPPED = 4 * 1024 * 1024; // one month of one firm is far below this
 /** The rows of the first sheet that carries an Evrak No, Borç and Alacak header. Throws MuavinError (Turkish) when none does. */
 export async function readMuavin(file: Buffer): Promise<MuavinRow[]> {
-  // exceljs (JSZip) inflates an entry fully before checking its declared size: inflate it here first with a hard cap.
-  try { unzip(file, { maxFiles: 2000, maxFileBytes: MAX_UNZIPPED, maxTotalBytes: MAX_UNZIPPED }); } catch {
+  let sheets: Cell[][][];
+  try {
+    sheets = readSheets(file, { maxBytes: MAX_UNZIPPED, maxRows: MAX_ROWS });
+  } catch (e) {
+    if (e instanceof XlsxError && e.message === "rows") throw new MuavinError(`Dosyada ${MAX_ROWS} satırdan fazlası var. Bir ayı ayrı indirin.`);
     throw new MuavinError("Dosya açılamadı ya da çok büyük. Luca'dan tek ayın muavinini Excel (.xlsx) olarak indirin.");
   }
-  const book = new ExcelJS.Workbook();
-  try {
-    await book.xlsx.load(file as unknown as ArrayBuffer);
-  } catch {
-    throw new MuavinError("Dosya açılamadı. Luca'dan Excel (.xlsx) olarak indirdiğiniz muavini yükleyin.");
-  }
-  for (const sheet of book.worksheets) {
+  for (const sheet of sheets) {
     let cols: Partial<Record<keyof typeof HEADERS, number>> | null = null;
     let account: string | null = null;
     const rows: MuavinRow[] = [];
-    let n = 0;
-    sheet.eachRow((row) => {
-      if (++n > MAX_ROWS) throw new MuavinError(`Dosyada ${MAX_ROWS} satırdan fazlası var. Bir ayı ayrı indirin.`);
-      const cells = (row.values as ExcelJS.CellValue[]).slice(1);
+    for (const cells of sheet) {
       if (!cols) {
         const keys = cells.map((c) => key(text(c)));
         const found: Partial<Record<keyof typeof HEADERS, number>> = {};
@@ -81,14 +65,14 @@ export async function readMuavin(file: Buffer): Promise<MuavinRow[]> {
         }
         if (found.documentNo !== undefined && found.debit !== undefined && found.credit !== undefined) cols = found;
         else { const title = ACCOUNT_TITLE.exec(text(cells[0])); if (title) account = title[1]; }
-        return;
+        continue;
       }
       const doc = text(cells[cols.documentNo!]);
       const debit = kurus(cells[cols.debit!]);
       const credit = kurus(cells[cols.credit!]);
       // A title row of the next account (grouped exports), or a total line: no evrak no, so not a posting.
-      if (!doc) { const title = ACCOUNT_TITLE.exec(text(cells[0])); if (title && cols.account === undefined) account = title[1]; return; }
-      if (debit === null || credit === null) return;
+      if (!doc) { const title = ACCOUNT_TITLE.exec(text(cells[0])); if (title && cols.account === undefined) account = title[1]; continue; }
+      if (debit === null || credit === null) continue;
       rows.push({
         accountCode: cols.account !== undefined ? (ACCOUNT_TITLE.exec(text(cells[cols.account]))?.[1] ?? null) : account,
         documentNo: doc,
@@ -96,7 +80,7 @@ export async function readMuavin(file: Buffer): Promise<MuavinRow[]> {
         debitKurus: debit,
         creditKurus: credit,
       });
-    });
+    }
     if (cols) return rows;
   }
   throw new MuavinError("Dosyada Evrak No, Borç ve Alacak sütunları bulunamadı. Luca'da muavini bu sütunlarla Excel'e aktarın.");

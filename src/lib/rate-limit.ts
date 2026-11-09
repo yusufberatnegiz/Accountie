@@ -34,7 +34,7 @@ export const LIMITS = {
   gibCodeTry: [[1, MIN]],
   gibUserFail: [[5, 24 * 60 * MIN]], // failed GİB checks per Accountie user: no checking of leaked code/password lists
   gibPull: [[10, 60 * MIN], [40, 24 * 60 * MIN]], // per user and stored code
-  gibPullFail: [[2, 24 * 60 * MIN]], // a stored login failing a third time in a day is removed, whatever GİB said
+  gibPullFail: [[1, 24 * 60 * MIN]], // a stored login GİB refuses a second time in a day is removed, whatever the message
   gibNew: [[3, 24 * 60 * MIN]], // logins saved by accounts younger than a day
   gibGlobal: [[3000, 24 * 60 * MIN]], // every login check the app sends to GİB in a day
 } as const;

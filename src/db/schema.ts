@@ -105,6 +105,7 @@ export const rateLimitHits = pgTable("rate_limit_hits", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   index("rate_limit_hits_key_created_idx").on(t.key, t.createdAt),
+  index("rate_limit_hits_created_idx").on(t.createdAt), // the sweep of rows older than a day
   pgPolicy("rate_limit_hits_server_only", { for: "all", using: sql`false`, withCheck: sql`false` }),
 ]);
 
