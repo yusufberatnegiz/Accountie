@@ -7,6 +7,14 @@ Kullanılan skill'ler (Skill aracıyla çağrıldı): `taste-skill:design-taste-
 
 Skill klasörü: `C:\Users\Yusuf Berat Negiz\.claude\plugins\cache\taste-skill\taste-skill\2.1.5\skills\taste-skill` (aşağıda `<skill>`). Script'ler repo kökünden çalışır, çalışma dosyaları `.taste-skill/` altına düşer (gitignore'da).
 
+## 25. Hareket değerleri (2026-11-10, kullanıcının gönderdiği ipucu listeleri; 23.3.6'daki basma ve açılış değerlerinin üstündedir)
+
+- Basma: her yerde `scale(0.97)`.
+- Açılır menü ve paneller tetikleyicisinin köşesinden (`transform-origin`) `scale(0.95)` ve saydamdan açılır: site menüsü 160 ms, çerez penceresi ve masaüstü Hesap paneli 200 ms, telefonda Hesap alttan 24 px, 240 ms. Hepsi ease-out, sıçrama yok.
+- Tema ikonu yalnız tema değişince bulanıklıkla gelir (sayfa açılışında oynamaz).
+- Onaylanan fişte düğmeden tek bir yeşil halka, eşit büyür (`scale(1.08)`), 480 ms.
+- Ctrl/⌘+K panelin her yerinden firma aramasına götürür; kaydedilmemiş düzenleme varsa önce sorar, açık bir panel varken tuşa dokunmaz.
+
 ## 24. Sıcak palet ve amber vurgu (2026-11-09, kullanıcı kararı; 0'daki vurgu satırının, 6'daki renk tokenlarının, 23.1 'mavi kimlik değişmez' ve 23.27/23.31 nötr ve koyu merdiven kararlarının üstündedir)
 
 Kullanıcı başka uygulamasının (talkd) sıcak paletini istedi; mavi vurguyu "alakasız" buldu. Jüri tur 25 ve 26 ile ayarlandı.

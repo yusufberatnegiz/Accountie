@@ -25,6 +25,7 @@ function syncThemeColor(look: "light" | "dark") {
 
 export function applyTheme(choice: ThemeChoice) {
   const root = document.documentElement;
+  root.dataset.themeChanged = ""; // the theme icon animates only after a change
   // No colour fades: inputs and buttons would sit unreadable mid-way for 180ms (YON 6.2).
   root.classList.add(FREEZE_CLASS);
   if (choice === "system") delete root.dataset.theme;
