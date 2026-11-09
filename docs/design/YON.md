@@ -1,11 +1,23 @@
 # Accountie tasarım yönü
 
 Durum: bağlayıcı. Tarih: 2026-11-03. Her UI geliştiricisi ve jüri üyesi işe başlamadan bu belgeyi baştan sona okur.
-Bu belge yalnızca yönü belirler; kod içermez. Kurallar şu sırayla üstündür: `INSTRUCTIONS.md` (mavi palet, güvenlik, yasaklar) > taste-skill house rules > bu belge > yön kâğıtlarındaki blueprint'ler.
+Bu belge yalnızca yönü belirler; kod içermez. Kurallar şu sırayla üstündür: `INSTRUCTIONS.md` (sıcak palet ve amber vurgu, güvenlik, yasaklar) > taste-skill house rules > bu belge > yön kâğıtlarındaki blueprint'ler.
 
 Kullanılan skill'ler (Skill aracıyla çağrıldı): `taste-skill:design-taste-frontend` (SKILL.md ve `references/app-screens.md` tamamı okundu; `copy.md`, `motion.md` ilgili bölümleri) ve `web-design-guidelines` (Vercel Web Interface Guidelines, `command.md` güncel sürümü çekildi, bölüm 11'e kontrol listesi olarak aktarıldı).
 
 Skill klasörü: `C:\Users\Yusuf Berat Negiz\.claude\plugins\cache\taste-skill\taste-skill\2.1.5\skills\taste-skill` (aşağıda `<skill>`). Script'ler repo kökünden çalışır, çalışma dosyaları `.taste-skill/` altına düşer (gitignore'da).
+
+## 24. Sıcak palet ve amber vurgu (2026-11-09, kullanıcı kararı; 0'daki vurgu satırının, 6'daki renk tokenlarının, 23.1 'mavi kimlik değişmez' ve 23.27/23.31 nötr ve koyu merdiven kararlarının üstündedir)
+
+Kullanıcı başka uygulamasının (talkd) sıcak paletini istedi; mavi vurguyu "alakasız" buldu. Jüri tur 25 ve 26 ile ayarlandı.
+
+- Açık: zemin `#f8f4ed` (sakin krem; `#fbf5ea` fazla sarı bulundu), kart beyaz, alanlar `#efe9df` / `#e4dccf`, mürekkep `#241e18`, ikincil `#58524a`, soluk `#655e57`.
+- Koyu: zemin `#0e0d0c`, alan `#171513`, kart `#211e1b`, yükseltilmiş `#2c2824`, etkin `#332e29`, mürekkep `#f5efe5`, ikincil `#b4b0a8`, soluk `#a29e97`; kenarlar krem %8-14.
+- Vurgu amber: açıkta `#8f5718` (zeminde 5.4:1, talkd'nin `#b9792e`'si küçük metinde AA geçmez), koyuda `#e8b57a`. Luca'ya giden rakam, bağlantı, seçili çip, odak halkası ve fişin yolundaki Luca alanı (`#563412`, koyuda `#3d2a15`) amberdir.
+- Uyarı vurguyla karışmasın diye zeytin/hardal: açıkta `#5c5800` / `#f8efcf` / kenar `#a98b2c`; koyuda `#e3cf72` / `#26230f`. Hata kırmızı kalır.
+- Renk körlüğünde amber ve kırmızı birleşir: yanlış rakam (`.balance-off` tutar hücreleri) ayrıca dalgalı alt çizgi taşır; renk tek işaret değildir.
+- Uygulama ikonu: zemin `#241e18`, fiş krem, satırlar `#a29e97`, Luca çizgisi amber.
+- Mavi geri gelmez; amber kararı ancak kullanıcı değiştirir.
 
 ## 0. Kısa özet
 
@@ -15,7 +27,7 @@ Skill klasörü: `C:\Users\Yusuf Berat Negiz\.claude\plugins\cache\taste-skill\t
 | Hero | Control that reads the page: iki ton yarı, sağda çalışan fiş parçası |
 | Panel stili | `achromatic-ledger` (Renksiz defter, açık), seed **1951193909**, kabuk: icon rail |
 | Yazı | Stack Sans Headline (yalnız büyük başlıklar, 300) + Stack Sans Text (her şey). İki aile. |
-| Vurgu | Defter mavisi `#2b5a9a` (koyu temada `#8db0e0`). Mavi = Luca'ya giden rakam. |
+| Vurgu | Amber `#8f5718` (koyu temada `#e8b57a`). Amber = Luca'ya giden rakam. Bölüm 24 (2026-11-09) defter mavisinin yerine geçer. |
 | Fikir | Fişin termal baskısı, ziyaretçinin elinde Luca Fiş Detayı satırlarına dönüşür; Luca'ya giden her rakam defter mavisiyle yazılır. |
 | Canlı öğe | Hero'daki "fiş tezgâhı": örnek fiş ve ödeme şekli seçilir, satırlar `buildJournalLines` ile gerçek kurallardan hesaplanır, "Satırları kopyala" gerçekten panoya Luca sırasında yazar. |
 | İmza öğe (panel) | Fiş izi: bir yevmiye satırı seçilince fişte o rakamın geldiği satır işaretlenir; listede Luca dosyası doluluk çizgisi (50 fiş / 400 satır). |

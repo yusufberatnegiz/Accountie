@@ -59,7 +59,7 @@
   --positive-soft: #e3f3ea;
   --negative: #b3261e;
   --negative-soft: #fbeceb;
-  --warn-ink: #715600;
+  --warn-ink: #5c5800;
   --warn-bg: #f8efcf;
   --warn-edge: #a98b2c; /* 3.2:1 on --raised: the edge is the note's only mark */
   --focus: var(--accent);
@@ -125,7 +125,7 @@
 }
 
 /* ---------- Tokens: dark. Owner, 2026-11-09 (from talkd): ground #0e0d0c, fields #171513, cards #211e1b, raised #2c2824,
-   cream ink #f5efe5 with secondary tones mixed from it, edges cream at 8-14%; blue stays the accent. Older notes below (YON 23.31; replaces the 23.27 seven-step ladder, whose mid-grey windows read as taupe slabs).
+   cream ink #f5efe5 with secondary tones mixed from it, edges cream at 8-14%; amber is the accent. Older notes below (YON 23.31; replaces the 23.27 seven-step ladder, whose mid-grey windows read as taupe slabs).
    Depth is lightness plus a light edge plus the lift shadow, never a mid-grey slab; saturation stays low and warm:
    #100f0d ground; #181715 fields (stage, auth split, showcase, closing call, the first path field, plate);
    #1e1c19 app surface and phone screen, #1f1e1b a product window or card (always above its field, path cards one step above theirs);
@@ -141,7 +141,7 @@
     --accent: #e8b57a; --accent-strong: #f0c896; --accent-soft: #352b20; --on-accent-field: #f5efe5;
     --primary: #f5efe5; --primary-hover: #ded8ce; --on-primary: #0e0d0c;
     --secondary: #2c2824; --secondary-hover: #36312b; --bar-control: #36312b;
-    --chip-on: var(--accent); --on-chip-on: #0e0d0c; --lift-control: #36312b; --lift-control-hover: #3f3933; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
+    --chip-on: var(--accent); --on-chip-on: #0e0d0c; --lift-control: #36312b; --lift-control-hover: #3f3933; /* the chosen chip is the amber accent; a control is 1.3:1 over its window */
     --deep: #12100e; --deep-raised: #211e1b; /* phone screens: darker than the CTA field they stand on (jury tur 9) */
     --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
     --warn-ink: #e3cf72; --warn-bg: #26230f; --warn-edge: #8c7a35;
@@ -166,7 +166,7 @@
   --accent: #e8b57a; --accent-strong: #f0c896; --accent-soft: #352b20; --on-accent-field: #f5efe5;
   --primary: #f5efe5; --primary-hover: #ded8ce; --on-primary: #0e0d0c;
   --secondary: #2c2824; --secondary-hover: #36312b; --bar-control: #36312b;
-  --chip-on: var(--accent); --on-chip-on: #0e0d0c; --lift-control: #36312b; --lift-control-hover: #3f3933; /* the chosen chip is ledger blue; a control is 1.3:1 over its window */
+  --chip-on: var(--accent); --on-chip-on: #0e0d0c; --lift-control: #36312b; --lift-control-hover: #3f3933; /* the chosen chip is the amber accent; a control is 1.3:1 over its window */
   --deep: #12100e; --deep-raised: #211e1b; /* phone screens: darker than the CTA field they stand on (jury tur 9) */
   --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
   --warn-ink: #e3cf72; --warn-bg: #26230f; --warn-edge: #8c7a35;
@@ -229,7 +229,7 @@ h3 { font-size: var(--fs-body); font-weight: var(--w-strong); }
 .t-small { font-size: var(--step-small); }
 .num, .num-font, .tnum { font-variant-numeric: tabular-nums; }
 .num { text-align: right; }
-/* The product's colour rule: what goes to Luca is ledger blue. */
+/* The product's colour rule: what goes to Luca is the amber accent. */
 .to-luca { color: var(--accent); font-variant-numeric: tabular-nums; }
 .from-receipt { color: var(--thermal-ink); font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); }
@@ -366,6 +366,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .balance { font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
 .balance-ok { color: var(--positive); }
 .balance-off { color: var(--negative); }
+.num.balance-off, dd.balance-off, td.balance-off { text-decoration: underline wavy; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .phone-only { display: none; }
 @media (max-width: 720px) {
   h1 { font-size: 22px; }
