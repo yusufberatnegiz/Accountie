@@ -27,6 +27,7 @@ export function ReconcileView({ firmName, month, months, base = "/panel", previe
     if (firm) data.set("firma", firm);
     setBusy(true);
     setError("");
+    setResult(null);
     const res = await fetch("/api/reconcile", { method: "POST", body: data }).catch(() => null);
     setBusy(false);
     const body = await res?.json().catch(() => null);
@@ -52,14 +53,16 @@ export function ReconcileView({ firmName, month, months, base = "/panel", previe
         <h2 id="muavin-yukle">Muavin dosyası</h2>
         <p className="muted">Luca&apos;da bu firmanın {monthLabel(month)} muavinini (191, 770 ya da hepsi) Excel olarak indirin ve buraya yükleyin. Dosya saklanmaz.</p>
         <form className="reconcile-form" onSubmit={check} aria-describedby={error ? "muavin-hata" : undefined}>
-          <label className="stack"><span>Excel dosyası (.xlsx)</span><input className="field" type="file" name="dosya" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required /></label>
+          <label className="stack"><span>Excel dosyası (.xlsx, en fazla 4 MB)</span><input className="field field-file" type="file" aria-invalid={error ? true : undefined} name="dosya" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required /></label>
           {error ? <p id="muavin-hata" className="alert alert-error" role="alert">{error}</p> : null}
           <button type="submit" className="btn btn-primary" aria-disabled={busy || undefined}>{busy ? "Karşılaştırılıyor…" : "Karşılaştır"}</button>
         </form>
+        {/* Present from the start so screen readers announce the outcome; the result panel itself appears all at once. */}
+        <p className="visually-hidden" role="status">{busy ? "Karşılaştırılıyor" : result ? `Karşılaştırma bitti: ${ok.length} fiş uyuyor, ${off.length} tutar farkı, ${missing.length} fiş Luca'da yok, ${result.extra.length} kayıt Accountie'de yok.` : ""}</p>
       </section>
 
       {result ? (
-        <section className="panel reconcile-result" aria-labelledby="sonuc" aria-live="polite">
+        <section className="panel reconcile-result" aria-labelledby="sonuc">
           <h2 id="sonuc">Sonuç</h2>
           <p className="reconcile-summary">
             <span data-state="tamam">{ok.length} fiş uyuyor</span>

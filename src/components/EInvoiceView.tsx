@@ -24,6 +24,7 @@ export function EInvoiceView({ firmName, base = "/panel", preview }: { firmName:
     if (firm) data.set("firma", firm);
     setBusy(true);
     setError("");
+    setResult(null);
     const res = await fetch("/api/efatura", { method: "POST", body: data }).catch(() => null);
     setBusy(false);
     const body = await res?.json().catch(() => null);
@@ -50,14 +51,15 @@ export function EInvoiceView({ firmName, base = "/panel", preview }: { firmName:
         </ol>
         <p className="muted small">GİB şifreniz Accountie&apos;ye gelmez, Accountie GİB&apos;e bağlanmaz. Dosya saklanmaz; yalnız taslaklar kaydedilir. Faturanın bu firmaya kesildiği firmanın VKN&apos;siyle doğrulanır; satış, iade, tevkifatlı ve döviz faturaları atlanır.</p>
         <form className="reconcile-form" onSubmit={upload} aria-describedby={error ? "fatura-hata" : undefined}>
-          <label className="stack"><span>XML ya da zip (en fazla 4 MB, 300 fatura)</span><input className="field" type="file" name="dosya" accept=".xml,.zip,application/xml,text/xml,application/zip" required /></label>
+          <label className="stack"><span>XML ya da zip (en fazla 4 MB, 300 fatura)</span><input className="field field-file" type="file" aria-invalid={error ? true : undefined} name="dosya" accept=".xml,.zip,application/xml,text/xml,application/zip" required /></label>
           {error ? <p id="fatura-hata" className="alert alert-error" role="alert">{error}</p> : null}
           <button type="submit" className="btn btn-primary" aria-disabled={busy || undefined}>{busy ? "Okunuyor…" : "Faturaları yükle"}</button>
         </form>
+        <p className="visually-hidden" role="status">{busy ? "Faturalar okunuyor" : result ? `${result.created} fatura taslak oldu, ${result.skipped.length} atlandı.` : ""}</p>
       </section>
 
       {result ? (
-        <section className="panel reconcile-result" aria-labelledby="fatura-sonuc" aria-live="polite">
+        <section className="panel reconcile-result" aria-labelledby="fatura-sonuc">
           <h2 id="fatura-sonuc">Sonuç</h2>
           <p className="reconcile-summary">
             <span data-state={result.created ? "tamam" : undefined}>{result.created} fatura taslak oldu</span>

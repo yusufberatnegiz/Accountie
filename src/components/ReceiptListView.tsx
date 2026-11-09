@@ -151,6 +151,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
             <p className="muted small">İndirilen fişler Aktarıldı olur. Luca dosyayı reddederse Aktarıldı sekmesinden tekrar indirin. Dosya düzeni Luca&apos;nın resmi şablonuyla henüz doğrulanmadı; ilk yüklemede önizlemedeki kodları ve tutarları fişle karşılaştırın.</p>
           </details>
           <Link className="btn btn-ghost" href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link>
+          <Link className="btn btn-ghost" href={`${base}/efatura`}>e-Fatura / e-Arşiv yükle</Link>
         </section>
 
         {byAccount.length ? (

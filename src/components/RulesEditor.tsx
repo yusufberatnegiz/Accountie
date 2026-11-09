@@ -99,6 +99,7 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
                     ))}
                     <li><a href="#kural-eklenti"><span>Chrome eklentisi</span></a></li>
                     <li><a href="#kural-gorunum"><span>Görünüm</span></a></li>
+                    <li><a href="#satici-kurallari"><span>Satıcıya göre öğrenilenler</span></a></li>
                   </ul>
                 </nav>
               ) : null}

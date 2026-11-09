@@ -15,9 +15,11 @@ export default async function ReconcilePage({ searchParams }: { searchParams: Pr
   const { ay } = await searchParams;
   const now = new Date();
   const { firm } = await activeFirm(user.id);
+  const month = isMonth(ay) ? ay : currentMonth(now);
   return (
     <AppShell current="fisler" email={user.email} firmId={firm.id}>
-      <ReconcileView firmName={firm.name} month={isMonth(ay) ? ay : currentMonth(now)} months={recentMonths(now)} />
+      {/* Keyed by month: a comparison never stays on screen under another month. */}
+      <ReconcileView key={month} firmName={firm.name} month={month} months={recentMonths(now)} />
     </AppShell>
   );
 }
