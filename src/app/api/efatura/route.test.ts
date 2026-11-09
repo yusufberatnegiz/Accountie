@@ -100,6 +100,15 @@ describe("POST /api/efatura", () => {
     expect(q.createReceipt).not.toHaveBeenCalled();
   });
 
+  it("başka bir okuyucunun farklı göreceği zip'i (yorum, sayılmamış merkez kaydı) reddeder", async () => {
+    const one = zip([{ name: "a.xml", data: Buffer.from(invoiceXml()) }]);
+    expect((await POST(post(Buffer.concat([one.subarray(0, one.length - 2), Buffer.from([4, 0]), Buffer.from("yorum")])))).status).toBe(422);
+    const end = one.length - 22, cd = one.readUInt32LE(end + 16), record = one.subarray(cd, end), tail = Buffer.from(one.subarray(end));
+    tail.writeUInt32LE(record.length * 2, 12); // two central records, the count still says one
+    expect((await POST(post(Buffer.concat([one.subarray(0, cd), record, record, tail]))))).toMatchObject({ status: 422 });
+    expect(q.createReceipt).not.toHaveBeenCalled();
+  });
+
   it("açılınca sınırı aşan zip'i (boyutu yalan söylese de) açmadan reddeder", async () => {
     const bomb = zip([{ name: "b.xml", data: Buffer.alloc(6 * 1024 * 1024, 0x20), declared: 100 }]);
     expect(bomb.length).toBeLessThan(100_000);

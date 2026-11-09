@@ -26,6 +26,8 @@ export const LIMITS = {
   // GİB logins: per user, and per firm so repeated tries never lock a client's GİB account.
   gib: [[5, MIN], [60, 24 * 60 * MIN]],
   gibFirm: [[3, 10 * MIN], [12, 24 * 60 * MIN]],
+  // Per GİB user code across every Accountie user: the app can never become a way to guess or lock someone's GİB login.
+  gibCode: [[3, 60 * MIN], [6, 24 * 60 * MIN]],
 } as const;
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex").slice(0, 32);

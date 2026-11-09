@@ -27,11 +27,20 @@ describe("GİB şifresinin mühürlenmesi", () => {
     expect(() => open(key, "düz metin", ctx)).toThrow(SecretError);
   });
 
+  it("mühür boyu şifrenin uzunluğunu söylemez; başka anahtarın mührü 'key' hatası verir (kayıt silinmesin diye)", () => {
+    expect(seal(key, "a", ctx).length).toBe(seal(key, "x".repeat(64), ctx).length);
+    expect(open(key, seal(key, "ğüşİ", ctx), ctx)).toBe("ğüşİ");
+    expect(() => open(randomBytes(32), seal(key, "a", ctx), ctx)).toThrow("key");
+    expect(() => open(key, "v2.xx.yy.zz.ww", ctx)).toThrow("key");
+  });
+
   it("anahtar yoksa ya da 32 bayt değilse özellik kapalı (null)", () => {
     expect(secretKey()).toBeNull();
     process.env.GIB_SECRET_KEY = Buffer.alloc(16).toString("base64");
     expect(secretKey()).toBeNull();
     process.env.GIB_SECRET_KEY = "kısa";
+    expect(secretKey()).toBeNull();
+    process.env.GIB_SECRET_KEY = Buffer.alloc(32).toString("base64"); // a placeholder of zeros
     expect(secretKey()).toBeNull();
     process.env.GIB_SECRET_KEY = key.toString("base64");
     expect(secretKey()?.equals(key)).toBe(true);

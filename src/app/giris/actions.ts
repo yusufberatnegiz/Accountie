@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuth } from "@/lib/auth/server";
+import { inRecovery } from "@/lib/auth/session";
 import { AFTER_LOGIN, safeNextPath } from "@/lib/auth/next-path";
 import { allow, clientIp } from "@/lib/rate-limit";
 import { verifyTurnstile } from "@/lib/turnstile";
@@ -89,6 +90,7 @@ export async function resetPassword(_prev: ResetState, formData: FormData): Prom
   const input = newPasswordSchema.safeParse({ password: formData.get("password") });
   if (!input.success) return { error: "bicim-sifre", field: "password" };
   if (!(await allow("resetIp", clientIp(await headers())))) return { error: "sifre-cok" };
+  if (!(await inRecovery())) return { error: "sifre-baglanti" };
   const auth = await getAuth();
   const { error } = await auth.updateUser({ password: input.data.password });
   if (error) return { error: "sifre-baglanti" };

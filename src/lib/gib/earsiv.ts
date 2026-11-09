@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * The GİB e-Arşiv portal, through the same endpoints its own web pages call. GİB publishes no API for it: the command names
  * below come from the open-source mlevent/fatura client, so GİB can change them without notice (the import then fails with
@@ -6,7 +8,7 @@
  * shortcut: unofficial endpoints, verified against the open-source client only; move to an integrator's official API if they break.
  */
 export class PortalError extends Error {
-  constructor(message: string, readonly kind: "auth" | "portal") { super(message); }
+  constructor(message: string, readonly kind: "auth" | "locked" | "portal") { super(message); }
 }
 
 const HOSTS = { prod: "https://earsivportal.efatura.gov.tr", test: "https://earsivportaltest.efatura.gov.tr" } as const;
@@ -33,14 +35,17 @@ async function capped(res: Response, max: number): Promise<Buffer> {
 }
 
 async function call(path: string, init: RequestInit, max: number): Promise<Buffer> {
-  let res: Response;
   try {
-    res = await fetch(`${portalHost()}${path}`, { ...init, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(TIMEOUT_MS) });
-  } catch {
+    const res = await fetch(`${portalHost()}${path}`, { ...init, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(TIMEOUT_MS) });
+    if (!res.ok) {
+      await res.body?.cancel().catch(() => undefined);
+      throw new PortalError("GİB e-Arşiv portalı isteği kabul etmedi. Biraz sonra tekrar deneyin.", "portal");
+    }
+    return await capped(res, max); // the timeout also cuts a body that trickles in
+  } catch (e) {
+    if (e instanceof PortalError) throw e;
     throw new PortalError("GİB e-Arşiv portalına ulaşılamadı. Biraz sonra tekrar deneyin.", "portal");
   }
-  if (!res.ok) throw new PortalError("GİB e-Arşiv portalı isteği kabul etmedi. Biraz sonra tekrar deneyin.", "portal");
-  return capped(res, max);
 }
 
 async function postForm(path: string, form: Record<string, string>): Promise<Record<string, unknown>> {
@@ -56,8 +61,20 @@ async function postForm(path: string, form: Record<string, string>): Promise<Rec
 export async function login(username: string, password: string): Promise<string> {
   const json = await postForm("/earsiv-services/assos-login", { assoscmd: portalHost() === HOSTS.test ? "login" : "anologin", rtype: "json", userid: username, sifre: password, sifre2: password, parola: "1" });
   if (typeof json.token === "string" && /^[A-Za-z0-9._-]{8,512}$/.test(json.token)) return json.token;
-  if (json.error || json.messages) throw new PortalError("GİB kullanıcı kodunu ya da şifresini kabul etmedi.", "auth");
-  throw new PortalError("GİB e-Arşiv portalının yanıtı okunamadı; portal değişmiş olabilir.", "portal");
+  throw loginRefusal(json);
+}
+
+/**
+ * Why GİB refused a login. Only a message that names the code or password counts as a wrong login (the stored one is then
+ * deleted) and a lock message as locked; maintenance, captcha or anything unrecognised is the portal's problem and keeps it.
+ */
+export function loginRefusal(json: Record<string, unknown>): PortalError {
+  const text = JSON.stringify(json.messages ?? json.error ?? "").toLocaleLowerCase("tr");
+  if (/kilit|bloke|askıya/.test(text)) return new PortalError("GİB bu hesabın kilitli olduğunu bildirdi.", "locked");
+  if (/şifre|sifre|parola|kullanıcı|kullanici|hatalı|hatali|geçersiz|gecersiz/.test(text) && !/doğrulama kodu|captcha|güvenlik kodu/.test(text)) {
+    return new PortalError("GİB kullanıcı kodunu ya da şifresini kabul etmedi.", "auth");
+  }
+  return new PortalError("GİB e-Arşiv portalı şu an girişe izin vermedi (bakım ya da doğrulama kodu olabilir). Biraz sonra tekrar deneyin.", "portal");
 }
 
 export async function logout(token: string): Promise<void> {

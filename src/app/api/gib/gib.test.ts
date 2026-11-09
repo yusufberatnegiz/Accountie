@@ -99,11 +99,35 @@ describe("PUT /api/gib/credentials", () => {
     expect(calls.every((c) => c.url.startsWith("https://earsivportal.efatura.gov.tr/earsiv-services/"))).toBe(true);
   });
 
+  it("deneme sınırı GİB kullanıcı kodunun kendisine de bağlı (bütün kullanıcılar için ortak); firması VKN'siz ya da başkasınınsa GİB'e gitmez", async () => {
+    const calls = portal();
+    vi.mocked(allow).mockImplementation(async (kind) => kind !== "gibCode");
+    expect((await credentials.PUT(json({ kullaniciKodu: "12345678", sifre: "x" }, "PUT"))).status).toBe(429);
+    expect(vi.mocked(allow).mock.calls).toContainEqual(["gibCode", "12345678"]);
+    vi.mocked(allow).mockResolvedValue(true);
+    vi.mocked(activeFirm).mockResolvedValueOnce({ firms: [FIRM], firm: { ...FIRM, taxNumber: null } });
+    expect((await credentials.PUT(json({ kullaniciKodu: "12345678", sifre: "x" }, "PUT"))).status).toBe(422);
+    expect((await credentials.PUT(json({ firma: "00000000-0000-4000-8000-000000000009", kullaniciKodu: "12345678", sifre: "x" }, "PUT"))).status).toBe(404);
+    expect(calls).toHaveLength(0);
+  });
+
   it("deneme sınırında GİB'e gitmez (kilitlenme olmasın)", async () => {
     const calls = portal();
     vi.mocked(allow).mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     expect((await credentials.PUT(json({ kullaniciKodu: "12345678", sifre: "x" }, "PUT"))).status).toBe(429);
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("GİB giriş reddinin sınıflandırılması", () => {
+  it("yalnız şifre/kullanıcı hatası 'auth', kilit 'locked'; bakım, doğrulama kodu ve bilinmeyen 'portal' (kayıt korunur)", async () => {
+    const { loginRefusal } = await import("@/lib/gib/earsiv");
+    const kind = (text: string) => loginRefusal({ error: "1", messages: [{ type: "4", text }] }).kind;
+    expect(kind("Kullanıcı adı veya şifre hatalı")).toBe("auth");
+    expect(kind("Hesabınız kilitlenmiştir")).toBe("locked");
+    expect(kind("Sistem bakımda, lütfen daha sonra deneyiniz")).toBe("portal");
+    expect(kind("Güvenlik kodu hatalı")).toBe("portal");
+    expect(loginRefusal({}).kind).toBe("portal");
   });
 });
 
@@ -129,7 +153,7 @@ describe("POST /api/gib/earsiv", () => {
     expect(calls).toHaveLength(1);
   });
 
-  it("bağlantı yoksa 404, firmanın VKN'si yoksa 422, gelecek ay 400, başka anahtarla mühür açılmazsa siler", async () => {
+  it("bağlantı yoksa 404, firmanın VKN'si yoksa 422, gelecek ay 400; başka anahtarla açılmazsa korur (503), bozuksa siler (409)", async () => {
     const calls = portal();
     vi.mocked(q.getGibCredential).mockResolvedValueOnce(null);
     expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(404);
@@ -137,8 +161,12 @@ describe("POST /api/gib/earsiv", () => {
     expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(422);
     expect((await earsiv.POST(json({ ay: "2099-01" }))).status).toBe(400);
     process.env.GIB_SECRET_KEY = randomBytes(32).toString("base64");
+    expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(503);
+    expect(q.deleteGibCredential).not.toHaveBeenCalled();
+    process.env.GIB_SECRET_KEY = KEY.toString("base64");
+    vi.mocked(q.getGibCredential).mockResolvedValueOnce({ usernameSealed: "v2.bozuk", passwordSealed: "v2.bozuk", lastUsedAt: null });
     expect((await earsiv.POST(json({ ay: "2026-09" }))).status).toBe(409);
-    expect(q.deleteGibCredential).toHaveBeenCalled();
+    expect(q.deleteGibCredential).toHaveBeenCalledWith("user-a", FIRM.id);
     expect(calls.filter((c) => c.form?.get("assoscmd") === "anologin")).toHaveLength(0);
   });
 });

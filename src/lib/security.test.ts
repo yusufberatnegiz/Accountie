@@ -12,6 +12,7 @@ const A = vi.hoisted(() => ({
   updateUser: vi.fn(async () => ({ error: null })),
   signOut: vi.fn(async () => ({ error: null })),
   exchangeCodeForSession: vi.fn(async () => ({ error: null })),
+  getClaims: vi.fn(async () => ({ data: { claims: { amr: [{ method: "recovery", timestamp: Math.floor(Date.now() / 1000) - 60 }] } }, error: null })),
 }));
 vi.mock("@/lib/auth/server", () => ({ getAuth: async () => A }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": "203.0.113.9, 10.0.0.1", origin: "https://accountie.test" }) }));
@@ -143,6 +144,11 @@ describe("şifre yenileme", () => {
 
   it("geçersiz bağlantı ve kısa şifre yeni şifreyi kaydetmez; başarıda kurtarma oturumu kapanır", async () => {
     expect(await actions.resetPassword(undefined, form({ password: "kisa" }))).toEqual({ error: "bicim-sifre", field: "password" });
+    // An everyday session (signed in with a password) or an old recovery cannot set a new password.
+    for (const amr of [[{ method: "password", timestamp: Math.floor(Date.now() / 1000) }], [{ method: "recovery", timestamp: Math.floor(Date.now() / 1000) - 3600 }], undefined]) {
+      vi.mocked(A.getClaims as unknown as Reply).mockResolvedValueOnce({ data: { claims: { amr } }, error: null });
+      expect(await actions.resetPassword(undefined, form({ password: "12345678" }))).toEqual({ error: "sifre-baglanti" });
+    }
     expect(A.updateUser).not.toHaveBeenCalled();
     // No recovery session (an expired or foreign link): Supabase refuses the update.
     vi.mocked(A.updateUser as unknown as Reply).mockResolvedValueOnce({ error: { status: 401 } });

@@ -76,10 +76,10 @@ export function GibConnection({ gib, months, onResult }: { gib: GibState; months
         </>
       ) : (
         <>
-          <p className="muted small">Firmanın e-Arşiv portalı kullanıcı kodu ve şifresi. GİB önce doğrular; yanlışsa saklanmaz. Doğruysa şifrelenerek saklanır ve bir daha gösterilmez. GİB yanlış denemelerde hesabı kilitleyebilir, bu yüzden deneme sayısı sınırlıdır.</p>
+          <p className="muted small">Firmanın e-Arşiv portalı kullanıcı kodu ve şifresi. GİB önce doğrular; yanlışsa saklanmaz. Doğruysa şifrelenerek saklanır ve bir daha gösterilmez. GİB yanlış denemelerde hesabı kilitleyebilir, bu yüzden deneme sayısı sınırlıdır. Tarayıcının bu şifreyi kaydetmesine izin vermeyin.</p>
           <form className="reconcile-form" onSubmit={save} autoComplete="off">
             <label className="stack"><span>Kullanıcı kodu</span><input className="field" name="kullaniciKodu" inputMode="numeric" autoComplete="off" spellCheck={false} required pattern="[0-9A-Za-z]{4,20}" maxLength={20} /></label>
-            <label className="stack"><span>Şifre</span><input className="field" name="sifre" type="password" autoComplete="new-password" required maxLength={64} /></label>
+            <label className="stack"><span>Şifre</span><input className="field" name="sifre" type="password" autoComplete="off" data-1p-ignore="" data-lpignore="true" data-bwignore="" required maxLength={64} /></label>
             <button type="submit" className="btn btn-primary" aria-disabled={busy !== "" || undefined}>{busy === "kaydet" ? "GİB ile doğrulanıyor…" : "Kaydet ve doğrula"}</button>
           </form>
         </>

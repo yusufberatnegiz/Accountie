@@ -97,6 +97,8 @@ export async function saveRules(userId: string, rows: readonly RuleRow[]): Promi
 export async function hitRateLimit(key: string, windows: readonly (readonly [limit: number, windowMs: number])[]): Promise<boolean> {
   const now = Date.now();
   const results = await getDb().transaction(async (tx) => {
+    // One key at a time: under READ COMMITTED parallel requests would not see each other's uncommitted hit and all pass.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${key}))`);
     // Global sweep so one-off keys (other e-mails/IPs) do not pile up; no LIMITS window is longer than a day.
     // shortcut: no index on created_at alone, so this scans the (one day of hits) table; add one if it grows large.
     await tx.delete(rateLimitHits).where(lt(rateLimitHits.createdAt, new Date(now - 24 * 60 * 60_000)));
@@ -131,8 +133,8 @@ const listColumns = {
   expenseCode: sql<string | null>`(select jl.account_code from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
   lineCount: sql<number>`(select count(*)::int from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId})`,
   // Debits as they go to Luca: the expense side (matrah) and the 191 VAT side, so the list never sums gross amounts into 770.
-  expenseKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::int from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code not like '191%')`,
-  vatKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::int from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code like '191%')`,
+  expenseKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::bigint from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code not like '191%')`.mapWith(Number),
+  vatKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::bigint from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code like '191%')`.mapWith(Number),
 };
 
 // A receipt's month (src/lib/month.ts): its date, or the Turkey-time upload day when the date was not read.

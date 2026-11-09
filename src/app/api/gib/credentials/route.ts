@@ -1,3 +1,4 @@
+import "server-only";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { deleteGibCredential, saveGibCredential } from "@/db/queries";
@@ -29,7 +30,11 @@ export async function PUT(request: Request) {
   const body = SaveSchema.safeParse(await readJson(request));
   if (!body.success) return fail("Kullanıcı kodu ya da şifre geçersiz.", 400);
   const { firm } = await activeFirm(userId, body.data.firma ?? null);
-  if (!(await allow("gib", userId)) || !(await allow("gibFirm", firm.id))) return fail("Çok fazla deneme yapıldı. Bir süre bekleyin; GİB hesabı kilitlenmesin.", 429);
+  if (body.data.firma && body.data.firma !== firm.id) return fail("Firma bulunamadı.", 404);
+  if (!firm.taxNumber) return fail("Önce Firmalar'da bu firmanın VKN'sini girin.", 422);
+  if (!(await allow("gib", userId)) || !(await allow("gibFirm", firm.id)) || !(await allow("gibCode", body.data.kullaniciKodu))) {
+    return fail("Çok fazla deneme yapıldı. Bir süre bekleyin; GİB hesabı kilitlenmesin.", 429);
+  }
 
   try {
     await logout(await login(body.data.kullaniciKodu, body.data.sifre));
@@ -37,7 +42,13 @@ export async function PUT(request: Request) {
     if (!(e instanceof PortalError)) throw e;
     return fail(e.message, e.kind === "auth" ? 422 : 502);
   }
-  await saveGibCredential(userId, firm.id, seal(key, body.data.kullaniciKodu, secretContext(userId, firm.id, "kullanici")), seal(key, body.data.sifre, secretContext(userId, firm.id, "sifre")));
+  try {
+    await saveGibCredential(userId, firm.id, seal(key, body.data.kullaniciKodu, secretContext(userId, firm.id, "kullanici")), seal(key, body.data.sifre, secretContext(userId, firm.id, "sifre")));
+  } catch (err) {
+    // A driver error message carries the query parameters (the sealed login): log the error's name only.
+    console.error("gib credential save failed", { error: err instanceof Error ? err.name : "unknown" });
+    return fail("Bağlantı kaydedilemedi. Tekrar deneyin.", 500);
+  }
   return NextResponse.json({ saved: true, firm: firm.name }, { headers: { "Cache-Control": "no-store" } });
 }
 
@@ -46,6 +57,7 @@ export async function DELETE(request: Request) {
   if (!userId) return unauthorized();
   const wanted = new URL(request.url).searchParams.get("firma");
   const { firm } = await activeFirm(userId, wanted);
+  if (wanted && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never fall back to another firm's login
   await deleteGibCredential(userId, firm.id);
   return new NextResponse(null, { status: 204 });
 }

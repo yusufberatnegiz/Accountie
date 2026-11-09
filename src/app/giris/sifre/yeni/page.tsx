@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getSessionUser } from "@/lib/auth/session";
+import { inRecovery } from "@/lib/auth/session";
 import { AuthShell } from "../../LoginView";
 import { NewPasswordForm } from "../../ResetForms";
 
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /** The e-mailed link reaches here through /auth/callback, which opened a recovery session (or sent ?hata=1 when it could not). */
 export default async function NewPasswordPage({ searchParams }: { searchParams: Promise<{ hata?: string }> }) {
   const { hata } = await searchParams;
-  const valid = !hata && !!(await getSessionUser());
+  const valid = !hata && (await inRecovery());
   return (
     <AuthShell title="Yeni şifre belirleyin" lead={valid ? "En az 8 karakterlik yeni şifrenizi yazın. Sonra onunla giriş yaparsınız." : "Bu bağlantıyla şifre değiştirilemiyor."}>
       {valid ? <NewPasswordForm /> : (
