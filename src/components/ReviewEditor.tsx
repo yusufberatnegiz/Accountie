@@ -548,7 +548,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           ) : null}
           {editable ? (
             // aria-disabled keeps the button in the Tab order; pressing it while blocked goes to the field that fixes it.
-            <button className="btn btn-primary btn-lg" type="button" disabled={working || approved} data-busy={working || approved || undefined} aria-disabled={target ? true : undefined}
+            <button className="btn btn-primary btn-lg" type="button" disabled={working || approved} data-busy={working || approved || undefined} data-done={approved || undefined} aria-disabled={target ? true : undefined}
               aria-describedby={target ? "onay-engeli" : undefined}
               onClick={() => (target ? fix() : run(async () => { if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) { setApproved(true); measureLock(); refresh(); } }))}>
               {approved ? "Onaylandı" : busy ? "Kaydediliyor…" : "Onayla"}

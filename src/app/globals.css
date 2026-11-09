@@ -266,7 +266,7 @@ details.stack > summary h2 { display: inline; }
   .btn-danger:hover { background: var(--negative-soft); color: var(--negative); }
   .btn-quiet:hover { background: var(--active); color: var(--ink); }
 }
-.btn:active { transform: scale(0.98); }
+.btn:active { transform: scale(0.97); }
 /* Disabled keeps its shape as an edge on any tray or card tone (an --active fill vanished on --stage). */
 .btn:disabled, .btn[aria-disabled="true"] { background: transparent; color: var(--muted); border-color: var(--control-edge); cursor: not-allowed; transform: none; }
 .btn:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -327,7 +327,9 @@ label .field { font-weight: 400; }
 /* One-button theme control for narrow bars (ThemeCycle). */
 .theme-cycle { display: inline-grid; place-items: center; flex: none; width: var(--touch); height: var(--touch); border: 0; border-radius: var(--radius-control); background: var(--active); color: var(--ink); cursor: pointer; transition: background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
 .theme-cycle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.theme-cycle:active { transform: scale(0.96); }
+.theme-cycle:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: no-preference) { .theme-cycle svg { animation: icon-swap 200ms var(--ease-out); } }
+@keyframes icon-swap { from { opacity: 0; filter: blur(3px); transform: scale(0.8); } }
 /* The icon follows the look the head script set; without it (no JS) the system preference picks. */
 .theme-cycle-dark, :root[data-look="dark"] .theme-cycle-light { display: none; }
 :root[data-look="dark"] .theme-cycle-dark { display: block; }

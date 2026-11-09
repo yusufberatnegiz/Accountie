@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandMark } from "@/components/BrandMark";
 import { CaptureButton } from "@/components/CaptureButton";
+import { FirmShortcut } from "@/components/FirmShortcut";
 import "./panel/panel.css";
 
 type Current = "fisler" | "fis" | "kurallar" | "firmalar";
@@ -30,6 +31,7 @@ export function AppShell({ current, base = "/panel", email, firmId, children }: 
     // data-firm: the firm this page shows. Uploads and downloads send it, so a page left open in another tab never writes into
     // the firm chosen later (the cookie is only the default for the next page).
     <div className="app" data-screen={current} data-firm={firmId ?? undefined}>
+      <FirmShortcut base={base} />
       <nav className="rail" aria-label="Panel">
         <Link className="rail-mark" href={base} translate="no"><BrandMark /><span className="visually-hidden">Accountie, fiş listesi</span></Link>
         {item(base, "Fişler", "receipt", current === "fisler" || current === "fis")}

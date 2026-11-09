@@ -1,10 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import type { Firm } from "@/db/queries";
 import { MonthPicker } from "@/components/MonthPicker";
 import { monthLabel, monthState, type MonthCounts } from "@/lib/month";
+
+// The shortcut as the visitor's keyboard writes it; the server and the first paint say Ctrl K.
+const noop = () => () => {};
+const macKey = () => (/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K");
 
 const EMPTY: MonthCounts = { draft: 0, approved: 0, exported: 0 };
 const STATES = [{ key: "", label: "Hepsi" }, { key: "bekleyen", label: "Bekleyen var" }, { key: "tamam", label: "Tamam" }, { key: "bos", label: "Fiş yok" }] as const;
@@ -30,6 +34,10 @@ export function FirmsView({ firms, activeId, month, months, counts, base = "/pan
   for (const f of firms) tally[monthState(of(f))]++;
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const search = useRef<HTMLInputElement>(null);
+  const shortcut = useSyncExternalStore(noop, macKey, () => "Ctrl K");
+  // Arriving from Ctrl+K elsewhere in the panel (#ara): the search is ready to type into.
+  useEffect(() => { if (location.hash === "#ara") search.current?.focus(); }, []);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<{ at: "form" | "list"; text: string } | null>(null);
   const q = tr(query.trim());
@@ -85,7 +93,8 @@ export function FirmsView({ firms, activeId, month, months, counts, base = "/pan
         <h2 id="firma-liste" className="visually-hidden">Firma listesi</h2>
         <label className="firms-search">
           <span className="visually-hidden">Firma ara</span>
-          <input className="field" type="search" placeholder="Firma adı ya da VKN ile ara" value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
+          <input ref={search} id="firma-ara" aria-keyshortcuts="Control+K Meta+K" className="field" type="search" placeholder="Firma adı ya da VKN ile ara" value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
+          <kbd className="firms-kbd" aria-hidden="true">{shortcut}</kbd>
         </label>
         {/* The month close: filter to the firms that still need work this month. */}
         <div className="firms-states" role="group" aria-label="Ay durumuna göre süz">

@@ -38,11 +38,11 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
 }
 .site-menu summary::-webkit-details-marker { display: none; }
 .site-menu summary svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
-.site-menu summary:active { transform: scale(0.96); }
+.site-menu summary:active { transform: scale(0.97); }
 .site-menu summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) { .site-menu summary:hover { background: var(--secondary-hover); } }
 .site-menu-list {
-  position: absolute; right: 0; top: calc(100% + var(--s3)); min-width: 220px; display: grid; padding: var(--s1);
+  position: absolute; right: 0; transform-origin: top right; /* the menu button sits at its top right */ top: calc(100% + var(--s3)); min-width: 220px; display: grid; padding: var(--s1);
   background: var(--surface); border-radius: var(--radius-card);
 }
 .site-menu[open] .site-menu-list { box-shadow: var(--shadow-float); } /* taste-skill-ignore: the open menu floats */
@@ -51,7 +51,7 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
 @media (prefers-reduced-motion: no-preference) {
   .site-menu[open] .site-menu-list { animation: site-drop 160ms var(--ease-out) both; }
 }
-@keyframes site-drop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes site-drop { from { opacity: 0; transform: translateY(-4px) scale(0.95); } to { opacity: 1; transform: none; } }
 
 /* The full row (brand, three links, theme, two buttons) needs about 880px; below 960 the links go into the menu. */
 @media (max-width: 959px) {
@@ -101,6 +101,12 @@ html:has(.site-dock) { scroll-padding-top: 88px; }
 /* It comes after <main> in the DOM, so Tab reaches it at the page's end, when it has stepped aside: focus brings it back. */
 .cookie-note[data-away]:focus-within { transform: none; opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .cookie-note, .cookie-note[data-away] { transition: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .cookie-dialog[open] { animation: dialog-in 200ms var(--ease-out); }
+  .cookie-dialog[open]::backdrop { animation: backdrop-in 200ms var(--ease-out); }
+}
+@keyframes dialog-in { from { opacity: 0; transform: scale(0.95); } }
+@keyframes backdrop-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
   .cookie-note { animation: site-rise 320ms var(--ease-out) backwards; animation-delay: 600ms; }
 }
