@@ -40,7 +40,8 @@ export function useAfterAttempt(state: { error?: string; field?: string } | unde
     if (!state?.error) return;
     if (state.field) document.getElementById(`auth-${state.field}`)?.focus();
     else alertRef.current?.focus();
-    window.turnstile?.reset();
+    // reset() throws when Turnstile has lost its widget; uncaught, that replaced the whole form (and its error message) with the error page.
+    try { window.turnstile?.reset(); } catch {}
   }, [state]);
   return alertRef;
 }
