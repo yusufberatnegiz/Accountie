@@ -1,9 +1,9 @@
 // Fills Luca "Fiş Detayı" rows. Pure apart from the DOM it is handed; tested in src/lib/luca/extension-fill.test.ts.
 // Never presses Kaydet itself; popup.js does, in the auto mode only, after checkGrid finds the grid matching.
 (function (root) {
-  const FIELDS = ["accountCode", "documentNo", "documentDate", "documentType", "description", "debit", "credit"];
+  const FIELDS = ["accountCode", "documentNo", "documentDate", "documentType", "taxNumber", "description", "debit", "credit"];
   const FIELD_LABELS = {
-    accountCode: "Hesap Kodu", documentNo: "Evrak No", documentDate: "Evrak Tarihi", documentType: "BT",
+    accountCode: "Hesap Kodu", documentNo: "Evrak No", documentDate: "Evrak Tarihi", documentType: "BT", taxNumber: "Vergi No",
     description: "Açıklama", debit: "Borç", credit: "Alacak", row: "(satır yok)",
   };
 

@@ -220,7 +220,7 @@ describe("tek fiş", () => {
 
 describe("POST /api/exports", () => {
   it("dengeli fişlerden xlsx üretir ve aktarıldı işaretler", async () => {
-    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", lines }, { id: "bad", firmName: "ÖRNEK FİRMA", lines: lines.slice(0, 1) }]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", taxNumber: null, lines }, { id: "bad", firmName: "ÖRNEK FİRMA", taxNumber: null, lines: lines.slice(0, 1) }]);
     const res = await exportsRoute.POST(json({}, "POST"));
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("spreadsheetml");
@@ -228,7 +228,7 @@ describe("POST /api/exports", () => {
   });
 
   it("ay seçiliyken yalnız o ayın onaylı fişleri istenir; bozuk ay 400", async () => {
-    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", lines }]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", taxNumber: null, lines }]);
     expect((await exportsRoute.POST(json({ month: "2026-10" }, "POST"))).status).toBe(200);
     expect(q.listForExport).toHaveBeenCalledWith(USER, "firm-1", undefined, "2026-10");
     expect((await exportsRoute.POST(json({ month: "2026-13" }, "POST"))).status).toBe(400);

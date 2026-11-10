@@ -39,7 +39,7 @@ export async function importInvoiceFiles(userId: string, firm: Firm, rules: Rule
 
     const data = invoiceData(inv);
     const learned = vkn ? await getVendorRule(userId, firm.id, vkn).catch(() => null) : null;
-    const { lines, warnings } = buildJournalLines(data, withVendorAccount(invoiceRules(rules), data.category, learned && { code: learned.accountCode, name: learned.accountName }));
+    const { lines, warnings } = buildJournalLines(data, withVendorAccount(invoiceRules(rules, inv.profile), data.category, learned && { code: learned.accountCode, name: learned.accountName }));
     const extra = [warn("efatura"), ...(fromGib ? [] : [warn("efatura_unsigned")]), ...(inv.otherTax ? [warn("efatura_other_tax")] : []), ...(vkn ? [] : [warn("tax_number_invalid")])];
     const receipt: NewReceipt = {
       vendorName: data.vendorName,

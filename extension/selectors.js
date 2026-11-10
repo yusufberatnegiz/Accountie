@@ -20,6 +20,8 @@ globalThis.AccountieSelectors = {
     documentNo: "input[name='EVRAK_NO']",
     documentDate: "input[name='EVRAK_TARIHI']",
     documentType: "input[name='BELGE_TUR_KOD']",
+    // Satıcının VKN'si, yalnız gider satırında. BA_BS kutusuna dokunulmaz (müşavirin isteği: BaBs işaretlenmez).
+    taxNumber: "input[name='VERGI_NO']",
     description: "input[name='ACIKLAMA']",
     debit: "input[name='BORC']",
     credit: "input[name='ALACAK']",

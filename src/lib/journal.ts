@@ -49,7 +49,7 @@ export const WARNING_MESSAGES: Record<string, string> = {
   receipt_no_unsure: "Fiş no okunamadı. Evrak No'yu kontrol edin.",
   duplicate: "Bu VKN, fiş no ve tarihle kayıtlı başka bir fiş var. Aynı fiş iki kez aktarılmasın.",
   extraction_failed: "Fiş okunamadı, tekrar deneyin veya elle girin.",
-  efatura: "e-Faturadan alındı. 320 satıcı alt hesabını ve BT kodunu (FT) Luca'daki karşılığıyla kontrol edin, gider hesabını seçin.",
+  efatura: "e-Faturadan alındı. 320 satıcı alt hesabını ve BT kodunu (EF/EA) Luca'daki karşılığıyla kontrol edin, gider hesabını seçin.",
   efatura_unsigned: "Dosyadan yüklendi; faturanın imzası doğrulanmadı. Şüpheliyse GİB'de ETTN ile sorgulayın.",
   efatura_other_tax: "Faturada KDV dışında vergi var (ÖTV, konaklama vergisi vb.). Toplam farkını kontrol edin.",
 };

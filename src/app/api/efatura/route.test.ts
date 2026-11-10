@@ -60,14 +60,14 @@ describe("POST /api/efatura", () => {
     expect(q.createReceipt).not.toHaveBeenCalled();
   });
 
-  it("tek XML'i seçili firmanın taslağı yapar: 320 alacak, BT FT, satıcı VKN'si, uyarı", async () => {
+  it("tek XML'i seçili firmanın taslağı yapar: 320 alacak, BT EF, satıcı VKN'si, uyarı", async () => {
     expect((await POST(post(invoiceXml(), "baskasinin-firmasi"))).status).toBe(404); // never falls back to another firm
     const res = await POST(post(invoiceXml(), "firm-1"));
     expect(res.status).toBe(201);
     expect(activeFirm).toHaveBeenCalledWith("user-a", "firm-1");
     const [user, firm, receipt, lines] = vi.mocked(q.createReceipt).mock.calls[0];
     expect([user, firm, receipt.taxNumber, receipt.receiptNo, receipt.receiptDate, receipt.totalKurus, receipt.model]).toEqual(["user-a", "firm-1", "2222222224", "ABC2026000000412", "2026-09-08", 131000, "e-fatura"]);
-    expect(lines.at(-1)).toMatchObject({ accountCode: "320.01", creditKurus: 131000, documentType: "FT" });
+    expect(lines.at(-1)).toMatchObject({ accountCode: "320.01", creditKurus: 131000, documentType: "EF" });
     expect(receipt.warnings[0].code).toBe("efatura");
   });
 

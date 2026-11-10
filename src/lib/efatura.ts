@@ -11,6 +11,7 @@ export type Invoice = {
   number: string;
   date: string; // yyyy-mm-dd
   type: string; // SATIS, IADE, TEVKIFAT, ...
+  profile: string; // TEMELFATURA, TICARIFATURA, EARSIVFATURA, ...
   currency: string;
   supplier: { taxNumber: string | null; name: string | null };
   customerTaxNumber: string | null;
@@ -72,7 +73,7 @@ export function parseInvoice(xml: string): Invoice {
     const p = path[path.length - 1];
     const value = text.trim();
     const scheme = (attrs[attrs.length - 1]?.schemeID ?? "").toUpperCase();
-    if (["Invoice/ID", "Invoice/IssueDate", "Invoice/InvoiceTypeCode", "Invoice/DocumentCurrencyCode", "Invoice/LegalMonetaryTotal/PayableAmount",
+    if (["Invoice/ID", "Invoice/IssueDate", "Invoice/InvoiceTypeCode", "Invoice/ProfileID", "Invoice/DocumentCurrencyCode", "Invoice/LegalMonetaryTotal/PayableAmount",
       "Invoice/AccountingSupplierParty/Party/PartyName/Name"].includes(p)) got[p] = value;
     const id = /^Invoice\/Accounting(Supplier|Customer)Party\/Party\/PartyIdentification\/ID$/.exec(p);
     if (id && (scheme === "VKN" || scheme === "TCKN")) {
@@ -112,6 +113,7 @@ export function parseInvoice(xml: string): Invoice {
     number: number.slice(0, 40),
     date,
     type: (got["Invoice/InvoiceTypeCode"] ?? "").toUpperCase(),
+    profile: (got["Invoice/ProfileID"] ?? "").toUpperCase(),
     currency: (got["Invoice/DocumentCurrencyCode"] ?? "").toUpperCase(),
     supplier: { taxNumber: supplierId, name: (got["Invoice/AccountingSupplierParty/Party/PartyName/Name"] || person.join(" ") || null)?.slice(0, 200) ?? null },
     customerTaxNumber: customerId,
@@ -145,7 +147,8 @@ export function skipReason(inv: Invoice, firmTaxNumber: string | null): string |
  * A purchase invoice is owed to its seller, not paid by a partner or from the till: 320, and BT FT instead of the ÖKC's ÖK.
  * shortcut: one 320.01 for every seller and BT "FT" are guesses at a common Luca plan, flagged on each draft; make them rules when a müşavir's plan says otherwise.
  */
-export const invoiceRules = (rules: Rules): Rules => ({ ...rules, payment: { ...rules.payment, other: { code: "320.01", name: "Satıcılar" } }, documentType: "FT" });
+// BT as the müşavir enters it in Luca: EA for an e-Arşiv invoice, EF for an e-Fatura.
+export const invoiceRules = (rules: Rules, profile: string): Rules => ({ ...rules, payment: { ...rules.payment, other: { code: "320.01", name: "Satıcılar" } }, documentType: profile === "EARSIVFATURA" ? "EA" : "EF" });
 
 /** The invoice as the receipt fields the journal builder takes (gross per KDV rate, the payable amount as total). */
 export const invoiceData = (inv: Invoice): ReceiptData => ({

@@ -43,10 +43,13 @@ function fakeDoc(rowCount: number, opts: { addRowText?: string; fields?: string[
 describe("lucaGridRows", () => {
   it("Fiş Detayı kolonlarını Luca biçiminde metne çevirir", () => {
     expect(rows).toEqual([
-      { accountCode: "770.08", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "örnek balık lokantası", debit: "7.931,82", credit: "" },
-      { accountCode: "191.03.10", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "örnek balık lokantası", debit: "793,18", credit: "" },
-      { accountCode: "331.01", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "örnek balık lokantası", debit: "", credit: "8.725,00" },
+      { accountCode: "770.08", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", debit: "7.931,82", credit: "", taxNumber: "" },
+      { accountCode: "191.03.10", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", debit: "793,18", credit: "", taxNumber: "" },
+      { accountCode: "331.01", documentNo: "0047", documentDate: "05/09/2026", documentType: "ÖK", description: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", debit: "", credit: "8.725,00", taxNumber: "" },
     ]);
+  });
+  it("satıcı VKN'si yalnız gider satırına yazılır; KDV ve ödeme satırında boş kalır", () => {
+    expect(lucaGridRows(lines, "1234567890").map((r) => r.taxNumber)).toEqual(["1234567890", "", ""]);
   });
 });
 

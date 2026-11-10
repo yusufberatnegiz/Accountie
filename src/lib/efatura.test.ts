@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decimalKurus, InvoiceError, invoiceData, parseInvoice, skipReason } from "./efatura";
+import { decimalKurus, InvoiceError, invoiceData, invoiceRules, parseInvoice, skipReason } from "./efatura";
 import { buildJournalLines } from "./journal";
 import { DEFAULT_RULES } from "./default-rules";
 
@@ -38,7 +38,7 @@ export const invoiceXml = ({ type = "SATIS", currency = "TRY", supplier = "22222
 describe("e-Fatura okuma", () => {
   it("fatura no, tarih, satıcı VKN/adı, alıcı VKN, KDV kırılımı ve ödenecek tutarı okur; satır KDV'lerini saymaz", () => {
     expect(parseInvoice(invoiceXml())).toEqual({
-      number: "ABC2026000000412", date: "2026-09-08", type: "SATIS", currency: "TRY",
+      number: "ABC2026000000412", date: "2026-09-08", type: "SATIS", profile: "TEMELFATURA", currency: "TRY",
       supplier: { taxNumber: "2222222224", name: "ÖRNEK KIRTASİYE & OFİS LTD.ŞTİ." }, customerTaxNumber: FIRM,
       vat: [{ rate: 20, taxableKurus: 100000, vatKurus: 20000 }, { rate: 10, taxableKurus: 10000, vatKurus: 1000 }],
       otherTax: false, withholding: false, payableKurus: 131000,
@@ -84,5 +84,13 @@ describe("hangi faturalar taslak olur", () => {
     expect(balanced).toBe(true);
     expect(lines.map((l) => [l.accountCode.slice(0, 3), l.debitKurus, l.creditKurus])).toEqual([["770", 100000, 0], ["191", 20000, 0], ["770", 10000, 0], ["191", 1000, 0], ["331", 0, 131000]]);
     expect(lines[0].documentNo).toBe("ABC2026000000412");
+  });
+});
+
+describe("invoiceRules", () => {
+  it("BT müşavirin girdiği gibi: e-Arşiv EA, e-Fatura EF; ödeme 320", () => {
+    expect(invoiceRules(DEFAULT_RULES, "EARSIVFATURA").documentType).toBe("EA");
+    expect(invoiceRules(DEFAULT_RULES, "TEMELFATURA").documentType).toBe("EF");
+    expect(invoiceRules(DEFAULT_RULES, "TICARIFATURA").payment.other.code).toBe("320.01");
   });
 });

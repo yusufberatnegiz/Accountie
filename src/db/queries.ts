@@ -249,7 +249,7 @@ export async function deleteDraft(userId: string, id: string): Promise<boolean> 
 export async function listForExport(userId: string, firmId: string | null, ids?: readonly string[], month?: string) {
   const db = getDb();
   const mine = firmId ? and(eq(receipts.userId, userId), eq(receipts.firmId, firmId)) : eq(receipts.userId, userId);
-  const rows = await db.select({ id: receipts.id, firmName: firms.name }).from(receipts).leftJoin(firms, eq(firms.id, receipts.firmId))
+  const rows = await db.select({ id: receipts.id, firmName: firms.name, taxNumber: receipts.taxNumber }).from(receipts).leftJoin(firms, eq(firms.id, receipts.firmId))
     .where(ids?.length
       ? and(mine, inArray(receipts.id, [...ids]), inArray(receipts.status, ["approved", "exported"]))
       : and(mine, eq(receipts.status, "approved"), month ? eq(RECEIPT_MONTH, month) : undefined))
@@ -258,7 +258,7 @@ export async function listForExport(userId: string, firmId: string | null, ids?:
   const lines = await db.select({ ...lineColumns, receiptId: journalLines.receiptId }).from(journalLines)
     .where(and(eq(journalLines.userId, userId), inArray(journalLines.receiptId, rows.map((r) => r.id))))
     .orderBy(asc(journalLines.lineNo));
-  return rows.map((r) => ({ id: r.id, firmName: r.firmName, lines: lines.filter((l) => l.receiptId === r.id).map(({ receiptId, ...l }) => l) }));
+  return rows.map((r) => ({ id: r.id, firmName: r.firmName, taxNumber: r.taxNumber, lines: lines.filter((l) => l.receiptId === r.id).map(({ receiptId, ...l }) => l) }));
 }
 
 export async function markExported(userId: string, ids: readonly string[]): Promise<void> {

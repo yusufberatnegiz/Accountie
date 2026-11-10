@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const userId = await extensionUserId(request);
   if (!userId) return fail("Eklenti anahtarı geçersiz veya süresi dolmuş.", 401);
   const receipts = (await listForExport(userId, null)).filter((r) => !approvalProblem(r.lines)).slice(0, 50).map((r) => {
-    const rows = lucaGridRows(r.lines);
+    const rows = lucaGridRows(r.lines, r.taxNumber);
     return {
       id: r.id,
       firm: r.firmName ?? "",
