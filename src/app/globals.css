@@ -20,7 +20,7 @@
   --section-gap: var(--s11);
 
   /* Radius: tight mode, nested steps down. Photos stay square. */
-  --radius-card: 8px; --radius-control: 6px; --radius-chip: 4px;
+  --radius-card: 14px; --radius-control: 8px; --radius-chip: 999px; --radius-button: 999px;
   --radius: var(--radius-control);
 
   /* Control heights */
@@ -255,7 +255,7 @@ details.stack > summary h2 { display: inline; }
    Feedback: background shift on hover, scale on press, ring on focus. Never only a fade. */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
-  min-height: var(--control); padding: 0 var(--s4); border-radius: var(--radius-control);
+  min-height: var(--control); padding: 0 var(--s4); border-radius: var(--radius-button);
   border: 1px solid transparent; background: var(--secondary); color: var(--ink);
   font-weight: var(--w-medium); font-size: var(--fs-body); line-height: 1.2; cursor: pointer; text-decoration: none; white-space: nowrap;
   transition: transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease, border-color var(--t-hover) ease, color var(--t-hover) ease;

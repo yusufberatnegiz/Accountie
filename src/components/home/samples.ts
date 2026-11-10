@@ -103,7 +103,6 @@ export function journalFor(sample: Sample, payment: Payment["id"]) {
   return buildJournalLines({ ...sample.receipt, paymentMethod: p.method }, rules);
 }
 
-export const defaultPayment = (s: Sample): Payment["id"] => (s.receipt.paymentMethod === "cash" ? "cash" : "partner");
 
 /**
  * Where each journal line comes from on the strip (the panel's "fiş izi"): an expense line from its rate's items,
