@@ -4,25 +4,26 @@
   <meta charset="utf-8">
   <title>Accountie</title>
   <link rel="stylesheet" href="popup.css">
+  <script src="theme.js"></script>
 </head>
 <body>
-  <h1>Luca'ya doldur</h1>
+  <h1>Luca'ya aktar</h1>
 
   <form id="token-form">
     <label for="token">Eklenti anahtarı</label>
-    <p class="muted">Accountie'de Fişler sayfasındaki Chrome eklentisi bölümünden alın. 12 saat geçerlidir.</p>
+    <p class="muted">Accountie'de Kurallar sayfasındaki Chrome eklentisi bölümünden alın. 12 saat geçerlidir.</p>
     <input id="token" type="password" autocomplete="off" spellcheck="false" required pattern="acx_[A-Za-z0-9_\-]{43}">
-    <button type="submit">Fişleri getir</button>
+    <button type="submit" class="primary">Fişleri getir</button>
   </form>
 
   <section id="list-view" hidden>
-    <label for="receipt">Onaylı fiş</label>
-    <select id="receipt"></select>
-    <table>
-      <thead><tr><th>Hesap</th><th>Borç</th><th>Alacak</th></tr></thead>
-      <tbody id="preview"></tbody>
-    </table>
-    <button id="fill" type="button" class="primary">Fiş Detayına yaz</button>
+    <div class="cards-head">
+      <label id="cards-label">Onaylı fişler</label>
+      <button id="toggle-all" type="button" class="link">Tümünü seç</button>
+    </div>
+    <ul id="cards" class="cards" aria-labelledby="cards-label"></ul>
+    <p id="selection" class="muted" aria-live="polite"></p>
+    <button id="fill" type="button" class="primary" disabled>Fiş Detayına yaz</button>
     <button id="auto" type="button" hidden>Hepsini sırayla kaydet</button>
     <p id="auto-note" class="muted" hidden>Hepsini sırayla kaydet: her fiş doldurulur, ekranla karşılaştırılır, aynıysa kaydedilir ve yeni fiş açılır. Fark çıkarsa durur. Son fişi siz kaydedersiniz.</p>
     <button id="done" type="button" hidden>Luca'da kaydettim</button>

@@ -23,38 +23,59 @@ async function api(path, method = "GET") {
   return res.status === 204 ? null : res.json();
 }
 
-const current = () => receipts.find((r) => r.id === $("receipt").value);
+const selected = () => receipts.filter((r) => $(`pick-${r.id}`)?.checked);
 
-function renderPreview() {
-  const body = $("preview");
-  body.replaceChildren();
-  for (const row of current()?.rows ?? []) {
-    const tr = document.createElement("tr");
-    for (const v of [row.accountCode, row.debit, row.credit]) tr.appendChild(Object.assign(document.createElement("td"), { textContent: v }));
-    body.appendChild(tr);
-  }
-  $("done").hidden = true;
+function el(tag, props = {}, ...children) {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children);
+  return node;
+}
+
+/** One small receipt per approved receipt: firm, vendor, number and date, total; checked ones go to Luca together. */
+function renderCards(filled) {
+  $("cards").replaceChildren(...receipts.map((r) => {
+    // The lines show on hover: account, then Borç or "A" + Alacak.
+    const lines = r.rows.map((row) => `${row.accountCode}  ${row.debit || `A ${row.credit}`}`);
+    return el("li", { className: `card${filled.includes(r.id) ? " filled" : ""}`, title: lines.join(String.fromCharCode(10)) },
+      el("input", { type: "checkbox", id: `pick-${r.id}`, checked: !filled.includes(r.id) && receipts.length === 1 }),
+      el("label", { htmlFor: `pick-${r.id}` },
+        el("span", { className: "firm", textContent: r.firm || "Firma yok" }),
+        el("span", { className: "vendor", textContent: r.title || "Satıcı yok" }),
+        el("span", { className: "meta", textContent: `${r.documentNo || "No yok"} · ${r.documentDate}` }),
+        el("span", { className: "total", textContent: `${r.total} TL` })),
+      el("span", { className: "tick", "aria-hidden": "true" }));
+  }));
+  updateSelection();
+}
+
+function updateSelection() {
+  const picked = selected();
+  const firms = new Set(picked.map((r) => r.firm));
+  $("fill").disabled = picked.length === 0;
+  $("fill").textContent = picked.length > 1 ? `${picked.length} fişi Fiş Detayına yaz` : "Fiş Detayına yaz";
+  $("toggle-all").textContent = picked.length === receipts.length && receipts.length ? "Seçimi kaldır" : "Tümünü seç";
+  $("toggle-all").hidden = receipts.length < 2;
+  $("selection").textContent = !picked.length ? (receipts.length ? "Aktarılacak fişleri seçin." : "")
+    : firms.size > 1 ? "Seçilen fişler farklı firmalardan. Luca'da tek firma açık olur; aynı firmanın fişlerini seçin."
+    : `${picked.length} fiş seçildi, toplam ${picked.reduce((n, r) => n + r.rows.length, 0)} satır. Fişler Fiş Detayına alt alta yazılır.`;
+  if (firms.size > 1) $("fill").disabled = true;
 }
 
 async function load() {
   status("Fişler getiriliyor.");
   const data = await api("/api/extension/receipts");
   receipts = data.receipts;
-  $("receipt").replaceChildren(...receipts.map((r) => Object.assign(document.createElement("option"), {
-    // The firm first: Luca has one firm open, and a receipt must go into its own firm's ledger.
-    value: r.id, textContent: `${r.firm ? `${r.firm} — ` : ""}${r.documentNo} · ${r.documentDate} · ${r.title} · ${r.total} TL`,
-  })));
   $("token-form").hidden = true;
   $("list-view").hidden = false;
-  $("fill").disabled = receipts.length === 0;
   $("auto").hidden = $("auto-note").hidden = !autoReady();
   $("auto").disabled = receipts.length < 2;
   // The popup closes when the user clicks Luca's Kaydet; reopen with "Luca'da kaydettim" visible for every receipt filled since.
   const filled = (await filledIds()).filter((id) => receipts.some((r) => r.id === id));
-  if (filled.length) $("receipt").value = filled[filled.length - 1];
-  renderPreview();
+  renderCards(filled);
+  if (!receipts.length) $("cards").replaceChildren(el("li", { className: "empty muted", textContent: "Aktarılacak onaylı fiş yok. Accountie'de fişleri onaylayınca burada görünür." }));
   $("done").hidden = !filled.length;
-  status(receipts.length ? "" : "Aktarılacak onaylı fiş yok.");
+  if (filled.length) $("done").textContent = filled.length > 1 ? `Luca'da kaydettim (${filled.length} fiş)` : "Luca'da kaydettim";
+  status("");
 }
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -99,21 +120,29 @@ async function fillAndCheck(tabId, receipt) {
   return { summary, problems: AccountieFill.checkGrid(receipt.rows, grid && grid.slice(summary.start)) };
 }
 
+/** The chosen receipts one under another in the open Fiş Detayı; stops at the first one the screen does not match. */
 async function fill() {
-  const receipt = current();
-  const tab = receipt && (await lucaTab());
+  const picked = selected();
+  const tab = picked.length && (await lucaTab());
   if (!tab) return;
-  // Rows now go below the ones already there, so a second press would write the same receipt twice into one entry.
-  if ((await filledIds()).includes(receipt.id)) {
+  const already = await filledIds();
+  // Rows go below the ones already there, so a receipt written before would go into one entry twice.
+  if (picked.some((r) => already.includes(r.id))) {
     const grids = await inTab(tab.id, () => globalThis.AccountieFill.readGrid(document, globalThis.AccountieSelectors));
-    if (grids.some((g) => g && g.length)) return status("Bu fiş açık kayda zaten yazıldı. Tekrar yazmak için önce Luca'da satırlarını silin.", true);
+    if (grids.some((g) => g && g.length)) return status("Seçilenlerden biri açık kayda zaten yazıldı. Onu seçimden çıkarın ya da önce Luca'da satırlarını silin.", true);
   }
-  const { summary, problems } = await fillAndCheck(tab.id, receipt);
-  if (problems.length) status(`Ekrandaki kayıt fişle aynı değil: ${problems.join(" ")} Düzeltmeden Kaydet'e basmayın.`, true);
-  else status(summary.message, !summary.ok);
-  // Shown after partial fills too: the user completes the missing cells by hand and still has to mark the receipt.
-  $("done").hidden = !summary.gridFound;
-  if (summary.gridFound) await addFilled(receipt.id);
+  let written = 0;
+  for (const [i, receipt] of picked.entries()) {
+    if (picked.length > 1) status(`${i + 1}/${picked.length}: ${receipt.documentNo} yazılıyor.`);
+    const { summary, problems } = await fillAndCheck(tab.id, receipt);
+    // Shown after partial fills too: the user completes the missing cells by hand and still has to mark the receipt.
+    if (summary.gridFound) { await addFilled(receipt.id); written++; }
+    const done = written ? `${written} fiş yazıldı. ` : "";
+    if (problems.length) { await load(); return status(`${done}${receipt.documentNo} numaralı fişte ekran fişle aynı değil: ${problems.join(" ")} Düzeltmeden Kaydet'e basmayın.`, true); }
+    if (!summary.ok) { await load(); return status(`${done}${receipt.documentNo} numaralı fişte durdum. ${summary.message}`, true); }
+  }
+  await load();
+  status(picked.length > 1 ? `${written} fiş alt alta yazıldı ve ekranla karşılaştırıldı. Luca'da kontrol edip Kaydet'e siz basın, sonra eklentiyi açıp Luca'da kaydettim'e basın.` : AccountieFill.summarize([{ gridFound: true, filled: 1, missing: [] }], picked[0].rows.length).message);
 }
 
 /** Every approved receipt in turn: fill, check, save, wait for Luca's confirmation, mark, new entry. The last one is left for the user to save. */
@@ -183,7 +212,12 @@ $("token-form").addEventListener("submit", (e) => {
   // Session storage: cleared when the browser closes, never synced.
   guard(async () => { await chrome.storage.session.set({ token }); await load(); })();
 });
-$("receipt").addEventListener("change", renderPreview);
+$("cards").addEventListener("change", updateSelection);
+$("toggle-all").addEventListener("click", () => {
+  const all = selected().length !== receipts.length;
+  for (const r of receipts) $(`pick-${r.id}`).checked = all;
+  updateSelection();
+});
 $("fill").addEventListener("click", guard(fill));
 $("auto").addEventListener("click", guard(autoAll));
 $("done").addEventListener("click", guard(done));
