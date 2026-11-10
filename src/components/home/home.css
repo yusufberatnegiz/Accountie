@@ -218,7 +218,7 @@
 /* In the four small cards the read is the strip's head and totals over the fields it gave (no empty top half, YON 23.24) and the
    sheet drops its Evrak No and date columns (the account code and amounts never cut); the sticky desktop card, wide enough, sets the whole paper beside the fields and every column. */
 .path-read { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); align-items: center; }
-.path-xl .path-xl-date { display: none; }
+.path-xl .path-xl-date, .path-xl .path-xl-wide { display: none; }
 /* Each read field is a line of the form with its value at full ink: the read is a form, not a second picture of the paper. */
 .path-read-fields { display: grid; gap: 0; }
 .path-read-fields .ui-kv { padding-block: var(--s2); border-bottom: 1px solid var(--rule); } /* taste-skill-ignore: data-ui form rows */
@@ -227,13 +227,15 @@
 .path-xl { width: 100%; border-collapse: collapse; font-size: var(--fs-small); font-variant-numeric: tabular-nums; table-layout: fixed; }
 .path-xl :is(th, td) { height: 30px; padding: 0 var(--s1); border: 1px solid var(--ui-border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; } /* taste-skill-ignore: data-ui spreadsheet grid */
 .path-xl thead :is(th, td), .path-xl tbody th { background: var(--ui-raised); color: var(--muted); font-weight: var(--w-medium); text-align: center; }
-.path-xl thead td, .path-xl tbody th { width: 2.5em; }
+.path-xl thead td, .path-xl tbody th { width: 1.9em; }
 .path-xl .path-xl-head td { font-weight: var(--w-medium); }
 .path-xl .num { text-align: right; }
-.path-xl tr > :nth-child(2) { width: 40%; } /* the account code column (A) takes the room; amounts share the rest */
+.path-xl tr > :nth-child(2) { width: 76px; } /* the account code column (A) fits 191.03.10; the amounts share the rest, even at 360 px */
+
 @media (min-width: 1100px) and (prefers-reduced-motion: no-preference) {
   .js .path-xl .path-xl-date { display: table-cell; }
   .js .path-xl :is(th, td) { padding: 0 var(--s2); }
+  .js .path-xl .path-xl-wide { display: inline; }
   .js .path-xl tr > :nth-child(2) { width: auto; } /* every column shows on the wide card: equal shares fit */
 }
 .path-file { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) var(--s3); background: color-mix(in srgb, var(--card), var(--ink) 6%); border-radius: var(--radius-control); font-size: var(--fs-small); }
@@ -486,6 +488,15 @@
   .foot-what { grid-column: 1 / 7; }
   .foot-links { grid-column: 7 / 13; }
 }
+/* Without the scroll stage (reduced motion, no script) four static columns are too narrow below 1320: the same 2x2 as tablets. */
+@media (min-width: 1100px) and (max-width: 1320px) and (prefers-reduced-motion: reduce) {
+  .path { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto repeat(2, auto auto); }
+  .path-field-3, .path-field-4 { grid-row: 4 / span 2; }
+}
+@media (min-width: 1100px) and (max-width: 1320px) {
+  html:not(.js) .path { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto repeat(2, auto auto); }
+  html:not(.js) :is(.path-field-3, .path-field-4) { grid-row: 4 / span 2; }
+}
 @media (max-width: 900px) {
   .routes-list, .routes-aside { grid-column: 1 / 13; }
   .routes-aside { position: static; }
@@ -521,6 +532,7 @@
   .path::-webkit-scrollbar { display: none; }
   /* The next field fades in at the edge rather than standing as a grey strip of another height (no 1/4 counter: house rule). */
   .path { mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); } /* taste-skill-ignore: an alpha mask on the sideways row, nothing painted */
+  @media (max-width: 340px) { .path { grid-template-columns: repeat(4, calc(100% - 32px)); } .path :is(.path-field, .path-field-3, .path-field-4) { padding: var(--s5) var(--s4); } } /* the smallest phones keep the card's amounts whole */
   .path-title { grid-column: 1; position: sticky; left: 0; }
   /* Each field as tall as its own card (YON 23.32): equal heights left 189px of empty field under the first card. */
   .path-field, .path-field-3, .path-field-4 { grid-row: 2; grid-template-rows: none; align-content: start; align-self: start; row-gap: var(--s5); padding: var(--s6) var(--s6); scroll-snap-align: start; }
