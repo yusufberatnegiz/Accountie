@@ -24,6 +24,9 @@ async function api(path, method = "GET") {
 }
 
 const selected = () => receipts.filter((r) => $(`pick-${r.id}`)?.checked);
+// Written into the open Luca entry and not yet marked: such a receipt cannot be picked again (it would go into Luca twice).
+let filledNow = [];
+const pickable = () => receipts.filter((r) => !filledNow.includes(r.id));
 
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
@@ -33,16 +36,18 @@ function el(tag, props = {}, ...children) {
 
 /** One small receipt per approved receipt: firm, vendor, number and date, total; checked ones go to Luca together. */
 function renderCards(filled) {
+  filledNow = filled;
   $("cards").replaceChildren(...receipts.map((r) => {
     // The lines show on hover: account, then Borç or "A" + Alacak.
     const lines = r.rows.map((row) => `${row.accountCode}  ${row.debit || `A ${row.credit}`}`);
     return el("li", { className: `card${filled.includes(r.id) ? " filled" : ""}`, title: lines.join(String.fromCharCode(10)) },
-      el("input", { type: "checkbox", id: `pick-${r.id}`, checked: !filled.includes(r.id) && receipts.length === 1 }),
+      el("input", { type: "checkbox", id: `pick-${r.id}`, checked: !filled.includes(r.id) && receipts.length === 1, disabled: filled.includes(r.id) }),
       el("label", { htmlFor: `pick-${r.id}` },
         el("span", { className: "firm", textContent: r.firm || "Firma yok" }),
         el("span", { className: "vendor", textContent: r.title || "Satıcı yok" }),
         el("span", { className: "meta", textContent: `${r.documentNo || "No yok"} · ${r.documentDate}` }),
-        el("span", { className: "total", textContent: `${r.total} TL` })),
+        el("span", { className: "total", textContent: `${r.total} TL` }),
+        filled.includes(r.id) ? el("span", { className: "state", textContent: "Yazıldı, kaydı bekliyor" }) : ""),
       el("span", { className: "tick", "aria-hidden": "true" }));
   }));
   updateSelection();
@@ -51,14 +56,18 @@ function renderCards(filled) {
 function updateSelection() {
   const picked = selected();
   const firms = new Set(picked.map((r) => r.firm));
-  $("fill").disabled = picked.length === 0;
+  // The first picked receipt sets the firm; picked cards of any other firm are marked so the user sees which to drop.
+  const firm = picked[0]?.firm;
+  for (const r of receipts) $(`pick-${r.id}`)?.closest(".card").classList.toggle("other-firm", firms.size > 1 && picked.includes(r) && r.firm !== firm);
+  $("fill").disabled = picked.length === 0 || firms.size > 1;
   $("fill").textContent = picked.length > 1 ? `${picked.length} fişi Fiş Detayına yaz` : "Fiş Detayına yaz";
-  $("toggle-all").textContent = picked.length === receipts.length && receipts.length ? "Seçimi kaldır" : "Tümünü seç";
-  $("toggle-all").hidden = receipts.length < 2;
-  $("selection").textContent = !picked.length ? (receipts.length ? "Aktarılacak fişleri seçin." : "")
-    : firms.size > 1 ? "Seçilen fişler farklı firmalardan. Luca'da tek firma açık olur; aynı firmanın fişlerini seçin."
+  const open = pickable();
+  $("toggle-all").textContent = open.length && picked.length === open.length ? "Seçimi kaldır" : "Tümünü seç";
+  $("toggle-all").hidden = open.length < 2;
+  $("selection").className = firms.size > 1 ? "muted error" : "muted";
+  $("selection").textContent = !picked.length ? (open.length ? "Aktarılacak fişleri seçin." : "")
+    : firms.size > 1 ? `Seçilen fişler ${firms.size} ayrı firmadan. Luca'da tek firma açık olur; firma adı kırmızı olanları seçimden çıkarın.`
     : `${picked.length} fiş seçildi, toplam ${picked.reduce((n, r) => n + r.rows.length, 0)} satır. Fişler Fiş Detayına alt alta yazılır.`;
-  if (firms.size > 1) $("fill").disabled = true;
 }
 
 async function load() {
@@ -73,6 +82,12 @@ async function load() {
   const filled = (await filledIds()).filter((id) => receipts.some((r) => r.id === id));
   renderCards(filled);
   if (!receipts.length) $("cards").replaceChildren(el("li", { className: "empty muted", textContent: "Aktarılacak onaylı fiş yok. Accountie'de fişleri onaylayınca burada görünür." }));
+  $("fill").hidden = !receipts.length;
+  // While written receipts wait for Luca's Kaydet, marking them is the next step: that button leads.
+  $("done").className = filled.length ? "primary" : "";
+  $("fill").className = filled.length ? "" : "primary";
+  $("clear-filled").hidden = !filled.length;
+  $("done").after($("status"));
   $("done").hidden = !filled.length;
   if (filled.length) $("done").textContent = filled.length > 1 ? `Luca'da kaydettim (${filled.length} fiş)` : "Luca'da kaydettim";
   status("");
@@ -125,14 +140,11 @@ async function fill() {
   const picked = selected();
   const tab = picked.length && (await lucaTab());
   if (!tab) return;
-  const already = await filledIds();
-  // Rows go below the ones already there, so a receipt written before would go into one entry twice.
-  if (picked.some((r) => already.includes(r.id))) {
-    const grids = await inTab(tab.id, () => globalThis.AccountieFill.readGrid(document, globalThis.AccountieSelectors));
-    if (grids.some((g) => g && g.length)) return status("Seçilenlerden biri açık kayda zaten yazıldı. Onu seçimden çıkarın ya da önce Luca'da satırlarını silin.", true);
-  }
+  // A receipt already written (and not yet marked) would go into Luca twice; its card is disabled, this is the last guard.
+  if (picked.some((r) => filledNow.includes(r.id))) return status("Seçilenlerden biri zaten yazıldı. Luca'da kaydettiyseniz Luca'da kaydettim'e basın.", true);
   let written = 0;
   for (const [i, receipt] of picked.entries()) {
+    $("fill").textContent = `Yazılıyor ${i + 1}/${picked.length}`;
     if (picked.length > 1) status(`${i + 1}/${picked.length}: ${receipt.documentNo} yazılıyor.`);
     const { summary, problems } = await fillAndCheck(tab.id, receipt);
     // Shown after partial fills too: the user completes the missing cells by hand and still has to mark the receipt.
@@ -195,15 +207,38 @@ async function done() {
   status(`${ids.length} fiş Accountie'de aktarıldı olarak işaretlendi.`);
 }
 
+/** Luca'da satırlar kaydedilmeden silindiyse: yazıldı işaretlerini Accountie'de aktarıldı yapmadan kaldırır. */
+async function clearFilled() {
+  await chrome.storage.session.remove("filledIds");
+  await load();
+  status("Yazıldı işaretleri kaldırıldı; fişler yeniden seçilebilir.");
+}
+
 async function forget() {
   token = "";
   receipts = [];
   await chrome.storage.session.remove(["token", "filledIds"]);
   $("list-view").hidden = true;
   $("token-form").hidden = false;
+  $("token-form").after($("status"));
 }
 
-const guard = (fn) => () => fn().catch((e) => status(e.message, true));
+const ACTIONS = ["fill", "auto", "done", "import", "forget", "toggle-all", "clear-filled"];
+/** One action at a time: every action button is off while one runs, and the pressed one says it is busy. */
+const guard = (fn, id) => async () => {
+  if (id) {
+    for (const a of ACTIONS) $(a).disabled = true;
+    for (const c of document.querySelectorAll(".card input")) c.disabled = true;
+    $(id).setAttribute("aria-busy", "true");
+  }
+  try { await fn(); } catch (e) { status(e.message, true); } finally {
+    if (id) {
+      $(id).removeAttribute("aria-busy");
+      for (const a of ACTIONS) $(a).disabled = false;
+      if (receipts.length) { renderCards(filledNow); $("fill").textContent = selected().length > 1 ? `${selected().length} fişi Fiş Detayına yaz` : "Fiş Detayına yaz"; }
+    }
+  }
+};
 
 $("token-form").addEventListener("submit", (e) => {
   e.preventDefault();
@@ -214,13 +249,15 @@ $("token-form").addEventListener("submit", (e) => {
 });
 $("cards").addEventListener("change", updateSelection);
 $("toggle-all").addEventListener("click", () => {
-  const all = selected().length !== receipts.length;
-  for (const r of receipts) $(`pick-${r.id}`).checked = all;
+  const open = pickable();
+  const all = selected().length !== open.length;
+  for (const r of open) $(`pick-${r.id}`).checked = all;
   updateSelection();
 });
-$("fill").addEventListener("click", guard(fill));
-$("auto").addEventListener("click", guard(autoAll));
-$("done").addEventListener("click", guard(done));
+$("fill").addEventListener("click", guard(fill, "fill"));
+$("auto").addEventListener("click", guard(autoAll, "auto"));
+$("done").addEventListener("click", guard(done, "done"));
+$("clear-filled").addEventListener("click", guard(clearFilled, "clear-filled"));
 // Kendi sekmesinde: açılır pencere odağı kaybedince kapanır, içe aktarma dakikalar sürer.
 $("import").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("import.html") }));
 $("forget").addEventListener("click", guard(async () => { await forget(); status("Anahtar silindi."); }));

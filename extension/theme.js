@@ -5,7 +5,8 @@
 (async function () {
   const root = document.documentElement;
   const media = matchMedia("(prefers-color-scheme: dark)");
-  let choice = (await chrome.storage.local.get("tema").catch(() => ({}))).tema;
+  let choice;
+  try { choice = localStorage.getItem("tema"); } catch { /* yok */ }
   const apply = () => { root.dataset.look = choice === "light" || choice === "dark" ? choice : media.matches ? "dark" : "light"; };
   apply();
   media.addEventListener("change", apply);
@@ -14,7 +15,7 @@
       const [frame] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => localStorage.getItem("tema") });
       if (!frame) continue;
       choice = frame.result === "light" || frame.result === "dark" ? frame.result : "system";
-      await chrome.storage.local.set({ tema: choice });
+      try { localStorage.setItem("tema", choice); } catch { /* yok */ }
       apply();
       break;
     }

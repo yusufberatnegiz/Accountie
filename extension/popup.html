@@ -11,8 +11,8 @@
 
   <form id="token-form">
     <label for="token">Eklenti anahtarı</label>
-    <p class="muted">Accountie'de Kurallar sayfasındaki Chrome eklentisi bölümünden alın. 12 saat geçerlidir.</p>
-    <input id="token" type="password" autocomplete="off" spellcheck="false" required pattern="acx_[A-Za-z0-9_\-]{43}">
+    <p id="token-hint" class="muted">Accountie'de Kurallar sayfasındaki Chrome eklentisi bölümünden alın. 12 saat geçerlidir.</p>
+    <input id="token" aria-describedby="token-hint" type="password" autocomplete="off" spellcheck="false" required pattern="acx_[A-Za-z0-9_\-]{43}">
     <button type="submit" class="primary">Fişleri getir</button>
   </form>
 
@@ -27,6 +27,7 @@
     <button id="auto" type="button" hidden>Hepsini sırayla kaydet</button>
     <p id="auto-note" class="muted" hidden>Hepsini sırayla kaydet: her fiş doldurulur, ekranla karşılaştırılır, aynıysa kaydedilir ve yeni fiş açılır. Fark çıkarsa durur. Son fişi siz kaydedersiniz.</p>
     <button id="done" type="button" hidden>Luca'da kaydettim</button>
+    <button id="clear-filled" type="button" class="link" hidden>Luca'da kaydetmedim, yazıldı işaretlerini kaldır</button>
     <button id="import" type="button">Luca'dan firmaları çek</button>
     <button id="forget" type="button" class="link">Anahtarı unut</button>
   </section>
