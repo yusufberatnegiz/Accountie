@@ -33,7 +33,7 @@ export function AppShell({ current, base = "/panel", email, firmId, children }: 
     <div className="app" data-screen={current} data-firm={firmId ?? undefined}>
       <FirmShortcut base={base} />
       <nav className="rail" aria-label="Panel">
-        <Link className="rail-mark" href={base} translate="no"><BrandMark /><span className="visually-hidden">Accountie, fiş listesi</span></Link>
+        <Link className="rail-mark" href={base} translate="no"><BrandMark /><span className="rail-brand" aria-hidden="true">Accountie</span><span className="visually-hidden">Accountie, fiş listesi</span></Link>
         {item(base, "Fişler", "receipt", current === "fisler" || current === "fis")}
         <CaptureButton pickers={["camera"]} variant="rail" base={base} />
         {item(`${base}/kurallar`, "Kurallar", "table", current === "kurallar")}

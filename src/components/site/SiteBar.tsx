@@ -6,7 +6,7 @@ import "./site.css";
 
 const LINKS = [
   { href: "/#path-title", label: "Nasıl çalışır" },
-  { href: "/#show-title", label: "Kontrol ekranı" },
+  { href: "/#kural", label: "Denge kuralı" },
   { href: "/#sss", label: "SSS" },
 ];
 

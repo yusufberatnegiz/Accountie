@@ -68,6 +68,15 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
         </div>
       </div>
 
+      {all.length ? (
+        <dl className="tiles" aria-label={month ? `${monthLabel(month)} özeti` : "Özet"}>
+          <div><dt>Fiş</dt><dd>{all.length}</dd></div>
+          <div className="tile-draft"><dt>Kontrol bekleyen</dt><dd>{drafts}</dd></div>
+          <div><dt>Luca&apos;ya hazır</dt><dd>{ready.length}</dd></div>
+          <div><dt>İndirilecek KDV</dt><dd>{formatTrAmount(vatTotal)}</dd></div>
+        </dl>
+      ) : null}
+
       <section className="panel list-panel" aria-labelledby="liste-baslik">
         <h2 id="liste-baslik" className="visually-hidden">Fiş listesi</h2>
         <ListTabs active={tab.slug} tabs={TABS.map((t) => ({ slug: t.slug, label: t.label, href: withMonth(t.slug ? `durum=${t.slug}` : ""), count: count(t.status) }))} />
