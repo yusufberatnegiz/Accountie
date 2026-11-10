@@ -55,7 +55,7 @@ export function PreviewApi({ approved }: { approved: string[] }) {
         return json({ approved: chosen.length, skipped: 0 });
       }
       const action = /^\/api\/receipts\/([^/]+)\/(approve|reopen|exported)$/.exec(url);
-      if (action) setStatus([action[1]], { approve: "approved", reopen: "draft", exported: "exported" }[action[2]]!);
+      if (action) setStatus([action[1]], init?.method === "DELETE" ? "approved" : { approve: "approved", reopen: "draft", exported: "exported" }[action[2]]!);
       if (url === "/api/exports") {
         const chosen: string[] | undefined = JSON.parse(String(init?.body ?? "{}")).receiptIds;
         setStatus(chosen ?? approvedIds, "exported");

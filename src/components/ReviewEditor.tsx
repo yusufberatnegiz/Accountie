@@ -525,6 +525,12 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
                 Luca&apos;ya elle girdim
               </button>
             </>
+          ) : receipt.status === "exported" ? (
+            <button className="btn" type="button" disabled={working}
+              onClick={() => confirm("Fiş yeniden “Onaylandı” olur; eklentide ve sonraki Excel dosyasında tekrar çıkar. Luca'daki kaydı silmediyseniz fiş iki kez girilir. Devam edilsin mi?")
+                && run(async () => { if (await call(`/api/receipts/${receipt.id}/exported`, { method: "DELETE" })) refresh(); })}>
+              Aktarılmadı say
+            </button>
           ) : null}
           <button className="btn" type="button" disabled={invalid} onClick={copy}><Roll value={copied ? "Kopyalandı" : "Satırları kopyala"} /></button>
           <p role="status" className="muted small">{info}</p>

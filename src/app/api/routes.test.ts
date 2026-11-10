@@ -65,8 +65,9 @@ describe("oturum", () => {
       receiptRoute.DELETE(new Request("http://test"), params()), approveRoute.POST(new Request("http://test"), params()),
       exportsRoute.POST(json({}, "POST")), rulesRoute.GET(), rulesRoute.PUT(json({ rows: [] }, "PUT")),
       exportedRoute.POST(new Request("http://test"), params()), reopenRoute.POST(new Request("http://test"), params()),
+      exportedRoute.DELETE(new Request("http://test"), params()),
     ]);
-    expect(responses.map((r) => r.status)).toEqual(Array(11).fill(401));
+    expect(responses.map((r) => r.status)).toEqual(Array(12).fill(401));
     expect(q.transitionReceipt).not.toHaveBeenCalled();
     expect(q.createReceipt).not.toHaveBeenCalled();
   });
@@ -245,6 +246,14 @@ describe("POST /api/receipts/[id]/exported", () => {
     expect((await exportedRoute.POST(new Request("http://test"), params())).status).toBe(204);
     expect(q.markExported).toHaveBeenCalledWith(USER, [ID]);
     expect((await exportedRoute.POST(new Request("http://test"), params("x"))).status).toBe(404);
+  });
+
+  it("DELETE aktarıldıyı geri alır: yalnız aktarılmış fiş onaylıya döner", async () => {
+    vi.mocked(q.transitionReceipt).mockResolvedValueOnce(true);
+    expect((await exportedRoute.DELETE(new Request("http://test"), params())).status).toBe(204);
+    expect(q.transitionReceipt).toHaveBeenCalledWith(USER, ID, "exported", "approved");
+    vi.mocked(q.transitionReceipt).mockResolvedValueOnce(false);
+    expect((await exportedRoute.DELETE(new Request("http://test"), params())).status).toBe(404);
   });
 });
 
