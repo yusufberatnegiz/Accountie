@@ -26,9 +26,10 @@ export function SiteBar({ current }: { current?: "giris" | "kayit" }) {
         </nav>
         <div className="site-actions">
           <ThemeCycle />
-          {current === "giris" ? null : <Link className="btn site-login" href="/giris">Giriş yap</Link>}
+          {/* A full page load: the login pages' CSP lets Turnstile load, this page's does not, and a client navigation keeps this page's. */}
+          {current === "giris" ? null : <a className="btn site-login" href="/giris">Giriş yap</a>}
           {/* On the auth screens the form’s own button is the one primary action. */}
-          {current === "kayit" ? null : <Link className={current ? "btn site-cta" : "btn btn-primary site-cta"} href="/kayit">Hesap oluştur</Link>}
+          {current === "kayit" ? null : <a className={current ? "btn site-cta" : "btn btn-primary site-cta"} href="/kayit">Hesap oluştur</a>}
           <SiteMenu links={[...LINKS, ...(current === "kayit" ? [] : [{ href: "/kayit", label: "Hesap oluştur" }])]} />
         </div>
       </header>

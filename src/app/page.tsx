@@ -335,7 +335,7 @@ export default function LandingPage() {
               Yazar kasa fişini telefonla çekin; gider, KDV ve alacak satırları sizin hesap kodlarınızla hazırlanır, siz onaylayınca Excel ile Luca’ya aktarırsınız.
             </p>
             <p>
-              <Link className="btn btn-primary btn-lg" href="/kayit">Hesap oluştur</Link>
+              <a className="btn btn-primary btn-lg" href="/kayit">Hesap oluştur</a>
             </p>
           </div>
           <div className="hero-stage">
@@ -561,8 +561,8 @@ export default function LandingPage() {
               <h2 className="t-display cta-title" id="cta-title"><span>İlk fişinizi</span> <span>çekin</span></h2>
               <p className="cta-sub">Hesabı açtığınızda varsayılan hesap planı kural tablonuza kopyalanır. İlk fişi telefonla çekip kontrol ekranında görürsünüz.</p>
               <div className="cta-actions">
-                <Link className="btn btn-lg cta-btn" href="/kayit" prefetch={false}>Hesap oluştur</Link>
-                <p>Hesabınız var mı? <Link href="/giris" prefetch={false}>Giriş yapın</Link></p>
+                <a className="btn btn-lg cta-btn" href="/kayit">Hesap oluştur</a>
+                <p>Hesabınız var mı? <a href="/giris">Giriş yapın</a></p>
               </div>
             </div>
             {/* The moment of the shot (YON 23.24): the phone's camera screen on Kırtasiye 0912, and the lines it becomes as chips
@@ -596,8 +596,8 @@ export default function LandingPage() {
         <div className="foot-top">
           <p className="foot-what"><span translate="no">Accountie</span>, yazar kasa fişinden Luca yevmiye kaydı hazırlar.</p>
           <nav className="foot-links" aria-label="Alt bağlantılar">
-            <Link href="/giris" prefetch={false}>Giriş yap</Link>
-            <Link href="/kayit" prefetch={false}>Hesap oluştur</Link>
+            <a href="/giris">Giriş yap</a>
+            <a href="/kayit">Hesap oluştur</a>
             <a href="#sss">Sık sorulanlar</a>
             <Link href="/gizlilik" prefetch={false}>Gizlilik</Link>
           </nav>
