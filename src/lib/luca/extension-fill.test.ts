@@ -8,7 +8,7 @@ import "../../../extension/selectors.js";
 type FakeEl = { value: string; events: string[]; dispatchEvent(e: Event): boolean; focus(): void };
 type Fill = {
   FIELDS: string[];
-  fillReceipt(doc: unknown, rows: unknown[], sel: Selectors): { gridFound: boolean; filled: number; missing: { row: number; field: string }[]; extraRows: number };
+  fillReceipt(doc: unknown, rows: unknown[], sel: Selectors): { gridFound: boolean; filled: number; missing: { row: number; field: string }[]; extraRows: number; start: number };
   summarize(results: unknown[], rowCount: number): { ok: boolean; gridFound: boolean; message: string };
   readGrid(doc: unknown, sel: Selectors): Record<string, string>[] | null;
   checkGrid(expected: unknown[], actual: Record<string, string>[] | null): string[];
@@ -57,7 +57,7 @@ describe("eklenti satır doldurma", () => {
   it("üç satırı doldurur, boş tutarı yazmaz, input/change olaylarını tetikler", () => {
     const doc = fakeDoc(3);
     const result = fill.fillReceipt(doc, rows, SEL);
-    expect(result).toEqual({ gridFound: true, filled: 18, missing: [], extraRows: 0 });
+    expect(result).toEqual({ gridFound: true, filled: 18, missing: [], extraRows: 0, start: 0 });
     expect(doc.grid[0].cells[".accountCode"].value).toBe("770.08");
     expect(doc.grid[0].cells[".debit"].value).toBe("7.931,82");
     expect(doc.grid[0].cells[".credit"].value).toBe("");
@@ -65,11 +65,17 @@ describe("eklenti satır doldurma", () => {
     expect(doc.grid[0].cells[".documentNo"].events).toEqual(["input", "change", "blur"]);
   });
 
-  it("önceden dolu satırda boş kalan tutarı temizler", () => {
-    const doc = fakeDoc(3);
-    doc.grid[0].cells[".credit"].value = "999,00";
+  it("tabloda önceki fiş varsa yenisini altına yazar, öncekine dokunmaz", () => {
+    const doc = fakeDoc(4);
     fill.fillReceipt(doc, rows, SEL);
-    expect(doc.grid[0].cells[".credit"].value).toBe("");
+    const result = fill.fillReceipt(doc, rows, SEL);
+    expect(result.start).toBe(3);
+    expect(result.missing).toEqual([]);
+    expect(doc.grid).toHaveLength(6);
+    expect(doc.grid[2].cells[".credit"].value).toBe("8.725,00");
+    expect(doc.grid[3].cells[".accountCode"].value).toBe("770.08");
+    expect(doc.grid[5].cells[".credit"].value).toBe("8.725,00");
+    expect(fill.checkGrid(rows, fill.readGrid(doc, SEL)!.slice(result.start))).toEqual([]);
   });
 
   it("satır yetmezse Satır Ekle ile yeni satır açar", () => {
@@ -90,15 +96,17 @@ describe("eklenti satır doldurma", () => {
     expect(fill.fillReceipt(doc, rows, SEL).missing).toEqual([1, 2, 3].map((row) => ({ row, field: "documentType" })));
   });
 
-  it("kaydın altında kalan dolu satırları sayar ama silmez", () => {
+  it("aşağıda dolu bir satır varsa onun da altına yazar, hiçbir dolu satırı ezmez", () => {
     const doc = fakeDoc(5);
     doc.grid[4].cells[".debit"].value = "100,00";
-    expect(fill.fillReceipt(doc, rows, SEL).extraRows).toBe(1);
+    const result = fill.fillReceipt(doc, rows, SEL);
+    expect(result.start).toBe(5);
     expect(doc.grid[4].cells[".debit"].value).toBe("100,00");
+    expect(doc.grid[0].cells[".accountCode"].value).toBe("");
   });
 
   it("tablo yoksa gridFound false döner", () => {
-    expect(fill.fillReceipt(fakeDoc(0), rows, SEL)).toEqual({ gridFound: false, filled: 0, missing: [], extraRows: 0 });
+    expect(fill.fillReceipt(fakeDoc(0), rows, SEL)).toEqual({ gridFound: false, filled: 0, missing: [], extraRows: 0, start: 0 });
   });
 });
 
@@ -123,9 +131,12 @@ describe("çerçeve sonuçlarının özeti", () => {
     expect(s.gridFound).toBe(true);
     expect(s.message).toContain("2 dolu satır daha var");
   });
+  it("önceki fişin altına yazıldıysa bunu söyler", () => {
+    expect(fill.summarize([{ gridFound: true, filled: 18, missing: [], start: 3 }], 3).message).toContain("3 satır dolduruldu (önceki 3 satırın altına).");
+  });
   it("hepsi dolunca kullanıcıya Kaydet'i kendisinin basacağını söyler", () => {
     const s = fill.summarize([{ gridFound: false, filled: 0, missing: [] }, { gridFound: true, filled: 18, missing: [] }], 3);
-    expect(s).toEqual({ ok: true, gridFound: true, message: "3 satır dolduruldu. Luca'da kontrol edip Kaydet'e siz basın, sonra eklentiyi yeniden açıp Luca'da kaydettim'e basın." });
+    expect(s).toEqual({ ok: true, gridFound: true, start: 0, message: "3 satır dolduruldu. Luca'da kontrol edip Kaydet'e siz basın, sonra eklentiyi yeniden açıp Luca'da kaydettim'e basın." });
   });
 });
 

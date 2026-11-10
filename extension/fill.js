@@ -16,12 +16,17 @@
     for (const type of ["input", "change", "blur"]) el.dispatchEvent(new Event(type, { bubbles: true }));
   }
 
+  const hasValue = (row, sel) => FIELDS.some((f) => { const el = sel.cells[f] ? row.querySelector(sel.cells[f]) : null; return !!(el && String(el.value || "").trim()); });
+
+  // Another receipt already in the grid stays: the new one starts on the first row after the last filled one.
   function fillReceipt(doc, rows, sel) {
     let grid = Array.from(doc.querySelectorAll(sel.row));
-    if (grid.length === 0) return { gridFound: false, filled: 0, missing: [], extraRows: 0 };
+    if (grid.length === 0) return { gridFound: false, filled: 0, missing: [], extraRows: 0, start: 0 };
+    const start = grid.map((row) => hasValue(row, sel)).lastIndexOf(true) + 1;
     const missing = [];
     let filled = 0;
-    rows.forEach((values, i) => {
+    rows.forEach((values, n) => {
+      const i = start + n;
       if (!grid[i] && sel.addRow) {
         const button = doc.querySelector(sel.addRow);
         // shortcut: assumes the grid adds the row synchronously; add a wait if Luca renders it later.
@@ -40,15 +45,14 @@
       }
     });
     // Rows below ours that still hold values would be saved with this entry; we only warn, never clear them.
-    const extraRows = grid.slice(rows.length).filter((row) =>
-      FIELDS.some((f) => { const el = sel.cells[f] ? row.querySelector(sel.cells[f]) : null; return !!(el && String(el.value || "").trim()); })).length;
-    return { gridFound: true, filled, missing, extraRows };
+    const extraRows = grid.slice(start + rows.length).filter((row) => hasValue(row, sel)).length;
+    return { gridFound: true, filled, missing, extraRows, start };
   }
 
   /** Picks the frame that found the grid and turns its result into one Turkish message. */
   function summarize(results, rowCount) {
     const best = results.filter((r) => r && r.gridFound).sort((a, b) => b.filled - a.filled)[0];
-    if (!best) return { ok: false, gridFound: false, message: "Fiş Detayı tablosu bulunamadı. Luca'da Fiş Detayı ekranını açın; açıksa extension/selectors.js içindeki seçicileri güncelleyin." };
+    if (!best) return { ok: false, gridFound: false, start: 0, message: "Fiş Detayı tablosu bulunamadı. Luca'da Fiş Detayı ekranını açın; açıksa extension/selectors.js içindeki seçicileri güncelleyin." };
     const extra = best.extraRows
       ? ` Dikkat: tabloda bu kayda ait olmayan ${best.extraRows} dolu satır daha var; Kaydet'ten önce silin.`
       : "";
@@ -57,9 +61,10 @@
       const rowHint = best.missing.some((m) => m.field === "row")
         ? " Satır eksikse Luca'da + ile boş satır ekleyip Fiş Detayına yaz'a tekrar basabilirsiniz."
         : "";
-      return { ok: false, gridFound: true, message: `Alan bulunamadı: ${list}. Bu alanları elle doldurun, sonra Kaydet'e siz basın.${rowHint}${extra} Kaydettikten sonra eklentiyi yeniden açıp Luca'da kaydettim'e basın.` };
+      return { ok: false, gridFound: true, start: best.start || 0, message: `Alan bulunamadı: ${list}. Bu alanları elle doldurun, sonra Kaydet'e siz basın.${rowHint}${extra} Kaydettikten sonra eklentiyi yeniden açıp Luca'da kaydettim'e basın.` };
     }
-    return { ok: !extra, gridFound: true, message: `${rowCount} satır dolduruldu.${extra} Luca'da kontrol edip Kaydet'e siz basın, sonra eklentiyi yeniden açıp Luca'da kaydettim'e basın.` };
+    const where = best.start ? ` (önceki ${best.start} satırın altına)` : "";
+    return { ok: !extra, gridFound: true, start: best.start || 0, message: `${rowCount} satır dolduruldu${where}.${extra} Luca'da kontrol edip Kaydet'e siz basın, sonra eklentiyi yeniden açıp Luca'da kaydettim'e basın.` };
   }
 
   // "7.931,82", "7931,82" and "7931.82" (how a grid may echo it back) are the same kuruş.

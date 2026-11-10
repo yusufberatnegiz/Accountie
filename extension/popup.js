@@ -49,16 +49,18 @@ async function load() {
   $("fill").disabled = receipts.length === 0;
   $("auto").hidden = $("auto-note").hidden = !autoReady();
   $("auto").disabled = receipts.length < 2;
-  // The popup closes when the user clicks Luca's Kaydet; reopen on the filled receipt with "Luca'da kaydettim" visible.
-  const { filledId } = await chrome.storage.session.get("filledId");
-  const filled = receipts.some((r) => r.id === filledId);
-  if (filled) $("receipt").value = filledId;
+  // The popup closes when the user clicks Luca's Kaydet; reopen with "Luca'da kaydettim" visible for every receipt filled since.
+  const filled = (await filledIds()).filter((id) => receipts.some((r) => r.id === id));
+  if (filled.length) $("receipt").value = filled[filled.length - 1];
   renderPreview();
-  $("done").hidden = !filled;
+  $("done").hidden = !filled.length;
   status(receipts.length ? "" : "Aktarılacak onaylı fiş yok.");
 }
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+// Receipts written into the open Luca entry and not yet marked; several can share one entry, one under another.
+const filledIds = async () => (await chrome.storage.session.get("filledIds")).filledIds ?? [];
+const addFilled = async (id) => chrome.storage.session.set({ filledIds: [...new Set([...(await filledIds()), id])] });
 // Auto save needs all three selectors checked on Luca's real screen (selectors.js); until then the extension only fills.
 const autoReady = () => !!(AccountieSelectors.save && AccountieSelectors.saved && AccountieSelectors.newEntry);
 
@@ -93,19 +95,25 @@ async function fillAndCheck(tabId, receipt) {
   if (!summary.gridFound) return { summary, problems: [] };
   const grids = (await inTab(tabId, () => globalThis.AccountieFill.readGrid(document, globalThis.AccountieSelectors))).filter(Boolean);
   const grid = grids.sort((a, b) => b.length - a.length)[0] ?? null;
-  return { summary, problems: AccountieFill.checkGrid(receipt.rows, grid) };
+  // Only this receipt's rows are compared; the ones above it belong to receipts filled before.
+  return { summary, problems: AccountieFill.checkGrid(receipt.rows, grid && grid.slice(summary.start)) };
 }
 
 async function fill() {
   const receipt = current();
   const tab = receipt && (await lucaTab());
   if (!tab) return;
+  // Rows now go below the ones already there, so a second press would write the same receipt twice into one entry.
+  if ((await filledIds()).includes(receipt.id)) {
+    const grids = await inTab(tab.id, () => globalThis.AccountieFill.readGrid(document, globalThis.AccountieSelectors));
+    if (grids.some((g) => g && g.length)) return status("Bu fiş açık kayda zaten yazıldı. Tekrar yazmak için önce Luca'da satırlarını silin.", true);
+  }
   const { summary, problems } = await fillAndCheck(tab.id, receipt);
   if (problems.length) status(`Ekrandaki kayıt fişle aynı değil: ${problems.join(" ")} Düzeltmeden Kaydet'e basmayın.`, true);
   else status(summary.message, !summary.ok);
   // Shown after partial fills too: the user completes the missing cells by hand and still has to mark the receipt.
   $("done").hidden = !summary.gridFound;
-  if (summary.gridFound) await chrome.storage.session.set({ filledId: receipt.id });
+  if (summary.gridFound) await addFilled(receipt.id);
 }
 
 /** Every approved receipt in turn: fill, check, save, wait for Luca's confirmation, mark, new entry. The last one is left for the user to save. */
@@ -115,7 +123,7 @@ async function autoAll() {
   const queue = [...receipts];
   let saved = 0;
   const stop = async (receipt, text) => {
-    if (receipt) await chrome.storage.session.set({ filledId: receipt.id });
+    if (receipt) await addFilled(receipt.id);
     await load();
     status(`${saved} fiş kaydedildi. ${text}`, true);
   };
@@ -125,7 +133,7 @@ async function autoAll() {
     if (!summary.ok) return stop(summary.gridFound ? receipt : null, `${receipt.documentNo} numaralı fişte durdum. ${summary.message}`);
     if (problems.length) return stop(receipt, `${receipt.documentNo} numaralı fişte durdum, ekrandaki kayıt fişle aynı değil: ${problems.join(" ")} Düzeltip Kaydet'e siz basın.`);
     if (i === queue.length - 1) {
-      await chrome.storage.session.set({ filledId: receipt.id });
+      await addFilled(receipt.id);
       await load();
       return status(`${saved} fiş kaydedildi. Son fiş (${receipt.documentNo}) dolduruldu ve ekranla karşılaştırıldı. Kontrol edip Kaydet'e siz basın, sonra Luca'da kaydettim'e basın.`);
     }
@@ -151,17 +159,17 @@ async function autoAll() {
 }
 
 async function done() {
-  const receipt = current();
-  await api(`/api/extension/receipts/${encodeURIComponent(receipt.id)}/transferred`, "POST");
-  await chrome.storage.session.remove("filledId");
+  const ids = await filledIds();
+  for (const id of ids) await api(`/api/extension/receipts/${encodeURIComponent(id)}/transferred`, "POST");
+  await chrome.storage.session.remove("filledIds");
   await load();
-  status("Fiş Accountie'de aktarıldı olarak işaretlendi.");
+  status(`${ids.length} fiş Accountie'de aktarıldı olarak işaretlendi.`);
 }
 
 async function forget() {
   token = "";
   receipts = [];
-  await chrome.storage.session.remove(["token", "filledId"]);
+  await chrome.storage.session.remove(["token", "filledIds"]);
   $("list-view").hidden = true;
   $("token-form").hidden = false;
 }
