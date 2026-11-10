@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Accountie Luca Doldurucu",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Onaylı fişleri Luca Fiş Detayına yazar, ekranla karşılaştırır; son fişi siz kaydedersiniz.",
   "action": {
     "default_popup": "popup.html",
