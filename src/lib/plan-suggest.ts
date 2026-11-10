@@ -18,7 +18,8 @@ const EXPENSE_WORDS: Record<string, readonly string[]> = {
 };
 
 /**
- * The rows with each rule moved onto the firm's own Luca account where the plan names one; a rule with no match is left as it is.
+ * The rows with each rule moved onto the firm's own Luca account where the plan names one, or onto 770/191/309 when that main
+ * account has no sub-accounts; any other rule with no match is left as it is.
  * Only accounts that can be posted to (no sub-account under them) are offered. A suggestion, not a decision: the user saves it.
  */
 export function suggestRules(rows: readonly RuleRow[], plan: readonly Account[]): RuleRow[] {
@@ -41,5 +42,10 @@ export function suggestRules(rows: readonly RuleRow[], plan: readonly Account[])
     if (r.kind === "payment" && r.key === "card") return find("3", (n) => n.includes("kredi kart"));
     if (r.kind === "payment" && r.key === "cash") return find("100", () => true);
   };
-  return rows.map((r) => { const hit = pick(r); return hit ? { ...r, accountCode: hit.code, accountName: hit.name } : r; });
+  // A plan with no sub-accounts under these (Luca's bare template) is posted to the main account itself.
+  const main = (r: RuleRow) => {
+    const code = r.kind === "expense" ? "770" : r.kind === "vat" ? "191" : r.kind === "payment" && r.key === "card" ? "309" : null;
+    return code ? leaves.find((a) => a.code === code) : undefined;
+  };
+  return rows.map((r) => { const hit = pick(r) ?? main(r); return hit ? { ...r, accountCode: hit.code, accountName: hit.name } : r; });
 }

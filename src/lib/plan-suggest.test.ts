@@ -50,4 +50,17 @@ describe("suggestRules", () => {
     expect(out.filter((r) => r.kind === "setting")).toEqual(rows.filter((r) => r.kind === "setting"));
     expect(suggestRules(rows, [])).toEqual(rows);
   });
+
+  it("alt hesabı olmayan şablon planda gider 770'e, KDV 191'e, kart 309'a, nakit 100'e önerilir", () => {
+    const bare = [{ code: "100", name: "KASA" }, { code: "191", name: "İNDİRİLECEK KATMA DEĞER VERGİSİ" }, { code: "309", name: "DİĞER MALİ BORÇLAR" }, { code: "770", name: "GENEL YÖNETİM GİDERLERİ" }];
+    const got = suggestRules(rows, bare);
+    expect(new Set(got.filter((r) => r.kind === "expense").map((r) => r.accountCode))).toEqual(new Set(["770"]));
+    expect(new Set(got.filter((r) => r.kind === "vat").map((r) => r.accountCode))).toEqual(new Set(["191"]));
+    expect(code(got, "payment", "card")).toBe("309");
+    expect(code(got, "payment", "cash")).toBe("100");
+  });
+
+  it("alt hesabı olan planda eşleşmeyen kural ana hesaba atılmaz", () => {
+    expect(code(out, "expense", "telecom")).not.toBe("770");
+  });
 });
