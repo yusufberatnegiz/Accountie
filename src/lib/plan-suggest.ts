@@ -31,8 +31,13 @@ export function suggestRules(rows: readonly RuleRow[], plan: readonly Account[])
   };
   const pick = (r: RuleRow) => {
     if (r.kind === "expense") return byWords(["770", "7"], EXPENSE_WORDS[r.key] ?? []);
-    // "% 20 Li İndirilecek Kdv": the rate as a number of its own, and never a withholding (tevkifat) account.
-    if (r.kind === "vat") return find("191", (n) => new RegExp(`(^|\\D)${Number(r.key)}(\\D|$)`).test(n) && !n.includes("tevkif"));
+    // "% 20 Li İndirilecek Kdv": the rate as a number of its own. Real plans also hold the same rate as withholding (sorumlu
+    // sıfatıyla, tevkifatlı), import and refund KDV; a receipt's KDV is none of those ("tevkifatsız" is the plain one).
+    if (r.kind === "vat") {
+      const hits = leaves.filter((a) => a.code.startsWith("191") && new RegExp(`(^|\\D)${Number(r.key)}(\\D|$)`).test(a.lower) && !/sorumlu|ithal|iade|tevkifatlı/.test(a.lower));
+      // Two accounts may name the same rate (191.03.0 and 191.03.20); the one numbered after the rate is the usual one.
+      return hits.find((a) => a.code.endsWith(`.${r.key.padStart(2, "0")}`)) ?? hits[0];
+    }
     if (r.kind === "payment" && r.key === "card") return find("3", (n) => n.includes("kredi kart"));
     if (r.kind === "payment" && r.key === "cash") return find("100", () => true);
   };

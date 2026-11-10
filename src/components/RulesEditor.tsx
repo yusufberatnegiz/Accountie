@@ -28,7 +28,7 @@ const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
 export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; plan?: Account[] }) {
   const names = new Map(plan.map((a) => [a.code, a.name]));
   const [rows, setRows] = useState(initial);
-  const [suggested, setSuggested] = useState<number | null>(null);
+  const [suggested, setSuggested] = useState<{ matched: number; left: number } | null>(null);
   const [saved, setSaved] = useState(initial);
   const [note, setNote] = useState<{ kind: RuleKind; text: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState<RuleKind | null>(null);
@@ -61,7 +61,9 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
 
   function suggest() {
     const next = suggestRules(rows, plan);
-    setSuggested(next.filter((r, i) => r.accountCode !== rows[i].accountCode).length);
+    const accounts = next.filter((r) => r.kind !== "setting");
+    const matched = accounts.filter((r) => names.has(r.accountCode)).length;
+    setSuggested({ matched, left: accounts.length - matched });
     setRows(next);
   }
 
@@ -75,7 +77,7 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
           </div>
           <div className="setting-panel">
             <button className="btn" type="button" onClick={suggest}>Plandan öner</button>
-            <p className="muted small" aria-live="polite">{suggested === null ? "Kuralları plandaki ada göre eşleştirir; hiçbir şey kaydedilmez." : suggested ? `${suggested} kural plandaki hesaba çekildi. Kontrol edip her bölümü kaydedin.` : "Planda eşleşen yeni hesap bulunamadı."}</p>
+            <p className="muted small" aria-live="polite">{suggested === null ? "Kuralları plandaki ada göre eşleştirir; hiçbir şey kaydedilmez." : `${suggested.matched} kural plandaki bir hesapla eşleşti${suggested.left ? `, ${suggested.left} kural için hesabı kod kutusundaki listeden seçin (kırmızı olanlar)` : ""}. Kontrol edip her bölümü kaydedin.`}</p>
           </div>
           <datalist id="plan-kodlari">{plan.map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}</datalist>
         </section>

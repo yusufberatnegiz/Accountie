@@ -8,6 +8,8 @@ const PLAN = [
   { code: "191", name: "İndirilecek Kdv" }, { code: "191.03", name: "İndirilecek Kdv" },
   { code: "191.03.01", name: "% 1 Li İndirilecek Kdv" }, { code: "191.03.10", name: "% 10 Li İndirilecek Kdv" }, { code: "191.03.20", name: "% 20 Li İndirilecek Kdv" },
   { code: "191.09.20", name: "% 20 Tevkifatlı Kdv" },
+  { code: "191.04.10", name: "%10 İndirilecek KDV - Sorumlu Sıfatıyla Alımlar İçin Ödenen" },
+  { code: "191.110.20", name: "%20 İndirilecek KDV - İthalde Ödenen" },
   { code: "309", name: "Diğer Mali Borçlar" }, { code: "309.01", name: "Kredi Kartı İle Ödemeler" },
   { code: "770", name: "Genel Yönetim Giderleri" },
   { code: "770.01", name: "Kırtasiye-Noter-Pul" }, { code: "770.05", name: "Sigorta-Seyahat-Konaklama" },
@@ -31,7 +33,7 @@ describe("suggestRules", () => {
     expect(out.find((r) => r.kind === "expense" && r.key === "meal")?.accountName).toBe("Yeme-İçme Ve Ağırlama");
   });
 
-  it("KDV oranını ayrı bir sayı olarak arar: %1, %10 ile karışmaz; tevkifat hesabı önerilmez", () => {
+  it("KDV oranını ayrı bir sayı olarak arar: %1, %10 ile karışmaz; tevkifatlı, sorumlu sıfatıyla ve ithalde ödenen hesap önerilmez", () => {
     expect(code(out, "vat", "1")).toBe("191.03.01");
     expect(code(out, "vat", "10")).toBe("191.03.10");
     expect(code(out, "vat", "20")).toBe("191.03.20");
