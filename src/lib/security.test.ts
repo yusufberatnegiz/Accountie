@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), revokeExtensionTokens: vi.fn() }));
@@ -209,13 +207,6 @@ describe("yapılandırma", () => {
     expect(config.poweredByHeader).toBe(false);
   });
 
-  it(".env.example yalnızca yer tutucu içerir ve NEXT_PUBLIC_ sır yok", () => {
-    const env = readFileSync(join(process.cwd(), ".env.example"), "utf8");
-    expect(env).not.toMatch(/^NEXT_PUBLIC_/m);
-    expect(env).not.toMatch(/sb_secret_|service_role/);
-    expect(env).not.toMatch(/sk-ant-api|npg_/);
-    for (const line of env.split("\n").filter((l) => /^[A-Z_]+=/.test(l))) expect(line).toMatch(/ornek|yer-tutucu|kullanici:sifre|rastgele/);
-  });
 });
 
 describe("e-posta bağlantısı dönüşü (/auth/callback)", () => {

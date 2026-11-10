@@ -40,7 +40,7 @@
 
 ## Korunan alanlar
 
-- Sırlar (`.env*`, API anahtarları, Neon bağlantı dizesi) commit edilmez, yazdırılmaz. `.env.example` yalnızca yer tutucu.
+- Sırlar (`.env*`, API anahtarları, Neon bağlantı dizesi) commit edilmez, yazdırılmaz.
 - Canlı veritabanına migration uygulama, Vercel'e deploy, `git push`, uzak serviste hesap açma veya giriş: kullanıcının açık onayı olmadan yapılmaz.
 - Luca'ya erişim yok. Chrome eklentisi (`extension/`) yalnızca açık Fiş Detayı ekranına satır yazar, Kaydet'e basmaz; Luca seçicileri yalnızca `extension/selectors.js` içinde.
 - Testler gerçek veritabanına ve gerçek Anthropic API'sine bağlanmaz.

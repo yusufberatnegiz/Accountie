@@ -47,7 +47,7 @@ npm run lint
 npm run build
 ```
 
-Ortam değişkenleri `.env.example` içinde. `.env*` dosyaları commit edilmez.
+Ortam değişkenleri (yalnız sunucuda, `.env.local` ya da Vercel): `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `ANTHROPIC_API_KEY`, `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `GIB_SECRET_KEY`, `GIB_EARSIV_ORTAM`. `.env*` dosyaları commit edilmez.
 
 ## Chrome eklentisi kurulumu
 
