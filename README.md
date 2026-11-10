@@ -25,8 +25,6 @@ Canlı: [accountie.vercel.app](https://accountie.vercel.app)
 
 Next.js 16 (App Router), TypeScript, Drizzle ORM ve Supabase Postgres (Frankfurt), Supabase Auth, Anthropic Claude (fiş okuma), Cloudflare Turnstile, Vercel. Testler Vitest ile.
 
-Ayrıntılar: `docs/PRD.md`, `docs/TECH_DESIGN.md`, `docs/research/luca-aktarim.md`.
-
 ## Canlıya alma (accountie.vercel.app)
 
 Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
@@ -49,7 +47,7 @@ Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
 
    `"ok": true` ve fişteki tutarlar görünmeli. Hata alırsanız model adı veya parametre API tarafından reddedilmiştir; ayrıntı Vercel'de Logs ekranında `receipt extraction failed` satırındadır.
 7. **Uçtan uca deneme.** Telefondan giriş yapıp bir fiş çekin. Fiş sayfası (`/panel/fis/...`) açılmalı ve satırlar dolmalı. Onaylayın.
-8. **İlk Luca yüklemesi (tek fiş).** Excel dosyasının kolon düzeni Luca'nın resmi şablonuyla doğrulanmadı. İlk seferde tek fişlik dosya indirip Luca'da Excel veri aktarımı ekranından yükleyin, önizlemeyi kağıt fişle karşılaştırın. Kayıttan sonra Luca'nın verdiği fiş numarasına da bakın: dosyadaki Fiş No her dosyada 1'den başlar; mevcut bir mahsup numarasıyla çakışıyor mu, yeniden mi numaralanıyor, not edin. Luca reddederse hata mesajını ve Luca'nın "Şablon indir" dosyasını saklayın; kolonlar `src/lib/luca/export.ts` içindeki `LUCA_EXPORT_COLUMNS` ile düzeltilir. Şablon dosyası `docs/research/` altına konur; değişen yalnızca `LUCA_EXPORT_COLUMNS` ve `src/lib/luca/export.test.ts` içindeki beklentidir. Sonucu `docs/research/luca-aktarim.md` dosyasına yazın.
+8. **İlk Luca yüklemesi (tek fiş).** Excel dosyasının kolon düzeni Luca'nın resmi şablonuyla doğrulanmadı. İlk seferde tek fişlik dosya indirip Luca'da Excel veri aktarımı ekranından yükleyin, önizlemeyi kağıt fişle karşılaştırın. Kayıttan sonra Luca'nın verdiği fiş numarasına da bakın: dosyadaki Fiş No her dosyada 1'den başlar; mevcut bir mahsup numarasıyla çakışıyor mu, yeniden mi numaralanıyor, not edin. Luca reddederse hata mesajını ve Luca'nın "Şablon indir" dosyasını saklayın; kolonlar `src/lib/luca/export.ts` içindeki `LUCA_EXPORT_COLUMNS` ile düzeltilir. Değişen yalnızca `LUCA_EXPORT_COLUMNS` ve `src/lib/luca/export.test.ts` içindeki beklentidir.
 
 Bilinen sınırlar:
 
