@@ -19,7 +19,7 @@
   position: relative; display: grid; grid-template-rows: 18px auto; align-content: center; justify-items: center; gap: 4px;
   width: 64px; min-height: 52px; padding: var(--s1) 0;
   border: 0; border-radius: var(--radius-control); background: none; color: var(--muted); cursor: pointer; text-decoration: none;
-  transition: background-color var(--t-hover) ease, color var(--t-hover) ease, transform var(--t-press) var(--ease-out);
+  transition: background-color var(--t-hover) ease, color var(--t-hover) ease, box-shadow var(--t-hover) ease, transform var(--t-press) var(--ease-out);
 }
 .rail-item:active { transform: scale(0.97); }
 /* The current screen: a band one clear step off the rail's ground in both themes (--active is 1.08:1 there), label in ink at 600. */
@@ -770,8 +770,11 @@ p.side-links.phone-only { display: none; }
 }
 
 .tabs { gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
-.tabs a { min-height: 36px; padding: 0 14px; margin: 0; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); font-size: var(--fs-body); }
-@media (hover: hover) and (pointer: fine) { .tabs a:hover { border-color: var(--border); } }
+/* Background, text and edge change together (the text alone used to fade over an already swapped fill and vanish for a moment). */
+.tabs a { min-height: 36px; padding: 0 14px; margin: 0; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); font-size: var(--fs-body);
+  transition: background-color var(--t-hover) ease, color var(--t-hover) ease, border-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
+.tabs a:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) { .tabs a:not([aria-current="page"]):hover { background: var(--active); border-color: var(--border); } }
 .tabs a[aria-current="page"] { background: var(--ink); border-color: var(--ink); color: var(--ground); }
 .tabs a[aria-current="page"] .tab-count { color: inherit; opacity: 0.75; }
 .tab-line { display: none; }

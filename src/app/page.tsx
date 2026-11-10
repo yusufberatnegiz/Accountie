@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CookieNote } from "@/components/site/CookieNote";
 import { SiteBar } from "@/components/site/SiteBar";
 import { Faq, type Qa } from "@/components/home/Faq";
+import { Reveal } from "@/components/home/Reveal";
 import { journalFor, SAMPLES, shownAccountName } from "@/components/home/samples";
 import { Thermal } from "@/components/home/Thermal";
 import { formatTrAmount } from "@/lib/money";
@@ -50,7 +51,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="l-stage l-wrap" id="ornek" aria-label="Örnek fiş ve Luca satırları">
+        <section className="l-stage l-wrap" id="ornek" aria-label="Örnek fiş ve Luca satırları" data-reveal>
           <div className="l-plate">
             <div className="l-receipt"><Thermal sample={SAMPLE} printedPayment="KREDİ KARTI" hot={{ kind: "vat", rate: 10 }} /></div>
             <span className="l-flight" aria-hidden="true"><span>{formatTrAmount(SAMPLE.receipt.vatLines[0].vatKurus ?? 0)}</span></span>
@@ -74,14 +75,14 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="l-facts l-wrap" aria-label="Kısaca">
+        <section className="l-facts l-wrap" aria-label="Kısaca" data-reveal>
           <p><b>3</b><span>satır: gider, KDV, ödeme. Hesap kodunu model değil sizin kural tablonuz seçer.</span></p>
           <p><b>0,00</b><span>fark olmadan onay düğmesi açılmaz.</span></p>
           <p><b>1</b><span>Excel dosyası; Luca’nın Excel veri aktarımı ekranından yüklenir.</span></p>
           <p><b>~15 sn</b><span>fotoğraftan satırlara.</span></p>
         </section>
 
-        <section className="l-rule l-wrap" id="kural" aria-labelledby="rule-title">
+        <section className="l-rule l-wrap" id="kural" aria-labelledby="rule-title" data-reveal>
           <div className="l-rule-field">
             <div className="l-rule-text">
               <p className="l-small">Kural</p>
@@ -102,16 +103,22 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="l-steps l-wrap" aria-labelledby="path-title">
+        <section className="l-steps l-wrap" aria-labelledby="path-title" data-reveal>
           <h2 className="l-h2" id="path-title">Üç adım. Hepsi bildiğiniz Luca ekranlarına çıkar.</h2>
           <ol className="l-cards">
             <li><span className="l-n">01</span><h3>Çekin</h3><p>Telefonun kendi kamerasıyla. Art arda çekilen fişler ayrı kayıt olur.</p>
-              <p className="l-mini">Fiş çek <span className="muted">· 4 fiş okunuyor</span></p></li>
+              <span className="l-mini l-xl" translate="no">{SAMPLES.slice(0, 3).map((s, i) => (
+                <span key={s.id}><span>{s.receipt.receiptNo}</span><span>{s.label}</span><span className={i < 2 ? "l-ok" : "muted"}>{i < 2 ? "okundu" : "okunuyor"}</span></span>
+              ))}</span></li>
             <li><span className="l-n">02</span><h3>Kontrol edin</h3><p>Fiş ve satırlar tek ekranda; okunan her rakamın fişteki yeri işaretli.</p>
-              <p className="l-mini"><span className="status status-approved">Dengede</span> <span translate="no">{LINES.map((l) => l.accountCode).join(" · ")}</span></p></li>
+              <span className="l-mini l-xl" translate="no">
+                <span><span>KDV %10</span><span className="to-luca">{LINES[1]?.accountCode}</span><span className="num">{formatTrAmount(LINES[1]?.debitKurus ?? 0)}</span></span>
+                <span><span>TOPLAM</span><span className="to-luca">{LINES[2]?.accountCode}</span><span className="num">{formatTrAmount(LINES[2]?.creditKurus ?? 0)}</span></span>
+                <span><span>Fark</span><span><span className="status status-approved">Dengede</span></span><span className="num">0,00</span></span>
+              </span></li>
             <li><span className="l-n">03</span><h3>Luca’ya yükleyin</h3><p>Onaylı fişler tek Excel dosyasında: Muhasebe, Fiş İşlemleri, Excel veri aktarımı.</p>
-              <span className="l-mini l-xl" translate="no">{LINES.slice(0, 2).map((l) => (
-                <span key={l.accountCode}><span className="to-luca">{l.accountCode}</span><span>{SAMPLE.receipt.receiptNo}</span><span className="num">{formatTrAmount(l.debitKurus)}</span></span>
+              <span className="l-mini l-xl" translate="no">{LINES.map((l) => (
+                <span key={l.accountCode}><span className="to-luca">{l.accountCode}</span><span>{SAMPLE.receipt.receiptNo}</span><span className="num">{formatTrAmount(l.debitKurus || l.creditKurus)}</span></span>
               ))}</span></li>
           </ol>
         </section>
@@ -120,7 +127,7 @@ export default function LandingPage() {
           <Faq items={FAQ} titleId="sss-title" />
         </section>
 
-        <section className="l-cta l-wrap" aria-labelledby="cta-title">
+        <section className="l-cta l-wrap" aria-labelledby="cta-title" data-reveal>
           <h2 className="l-title l-cta-title" id="cta-title">İlk fişinizi<br />bugün çekin.</h2>
           <div className="l-lede">
             <p>Hesabı açtığınızda varsayılan hesap planı kural tablonuza kopyalanır; kendi kodlarınızı bir kez girin, gerisi her fişte hazır gelir.</p>
@@ -129,6 +136,7 @@ export default function LandingPage() {
         </section>
       </main>
 
+      <Reveal />
       <footer className="l-foot l-wrap">
         <p><span translate="no">Accountie</span>, yazar kasa fişinden Luca yevmiye kaydı hazırlar.</p>
         <nav aria-label="Alt bağlantılar">

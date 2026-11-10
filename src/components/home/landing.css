@@ -65,6 +65,8 @@
 .l-xl { display: grid; }
 .l-xl > span { display: grid; grid-template-columns: 6em 1fr auto; gap: var(--s2); padding: var(--s1) 0; border-bottom: 1px solid var(--rule); }
 .l-xl > span:last-child { border: 0; }
+.l-cards .l-xl { min-height: calc(3 * 2em + var(--s3) * 2); align-content: start; }
+.l-ok { color: var(--positive); font-weight: var(--w-medium); }
 
 /* ---------- faq: question index, one answer pane as tall as the list ---------- */
 .faq { margin-top: var(--s10); }
@@ -105,10 +107,23 @@
 .l-foot a:hover { color: var(--ink); }
 .l-foot a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 
-/* ---------- motion: the stage settles once, nothing waits on it ---------- */
+/* ---------- motion: each section enters once, where it is seen (Reveal.tsx adds .in); nothing waits on it ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  .l-ledger { animation: l-rise 700ms var(--ease-out) 120ms both; }
-  .l-flight { animation: l-draw 600ms var(--ease-out) 600ms both; }
+  /* Only once Reveal.tsx has run (html.reveal): without JS, or if its script fails, everything stays settled. */
+  .reveal [data-reveal]:not(.l-stage) > * { opacity: 0; transform: translateY(16px); }
+  .reveal [data-reveal].in:not(.l-stage) > * { opacity: 1; transform: none; transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out); }
+  .reveal [data-reveal].in > :nth-child(2) { transition-delay: 70ms; }
+  .reveal [data-reveal].in > :nth-child(3) { transition-delay: 140ms; }
+  .reveal [data-reveal].in > :nth-child(n+4) { transition-delay: 210ms; }
+  .reveal .l-cards > li { opacity: 0; transform: translateY(16px); }
+  .reveal .l-steps.in .l-cards > li { opacity: 1; transform: none; transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out); }
+  .reveal .l-steps.in .l-cards > li:nth-child(2) { transition-delay: 140ms; }
+  .reveal .l-steps.in .l-cards > li:nth-child(3) { transition-delay: 210ms; }
+  /* The stage: the ledger rises and the flight draws when the stage itself is reached, not at load below the fold. */
+  .reveal .l-stage:not(.in) .l-ledger { opacity: 0.4; transform: translateY(16px); }
+  .reveal .l-stage:not(.in) .l-flight { clip-path: inset(0 100% 0 0); }
+  .reveal .l-stage.in .l-ledger { animation: l-rise 700ms var(--ease-out) 120ms both; }
+  .reveal .l-stage.in .l-flight { animation: l-draw 600ms var(--ease-out) 600ms both; }
   .faq-a { animation: l-swap 220ms var(--ease-out) both; }
 }
 @keyframes l-rise { from { opacity: 0.4; transform: translateY(16px); } }

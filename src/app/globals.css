@@ -329,7 +329,7 @@ label .field { font-weight: 400; }
 .theme-cycle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .theme-cycle:active { transform: scale(0.97); }
 @media (prefers-reduced-motion: no-preference) { :root[data-theme-changed] .theme-cycle svg { animation: icon-swap 200ms var(--ease-out); } }
-@keyframes icon-swap { from { opacity: 0; filter: blur(3px); transform: scale(0.8); } }
+@keyframes icon-swap { from { opacity: 0; transform: scale(0.8); } }
 /* The icon follows the look the head script set; without it (no JS) the system preference picks. */
 .theme-cycle-dark, :root[data-look="dark"] .theme-cycle-light { display: none; }
 :root[data-look="dark"] .theme-cycle-dark { display: block; }
