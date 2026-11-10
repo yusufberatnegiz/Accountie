@@ -41,7 +41,7 @@ export default function LandingPage() {
       <main id="icerik" tabIndex={-1} className="land">
         <section className="l-hero l-wrap" aria-labelledby="hero-title">
           <p className="l-eyebrow"><span className="l-dot" aria-hidden="true" />Luca kullanan muhasebe büroları için</p>
-          <h1 className="l-title" id="hero-title">Fişin fotoğrafı.<br /><em>Luca’ya</em> hazır kayıt.</h1>
+          <h1 className="l-title" id="hero-title">Fişin fotoğrafı.<br /><em>Luca’ya</em> <span className="l-keep">hazır kayıt.</span></h1>
           <div className="l-lede">
             <p>Yazar kasa fişini telefonla çekin. Yevmiye satırları büronuzun kendi hesap kodlarıyla gelsin; siz yalnız kontrol edip onaylayın.</p>
             <div className="l-ctas">

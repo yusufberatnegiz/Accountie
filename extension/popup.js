@@ -220,7 +220,7 @@ async function clearFilled() {
 async function forget() {
   token = "";
   receipts = [];
-  await chrome.storage.session.remove(["token", "filledIds"]);
+  await chrome.storage.session.remove("token");
   $("list-view").hidden = true;
   $("token-form").hidden = false;
   $("token-form").after($("status"));
@@ -253,8 +253,9 @@ const guard = (fn, id) => async () => {
       }
       $("auto").disabled = receipts.length < 2 || filledNow.length > 0;
       // Focus stays on the pressed button, or on the step that now leads when it went away.
-      const target = !$(id).hidden ? $(id) : !$("done").hidden ? $("done") : $("fill");
-      target.focus();
+      const usable = (b) => b && !b.hidden && !b.disabled;
+      const target = [$(id), $("done"), $("fill"), document.querySelector(".card input:not(:disabled)"), $("import")].find(usable);
+      target?.focus();
     }
   }
 };

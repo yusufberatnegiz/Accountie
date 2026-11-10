@@ -10,6 +10,7 @@
 .l-hero { padding-top: calc(72px + var(--s9)); }
 .l-eyebrow { display: flex; align-items: center; gap: var(--s3); margin: 0 0 var(--s6); font-size: var(--step-small); color: var(--muted); }
 .l-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.l-keep { white-space: nowrap; }
 .l-title { margin: 0; font-family: var(--font-head); font-weight: 300; font-size: clamp(3.25rem, 8.6vw, 8rem); line-height: 0.95; letter-spacing: -0.035em; text-wrap: balance; }
 .l-title em { font-style: normal; color: var(--accent); }
 .l-lede { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s7); align-items: end; margin-top: var(--s7); }
@@ -21,8 +22,8 @@
 .l-plate { position: relative; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--s8); align-items: center;
   padding: var(--s9) var(--s8); border-radius: 28px; background: radial-gradient(60% 70% at 72% 25%, var(--accent-soft), transparent 70%), var(--plate); overflow: clip; }
 .l-receipt { justify-self: center; width: min(300px, 100%); transform: rotate(-3deg); filter: drop-shadow(0 30px 30px rgb(60 40 10 / 0.18)); }
-.l-flight { position: absolute; z-index: 2; left: 35%; top: 59%; width: 8%; height: 2px; background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 12px); transform: rotate(-6deg); transform-origin: left; }
-.l-flight span { position: absolute; right: -24px; top: -13px; box-shadow: 0 0 0 3px var(--surface); padding: 3px 10px; border-radius: 999px; background: var(--accent); color: var(--on-accent-field); font-size: var(--step-small); font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
+.l-flight { position: absolute; z-index: 2; left: calc(64px + (100% - 192px) * 2 / 11 + 158px); right: calc(100% - 124px - (100% - 192px) * 4 / 11); top: 59%; height: 2px; background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 12px); transform: rotate(-5deg); transform-origin: left; }
+.l-flight span { position: absolute; left: 50%; top: -13px; transform: translateX(-50%); box-shadow: 0 0 0 3px var(--plate); padding: 3px 10px; border-radius: 999px; background: var(--accent); color: var(--on-accent-field); font-size: var(--step-small); font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
 .l-ledger { margin: 0; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-lift), 0 0 0 1px var(--rule); overflow: hidden; }
 .l-ledger figcaption { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s4) var(--s5); border-bottom: 1px solid var(--rule); }
 .l-ledger figcaption b { font-weight: var(--w-medium); }
@@ -132,10 +133,12 @@
 @keyframes l-swap { from { opacity: 0.35; transform: translateY(8px); } }
 
 /* ---------- smaller screens ---------- */
-@media (max-width: 960px) {
+@media (max-width: 1120px) {
   .l-plate { grid-template-columns: 1fr; padding: var(--s7) var(--s5); gap: var(--s6); }
   .l-flight { display: none; }
   .l-receipt { transform: none; }
+}
+@media (max-width: 960px) {
   .l-rule-field { grid-template-columns: 1fr; }
   .l-rule-text, .l-rule-vis { padding: var(--s6) var(--s5); }
   .l-cards { grid-template-columns: 1fr; }
