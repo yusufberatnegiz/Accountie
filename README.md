@@ -51,7 +51,7 @@ Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
 
 Bilinen sınırlar:
 
-- Luca'ya birincil yol Excel'dir. Chrome eklentisinin Luca seçicileri tahmindir; gerçek Fiş Detayı ekranında denenip `extension/selectors.js` güncellenmeden çalışması beklenmemeli.
+- Luca'ya birincil yol Excel'dir. Chrome eklentisinin seçicileri gerçek Fiş Detayı ekranından okundu ama Luca'da henüz bir fişle denenmedi; ilk kullanımda satırları Kaydet'ten önce kontrol edin.
 - Fiş fotoğrafı yalnızca çekildiği cihazın tarayıcı sekmesinde durur, sunucuya kaydedilmez. Bilgisayarda kontrol ederken fotoğraf görünmez; tutarları kağıt fişle karşılaştırın.
 - Excel indirilen fiş "Aktarıldı" olur. Luca yüklemeyi reddederse Aktarıldı sekmesindeki "Bu listeyi tekrar indir" (son 50 fiş) ya da fiş sayfasındaki "Luca için Excel indir" ile tekrar indirin.
 - Luca'ya "Satırları kopyala" ile veya elle girilen onaylı fiş için fiş sayfasında "Luca'ya elle girdim"e basın; basılmazsa fiş sonraki Excel dosyasına tekrar girer ve Luca'da mükerrer kayıt oluşur.
@@ -85,9 +85,9 @@ Güvenlik:
 - Eklenti anahtarı tarayıcı oturumu boyunca tutar (`chrome.storage.session`), tarayıcı kapanınca silinir.
 - İzinler: `activeTab` (yalnızca simgesine tıkladığınız sekme), `scripting`, `storage` ve uygulama adresine erişim. Luca şifrenize veya çerezlerinize dokunmaz.
 
-### Luca seçicileri (doğrulanmadı)
+### Luca seçicileri
 
-Luca'nın sayfa yapısı herkese açık değil. Eklentinin Luca'da aradığı tablo ve hücreler yalnızca `extension/selectors.js` dosyasında tanımlı ve tahmindir. Bir öğe bulunamazsa eklenti "Fiş Detayı tablosu bulunamadı" veya "Alan bulunamadı: 2. satır BT" der ve o alanı boş bırakır.
+Eklentinin Luca'da aradığı tablo ve hücreler yalnızca `extension/selectors.js` dosyasında tanımlı. Satır ve hücre seçicileri 2026-11-10'da gerçek Fiş Detayı ekranından okundu; "+" ile satır ekleme ve kayıttan sonraki işaret henüz denenmedi, bu yüzden otomatik kayıt kapalı. Bir öğe bulunamazsa eklenti "Fiş Detayı tablosu bulunamadı" veya "Alan bulunamadı: 2. satır BT" der ve o alanı boş bırakır.
 
 Güncellemek için: Luca Fiş Detayı ekranında hücreye sağ tıklayıp **İncele** deyin, satırı ve her hücre girişini seçen CSS seçicisini `selectors.js` içine yazın, `chrome://extensions` sayfasında eklentiyi yenileyin. Luca farklı bir alan adındaki iframe kullanıyorsa `activeTab` yetmez; `manifest.json` içine o adres için `host_permissions` eklenmelidir.
 

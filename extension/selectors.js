@@ -1,25 +1,27 @@
 // Luca "Fiş Detayı" seçicileri. Eklentide Luca DOM'una dokunan TEK yer burası.
-// DOĞRULANMADI: Luca'ya erişim olmadan yazıldı. Gerçek ekranda DevTools ile bakıp güncelleyin
-// (README, "Chrome eklentisi" bölümü). Bir seçici tutmazsa eklenti "Alan bulunamadı" der, hiçbir şeyi tahmin etmez.
+// 2026-11-10'da gerçek Fiş Detayı ekranından salt okunur bakılarak yazıldı (auygs.luca.com.tr, addFisAction.do; ekran frm3
+// çerçevesinde, eklenti allFrames ile girer). Satırlar #TBL içinde tr0, tr1... ; her satırın girişleri name ile ayrılır.
+// Bir seçici tutmazsa eklenti "Alan bulunamadı" der, hiçbir şeyi tahmin etmez.
 globalThis.AccountieSelectors = {
-  // Fiş Detayı tablosundaki düzenlenebilir veri satırları, yukarıdan aşağı.
-  row: "table.fisDetay tbody tr",
-  // Yeni boş satır açan düğme. Yoksa null. Metninde "Kaydet" geçen bir düğmeye eklenti asla basmaz.
-  addRow: null,
+  // Fiş Detayı tablosundaki satırlar, yukarıdan aşağı.
+  row: "#TBL tr[id^='tr']",
+  // Son satırın "+" düğmesi: yeni boş satırı sona ekler. DOĞRULANMADI: tıklanıp denenmedi (salt okunur bakıldı);
+  // Luca satırı başka yere eklerse eklentinin karşılaştırması farkı bulur ve durur.
+  addRow: "#TBL tr[id^='tr']:last-of-type td.add_delete input[value='+']",
   // Otomatik kayıt için üçü de gerekir; biri null ise eklenti otomatik kaydetmez, yalnız doldurur.
-  // DOĞRULANMADI: Luca'nın gerçek Fiş Detayı ekranında bakılıp yazılacak. Tahminle doldurmayın:
-  // yanlış düğmeye basan bir seçici yasal deftere kontrolsüz kayıt demektir.
-  save: null, // Fişi kaydeden düğme
-  saved: null, // Kayıt başarılı olunca beliren öğe (ör. "Fiş kaydedildi" bildirimi)
-  newEntry: null, // Boş yeni fiş açan düğme
+  save: "#kaydetHref", // Fişi kaydeden düğme (Alt+K)
+  // DOĞRULANMADI: kayıttan sonra ne göründüğü gerçek bir kayıtla görülmeden yazılmaz. Tahminle doldurmayın:
+  // yanlış bir işaret, kaydı başarılı sanıp sonraki fişe geçmek demektir.
+  saved: null,
+  newEntry: "#yeniHref", // Boş yeni fiş açan düğme (Alt+Y)
   // Satırın içindeki hücre girişleri (satır öğesine göre).
   cells: {
-    accountCode: "input[name*='hesapKodu' i]",
-    documentNo: "input[name*='evrakNo' i]",
-    documentDate: "input[name*='evrakTarih' i]",
-    documentType: "input[name*='belgeTur' i], select[name*='belgeTur' i]",
-    description: "input[name*='aciklama' i]",
-    debit: "input[name*='borc' i]",
-    credit: "input[name*='alacak' i]",
+    accountCode: "input[name='HESAP_KODU']",
+    documentNo: "input[name='EVRAK_NO']",
+    documentDate: "input[name='EVRAK_TARIHI']",
+    documentType: "input[name='BELGE_TUR_KOD']",
+    description: "input[name='ACIKLAMA']",
+    debit: "input[name='BORC']",
+    credit: "input[name='ALACAK']",
   },
 };

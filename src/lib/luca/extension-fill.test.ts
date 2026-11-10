@@ -167,8 +167,8 @@ describe("kaydetmeden önce ekranı geri okuma", () => {
 });
 
 describe("seçici yapılandırması", () => {
-  it("otomatik kayıt seçicileri Luca'da doğrulanana kadar boş: eklenti kendiliğinden Kaydet'e basmaz", () => {
-    expect([realSelectors.save, realSelectors.saved, realSelectors.newEntry]).toEqual([null, null, null]);
+  it("kayıt işareti Luca'da doğrulanana kadar boş: üçü birden olmadan eklenti kendiliğinden Kaydet'e basmaz", () => {
+    expect(realSelectors.saved).toBeNull();
   });
 
   it("her alan için tek yerde seçici tanımlı", () => {
