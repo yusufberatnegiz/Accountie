@@ -110,7 +110,7 @@ export async function POST(request: Request) {
   }
   await touchGibCredential(userId, firm.id);
 
-  const { rules } = await getRules(userId);
+  const { rules } = await getRules(userId, firm.id);
   const result = await importInvoiceFiles(userId, firm, rules, files, { fromGib: true });
   return NextResponse.json({ firm: firm.name, created: result.ids.length, ids: result.ids, skipped: [...skipped, ...result.skipped], remaining },
     { status: result.ids.length ? 201 : 200, headers: { "Cache-Control": "no-store" } });

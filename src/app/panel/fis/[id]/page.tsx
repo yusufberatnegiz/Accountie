@@ -15,9 +15,10 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const userId = user.id;
   const id = idSchema.safeParse((await params).id);
   if (!id.success) notFound();
-  const [receipt, { rules }] = await Promise.all([getReceipt(userId, id.data), getRules(userId)]);
+  const receipt = await getReceipt(userId, id.data);
   if (!receipt) notFound();
-  const [next, vendor] = await Promise.all([
+  const [{ rules }, next, vendor] = await Promise.all([
+    getRules(userId, receipt.firmId),
     nextDraft(userId, receipt.firmId, id.data),
     receipt.taxNumber && receipt.firmId ? getVendorRule(userId, receipt.firmId, receipt.taxNumber) : null,
   ]);

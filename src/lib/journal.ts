@@ -133,11 +133,12 @@ export function isBalanced(lines: readonly Pick<JournalLine, "accountCode" | "de
 
 type ApprovalLine = Pick<JournalLine, "accountCode" | "debitKurus" | "creditKurus" | "documentNo" | "documentDate">;
 
-/** First reason the lines cannot be approved or exported, in Turkish; null when they can. */
-export function approvalProblem(lines: readonly ApprovalLine[]): string | null {
+/** First reason the lines cannot be approved or exported, in Turkish; null when they can. With the firm's Luca plan, every code must be in it. */
+export function approvalProblem(lines: readonly ApprovalLine[], plan?: ReadonlySet<string>): string | null {
   if (lines.length === 0) return "Satır yok.";
   for (const [i, l] of lines.entries()) {
     if (!l.accountCode) return `${i + 1}. satırda hesap kodu yok.`;
+    if (plan?.size && !plan.has(l.accountCode)) return `${i + 1}. satırdaki ${l.accountCode} hesabı firmanın Luca planında yok.`;
     if (l.debitKurus < 0 || l.creditKurus < 0) return `${i + 1}. satırda eksi tutar var.`;
     if (l.debitKurus > 0 && l.creditKurus > 0) return `${i + 1}. satırda hem borç hem alacak var.`;
     if (l.debitKurus === 0 && l.creditKurus === 0) return `${i + 1}. satırda tutar yok.`;

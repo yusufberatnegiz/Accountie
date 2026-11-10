@@ -78,6 +78,13 @@
       "when": 1794233074652,
       "tag": "20261109140434_gib_failed_logins",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794330590562,
+      "tag": "20261110170950_luca_firm_plan",
+      "breakpoints": true
     }
   ]
 }

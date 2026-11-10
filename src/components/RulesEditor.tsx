@@ -4,8 +4,9 @@ import { useState } from "react";
 import { ExtensionTokenPanel } from "@/components/ExtensionTokenPanel";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { useLeaveGuard } from "@/components/useLeaveGuard";
-import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, rulesToRows, type RuleKind, type RuleRow } from "@/lib/default-rules";
+import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, rulesToRows, type Account, type RuleKind, type RuleRow } from "@/lib/default-rules";
 import { formatTrAmount } from "@/lib/money";
+import { suggestRules } from "@/lib/plan-suggest";
 
 // The example receipt 0412 (6.480,00 TL, KDV %10 589,09, paid by card) shows what the rule in focus produces.
 const SAMPLE = { total: 648000, vat: 58909 };
@@ -19,12 +20,15 @@ const GROUPS: { kind: RuleKind; title: string; text: string; first: string; capt
   { kind: "setting", title: "Belge türü", text: "Luca'daki BT sütununa yazılır. Yazar kasa fişi için ÖK.", first: "documentType", caption: (r) => `Her satırın BT sütunu ${r.accountCode}` },
 ];
 
-const invalid = (r: RuleRow) => (r.kind === "setting" ? !r.accountCode.trim() || r.accountCode.length > 10 : !ACCOUNT_CODE_PATTERN.test(r.accountCode));
+// With the firm's Luca plan imported, a code Luca does not have is as wrong as a malformed one.
+const invalid = (r: RuleRow, plan?: ReadonlyMap<string, string>) => (r.kind === "setting" ? !r.accountCode.trim() || r.accountCode.length > 10 : !ACCOUNT_CODE_PATTERN.test(r.accountCode) || (!!plan?.size && !plan.has(r.accountCode)));
 const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
 
 /** Settings in two columns: each group is a row with its own Save; a Save sends only its group's edits. */
-export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
+export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; plan?: Account[] }) {
+  const names = new Map(plan.map((a) => [a.code, a.name]));
   const [rows, setRows] = useState(initial);
+  const [suggested, setSuggested] = useState<number | null>(null);
   const [saved, setSaved] = useState(initial);
   const [note, setNote] = useState<{ kind: RuleKind; text: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState<RuleKind | null>(null);
@@ -38,8 +42,9 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
 
   async function save(kind: RuleKind) {
     setNote(null);
-    if (rows.some((r) => r.kind === kind && invalid(r))) {
-      setNote({ kind, text: "Hesap kodu 770.08 biçiminde olmalı.", error: true });
+    const bad = rows.find((r) => r.kind === kind && invalid(r, names));
+    if (bad) {
+      setNote({ kind, text: invalid(bad) ? "Hesap kodu 770.08 biçiminde olmalı." : `${bad.accountCode} firmanın Luca planında yok. Plandaki bir kodu seçin.`, error: true });
       // Let React paint aria-invalid first, then jump to the field the user must fix.
       requestAnimationFrame(() => document.querySelector<HTMLInputElement>(`#kural-${kind} [aria-invalid="true"]`)?.focus());
       return;
@@ -54,8 +59,27 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
     } else setNote({ kind, text: (res && (await res.json().catch(() => null))?.error) ?? "Kaydedilemedi. Tekrar deneyin.", error: true });
   }
 
+  function suggest() {
+    const next = suggestRules(rows, plan);
+    setSuggested(next.filter((r, i) => r.accountCode !== rows[i].accountCode).length);
+    setRows(next);
+  }
+
   return (
     <div className="settings">
+      {plan.length ? (
+        <section id="kural-plan" className="setting-row" aria-labelledby="grp-plan">
+          <div className="setting-label">
+            <h2 id="grp-plan">Luca hesap planı</h2>
+            <p className="muted small">Bu firmanın Luca&apos;dan çekilen planında {plan.length} hesap var. Kod alanları plandan tamamlanır; planda olmayan kod kaydedilmez ve fiş onaylanmaz.</p>
+          </div>
+          <div className="setting-panel">
+            <button className="btn" type="button" onClick={suggest}>Plandan öner</button>
+            <p className="muted small" aria-live="polite">{suggested === null ? "Kuralları plandaki ada göre eşleştirir; hiçbir şey kaydedilmez." : suggested ? `${suggested} kural plandaki hesaba çekildi. Kontrol edip her bölümü kaydedin.` : "Planda eşleşen yeni hesap bulunamadı."}</p>
+          </div>
+          <datalist id="plan-kodlari">{plan.map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}</datalist>
+        </section>
+      ) : null}
       {GROUPS.map((g) => {
         const groupRows = rows.filter((r) => r.kind === g.kind);
         const shown = groupRows.find((r) => active && same(r, active)) ?? groupRows.find((r) => r.key === g.first) ?? groupRows[0];
@@ -111,7 +135,7 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
                   {groupRows.map((r) => (
                     <tr key={r.key} onMouseEnter={() => setActive(r)} onFocus={() => setActive(r)}>
                       <td className="rule-label">{r.label}</td>
-                      <td className="rule-code"><input name={`kod-${r.kind}-${r.key}`} autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={invalid(r)} value={r.accountCode} onChange={(e) => update(r, { accountCode: e.target.value.trim() })} /></td>
+                      <td className="rule-code"><input name={`kod-${r.kind}-${r.key}`} autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={invalid(r, names)} list={setting || !plan.length ? undefined : "plan-kodlari"} value={r.accountCode} onChange={(e) => { const code = e.target.value.trim(); const name = setting ? undefined : names.get(code); update(r, name === undefined ? { accountCode: code } : { accountCode: code, accountName: name }); }} /></td>
                       {/* The name is for people only (Luca matches the code), so it reads as text until pointed at or focused. */}
                       {setting ? null : <td className="rule-name"><input name={`ad-${r.kind}-${r.key}`} autoComplete="off" className="field field-quiet" aria-label={`${r.label} hesap adı`} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
                     </tr>
@@ -133,6 +157,7 @@ export function RulesEditor({ rows: initial }: { rows: RuleRow[] }) {
         <div className="setting-label">
           <h2 id="grp-eklenti">Chrome eklentisi (deneysel)</h2>
           <p className="muted small desktop-only">Eklenti onaylı fişin satırlarını Luca&apos;da açık Fiş Detayı ekranına yazar; Kaydet&apos;e siz basarsınız. Anahtar 12 saat geçerlidir ve yalnızca sizin onaylı fişlerinizi okur.</p>
+          <p className="muted small desktop-only">Eklenti penceresindeki &quot;Luca&apos;dan firmaları çek&quot; düğmesi, Luca&apos;daki firmaları ve hesap planlarını buraya getirir.</p>
           <p className="muted small desktop-only">Luca&apos;da henüz denenmedi; alanları bulamayabilir. Excel ile aktarım birincil yoldur.</p>
           {/* Luca and Chrome extensions live on the computer; the key is made there. */}
           <p className="muted small phone-only">Eklenti bilgisayardaki Chrome içindir. Anahtarı bilgisayarda bu sayfadan oluşturun.</p>

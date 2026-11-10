@@ -5,7 +5,7 @@ import { hashToken } from "@/lib/auth/extension-token";
 
 vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
 vi.mock("@/db/queries", () => ({
-  createExtensionToken: vi.fn(), revokeExtensionTokens: vi.fn(), userIdForTokenHash: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(),
+  createExtensionToken: vi.fn(), revokeExtensionTokens: vi.fn(), userIdForTokenHash: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), importLucaFirm: vi.fn(),
 }));
 
 const session = await import("@/lib/auth/session");
@@ -13,6 +13,7 @@ const q = await import("@/db/queries");
 const tokensRoute = await import("./extension-tokens/route");
 const listRoute = await import("./extension/receipts/route");
 const transferredRoute = await import("./extension/receipts/[id]/transferred/route");
+const firmsRoute = await import("./extension/firms/route");
 
 const USER = "user-a";
 const ID = "8b0f6c1e-1b7a-4c1e-9d55-0d6f1d7a2c11";
@@ -102,5 +103,39 @@ describe("POST /api/extension/receipts/[id]/transferred", () => {
   it("fişi anahtar sahibinin adına aktarıldı yapar", async () => {
     expect((await transferredRoute.POST(bearer(TOKEN, "POST"), params())).status).toBe(204);
     expect(q.markExported).toHaveBeenCalledWith(USER, [ID]);
+  });
+});
+
+describe("POST /api/extension/firms", () => {
+  const FIRM = { lucaId: "11", name: "ÖRNEK GIDA LTD. ŞTİ.", taxNumber: "1234567890", accounts: [{ code: "770.08", name: "Yeme-İçme Ve Ağırlama" }, { code: "320.M07", name: "ÖRNEK SATICI" }] };
+  const post = (body: unknown, token = TOKEN) => new Request("http://test", { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify(body) });
+
+  it("anahtarsız ya da bilinmeyen anahtar 401, çerez oturumu yetmez", async () => {
+    expect((await firmsRoute.POST(new Request("http://test", { method: "POST", body: JSON.stringify(FIRM) }))).status).toBe(401);
+    expect((await firmsRoute.POST(post(FIRM, `acx_${"b".repeat(43)}`))).status).toBe(401);
+    expect(q.importLucaFirm).not.toHaveBeenCalled();
+  });
+
+  it("bozuk firma 400: hesapsız plan, kod biçimi dışı hesap, sayı olmayan Luca no", async () => {
+    for (const bad of [{ ...FIRM, accounts: [] }, { ...FIRM, accounts: [{ code: "77", name: "x" }] }, { ...FIRM, lucaId: "11; drop" }, "x"]) {
+      expect((await firmsRoute.POST(post(bad))).status).toBe(400);
+    }
+    expect(q.importLucaFirm).not.toHaveBeenCalled();
+  });
+
+  it("yeni firma 201, yeniden gelen firma 200; anahtar sahibinin adına kaydedilir", async () => {
+    vi.mocked(q.importLucaFirm).mockResolvedValueOnce({ id: "firm-1", created: true });
+    const res = await firmsRoute.POST(post(FIRM));
+    expect(res.status).toBe(201);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(await res.json()).toEqual({ created: true, accounts: 2 });
+    expect(q.importLucaFirm).toHaveBeenCalledWith(USER, FIRM, 2000);
+    vi.mocked(q.importLucaFirm).mockResolvedValueOnce({ id: "firm-1", created: false });
+    expect((await firmsRoute.POST(post(FIRM))).status).toBe(200);
+  });
+
+  it("firma sınırında 409", async () => {
+    vi.mocked(q.importLucaFirm).mockResolvedValueOnce(null);
+    expect((await firmsRoute.POST(post(FIRM))).status).toBe(409);
   });
 });

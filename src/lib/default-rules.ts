@@ -62,7 +62,8 @@ export const DEFAULT_RULES: Rules = {
   documentType: "ÖK",
 };
 
-export const ACCOUNT_CODE_PATTERN = /^\d{3}(\.\d{1,3})*$/;
+// Luca sub-accounts may carry letters (320.M07), so a segment is letters or digits.
+export const ACCOUNT_CODE_PATTERN = /^\d{3}(\.[\p{L}\d]{1,12})*$/u;
 
 export type RuleKind = "expense" | "vat" | "payment" | "setting";
 export type RuleRow = { kind: RuleKind; key: string; label: string; accountCode: string; accountName: string };

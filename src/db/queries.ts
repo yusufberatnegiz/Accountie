@@ -3,7 +3,7 @@ import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "dri
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import type { JournalLine, Warning } from "@/lib/journal";
 import { getDb } from "./index";
-import { accountRules, extensionTokens, firms, gibCredentials, journalLines, rateLimitHits, receipts, vendorRules } from "./schema";
+import { accountRules, extensionTokens, firmAccounts, firmRules, firms, gibCredentials, journalLines, rateLimitHits, receipts, vendorRules } from "./schema";
 
 export type ReceiptStatus = "draft" | "approved" | "exported";
 
@@ -69,7 +69,31 @@ export async function createFirm(userId: string, name: string, taxNumber: string
   return row;
 }
 
-export async function getRules(userId: string): Promise<{ rules: Rules; rows: RuleRow[] }> {
+/**
+ * A firm Luca lists, with its chart of accounts: matched to the user's firm by VKN, else by Luca's id, else added. The plan is
+ * replaced whole, so a second import only refreshes. Null when a new firm would pass `maxFirms`.
+ */
+export async function importLucaFirm(userId: string, f: { lucaId: string; name: string; taxNumber: string | null; accounts: readonly { code: string; name: string }[] }, maxFirms: number): Promise<{ id: string; created: boolean } | null> {
+  return getDb().transaction(async (tx) => {
+    const mine = await tx.select({ id: firms.id, taxNumber: firms.taxNumber, lucaSirketId: firms.lucaSirketId }).from(firms).where(eq(firms.userId, userId));
+    const found = (f.taxNumber ? mine.find((m) => m.taxNumber === f.taxNumber) : undefined) ?? mine.find((m) => m.lucaSirketId === f.lucaId);
+    if (!found && mine.length >= maxFirms) return null;
+    const id = found?.id ?? (await tx.insert(firms).values({ userId, name: f.name, taxNumber: f.taxNumber, lucaSirketId: f.lucaId }).returning({ id: firms.id }))[0].id;
+    if (found) await tx.update(firms).set({ lucaSirketId: f.lucaId, taxNumber: found.taxNumber ?? f.taxNumber }).where(and(eq(firms.id, id), eq(firms.userId, userId)));
+    await tx.delete(firmAccounts).where(and(eq(firmAccounts.firmId, id), eq(firmAccounts.userId, userId)));
+    await tx.insert(firmAccounts).values(f.accounts.map((a) => ({ code: a.code, name: a.name, userId, firmId: id }))).onConflictDoNothing();
+    return { id, created: !found };
+  });
+}
+
+/** The firm's Luca chart of accounts by code; empty until the extension has imported it. */
+export async function listFirmAccounts(userId: string, firmId: string): Promise<{ code: string; name: string }[]> {
+  return getDb().select({ code: firmAccounts.code, name: firmAccounts.name }).from(firmAccounts)
+    .where(and(eq(firmAccounts.userId, userId), eq(firmAccounts.firmId, firmId))).orderBy(asc(firmAccounts.code));
+}
+
+/** The user's rules, with the firm's own rows laid over them when a firm is given. */
+export async function getRules(userId: string, firmId?: string | null): Promise<{ rules: Rules; rows: RuleRow[] }> {
   const db = getDb();
   let rows: RuleRow[] = await db.select({ kind: accountRules.kind, key: accountRules.key, label: accountRules.label, accountCode: accountRules.accountCode, accountName: accountRules.accountName })
     .from(accountRules).where(eq(accountRules.userId, userId));
@@ -77,13 +101,26 @@ export async function getRules(userId: string): Promise<{ rules: Rules; rows: Ru
     rows = rulesToRows(DEFAULT_RULES);
     await db.insert(accountRules).values(rows.map((r) => ({ ...r, userId }))).onConflictDoNothing();
   }
+  if (firmId) {
+    const own: RuleRow[] = await db.select({ kind: firmRules.kind, key: firmRules.key, label: firmRules.label, accountCode: firmRules.accountCode, accountName: firmRules.accountName })
+      .from(firmRules).where(and(eq(firmRules.userId, userId), eq(firmRules.firmId, firmId)));
+    const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
+    rows = [...rows.map((r) => own.find((o) => same(o, r)) ?? r), ...own.filter((o) => !rows.some((r) => same(o, r)))];
+  }
   return { rules: rulesFromRows(rows), rows };
 }
 
-export async function saveRules(userId: string, rows: readonly RuleRow[]): Promise<void> {
+/** Saves the rows as the firm's own rules when a firm is given, else as the user's. */
+export async function saveRules(userId: string, rows: readonly RuleRow[], firmId?: string): Promise<void> {
   if (rows.length === 0) return;
   await getDb().transaction(async (tx) => {
     for (const r of rows) {
+      if (firmId) {
+        const set = { accountCode: r.accountCode, accountName: r.accountName, label: r.label };
+        await tx.insert(firmRules).values({ ...r, userId, firmId })
+          .onConflictDoUpdate({ target: [firmRules.firmId, firmRules.kind, firmRules.key], set, setWhere: eq(firmRules.userId, userId) });
+        continue;
+      }
       await tx.insert(accountRules).values({ ...r, userId })
         .onConflictDoUpdate({ target: [accountRules.userId, accountRules.kind, accountRules.key], set: { accountCode: r.accountCode, accountName: r.accountName, label: r.label } });
     }

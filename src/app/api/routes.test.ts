@@ -8,7 +8,7 @@ vi.mock("@/lib/auth/session", () => {
 });
 vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(async () => false), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
-  getVendorRule: vi.fn(async () => null), learnVendorRule: vi.fn(async () => {}),
+  getVendorRule: vi.fn(async () => null), learnVendorRule: vi.fn(async () => {}), listFirmAccounts: vi.fn(async () => []),
   replaceLines: vi.fn(async () => true), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
@@ -258,6 +258,6 @@ describe("PUT /api/account-rules", () => {
   it("geçerli kuralı etiketi sunucuda belirleyerek kaydeder", async () => {
     const res = await rulesRoute.PUT(json({ rows: [{ kind: "payment", key: "card", accountCode: "309.01", accountName: "Diğer Mali Borçlar", label: "x" }] }, "PUT"));
     expect(res.status).toBe(200);
-    expect(q.saveRules).toHaveBeenCalledWith(USER, [{ kind: "payment", key: "card", accountCode: "309.01", accountName: "Diğer Mali Borçlar", label: "Kart" }]);
+    expect(q.saveRules).toHaveBeenCalledWith(USER, [{ kind: "payment", key: "card", accountCode: "309.01", accountName: "Diğer Mali Borçlar", label: "Kart" }], "firm-1");
   });
 });

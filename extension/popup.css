@@ -14,5 +14,7 @@ button.link { border: 0; background: none; color: var(--muted); text-decoration:
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
 th, td { text-align: left; padding: 4px; border-bottom: 1px solid var(--line); }
 td:nth-child(n+2), th:nth-child(n+2) { text-align: right; font-variant-numeric: tabular-nums; }
+body.wide { width: auto; max-width: 720px; margin: 0 auto; }
+.wide td, .wide th { text-align: left; }
 #status { margin: 0; }
 #status.error { color: var(--danger); }

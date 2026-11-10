@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { DEFAULT_RULES, rulesToRows } from "./default-rules";
+import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, rulesToRows } from "./default-rules";
 
 // Client-writable fields only. status, user_id, model, token counts and timestamps are never accepted.
 export const LineInputSchema = z.object({
-  accountCode: z.string().trim().regex(/^(\d{3}(\.\d{1,3})*)?$/, "Hesap kodu biçimi hatalı"),
+  accountCode: z.string().trim().refine((c) => c === "" || ACCOUNT_CODE_PATTERN.test(c), "Hesap kodu biçimi hatalı"),
   accountName: z.string().trim().max(120),
   debitKurus: z.number().int().min(0).max(1e12),
   creditKurus: z.number().int().min(0).max(1e12),
@@ -33,7 +33,7 @@ export const RulesPutSchema = z.object({
   })).max(100),
 }).transform(({ rows }, ctx) => rows.flatMap((r) => {
   const label = ALLOWED_RULE_KEYS.get(`${r.kind}:${r.key}`);
-  const codeOk = r.kind === "setting" ? r.accountCode.length <= 10 : /^\d{3}(\.\d{1,3})*$/.test(r.accountCode);
+  const codeOk = r.kind === "setting" ? r.accountCode.length <= 10 : ACCOUNT_CODE_PATTERN.test(r.accountCode);
   if (!label || !codeOk) {
     ctx.addIssue({ code: "custom", message: `Geçersiz kural: ${r.key}` });
     return [];
@@ -47,5 +47,15 @@ export const idSchema = z.uuid();
 export const FirmCreateSchema = z.object({
   name: z.string().trim().min(2).max(120),
   taxNumber: z.string().trim().regex(/^\d{10,11}$/).optional(),
+});
+// What the extension read in Luca for one firm. Names are cut to the lengths the app keeps.
+export const LucaFirmSchema = z.object({
+  lucaId: z.string().regex(/^\d{1,20}$/),
+  name: z.string().trim().min(2).max(400).transform((s) => s.slice(0, 120)),
+  taxNumber: z.string().regex(/^\d{10,11}$/).nullable(),
+  accounts: z.array(z.object({
+    code: z.string().trim().max(60).regex(ACCOUNT_CODE_PATTERN),
+    name: z.string().trim().max(400).transform((s) => s.slice(0, 120)),
+  })).min(1).max(5000),
 });
 export const FirmActiveSchema = z.object({ id: z.uuid() });

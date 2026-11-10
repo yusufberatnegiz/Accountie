@@ -51,7 +51,8 @@ export async function POST(request: Request) {
   if (!(await allow("receiptGlobal", "all"))) return fail("Fiş okuma bugün için geçici olarak durduruldu. Yarın tekrar deneyin.", 503);
 
   const wanted = form?.get("firma");
-  const [{ rules }, { firm }] = await Promise.all([getRules(userId), activeFirm(userId, typeof wanted === "string" ? wanted : null)]);
+  const { firm } = await activeFirm(userId, typeof wanted === "string" ? wanted : null);
+  const { rules } = await getRules(userId, firm.id);
   if (typeof wanted === "string" && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's data
   // Several receipts laid side by side in one photo: each is cut from the full-size upload and read on its own.
   const boxes = await locateReceipts(jpeg).catch(() => []);

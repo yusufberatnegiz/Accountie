@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/db/queries", () => ({ getReceipt: vi.fn(), transitionReceipt: vi.fn() }));
+vi.mock("@/db/queries", () => ({ getReceipt: vi.fn(), transitionReceipt: vi.fn(), listFirmAccounts: vi.fn(async () => []) }));
 vi.mock("@/lib/auth/session", () => ({ getUserId: async () => "user-1" }));
 
 const { getReceipt, transitionReceipt } = await import("@/db/queries");

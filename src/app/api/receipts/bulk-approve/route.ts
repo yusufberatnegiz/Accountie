@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getReceipt, transitionReceipt } from "@/db/queries";
+import { getReceipt, listFirmAccounts, transitionReceipt } from "@/db/queries";
 import { getUserId } from "@/lib/auth/session";
 import { fail, unauthorized } from "@/lib/http";
 import { approvalProblem } from "@/lib/journal";
@@ -17,10 +17,13 @@ export async function POST(request: Request) {
   const body = BulkApproveSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return fail("Geçersiz istek.", 400);
   let approved = 0;
+  const plans = new Map<string, Set<string>>();
   // shortcut: one query pair per receipt (at most 200); batch it if lists grow.
   for (const id of new Set(body.data.ids)) {
     const receipt = await getReceipt(userId, id);
-    if (!receipt || receipt.status !== "draft" || receipt.warnings.length > 0 || approvalProblem(receipt.lines)) continue;
+    if (!receipt || receipt.status !== "draft" || receipt.warnings.length > 0) continue;
+    if (receipt.firmId && !plans.has(receipt.firmId)) plans.set(receipt.firmId, new Set((await listFirmAccounts(userId, receipt.firmId)).map((a) => a.code)));
+    if (approvalProblem(receipt.lines, receipt.firmId ? plans.get(receipt.firmId) : undefined)) continue;
     if (await transitionReceipt(userId, id, "draft", "approved")) approved++;
   }
   return NextResponse.json({ approved, skipped: new Set(body.data.ids).size - approved });

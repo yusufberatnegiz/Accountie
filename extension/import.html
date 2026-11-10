@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>Accountie: Luca'dan firmaları çek</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body class="wide">
+  <h1>Luca'dan firmaları ve hesap planlarını çek</h1>
+  <p class="muted">Bu yıl dönemi açık olan her firma için Luca'dan tam unvan, vergi numarası ve hesap planı okunur, Accountie'ye kaydedilir. Luca'da hiçbir kayıt değişmez. Yeniden çalıştırmak yalnız planları tazeler.</p>
+  <p><strong>Sürerken Luca'da çalışmayın.</strong> Okuma sırasında Luca oturumundaki açık firma değişir; bitince ya da durdurunca ilk firmanıza geri döner. Bu sekmeyi kapatırsanız Luca'da firmayı kendiniz yeniden seçin.</p>
+  <div>
+    <button id="start" type="button" class="primary">Başlat</button>
+    <button id="stop" type="button" hidden>Durdur</button>
+  </div>
+  <p id="status" role="status"></p>
+  <table>
+    <thead><tr><th>Firma</th><th>Sonuç</th></tr></thead>
+    <tbody id="log"></tbody>
+  </table>
+  <script src="luca-import.js"></script>
+  <script src="import.js"></script>
+</body>
+</html>

@@ -1,7 +1,8 @@
 /* global chrome, AccountieFill, AccountieSelectors */
 // Change together with host_permissions in manifest.json (e.g. http://localhost:3000 for development).
 const APP_ORIGIN = "https://accountie.vercel.app";
-const LUCA_HOST = "auygs.luca.com.tr";
+// Luca birden çok sunucuda çalışır (auygs, auygs16, ...).
+const LUCA_HOST = /^auygs\d*\.luca\.com\.tr$/;
 
 const $ = (id) => document.getElementById(id);
 let token = "";
@@ -63,7 +64,7 @@ const autoReady = () => !!(AccountieSelectors.save && AccountieSelectors.saved &
 
 async function lucaTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.url || new URL(tab.url).hostname !== LUCA_HOST) {
+  if (!tab?.url || !LUCA_HOST.test(new URL(tab.url).hostname)) {
     status("Önce Luca'da Fiş Detayı ekranını açın, sonra eklentiyi o sekmede açın.", true);
     return null;
   }
@@ -178,6 +179,8 @@ $("receipt").addEventListener("change", renderPreview);
 $("fill").addEventListener("click", guard(fill));
 $("auto").addEventListener("click", guard(autoAll));
 $("done").addEventListener("click", guard(done));
+// Kendi sekmesinde: açılır pencere odağı kaybedince kapanır, içe aktarma dakikalar sürer.
+$("import").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("import.html") }));
 $("forget").addEventListener("click", guard(async () => { await forget(); status("Anahtar silindi."); }));
 
 chrome.storage.session.get("token").then(({ token: saved }) => {

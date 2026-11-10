@@ -48,7 +48,8 @@ export async function POST(request: Request) {
   if (files.length > MAX_INVOICES) return fail(`Bir seferde en fazla ${MAX_INVOICES} fatura yüklenebilir.`, 413);
 
   const wanted = form?.get("firma");
-  const [{ rules }, { firm }] = await Promise.all([getRules(userId), activeFirm(userId, typeof wanted === "string" ? wanted : null)]);
+  const { firm } = await activeFirm(userId, typeof wanted === "string" ? wanted : null);
+  const { rules } = await getRules(userId, firm.id);
   if (typeof wanted === "string" && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's data
   // Without the firm's VKN its own sales invoices and other clients' invoices could not be told apart: refuse, don't guess.
   if (!firm.taxNumber) return fail("Önce Firmalar'da bu firmanın VKN'sini girin; faturaların bu firmaya kesildiği VKN ile doğrulanır.", 422);

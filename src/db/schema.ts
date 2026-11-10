@@ -10,12 +10,14 @@ const ownerPolicy = (name: string) => pgPolicy(name, {
   withCheck: sql`user_id = current_setting('app.user_id', true)`,
 });
 
-// A mükellef the user keeps books for (a müşavir has hundreds). Receipts belong to one; rules stay the user's own for now.
+// A mükellef the user keeps books for (a müşavir has hundreds). Receipts belong to one; its own rules (firm_rules) lie over the user's.
 export const firms = pgTable("firms", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
   taxNumber: text("tax_number"),
+  // Luca's own id for the firm (SIRKET_ID), set when the extension imports it; matches a re-import when the VKN is missing.
+  lucaSirketId: text("luca_sirket_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   index("firms_user_name_idx").on(t.userId, t.name),
@@ -82,6 +84,35 @@ export const accountRules = pgTable("account_rules", {
 }, (t) => [
   uniqueIndex("account_rules_user_kind_key_idx").on(t.userId, t.kind, t.key),
   ownerPolicy("account_rules_owner"),
+]);
+
+// A firm's own rules, laid over the user's account_rules: the same kinds and keys, with the codes of that firm's Luca plan.
+export const firmRules = pgTable("firm_rules", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id),
+  kind: text("kind", { enum: ["expense", "vat", "payment", "setting"] }).notNull(),
+  key: text("key").notNull(),
+  label: text("label").notNull(),
+  accountCode: text("account_code").notNull(),
+  accountName: text("account_name").notNull(),
+}, (t) => [
+  uniqueIndex("firm_rules_firm_kind_key_idx").on(t.firmId, t.kind, t.key),
+  index("firm_rules_user_idx").on(t.userId),
+  ownerPolicy("firm_rules_owner"),
+]);
+
+// The firm's chart of accounts as Luca lists it (codes differ per müşavir and per firm); replaced whole on each import.
+export const firmAccounts = pgTable("firm_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id),
+  code: text("code").notNull(),
+  name: text("name").notNull(),
+}, (t) => [
+  uniqueIndex("firm_accounts_firm_code_idx").on(t.firmId, t.code),
+  index("firm_accounts_user_idx").on(t.userId),
+  ownerPolicy("firm_accounts_owner"),
 ]);
 
 // Chrome extension access. Only the SHA-256 of the token is stored; one live token per user, short expiry.

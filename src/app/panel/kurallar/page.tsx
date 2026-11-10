@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getRules, listVendorRules } from "@/db/queries";
+import { getRules, listFirmAccounts, listVendorRules } from "@/db/queries";
 import { activeFirm } from "@/lib/firm";
 import { AppShell } from "@/components/AppShell";
 import { RulesView } from "@/components/RulesView";
@@ -13,11 +13,11 @@ export default async function RulesPage() {
   const user = await getSessionUser();
   if (!user) redirect("/giris");
   const userId = user.id;
-  const [{ rows }, { firm }] = await Promise.all([getRules(userId), activeFirm(userId)]);
-  const vendorRules = await listVendorRules(userId, firm.id);
+  const { firm } = await activeFirm(userId);
+  const [{ rows }, vendorRules, plan] = await Promise.all([getRules(userId, firm.id), listVendorRules(userId, firm.id), listFirmAccounts(userId, firm.id)]);
   return (
     <AppShell current="kurallar" email={user.email} firmId={firm.id}>
-      <RulesView rows={rows} vendorRules={vendorRules} firmName={firm.name} />
+      <RulesView key={firm.id} rows={rows} vendorRules={vendorRules} firmName={firm.name} plan={plan} />
     </AppShell>
   );
 }

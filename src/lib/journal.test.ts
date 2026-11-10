@@ -141,4 +141,9 @@ describe("approvalProblem", () => {
     expect(approvalProblem([{ ...debit, documentNo: " " }, credit])).toBe("Evrak no eksik.");
     expect(approvalProblem([debit, { ...credit, documentDate: "2026-09-06" }])).toBe("Satırlarda evrak tarihi farklı.");
   });
+  it("firmanın Luca planı varsa planda olmayan kod onaylanmaz; plan yoksa bakılmaz", () => {
+    expect(approvalProblem([debit, credit], new Set(["770.08", "309.01"]))).toBe("2. satırdaki 331.01 hesabı firmanın Luca planında yok.");
+    expect(approvalProblem([debit, credit], new Set(["770.08", "331.01"]))).toBeNull();
+    expect(approvalProblem([debit, credit], new Set())).toBeNull();
+  });
 });
