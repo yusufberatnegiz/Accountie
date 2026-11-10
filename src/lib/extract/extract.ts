@@ -53,7 +53,8 @@ export async function extractReceipt(jpeg: Buffer, client: ExtractClient = (defa
     } catch (err) {
       // AnthropicError also covers output that fails ReceiptExtractionSchema, so the stronger model still gets its try.
       if (!(err instanceof Anthropic.AnthropicError)) throw err;
-      const api = err instanceof Anthropic.APIError ? { status: err.status, requestId: err.requestID } : {};
+      // The API's own message says why a request was refused (credit, model access, request shape); it never echoes the image.
+      const api = err instanceof Anthropic.APIError ? { status: err.status, requestId: err.requestID, message: err.message.slice(0, 300) } : {};
       console.error("receipt extraction failed", { model, error: err.constructor.name, ...api });
     }
   }
