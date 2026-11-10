@@ -1,9 +1,29 @@
 # Accountie
 
-Yazar kasa fişinin fotoğrafından Luca için yevmiye kaydı hazırlar. Muhasebeci satırları kontrol edip onaylar, onaylı kayıt Luca'ya iki yoldan biriyle aktarılır:
+Yazar kasa fişinin fotoğrafından Luca için yevmiye kaydı hazırlayan web uygulaması. Luca kullanan muhasebe büroları ve mali müşavirler için.
 
-1. **Excel dosyası (birincil).** Fişler sayfasında "Luca için indir". Dosya Luca'da Muhasebe, Fiş İşlemleri, Excel veri aktarımı ekranından yüklenir. Kolon düzeni Luca'nın resmi şablonuyla henüz doğrulanmadı; kolon adları yalnızca `src/lib/luca/export.ts` içindeki `LUCA_EXPORT_COLUMNS` sabitinde.
+Canlı: [accountie.vercel.app](https://accountie.vercel.app)
+
+## Ne yapar
+
+- **Fiş çekme ve okuma.** Telefonda fişin fotoğrafı çekilir; satıcı, VKN, tarih, fiş no, oran bazında KDV, toplam ve ödeme şekli okunur. Okunamayan alan boş kalır ve işaretlenir, uydurma değer yazılmaz.
+- **Yevmiye satırları.** Gider, KDV ve alacak satırları büronun kendi hesap kodlarıyla hazırlanır (gider kategoriden, KDV orandan, alacak ödeme şeklinden). Hesap kodunu model değil kural tablosu belirler; tutarlar tam sayı kuruşla hesaplanır.
+- **Kontrol ve onay.** Fiş ve satırlar tek ekranda. Borç toplamı alacağa eşit olmadan onay açılmaz, fark gösterilir. Toplu onay da var.
+- **Mükellefler.** Her firmanın fişleri ayrı; Firmalar ekranında arama (Ctrl/⌘+K) ve ay seçimi.
+- **Öğrenen satıcı kuralı.** Bir satıcı için gider hesabı değiştirilip onaylanırsa aynı satıcının sonraki fişleri o hesapla gelir; Kurallar ekranından kaldırılabilir.
+- **e-Fatura ve e-Arşiv.** Fatura dosyası (XML/ZIP) yüklenerek ya da firmanın GİB e-Arşiv girişiyle faturalar taslak fişe çevrilir. GİB girişi sunucuda şifreli saklanır.
+- **Mutabakat.** Luca muavin Excel'i yüklenir, ayın onaylı fişleriyle karşılaştırılır.
+- **Luca'ya aktarım.** Onaylı fişler tek Excel dosyasıyla (birincil) ya da Chrome eklentisiyle (yedek) Luca'ya gider.
+- **PWA.** Telefonda ana ekrana eklenir; açık ve koyu tema.
+
+## Luca'ya aktarım
+
+1. **Excel dosyası (birincil).** Panelde "Luca için indir". Dosya Luca'da Muhasebe, Fiş İşlemleri, Excel veri aktarımı ekranından yüklenir. Kolon düzeni Luca'nın resmi şablonuyla henüz doğrulanmadı; kolon adları yalnızca `src/lib/luca/export.ts` içindeki `LUCA_EXPORT_COLUMNS` sabitinde.
 2. **Chrome eklentisi (yedek).** Onaylı fişin satırlarını Luca'da açık olan Fiş Detayı ekranına yazar ve ekrandaki satır sayısını, hesap kodlarını ve tutarları geri okuyup fişle karşılaştırır. "Hepsini sırayla kaydet" her fişi doldurur, karşılaştırır, aynıysa kaydeder ve yeni fiş açar; fark çıkarsa durur, son fişi siz kaydedersiniz. Bu düğme `extension/selectors.js` içindeki `save`, `saved` ve `newEntry` seçicileri Luca'nın gerçek ekranından yazılınca görünür; o zamana kadar eklenti yalnız doldurur, Kaydet'e siz basarsınız.
+
+## Teknoloji
+
+Next.js 16 (App Router), TypeScript, Drizzle ORM ve Supabase Postgres (Frankfurt), Supabase Auth, Anthropic Claude (fiş okuma), Cloudflare Turnstile, Vercel. Testler Vitest ile.
 
 Ayrıntılar: `docs/PRD.md`, `docs/TECH_DESIGN.md`, `docs/research/luca-aktarim.md`.
 
@@ -12,7 +32,8 @@ Ayrıntılar: `docs/PRD.md`, `docs/TECH_DESIGN.md`, `docs/research/luca-aktarim.
 Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
 
 1. **Ortam değişkenleri.** Vercel'de projeyi açın, Settings, Environment Variables. Supabase'ten (proje eu-central-1, Frankfurt) şunları ekleyin: `DATABASE_URL` (Connect, Transaction pooler, port 6543; tırnaksız), `SUPABASE_URL` ve `SUPABASE_PUBLISHABLE_KEY` (Project Settings, API Keys). Hiçbirine `NEXT_PUBLIC_` öneki vermeyin; hepsi yalnız sunucuda okunur. Service role (secret) anahtarı gerekmez. `ANTHROPIC_API_KEY` ekleyin (console.anthropic.com, API Keys). Aynı konsolda Settings, Limits ekranından aylık harcama limiti koyun; uygulamadaki istek sınırı tek başına faturayı sınırlamaz. Vercel'de fonksiyon bölgesini Frankfurt (`fra1`) seçin; veritabanıyla aynı bölge.
-   - *İsteğe bağlı, Turnstile:* `TURNSTILE_SITE_KEY` ve `TURNSTILE_SECRET_KEY` (dash.cloudflare.com, Turnstile). Bu anahtarlar olmadan giriş ve kayıt bot korumasız çalışır (Vercel loguna uyarı düşer); ilk kurulumdan sonra eklenebilir.
+   - *Turnstile (canlıda zorunlu):* `TURNSTILE_SITE_KEY` ve `TURNSTILE_SECRET_KEY` (dash.cloudflare.com, Turnstile). Canlıda bu anahtarlar yoksa giriş ve kayıt reddedilir ve Vercel loguna hata düşer; yerelde anahtarsız çalışır.
+   - *İsteğe bağlı, GİB e-Arşiv:* `GIB_SECRET_KEY` (32 baytlık rastgele anahtar, base64), firmaların GİB girişini şifrelemek için. Yoksa GİB kartı görünmez, e-Fatura yalnız dosyayla yüklenir. `GIB_EARSIV_ORTAM=test` GİB'in test portalını kullanır.
    - *Bilgi, sınırlar:* Giriş IP başına (IPv6'da /64 ağı başına) ve e-posta başına (saatte 30 deneme) sınırlıdır. Fiş okuma kullanıcı başına (ilk 24 saatteki hesaplar için günde 20), ağ başına (günde 300) ve tüm uygulama için (günde 2000) sınırlıdır.
 2. **Tablolar.** Supabase'e 2026-11-08'de uygulandı: `drizzle/` altındaki bütün dosyalar sırayla; RLS açık, Data API kapalı, `anon` ve `authenticated` izinleri geri alındı. Yeni bir göç gelince Supabase SQL Editor'de yalnız yeni dosyanın içeriğini çalıştırın. Dosyalar yalnız ekler, hiçbir şey silmez.
 3. **Veritabanı rolü.** `DATABASE_URL` tabloların sahibi `postgres` rolüyle bağlanır. Kullanıcı ayrımı uygulama kodundaki `user_id` filtreleriyle yapılır; RLS ve geri alınan izinler ikinci güvencedir.
@@ -47,7 +68,7 @@ npm run lint
 npm run build
 ```
 
-Ortam değişkenleri (yalnız sunucuda, `.env.local` ya da Vercel): `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `ANTHROPIC_API_KEY`, `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `GIB_SECRET_KEY`, `GIB_EARSIV_ORTAM`. `.env*` dosyaları commit edilmez.
+Yerelde ortam değişkenleri `.env.local` dosyasına yazılır (yalnız sunucuda okunur): `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `ANTHROPIC_API_KEY`, `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `GIB_SECRET_KEY`, `GIB_EARSIV_ORTAM`. `.env*` dosyaları commit edilmez.
 
 ## Chrome eklentisi kurulumu
 
@@ -55,7 +76,7 @@ Eklenti Chrome Web Store'da değil, klasörden yüklenir.
 
 1. Chrome'da `chrome://extensions` adresini açın, sağ üstten **Geliştirici modu**nu açın.
 2. **Paketlenmemiş öğe yükle** ile bu repodaki `extension/` klasörünü seçin.
-3. Accountie'de Fişler sayfasındaki **Chrome eklentisi ile doldurma** bölümünden **Eklenti anahtarı oluştur**'a basın, anahtarı kopyalayın.
+3. Accountie'de bilgisayardan **Kurallar** ekranını açın; **Chrome eklentisi (deneysel)** bölümünde **Eklenti anahtarı oluştur**'a basın, anahtarı kopyalayın.
 4. Luca'da (auygs.luca.com.tr) Fiş Detayı ekranını açın. Aynı sekmede eklenti simgesine tıklayın, anahtarı yapıştırıp **Fişleri getir**'e basın.
 5. Fişi seçin, önizlemeyi kontrol edin, **Fiş Detayına yaz**'a basın.
 6. Luca'da satırları kontrol edip **Kaydet**'e kendiniz basın. Ardından eklenti simgesine tekrar tıklayın (Kaydet'e basınca eklenti penceresi kapanır, yeniden açıldığında doldurduğunuz fiş seçili ve düğme görünür olur) ve **Luca'da kaydettim**'e basın; fiş Accountie'de "Aktarıldı" olur ve tekrar listelenmez. Bazı alanlar bulunamayıp elle tamamlandıysa da bu düğme görünür; Kaydet'ten sonra mutlaka basın, yoksa fiş sonraki Excel dosyasına tekrar girer.
