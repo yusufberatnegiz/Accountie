@@ -98,6 +98,7 @@ const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 // Receipts written into the open Luca entry and not yet marked; several can share one entry, one under another.
 const filledIds = async () => (await chrome.storage.session.get("filledIds")).filledIds ?? [];
 const addFilled = async (id) => chrome.storage.session.set({ filledIds: [...new Set([...(await filledIds()), id])] });
+const dropFilled = async (id) => chrome.storage.session.set({ filledIds: (await filledIds()).filter((x) => x !== id) });
 // Auto save needs all three selectors checked on Luca's real screen (selectors.js); until then the extension only fills.
 const autoReady = () => !!(AccountieSelectors.save && AccountieSelectors.saved && AccountieSelectors.newEntry);
 
@@ -147,9 +148,12 @@ async function fill() {
   for (const [i, receipt] of picked.entries()) {
     $("fill").textContent = `Yazılıyor ${i + 1}/${picked.length}`;
     if (picked.length > 1) status(`${i + 1}/${picked.length}: ${receipt.documentNo} yazılıyor.`);
+    await addFilled(receipt.id);
+    filledNow = [...filledNow, receipt.id];
     const { summary, problems } = await fillAndCheck(tab.id, receipt);
-    // Shown after partial fills too: the user completes the missing cells by hand and still has to mark the receipt.
-    if (summary.gridFound) { await addFilled(receipt.id); written++; }
+    // Kept after partial fills too: the user completes the missing cells by hand and still has to mark the receipt.
+    if (summary.gridFound) written++;
+    else { await dropFilled(receipt.id); filledNow = filledNow.filter((x) => x !== receipt.id); }
     const done = written ? `${written} fiş yazıldı. ` : "";
     if (problems.length) { await load(); return status(`${done}${receipt.documentNo} numaralı fişte ekran fişle aynı değil: ${problems.join(" ")} Düzeltmeden Kaydet'e basmayın.`, true); }
     if (!summary.ok) { await load(); return status(`${done}${receipt.documentNo} numaralı fişte durdum. ${summary.message}`, true); }
@@ -239,7 +243,8 @@ const guard = (fn, id) => async () => {
     $(id).setAttribute("aria-disabled", "true");
     $(id).setAttribute("aria-busy", "true");
   }
-  try { await fn(); } catch (e) { status(e.message, true); } finally {
+  // An error mid-run reloads the list, so whatever was written shows as written and "Luca'da kaydettim" is offered.
+  try { await fn(); } catch (e) { if (receipts.length) await load().catch(() => {}); status(e.message, true); } finally {
     busy = false;
     if (id) {
       $(id).removeAttribute("aria-busy");
