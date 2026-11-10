@@ -21,8 +21,8 @@
 .l-plate { position: relative; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--s8); align-items: center;
   padding: var(--s9) var(--s8); border-radius: 28px; background: radial-gradient(60% 70% at 72% 25%, var(--accent-soft), transparent 70%), var(--plate); overflow: clip; }
 .l-receipt { justify-self: center; width: min(300px, 100%); transform: rotate(-3deg); filter: drop-shadow(0 30px 30px rgb(60 40 10 / 0.18)); }
-.l-flight { position: absolute; left: 36%; top: 50%; width: 9%; height: 2px; background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 12px); transform: rotate(-8deg); transform-origin: left; }
-.l-flight span { position: absolute; right: -36px; top: -15px; padding: 3px 10px; border-radius: 999px; background: var(--accent); color: var(--on-accent-field); font-size: var(--step-small); font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
+.l-flight { position: absolute; z-index: 2; left: 35%; top: 59%; width: 8%; height: 2px; background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 12px); transform: rotate(-6deg); transform-origin: left; }
+.l-flight span { position: absolute; right: -24px; top: -13px; box-shadow: 0 0 0 3px var(--surface); padding: 3px 10px; border-radius: 999px; background: var(--accent); color: var(--on-accent-field); font-size: var(--step-small); font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
 .l-ledger { margin: 0; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-lift), 0 0 0 1px var(--rule); overflow: hidden; }
 .l-ledger figcaption { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s4) var(--s5); border-bottom: 1px solid var(--rule); }
 .l-ledger figcaption b { font-weight: var(--w-medium); }
@@ -31,6 +31,7 @@
 .l-ledger td { padding: var(--s3) var(--s5); border-top: 1px solid var(--rule); }
 .l-ledger .num { text-align: right; font-variant-numeric: tabular-nums; }
 .l-ledger .code { font-weight: var(--w-strong); }
+.l-ledger .l-hot td { background: var(--accent-soft); }
 .l-balance { display: flex; justify-content: space-between; gap: var(--s3); margin: 0; padding: var(--s4) var(--s5); background: var(--positive-soft); color: var(--positive); font-weight: var(--w-medium); }
 
 /* ---------- facts ---------- */
@@ -41,7 +42,7 @@
 
 /* ---------- the rule, on the dark field ---------- */
 .l-rule { margin-top: var(--s10); scroll-margin-top: 88px; }
-.l-rule-field { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); border-radius: 28px; overflow: hidden; background: var(--deep); color: #f5efe5; box-shadow: 0 0 0 1px var(--rule); }
+.l-rule-field { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); border-radius: 28px; overflow: hidden; background: var(--rule-field, var(--deep)); color: #f5efe5; box-shadow: 0 0 0 1px var(--rule); }
 .l-rule-text { display: flex; flex-direction: column; justify-content: space-between; gap: var(--s6); padding: var(--s8) var(--s7); }
 .l-rule-text p { margin: 0; max-width: 40ch; color: #c9bfb0; font-size: var(--step-body); }
 .l-rule .l-h2 { margin: var(--s4) 0 var(--s5); color: #f5efe5; }
@@ -110,9 +111,9 @@
 /* ---------- motion: each section enters once, where it is seen (Reveal.tsx adds .in); nothing waits on it ---------- */
 @media (prefers-reduced-motion: no-preference) {
   /* Only once Reveal.tsx has run (html.reveal): without JS, or if its script fails, everything stays settled. */
-  .reveal [data-reveal]:not(.l-stage) > * { opacity: 0; transform: translateY(16px); }
-  .reveal [data-reveal].in:not(.l-stage) > * { opacity: 1; transform: none; transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out); }
-  .reveal [data-reveal].in > :nth-child(2) { transition-delay: 70ms; }
+  .reveal [data-reveal]:not(.l-stage, .l-rule) > *, .reveal .l-rule .l-rule-field > * { opacity: 0; transform: translateY(16px); }
+  .reveal .l-rule.in .l-rule-field > *, .reveal [data-reveal].in:not(.l-stage, .l-rule) > * { opacity: 1; transform: none; transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out); }
+  .reveal [data-reveal].in > :nth-child(2), .reveal .l-rule.in .l-rule-field > :nth-child(2) { transition-delay: 70ms; }
   .reveal [data-reveal].in > :nth-child(3) { transition-delay: 140ms; }
   .reveal [data-reveal].in > :nth-child(n+4) { transition-delay: 210ms; }
   .reveal .l-cards > li { opacity: 0; transform: translateY(16px); }

@@ -143,6 +143,7 @@
     --secondary: #2c2824; --secondary-hover: #36312b; --bar-control: #36312b;
     --chip-on: var(--accent); --on-chip-on: #0e0d0c; --lift-control: #36312b; --lift-control-hover: #3f3933; /* the chosen chip is the amber accent; a control is 1.3:1 over its window */
     --deep: #12100e; --deep-raised: #211e1b; /* phone screens: darker than the CTA field they stand on (jury tur 9) */
+    --rule-field: #1d1a17; /* the homepage rule field: --deep is the ground here, the field must read as one */
     --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
     --warn-ink: #e3cf72; --warn-bg: #26230f; --warn-edge: #8c7a35;
     --scrim: rgb(0 0 0 / 0.6);
@@ -168,6 +169,7 @@
   --secondary: #2c2824; --secondary-hover: #36312b; --bar-control: #36312b;
   --chip-on: var(--accent); --on-chip-on: #0e0d0c; --lift-control: #36312b; --lift-control-hover: #3f3933; /* the chosen chip is the amber accent; a control is 1.3:1 over its window */
   --deep: #12100e; --deep-raised: #211e1b; /* phone screens: darker than the CTA field they stand on (jury tur 9) */
+  --rule-field: #1d1a17;
   --positive: #6fcf9b; --positive-soft: #15281d; --negative: #f0948c; --negative-soft: #2e1a19;
   --warn-ink: #e3cf72; --warn-bg: #26230f; --warn-edge: #8c7a35;
   --scrim: rgb(0 0 0 / 0.6);

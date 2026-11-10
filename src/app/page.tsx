@@ -61,7 +61,7 @@ export default function LandingPage() {
                 <thead><tr><th scope="col">Hesap</th><th scope="col">Açıklama</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
                 <tbody>
                   {LINES.map((l) => (
-                    <tr key={l.accountCode}>
+                    <tr key={l.accountCode} className={l.accountCode.startsWith("191") ? "l-hot" : undefined}>
                       <td className="to-luca code" translate="no">{l.accountCode}</td>
                       <td>{shownAccountName(l.accountName)}</td>
                       <td className="num">{l.debitKurus ? formatTrAmount(l.debitKurus) : ""}</td>

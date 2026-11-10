@@ -40,9 +40,9 @@ function renderCards(filled) {
   $("cards").replaceChildren(...receipts.map((r) => {
     // The lines show on hover: account, then Borç or "A" + Alacak.
     const lines = r.rows.map((row) => `${row.accountCode}  ${row.debit || `A ${row.credit}`}`);
-    return el("li", { className: `card${filled.includes(r.id) ? " filled" : ""}`, title: lines.join(String.fromCharCode(10)) },
+    return el("li", { className: `card${filled.includes(r.id) ? " filled" : ""}` },
       el("input", { type: "checkbox", id: `pick-${r.id}`, checked: !filled.includes(r.id) && receipts.length === 1, disabled: filled.includes(r.id) }),
-      el("label", { htmlFor: `pick-${r.id}` },
+      el("label", { htmlFor: `pick-${r.id}`, title: lines.join(String.fromCharCode(10)) },
         el("span", { className: "firm", textContent: r.firm || "Firma yok" }),
         el("span", { className: "vendor", textContent: r.title || "Satıcı yok" }),
         el("span", { className: "meta", textContent: `${r.documentNo || "No yok"} · ${r.documentDate}` }),
@@ -55,9 +55,10 @@ function renderCards(filled) {
 
 function updateSelection() {
   const picked = selected();
-  const firms = new Set(picked.map((r) => r.firm));
-  // The first picked receipt sets the firm; picked cards of any other firm are marked so the user sees which to drop.
-  const firm = picked[0]?.firm;
+  const waiting = receipts.find((r) => filledNow.includes(r.id));
+  const firms = new Set([...(waiting ? [waiting.firm] : []), ...picked.map((r) => r.firm)]);
+  // The open entry's firm (or else the first picked receipt's) sets the firm; picked cards of any other firm are marked.
+  const firm = waiting ? waiting.firm : picked[0]?.firm;
   for (const r of receipts) $(`pick-${r.id}`)?.closest(".card").classList.toggle("other-firm", firms.size > 1 && picked.includes(r) && r.firm !== firm);
   $("fill").disabled = picked.length === 0 || firms.size > 1;
   $("fill").textContent = picked.length > 1 ? `${picked.length} fişi Fiş Detayına yaz` : "Fiş Detayına yaz";
@@ -66,7 +67,7 @@ function updateSelection() {
   $("toggle-all").hidden = open.length < 2;
   $("selection").className = firms.size > 1 ? "muted error" : "muted";
   $("selection").textContent = !picked.length ? (open.length ? "Aktarılacak fişleri seçin." : "")
-    : firms.size > 1 ? `Seçilen fişler ${firms.size} ayrı firmadan. Luca'da tek firma açık olur; firma adı kırmızı olanları seçimden çıkarın.`
+    : firms.size > 1 ? (waiting ? `Açık Luca kaydı ${waiting.firm} firmasının. Başka firmanın fişi bu kayda yazılamaz; önce kaydı bitirin.` : `Seçilen fişler ${firms.size} ayrı firmadan. Luca'da tek firma açık olur; firma adı kırmızı ve kalın olanları seçimden çıkarın.`)
     : `${picked.length} fiş seçildi, toplam ${picked.reduce((n, r) => n + r.rows.length, 0)} satır. Fişler Fiş Detayına alt alta yazılır.`;
 }
 
@@ -209,6 +210,8 @@ async function done() {
 
 /** Luca'da satırlar kaydedilmeden silindiyse: yazıldı işaretlerini Accountie'de aktarıldı yapmadan kaldırır. */
 async function clearFilled() {
+  // The rows must be gone from Luca first: otherwise the same receipts would be written under them a second time.
+  if (!confirm("Bu fişlerin satırlarını Luca'daki açık kayıttan sildiniz mi? Silmediyseniz fişler aynı kayda ikinci kez yazılır.")) return;
   await chrome.storage.session.remove("filledIds");
   await load();
   status("Yazıldı işaretleri kaldırıldı; fişler yeniden seçilebilir.");
@@ -225,17 +228,33 @@ async function forget() {
 
 const ACTIONS = ["fill", "auto", "done", "import", "forget", "toggle-all", "clear-filled"];
 /** One action at a time: every action button is off while one runs, and the pressed one says it is busy. */
+let busy = false;
 const guard = (fn, id) => async () => {
+  if (busy) return;
+  busy = true;
+  const keep = selected().map((r) => r.id);
   if (id) {
-    for (const a of ACTIONS) $(a).disabled = true;
+    for (const a of ACTIONS) if (a !== id) $(a).disabled = true;
     for (const c of document.querySelectorAll(".card input")) c.disabled = true;
+    $(id).setAttribute("aria-disabled", "true");
     $(id).setAttribute("aria-busy", "true");
   }
   try { await fn(); } catch (e) { status(e.message, true); } finally {
+    busy = false;
     if (id) {
       $(id).removeAttribute("aria-busy");
+      $(id).removeAttribute("aria-disabled");
       for (const a of ACTIONS) $(a).disabled = false;
-      if (receipts.length) { renderCards(filledNow); $("fill").textContent = selected().length > 1 ? `${selected().length} fişi Fiş Detayına yaz` : "Fiş Detayına yaz"; }
+      if (receipts.length) {
+        renderCards(filledNow);
+        // The choice survives a failed or partial run; written receipts drop out of it.
+        for (const rid of keep) { const box = $(`pick-${rid}`); if (box && !box.disabled) box.checked = true; }
+        updateSelection();
+      }
+      $("auto").disabled = receipts.length < 2 || filledNow.length > 0;
+      // Focus stays on the pressed button, or on the step that now leads when it went away.
+      const target = !$(id).hidden ? $(id) : !$("done").hidden ? $("done") : $("fill");
+      target.focus();
     }
   }
 };

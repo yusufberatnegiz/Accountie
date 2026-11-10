@@ -19,6 +19,7 @@ function log(name, result) {
   const tr = document.createElement("tr");
   for (const v of [name, result]) tr.appendChild(Object.assign(document.createElement("td"), { textContent: v }));
   $("log").prepend(tr);
+  $("log-table").hidden = false;
 }
 
 /** Firma seçicinin bulunduğu Luca sekmesi ve çerçevesi, firma listesiyle birlikte. */
