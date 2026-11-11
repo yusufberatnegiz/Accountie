@@ -80,7 +80,7 @@ export function Stage() {
             <tbody>
               {lines.map((l, i) => (
                 // Keyed by position: a row that stays rolls its digits, a new one simply appears.
-                <tr key={i} className={i === hotIdx ? "l-hot" : undefined} onPointerEnter={() => setPoint(i)} data-fig={`${l.accountCode} · ${formatTrAmount(l.debitKurus || l.creditKurus)}`}>
+                <tr key={i} className={i === hotIdx ? "l-hot" : undefined} onPointerEnter={() => setPoint(i)}>
                   <td className="to-luca code" translate="no"><Odometer value={l.accountCode} /></td>
                   <td>{shownAccountName(l.accountName)}</td>
                   <td className="num">{l.debitKurus ? <Odometer value={formatTrAmount(l.debitKurus)} /> : ""}</td>

@@ -8,44 +8,48 @@ import { useEffect, useRef } from "react";
  * before the class goes on, so nothing in view blinks out; the rest get "in" when they come near the viewport.
  */
 export function Reveal() {
-  const layer = useRef<HTMLDivElement>(null);
+  const dots = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    // Behind the pointer, on bare ground only: a code and amount from the stage's Luca lines surfaces and fades.
+    // Thermal dots: where the mouse passes, a grid of heat-print dots on the bare ground warms up and cools down.
+    // The canvas sits under the sections (z-index -1), so cards and plates cover it. No dots with reduced motion.
+    const canvas = dots.current, g = canvas?.getContext("2d");
     const still = matchMedia("(prefers-reduced-motion: reduce)");
-    const AVOID = "a, button, label, summary, li, figure, table, dl, img, svg, header, footer, .l-plate, .l-facts, .l-rule-field, .faq-pane, .l-pick";
-    const bare = (x: number, y: number) => {
-      const el = document.elementFromPoint(x, y);
-      if (!el || el.closest(AVOID)) return false;
-      const block = el.closest("h1, h2, h3, p");
-      if (!block) return true;
-      // A text block's box can span the row; only its real lines (with a margin) count as taken.
-      const r = document.createRange(); r.selectNodeContents(block);
-      return ![...r.getClientRects()].some((b) => x > b.left - 24 && x < b.right + 24 && y > b.top - 24 && y < b.bottom + 24);
+    const STEP = 16, REACH = 88;
+    const heat = new Map<number, number>(); // key: column * 10000 + row
+    const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
+    let x = 0, y = 0, frame = 0, last = 0;
+    const size = () => { if (canvas && fine) { canvas.width = innerWidth * devicePixelRatio; canvas.height = innerHeight * devicePixelRatio; } };
+    const draw = (now: number) => {
+      frame = 0;
+      if (!canvas || !g) return;
+      // Cooling by time, not by frame: the trail lasts about as long on a 60 Hz and a 144 Hz screen.
+      const cool = Math.min(0.1, (now - last) / 650), d = devicePixelRatio;
+      last = now;
+      g.clearRect(0, 0, canvas.width, canvas.height);
+      g.fillStyle = getComputedStyle(canvas).color; // the theme's accent, so a theme switch mid-trail recolours it
+      for (const [key, h] of heat) {
+        const col = Math.round(key / 10000), row = key - col * 10000;
+        g.globalAlpha = h * 0.6;
+        g.beginPath(); g.arc(col * STEP * d, row * STEP * d, (0.9 + h * 1.3) * d, 0, Math.PI * 2); g.fill();
+        if (h <= cool) heat.delete(key); else heat.set(key, h - cool);
+      }
+      if (heat.size) frame = requestAnimationFrame(draw);
     };
-    let fig = 0, lastX = -999, lastY = -999, lastT = 0;
-    const drop = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse" || still.matches || !layer.current) return;
-      const x = e.clientX, y = e.clientY, d = Math.hypot(x - lastX, y - lastY);
-      if (d < 140) return;
-      const fast = d / Math.max(1, e.timeStamp - lastT) > 1.5; // px per ms: a fling leaves nothing
-      lastX = x; lastY = y; lastT = e.timeStamp;
-      if (fast || layer.current.childElementCount >= 4) return;
-      const figs = [...document.querySelectorAll<HTMLElement>(".l-ledger tr[data-fig]")].map((r) => r.dataset.fig!);
-      if (!figs.length) return;
-      // Up and left of the arrow tip, so the arrow never covers it; the whole box, with a margin, must be bare ground.
-      const text = figs[fig % figs.length], w = text.length * 8 + 32, top = y - 50, left = x - 10 - w;
-      if (![[left, top], [x, top], [left, y], [x, y], [left + w / 2, y - 25]].every(([px, py]) => bare(px, py))) return;
-      fig++;
-      const n = document.createElement("span");
-      n.className = "l-num"; n.textContent = text;
-      n.style.translate = `calc(${x - 10}px - 100%) ${y - 34}px`;
-      n.addEventListener("animationend", () => n.remove());
-      layer.current.append(n);
+    const warm = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || still.matches) return;
+      x = e.clientX; y = e.clientY;
+      for (let col = Math.ceil((x - REACH) / STEP); col * STEP <= x + REACH; col++) for (let row = Math.ceil((y - REACH) / STEP); row * STEP <= y + REACH; row++) {
+        const near = 1 - Math.hypot(col * STEP - x, row * STEP - y) / REACH, key = col * 10000 + row;
+        if (near > 0) heat.set(key, Math.max(heat.get(key) ?? 0, near));
+      }
+      if (!frame) { last = performance.now(); frame = requestAnimationFrame(draw); }
     };
-    addEventListener("pointermove", drop);
-    // The layer is fixed; a scroll would slide content under a figure, so the figures go.
-    const sweep = () => layer.current?.replaceChildren();
+    // The canvas is fixed; on scroll the content moves and the trail would stay, so it goes.
+    const sweep = () => { if (heat.size) { heat.clear(); g?.clearRect(0, 0, canvas!.width, canvas!.height); } };
+    size();
+    if (fine) addEventListener("pointermove", warm);
     addEventListener("scroll", sweep, { passive: true });
+    addEventListener("resize", size);
 
     const items = [...document.querySelectorAll("[data-reveal]:not(.l-stage)")];
     const near = (el: Element) => el.getBoundingClientRect().top < innerHeight * 0.85;
@@ -70,7 +74,7 @@ export function Reveal() {
     const cards = [...document.querySelectorAll<HTMLElement>(".l-cards li")];
     const dim = (e: PointerEvent) => { const card = e.currentTarget as HTMLElement; card.style.removeProperty("--mx"); card.style.removeProperty("--my"); };
     for (const c of cards) { c.addEventListener("pointermove", glow); c.addEventListener("pointerleave", dim); }
-    return () => { removeEventListener("pointermove", drop); removeEventListener("scroll", sweep); clearTimeout(printed); io.disconnect(); stageIo.disconnect(); for (const c of cards) { c.removeEventListener("pointermove", glow); c.removeEventListener("pointerleave", dim); } };
+    return () => { removeEventListener("pointermove", warm); removeEventListener("scroll", sweep); removeEventListener("resize", size); cancelAnimationFrame(frame); clearTimeout(printed); io.disconnect(); stageIo.disconnect(); for (const c of cards) { c.removeEventListener("pointermove", glow); c.removeEventListener("pointerleave", dim); } };
   }, []);
-  return <div className="l-nums" ref={layer} aria-hidden="true" />;
+  return <canvas className="l-dots" ref={dots} aria-hidden="true" />;
 }
