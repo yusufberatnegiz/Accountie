@@ -21,6 +21,7 @@ export function ExtensionTokenPanel() {
 
   /** Makes a key and hands it straight to the extension; when the extension cannot be reached, shows it to copy instead. */
   async function connect() {
+    if (busy) return;
     setBusy(true);
     setMessage("");
     setToken("");
@@ -51,6 +52,7 @@ export function ExtensionTokenPanel() {
   }
 
   async function revoke() {
+    if (busy) return;
     setBusy(true);
     setMessage("");
     const res = await fetch("/api/extension-tokens", { method: "DELETE" }).catch(() => null);
@@ -68,8 +70,9 @@ export function ExtensionTokenPanel() {
   return (
     <div className="stack">
       <div className="actions">
-        <button className="btn btn-primary" type="button" onClick={connect} disabled={busy}>Eklentiye bağla</button>
-        <button className="btn btn-danger" type="button" onClick={revoke} disabled={busy}>Anahtarı iptal et</button>
+        {/* aria-disabled, not disabled: the pressed button keeps keyboard focus while the request runs. */}
+        <button className="btn btn-primary" type="button" onClick={connect} aria-disabled={busy || undefined} data-busy={busy || undefined}>{busy ? "Bağlanıyor…" : "Eklentiye bağla"}</button>
+        <button className="btn btn-danger" type="button" onClick={revoke} aria-disabled={busy || undefined}>Anahtarı iptal et</button>
       </div>
       {token ? (
         <div className="actions">
@@ -77,7 +80,8 @@ export function ExtensionTokenPanel() {
           <button className="btn" type="button" onClick={copy}>Kopyala</button>
         </div>
       ) : null}
-      {message ? <p role="status" className="muted">{message}</p> : null}
+      {/* Always mounted, so a screen reader hears the result when the text arrives. */}
+      <p role="status" className="muted">{message}</p>
     </div>
   );
 }

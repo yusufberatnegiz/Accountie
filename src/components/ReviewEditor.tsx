@@ -166,7 +166,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     setTrace(src);
     const root = reviewRef.current;
     const to = root?.querySelector<HTMLElement>(`.read-values > [data-src="${src}"]`);
-    if (!root || !to || !matchMedia("(min-width: 1100px)").matches) return setLink(null);
+    if (!root || !to || !matchMedia("(min-width: 1360px)").matches) return setLink(null);
     const o = root.getBoundingClientRect(), a = row.getBoundingClientRect(), b = to.getBoundingClientRect();
     // The receipt column sits left of the lines; the curve runs across the gutter between them and opens from the line's side.
     const rowY = a.top + a.height / 2 - o.top, srcY = b.top + b.height / 2 - o.top;
@@ -196,7 +196,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const isVat = (code: string) => (kind === "z_report" ? code.startsWith("391") : code.startsWith("191"));
   // Photo exists only in this tab; server render has none.
   const photo = useSyncExternalStore(noSubscribe, () => getPhoto(receipt.id), () => undefined);
-  // Below 1100px the photo is a thumbnail over the lines that opens in place, so a line and the receipt share one screen.
+  // Below 1360px the photo is a thumbnail over the lines that opens in place, so a line and the receipt share one screen.
   const [photoOpen, setPhotoOpen] = useState(false);
   const thumbRef = useRef<HTMLImageElement>(null);
 
@@ -366,7 +366,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
             <circle cx={4} cy={link.p} r={2.5} /><circle cx={link.w - 4} cy={link.q} r={2.5} />
           </svg>
         ) : null}
-        {/* Below 1100px the receipt column falls under the lines: its three figures sit above them, so the spotlight lands on screen. */}
+        {/* Below 1360px the receipt column falls under the lines: its three figures sit above them, so the spotlight lands on screen. */}
         <div className="read-brief">
           {photo ? (
             <button className="brief-thumb" type="button" aria-expanded={photoOpen} aria-controls="fis-onizleme" aria-label="Fiş fotoğrafı" onClick={() => setPhotoOpen((o) => !o)}>
@@ -379,8 +379,8 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           ) : null}
           <dl aria-label="Fişten okunan, özet">
           <div data-src="base" {...traced("base")}><dt>Matrah</dt><dd className="num">{readBase !== null ? formatTrAmount(readBase) : <span className="dash">-</span>}</dd></div>
-          <div data-src="vat" {...traced("vat")}><dt>KDV</dt><dd className="num">{formatTrAmount(readVat)}</dd></div>
-          <div data-src="total" {...traced("total")}><dt>Toplam</dt><dd className="num">{readTotal !== null ? formatTrAmount(readTotal) : <span className="dash">-</span>}</dd></div>
+          <div data-src="vat" {...traced("vat")}><dt>{kind === "foreign" ? "Sorumlu KDV" : "KDV"}</dt><dd className="num">{formatTrAmount(readVat)}</dd></div>
+          <div data-src="total" {...traced("total")}><dt>{kind === "foreign" ? "Toplam (TL)" : "Toplam"}</dt><dd className="num">{readTotal !== null ? formatTrAmount(readTotal) : <span className="dash">-</span>}</dd></div>
           </dl>
           {/* With a photo the thumbnail takes this slot; the read fields follow the lines anyway. */}
           {photo ? null : <a href="#fis-kaynak">Tüm alanlar</a>}
@@ -517,7 +517,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
         {/* Header fields that every line carries: under the lines and before the actions, so Tab and the eye run the same way (YON 23.16). Locked, they sit atop the lines instead. */}
         {editable ? (
         <section className="panel panel-pad info" aria-labelledby="bilgi-baslik">
-          <h2 id="bilgi-baslik">Fiş bilgileri</h2>
+          <h2 id="bilgi-baslik">{kind === "z_report" ? "Z raporu bilgileri" : kind === "foreign" ? "Fatura bilgileri" : "Fiş bilgileri"}</h2>
           <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>
           <div className="form-grid">
             <label>
@@ -604,12 +604,12 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
         {editable ? (
           <section className="danger-zone" aria-labelledby="sil-baslik">
             <div>
-              <h2 id="sil-baslik">Fişi sil</h2>
+              <h2 id="sil-baslik">{kind === "z_report" ? "Z raporunu sil" : kind === "foreign" ? "Faturayı sil" : "Fişi sil"}</h2>
               <p className="muted small">Taslak ve satırları kalıcı olarak silinir.</p>
             </div>
             <button className="btn btn-danger" type="button" disabled={working}
               onClick={() => confirm(deleteQuestion) && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) router.push(base); })}>
-              Fişi sil
+              {kind === "z_report" ? "Z raporunu sil" : kind === "foreign" ? "Faturayı sil" : "Fişi sil"}
             </button>
           </section>
         ) : null}

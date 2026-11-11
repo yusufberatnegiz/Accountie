@@ -120,6 +120,15 @@ describe("POST /api/receipts", () => {
     expect(vi.mocked(extractReceipt).mock.calls[0][2]).toBe("application/pdf");
   });
 
+  it("5 sayfadan uzun PDF'i okumadan reddeder", async () => {
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    const form = new FormData();
+    form.set("image", new File([new TextEncoder().encode("%PDF-1.7 " + "<< /Type /Page >> ".repeat(6))], "uzun.pdf", { type: "application/pdf" }));
+    const res = await POST(new Request("http://test/api/receipts", { method: "POST", body: form }));
+    expect(res.status).toBe(413);
+    expect(extractReceipt).not.toHaveBeenCalled();
+  });
+
   it("PDF uzantılı ama içi PDF olmayan dosyayı reddeder", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(true);
     const form = new FormData();

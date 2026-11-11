@@ -70,7 +70,8 @@ td:nth-child(n+2), th:nth-child(n+2) { text-align: right; font-variant-numeric: 
 
 /* Fiş kartları: her onaylı fiş küçük bir yazar kasa fişi gibi, alt kenarı tırtıklı. */
 .cards-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 340px; overflow-y: auto; padding: 10px; margin: 0; list-style: none; background: var(--stage); border-radius: 14px; }
+/* Chrome caps the popup at 600px: the tray scrolls inside it so the buttons and the status line below stay in view. */
+.cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 268px; overflow-y: auto; padding: 10px; margin: 0; list-style: none; background: var(--stage); border-radius: 14px; }
 .card { position: relative; border-radius: 2px; }
 /* Odak halkası li'de: label'ın tırtıklı kenarını çizen clip-path halkayı keserdi. */
 .card:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -100,5 +101,10 @@ td:nth-child(n+2), th:nth-child(n+2) { text-align: right; font-variant-numeric: 
 .empty { grid-column: 1 / -1; padding: 20px 16px; text-align: center; background: var(--paper); border-radius: 10px; }
 
 body.wide { width: auto; max-width: 720px; margin: 0 auto; padding: 32px 16px; }
+/* The import tab is a page of its own: the site's scale (a real title, a readable lead), not the popup's. */
+.wide h1 { font-size: 28px; letter-spacing: -0.02em; gap: 12px; }
+.wide h1::before { width: 14px; height: 20px; }
+.wide p, .wide .muted { font-size: 15px; }
+.wide .muted { color: var(--ink); }
 .wide td, .wide th { text-align: left; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } button:active:not(:disabled), .card input:not(:disabled):active + label { transform: none; } }

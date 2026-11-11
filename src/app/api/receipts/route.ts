@@ -9,7 +9,7 @@ import { kindOf, toForeignData, toReceiptData, toSalesData } from "@/lib/extract
 import { buildForeignLines, buildSalesLines, foreignTotalTl } from "@/lib/journal-kinds";
 import { tcmbRate } from "@/lib/tcmb";
 import { NO_STORE, fail, unauthorized } from "@/lib/http";
-import { ALLOWED_IMAGE_TYPES, cropReceipt, isPdf, MAX_UPLOAD_BYTES, normalizeImage, sniffImageType } from "@/lib/image";
+import { ALLOWED_IMAGE_TYPES, cropReceipt, isPdf, MAX_PDF_PAGES, MAX_UPLOAD_BYTES, normalizeImage, pdfPageCount, sniffImageType } from "@/lib/image";
 import { allow, clientIp } from "@/lib/rate-limit";
 import type { Rules } from "@/lib/default-rules";
 import { buildJournalLines, warn, type JournalLine, type ReceiptData, type Warning } from "@/lib/journal";
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
   // A PDF (an invoice saved from Google or Meta) goes to the reader as it is: no decoding, cropping or splitting.
   const pdf = isPdf(bytes);
   if (!pdf && !sniffImageType(bytes)) return fail("Dosya bir fotoğraf ya da PDF değil. JPEG, PNG, WebP, HEIC ya da PDF yükleyin.", 415);
+  if (pdf && pdfPageCount(bytes) > MAX_PDF_PAGES) return fail(`PDF en çok ${MAX_PDF_PAGES} sayfa olabilir. Yalnız faturanın sayfalarını yükleyin.`, 413);
   let jpeg: Buffer = bytes;
   if (!pdf) {
     try {

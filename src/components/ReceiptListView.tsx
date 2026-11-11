@@ -122,7 +122,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                       {DOC_KIND_LABEL[docKind(r.category)] ? <span className="r-kind">{DOC_KIND_LABEL[docKind(r.category)]}</span> : null}
                       {notes ? <span className="r-notes">{notes} uyarı</span> : null}
                     </td>
-                    <td className="r-no num" translate="no">{r.receiptNo ?? <span className="dash">-</span>}</td>
+                    <td className="r-no num" translate="no" title={r.receiptNo ?? undefined}>{r.receiptNo ?? <span className="dash">-</span>}</td>
                     <td className="r-date num">{trDate(r.receiptDate) ?? <span className="dash">Tarih yok</span>}</td>
                     <td className="r-code num" translate="no">{docKind(r.category) === "z_report" ? <span className="dash">Satış</span> : r.expenseCode ?? <span className="dash">-</span>}</td>
                     <td className="r-total num">{r.totalKurus === null ? <span className="dash">-</span> : <>{formatTrAmount(r.totalKurus)}<span className="unit">&nbsp;TL</span></>}</td>

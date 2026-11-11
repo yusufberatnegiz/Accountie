@@ -8,7 +8,7 @@ export type ForeignData = {
   vendorName: string | null;
   invoiceNo: string | null;
   date: string | null; // ISO yyyy-mm-dd
-  currency: string; // "TRY", "USD"...
+  currency: string; // "TRY", "USD"...; "" when it could not be read
   totalMinor: number | null;
   vatMinor: number; // KDV printed on the invoice, 0 when none
   paymentMethod: PaymentMethod;
@@ -53,7 +53,8 @@ export function buildForeignLines(data: ForeignData, rules: Rules, fx: FxRate | 
   const line = (a: Account, debitKurus: number, creditKurus: number): JournalLine => ({ accountCode: a.code, accountName: a.name, debitKurus, creditKurus, ...base });
   const total = foreignTotalTl(data, fx) ?? 0;
 
-  if (data.currency !== "TRY") {
+  if (!data.currency) warnings.push(warn("currency_unsure"));
+  else if (data.currency !== "TRY") {
     if (fx) warnings.push({ code: "foreign_rate", message: `Tutar ${data.currency}; TCMB döviz alış kuru ${fx.rate.toLocaleString("tr-TR", { maximumFractionDigits: 4 })} (${trDate(fx.bulletinDate)} tarihli bülten) ile TL'ye çevrildi. Kuru kontrol edin.` });
     else warnings.push(warn("foreign_rate_missing"));
   }

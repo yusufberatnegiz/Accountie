@@ -49,7 +49,7 @@ export const WARNING_MESSAGES: Record<string, string> = {
   receipt_no_unsure: "Fiş no okunamadı. Evrak No'yu kontrol edin.",
   duplicate: "Bu VKN, fiş no ve tarihle kayıtlı başka bir fiş var. Aynı fiş iki kez aktarılmasın.",
   extraction_failed: "Fiş okunamadı, tekrar deneyin veya elle girin.",
-  currency_unsure: "Faturanın para birimi okunamadı. Tutarları faturayla karşılaştırın.",
+  currency_unsure: "Faturanın para birimi okunamadı; tutarlar boş bırakıldı. TL tutarlarını faturadan girin.",
   foreign_rate_missing: "Döviz kuru alınamadı. TL tutarlarını TCMB döviz alış kuruyla elle girin.",
   foreign_vat_charged: "Faturada KDV görünüyor; sorumlu sıfatıyla KDV hesaplanmadı. Satırları faturayla karşılaştırın.",
   foreign_withholding: "Yurt dışından alınan hizmette gelir veya kurumlar vergisi stopajı gerekebilir; muhtasarı kontrol edin.",

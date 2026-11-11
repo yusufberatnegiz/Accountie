@@ -29,6 +29,13 @@ export async function cropReceipt(input: Buffer, box: { left: number; top: numbe
 /** A PDF by its magic bytes ("%PDF-"); it is never decoded here, only passed to the reader. */
 export const isPdf = (b: Uint8Array) => b.length >= 5 && String.fromCharCode(...b.subarray(0, 5)) === "%PDF-";
 
+export const MAX_PDF_PAGES = 5;
+/**
+ * Pages counted from the "/Type /Page" objects in the raw file.
+ * shortcut: pages kept inside compressed object streams are not seen (counted 0, let through); parse the PDF if that matters.
+ */
+export const pdfPageCount = (b: Uint8Array) => (Buffer.from(b).toString("latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
+
 // Magic-byte check before the decoder sees the file: sharp also opens SVG, GIF, TIFF, PDF..., which we never want.
 const HEIF_BRANDS = new Set(["heic", "heix", "hevc", "hevx", "heim", "heis", "mif1", "msf1"]);
 

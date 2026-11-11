@@ -119,7 +119,7 @@
   .receipts tbody tr:hover .r-status::after { border-color: var(--ink); transform: translateX(4px) rotate(45deg); }
 }
 .r-vendor { min-width: 0; }
-@media (min-width: 1100px) { .receipts .r-vendor .row-link span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .receipts .col-no { width: 76px; } .receipts .col-date { width: 100px; } .receipts .col-code { width: 104px; } .receipts .col-total { width: 116px; } .receipts .col-status { width: 128px; } }
+@media (min-width: 1100px) { .receipts .r-vendor .row-link span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .receipts .col-no { width: 96px; } .receipts .r-no { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .receipts .col-date { width: 100px; } .receipts .col-code { width: 104px; } .receipts .col-total { width: 116px; } .receipts .col-status { width: 128px; } }
 @media (min-width: 1181px) and (max-width: 1439px) { .receipts :is(.col-no, .r-no, .col-code, .r-code) { display: none; } }
 .row-link { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.3; overflow-wrap: anywhere; color: var(--ink); font-weight: var(--w-medium); text-decoration: none; }
 /* The whole row opens the receipt; the padding also gives the link's own box 44px without moving the text. */
@@ -164,10 +164,10 @@ details.side-block:not([open]) { gap: 0; }
 
 /* ---------- Review screen ---------- */
 /* The DOM is the one-column order (warnings, lines, receipt, header fields, actions, delete), so Tab follows the eye at every width.
-   From 1100px the receipt column takes the left track down to the bar's row and the header fields sit under the lines on the right,
+   From 1360px the receipt column takes the left track down to the bar's row and the header fields sit under the lines on the right,
    so Tab never jumps between the columns (YON 23.16); the lines row is 1fr, so a taller receipt column never spreads gaps on the right. */
 .review { display: grid; gap: var(--s4); align-items: start; }
-@media (min-width: 1100px) {
+@media (min-width: 1360px) {
   /* Rows: warnings, lines (1fr), header fields, the tray's two rows, Fişi sil. The receipt column runs down to the tray's foot. */
   .review { grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto 1fr auto auto auto auto; row-gap: 0; }
   .review > .source { grid-column: 1; grid-row: 1 / 6; }
@@ -191,8 +191,8 @@ details.side-block:not([open]) { gap: 0; }
   .info .bt-field > span { white-space: nowrap; }
 }
 /* The receipt column travels beside the lines, but only where all of it fits the screen; with the photo it would hide its own foot. */
-@media (min-width: 1100px) and (min-height: 820px) { .source:not(:has(.photo)) { position: sticky; top: var(--s4); } }
-@media (max-width: 1099px) {
+@media (min-width: 1360px) and (min-height: 820px) { .source:not(:has(.photo)) { position: sticky; top: var(--s4); } }
+@media (max-width: 1359px) {
   .review { display: flex; flex-direction: column; align-items: stretch; }
   .review > .source { display: contents; }
 }
@@ -217,7 +217,7 @@ details.side-block:not([open]) { gap: 0; }
 /* Fiş izi: the receipt figure behind the journal line in focus. A full row tone, never a coloured edge. */
 .read-values > [data-traced] { background: var(--accent-soft); }
 .read-values > [data-traced] dd { color: var(--ink); }
-/* Below 1100px: the receipt's three figures in one strip above the lines; the line in focus lights its figure here (YON 23.13). */
+/* Below 1360px: the receipt's three figures in one strip above the lines; the line in focus lights its figure here (YON 23.13). */
 .read-brief { display: flex; align-items: center; gap: var(--s3); padding: var(--s2); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); }
 .read-brief dl { display: flex; flex: 1; flex-wrap: wrap; gap: var(--s1) var(--s3); min-width: 0; margin: 0; } /* amounts never run together at 320 (jury tur 12) */
 .read-brief dl > div { flex: 1 1 0; display: grid; gap: 2px; padding: var(--s1) var(--s2); border-radius: var(--radius-chip); min-width: 0; transition: background-color var(--t-hover) ease; }
@@ -227,15 +227,15 @@ details.side-block:not([open]) { gap: 0; }
 .read-brief dl > [data-traced] { background: var(--accent-soft); }
 .read-brief dl > [data-traced] dd { color: var(--ink); }
 .read-brief a { flex: none; display: inline-flex; align-items: center; min-height: var(--touch); padding: 0 var(--s2); font-size: var(--fs-small); color: var(--muted); text-underline-offset: 3px; }
-/* With a photo, its thumbnail leads the strip and opens the photo in place under it, above the lines: below 1100px a line and
+/* With a photo, its thumbnail leads the strip and opens the photo in place under it, above the lines: below 1360px a line and
    the receipt share one screen, and the photo at the page's foot goes (YON 23.29). */
 .brief-thumb { flex: none; display: grid; place-items: center; width: var(--touch); min-height: 56px; padding: 0; border: 0; border-radius: var(--radius-chip); background: none; cursor: pointer; }
 .brief-thumb img { display: block; width: 36px; height: 48px; object-fit: cover; border-radius: 3px; background: var(--paper); }
 .brief-thumb[aria-expanded="true"] img { outline: 2px solid var(--ink); outline-offset: 2px; }
 .brief-photo { margin: 0; aspect-ratio: 3 / 4; max-height: 62vh; border-radius: var(--radius-card); overflow: hidden; background: var(--stage); }
 .brief-photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
-@media (max-width: 1099px) { .source .photo { display: none; } }
-@media (min-width: 1100px) { .review > .brief-photo { display: none; } }
+@media (max-width: 1359px) { .source .photo { display: none; } }
+@media (min-width: 1360px) { .review > .brief-photo { display: none; } }
 #fis-kaynak { scroll-margin-top: var(--s4); }
 .inline-field { display: grid; gap: var(--s1); font-size: var(--fs-small); color: var(--muted); }
 .inline-field .field { width: 260px; min-height: var(--control-sm); color: var(--ink); }

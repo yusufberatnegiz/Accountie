@@ -10,7 +10,8 @@ export type LucaGridRow = {
 };
 
 // The müşavir puts the seller's VKN on the expense line only (not on KDV or payment lines).
-const isExpense = (l: JournalLine) => l.debitKurus > 0 && !l.accountCode.startsWith("191");
+// Cash and other liquid accounts (100-108: a Z report's takings) are never the expense line.
+const isExpense = (l: JournalLine) => l.debitKurus > 0 && !l.accountCode.startsWith("191") && !/^10\d(\.|$)/.test(l.accountCode);
 
 export const lucaGridRows = (lines: readonly JournalLine[], taxNumber: string | null = null): LucaGridRow[] => lines.map((l) => ({
   accountCode: l.accountCode,

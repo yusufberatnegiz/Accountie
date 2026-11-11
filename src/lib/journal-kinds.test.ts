@@ -130,3 +130,24 @@ describe("TCMB kuru", () => {
     expect(await tcmbRate("usd", "2026-11-02", async () => new Response(BULLETIN))).toBeNull();
   });
 });
+
+describe("jüri tur 19 düzeltmeleri", () => {
+  it("para birimi okunamayan faturada tutar TL sayılmaz: satırlar boş, onay kapalı, uyarı var", () => {
+    const r = buildForeignLines({ ...google, currency: "" }, DEFAULT_RULES, null);
+    expect(lines(r)[0]).toEqual(["760.01", 0, 0]);
+    expect(codes(r)).toContain("currency_unsure");
+    expect(approvalProblem(r.lines)).toMatch(/tutar yok/);
+  });
+
+  it("Z raporunda firmanın VKN'si Kasa ve Kart satırlarına Vergi No olarak yazılmaz; fişte gider satırına yazılır", async () => {
+    const { lucaGridRows } = await import("./luca/clipboard");
+    const zRows = lucaGridRows(buildSalesLines(z, DEFAULT_RULES).lines, "1111111114");
+    expect(zRows.every((row) => row.taxNumber === "")).toBe(true);
+  });
+
+  it("PDF sayfaları sayılır (Pages kök nesnesi sayılmaz)", async () => {
+    const { pdfPageCount } = await import("./image");
+    const pdf = new TextEncoder().encode("%PDF-1.7\n1 0 obj << /Type /Pages /Count 2 >>\n2 0 obj << /Type /Page >>\n3 0 obj << /Type/Page /Parent 1 0 R >>");
+    expect(pdfPageCount(pdf)).toBe(2);
+  });
+});

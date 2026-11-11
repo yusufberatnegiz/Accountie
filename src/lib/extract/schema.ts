@@ -48,7 +48,8 @@ function amountOrNull(text: string | null): number | null {
 /** A foreign service invoice as read (src/lib/journal-kinds.ts). Amounts stay in the invoice currency. */
 export function toForeignData(x: ReceiptExtraction): ForeignData {
   const vat = x.vatLines.reduce((s, v) => s + (amountOrNull(v.vat) ?? 0), 0);
-  const currency = x.currency && /^[A-Z]{3}$/.test(x.currency) ? x.currency : "TRY";
+  // Not read: no currency, so no TL amount is guessed (a USD invoice must never pass as TL); the reviewer enters it.
+  const currency = x.currency && /^[A-Z]{3}$/.test(x.currency) ? x.currency : "";
   return {
     vendorName: x.vendorName,
     invoiceNo: x.receiptNo,
