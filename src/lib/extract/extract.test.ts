@@ -17,6 +17,11 @@ const goodOutput: ReceiptExtraction = {
   paymentMethod: "card",
   category: "meal",
   unreadableFields: ["zNo"],
+  documentKind: "receipt",
+  currency: "TRY",
+  cashTotal: null,
+  cardTotal: null,
+  invoicedTotal: null,
 };
 
 // checkExtraction flags dates far from "today"; pin it so the sample receipt stays current.
@@ -84,6 +89,20 @@ describe("checkExtraction", () => {
     expect(checkExtraction({ ...goodOutput, date: "05.09.2025" }, today)).toEqual(["date_unusual"]);
     expect(checkExtraction({ ...goodOutput, date: "04.11.2026" }, today)).toEqual([]);
     expect(checkExtraction({ ...goodOutput, date: "05.11.2025" }, today)).toEqual([]);
+  });
+});
+
+describe("belge türüne göre kontrol", () => {
+  const foreign = { ...goodOutput, documentKind: "foreign_invoice" as const, taxNumber: null, vatLines: [], total: "125,00", currency: "USD" };
+  it("yurt dışı faturada KDV satırı olmaması sorun değil; para birimi okunamazsa sorun", () => {
+    expect(checkExtraction(foreign)).toEqual([]);
+    expect(checkExtraction({ ...foreign, currency: null })).toEqual(["currency_unsure"]);
+  });
+  it("Z raporunda nakit ve kart toplamı tutmazsa ya da hiç okunamazsa sorun", () => {
+    const z = { ...goodOutput, documentKind: "z_report" as const, cashTotal: "725,00", cardTotal: "8.000,00" };
+    expect(checkExtraction(z)).toEqual([]);
+    expect(checkExtraction({ ...z, cardTotal: "7.000,00" })).toEqual(["z_payment_split"]);
+    expect(checkExtraction({ ...z, cashTotal: null, cardTotal: null })).toEqual(["z_payment_split"]);
   });
 });
 

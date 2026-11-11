@@ -81,7 +81,7 @@ describe("POST /api/receipts", () => {
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
         receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [],
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null,
       },
     });
     expect((await receiptsRoute.POST(upload())).status).toBe(201);
@@ -96,7 +96,7 @@ describe("POST /api/receipts", () => {
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
         receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [],
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null,
       },
     });
     const res = await receiptsRoute.POST(upload());
@@ -117,7 +117,7 @@ describe("POST /api/receipts", () => {
   });
 
   it("izin verilmeyen türü 415, 4 MB üstünü 413 ile reddeder", async () => {
-    expect((await receiptsRoute.POST(upload("application/pdf"))).status).toBe(415);
+    expect((await receiptsRoute.POST(upload("image/gif"))).status).toBe(415);
     expect((await receiptsRoute.POST(upload("image/jpeg", 4 * 1024 * 1024 + 1))).status).toBe(413);
     expect(extractReceipt).not.toHaveBeenCalled();
   });

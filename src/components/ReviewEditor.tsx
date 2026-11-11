@@ -9,6 +9,7 @@ import { approvalProblem, type JournalLine } from "@/lib/journal";
 import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount, parseTrAmount } from "@/lib/money";
 import { STATUS_LABELS } from "@/lib/status";
+import { DOC_KIND_LABEL, docKind } from "@/lib/doc-kind";
 import { getPhoto } from "@/lib/photo-store";
 import { moveOnly } from "@/lib/view-transition";
 import { CaptureButton } from "./CaptureButton";
@@ -186,6 +187,13 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     (nextLink?.offsetParent ? nextLink : statusLine.current)?.focus({ preventScroll: true });
   }, [receipt.status]);
   const invoice = receipt.model === "e-fatura"; // an old receipt from the removed e-Fatura import: there is no photo to compare
+  // A Z report (sales) and a foreign service invoice keep the same screen; what was read and which line is the payment differ.
+  const kind = docKind(receipt.category);
+  const x = (receipt.extraction ?? {}) as { currency?: string | null; total?: string | null; cashTotal?: string | null; cardTotal?: string | null; invoicedTotal?: string | null; fx?: { rate: number; bulletinDate: string } | null };
+  const vatOutCode = rules.foreign.vatOut.code;
+  // The line the "Alacak hesabı" choice changes: a receipt's credit, a foreign invoice's credit that is not the KDV it owes; a Z report has none.
+  const isPayment = (l: { accountCode: string; credit: string }) => kind !== "z_report" && kurus(l.credit) > 0 && !(kind === "foreign" && l.accountCode === vatOutCode);
+  const isVat = (code: string) => (kind === "z_report" ? code.startsWith("391") : code.startsWith("191"));
   // Photo exists only in this tab; server render has none.
   const photo = useSyncExternalStore(noSubscribe, () => getPhoto(receipt.id), () => undefined);
   // Below 1100px the photo is a thumbnail over the lines that opens in place, so a line and the receipt share one screen.
@@ -199,7 +207,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const sum = (f: (l: JournalLine) => number) => parsed.reduce((s, l) => s + (Number.isNaN(f(l)) ? 0 : f(l)), 0);
   const debit = sum((l) => l.debitKurus);
   const credit = sum((l) => l.creditKurus);
-  const vat = sum((l) => (l.accountCode.startsWith("191") ? l.debitKurus : 0));
+  const vat = sum((l) => (isVat(l.accountCode) ? (kind === "z_report" ? l.creditKurus : l.debitKurus) : 0));
   // The strip shows the same values as the action bar in the same frame; while keys come (until a 300ms pause) its figures
   // swap without rolling, and a whole-line change (delete) rolls.
   const [typing, setTyping] = useState(false);
@@ -209,7 +217,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     return () => clearTimeout(t);
   }, [typing, lines]);
   const problem = invalid ? "Tutar biçimi hatalı." : approvalProblem(parsed);
-  const creditCode = parsed.find((l) => l.creditKurus > 0)?.accountCode ?? "";
+  const creditCode = lines.find(isPayment)?.accountCode ?? "";
   const head = lines[0];
 
   const codes = receipt.warnings.map((w) => w.code);
@@ -238,9 +246,10 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   };
   const setCreditAccount = (code: string) => {
     const account = PAYMENT_ALTERNATIVES.find((a) => a.code === code);
-    if (account) setLines((ls) => ls.map((l) => (kurus(l.credit) > 0 ? { ...l, accountCode: account.code, accountName: account.name } : l)));
+    if (account) setLines((ls) => ls.map((l) => (isPayment(l) ? { ...l, accountCode: account.code, accountName: account.name } : l)));
   };
-  const knownAccounts: Account[] = [...Object.values(rules.expense), ...Object.values(rules.vat), ...Object.values(rules.payment), ...PAYMENT_ALTERNATIVES];
+  const knownAccounts: Account[] = [...Object.values(rules.expense), ...Object.values(rules.vat), ...Object.values(rules.payment), ...PAYMENT_ALTERNATIVES,
+    rules.foreign.expense, rules.foreign.vatIn, rules.foreign.vatOut, rules.sales.cash, rules.sales.card, ...Object.values(rules.sales.revenue), ...Object.values(rules.sales.vat)];
   const setCode = (key: number, code: string) => {
     const name = knownAccounts.find((a) => a.code === code.trim())?.name;
     update(key, name ? { accountCode: code, accountName: name } : { accountCode: code });
@@ -294,8 +303,18 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   }, () => setError("Panoya kopyalanamadı."));
 
   // What the receipt said, from the lines as first built (the reader's values); the editor's lines may differ after edits.
-  const readVat = receipt.lines.reduce((s, l) => s + (l.accountCode.startsWith("191") ? l.debitKurus : 0), 0);
+  const readVat = receipt.lines.reduce((s, l) => s + (isVat(l.accountCode) ? (kind === "z_report" ? l.creditKurus : l.debitKurus) : 0), 0);
   const readTotal = receipt.totalKurus;
+  // A foreign invoice's KDV is computed on top of what was paid (sorumlu sıfatıyla): its matrah is the whole amount.
+  const readBase = readTotal === null ? null : kind === "foreign" ? readTotal : readTotal - readVat;
+  // Which figure on the document a journal line came from (the fiş izi).
+  const sourceFor = (l: EditLine): Source => {
+    const credit = kurus(l.credit) || 0;
+    if (kind === "z_report") return credit > 0 ? (isVat(l.accountCode) ? "vat" : "base") : "total";
+    if (kind === "foreign") return isPayment(l) ? "total" : isVat(l.accountCode) || l.accountCode === vatOutCode ? "vat" : "base";
+    return sourceOf(l.accountCode, credit);
+  };
+  const docWord = kind === "z_report" ? "Z raporu" : kind === "foreign" ? "Fatura" : "Fiş";
   const vknUnsure = receipt.warnings.some((w) => w.code === "tax_number_invalid");
   const gap = Math.abs(debit - credit);
   const finding = invalid ? "Tutar biçimi hatalı: tutarları 7.931,82 biçiminde yazın."
@@ -325,13 +344,14 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     <>
       <div className="title-row">
         <div className="title-text">
-          <p className="crumb"><Link href={base}>Fişler</Link><span aria-hidden="true"> / </span><span translate="no">Fiş {receipt.receiptNo ?? "numarasız"}</span></p>
+          <p className="crumb"><Link href={base}>Fişler</Link><span aria-hidden="true"> / </span><span translate="no">{docWord} {receipt.receiptNo ?? "numarasız"}</span></p>
           <div className="title-line">
             {/* The list row's vendor name morphs into this title (ReceiptListView). */}
             <ViewTransition name={`fis-${receipt.id}`} share="title-morph" default="none" onShare={(i) => moveOnly(i)}>
               <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
             </ViewTransition>
             <span className={`status status-${receipt.status}`}><Roll value={STATUS_LABELS[receipt.status]} /></span>
+            {DOC_KIND_LABEL[kind] ? <span className="kind-tag">{DOC_KIND_LABEL[kind]}</span> : null}
           </div>
           <p className={findingOff ? "finding finding-off" : "finding"}>
             {target ? <button className="link-button" type="button" onClick={fix}>{finding}</button> : finding}
@@ -358,7 +378,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
             </button>
           ) : null}
           <dl aria-label="Fişten okunan, özet">
-          <div data-src="base" {...traced("base")}><dt>Matrah</dt><dd className="num">{readTotal !== null ? formatTrAmount(readTotal - readVat) : <span className="dash">-</span>}</dd></div>
+          <div data-src="base" {...traced("base")}><dt>Matrah</dt><dd className="num">{readBase !== null ? formatTrAmount(readBase) : <span className="dash">-</span>}</dd></div>
           <div data-src="vat" {...traced("vat")}><dt>KDV</dt><dd className="num">{formatTrAmount(readVat)}</dd></div>
           <div data-src="total" {...traced("total")}><dt>Toplam</dt><dd className="num">{readTotal !== null ? formatTrAmount(readTotal) : <span className="dash">-</span>}</dd></div>
           </dl>
@@ -383,7 +403,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
         <section className="panel" aria-labelledby="satir-baslik">
           <div className="panel-head">
             <h2 id="satir-baslik">Yevmiye satırları</h2>
-            {editable ? (
+            {editable && kind !== "z_report" ? (
               <label className="inline-field"><span>Alacak hesabı {checkNote(headFlags.credit)}</span>
                 <select className="field" value={PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? creditCode : ""} {...flag(headFlags.credit)}
                   onChange={(e) => { touch("credit"); setCreditAccount(e.target.value); }}>
@@ -415,7 +435,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
                 const debitFlag = flagged(`debit-${l.key}`, amountsUnsure && !!l.debit);
                 const creditFlag = flagged(`credit-${l.key}`, amountsUnsure && !!l.credit);
                 const unsure = (on: boolean) => (on ? ", kontrol edin" : "");
-                const src = sourceOf(l.accountCode, kurus(l.credit) || 0);
+                const src = sourceFor(l);
                 const side = sideOf(l);
                 return (
                 <tr key={l.key} data-key={l.key} data-side={side} data-new={firstKeys.has(l.key) ? undefined : ""} {...traced(src)} onMouseEnter={(e) => traceOn(src, e.currentTarget)} onMouseLeave={traceOff} onFocus={(e) => traceOn(src, e.currentTarget)} onBlur={traceOff}>
@@ -444,7 +464,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           <dl className="balance-strip" data-balanced={!gap && !invalid ? "" : undefined}>
             <div><dt>Borç toplamı</dt><dd className="num"><Odometer value={formatTrAmount(debit)} instant={typing} /></dd></div>
             <div><dt>Alacak toplamı</dt><dd className="num"><Odometer value={formatTrAmount(credit)} instant={typing} /></dd></div>
-            <div><dt>KDV (191)</dt><dd className="num"><Odometer value={formatTrAmount(vat)} instant={typing} /></dd></div>
+            <div><dt>{kind === "z_report" ? "KDV (391)" : "KDV (191)"}</dt><dd className="num"><Odometer value={formatTrAmount(vat)} instant={typing} /></dd></div>
             <div className="balance-answer"><dt>{gap ? "Fark" : "Fark yok, dengede"}</dt><dd className={gap ? "num balance-off" : "num balance-ok"}><Odometer value={formatTrAmount(gap)} instant={typing} />
               {/* Shown when debit meets credit; a CSS transition, so it never plays on load. */}
               <svg className="balance-check" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8.5l3.25 3.25L13 5" /></svg></dd></div>
@@ -462,19 +482,35 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           ) : null}
           {/* The receipt as read; the journal line in focus lights the figure it came from. */}
           <section className="panel read" id="fis-kaynak" aria-labelledby="okunan-baslik">
-            <h2 id="okunan-baslik">{invoice ? "e-Faturadan alınan" : "Fişten okunan"}</h2>
+            <h2 id="okunan-baslik">{invoice ? "e-Faturadan alınan" : kind === "z_report" ? "Z raporundan okunan" : kind === "foreign" ? "Faturadan okunan" : "Fişten okunan"}</h2>
             <dl className="read-values">
+              {kind === "receipt" ? <>
               <div><dt>Satıcı</dt><dd>{read(receipt.vendorName)}</dd></div>
               {/* Why the expense account is not the category's: an earlier approval of this seller taught it (src/lib/vendor-rule.ts). */}
               {learned ? <div className="read-learned"><dt>Gider hesabı</dt><dd>Bu satıcının önceki onayından: <span className="tnum" translate="no">{learned.accountCode}</span> {learned.accountName}. <Link href={`${base}/kurallar#satici-kurallari`}>Kurallarda</Link> kaldırabilirsiniz.</dd></div> : null}
               <div><dt>VKN</dt><dd className="tnum">{receipt.taxNumber ? <span className={vknUnsure ? "flagged" : undefined}>{receipt.taxNumber}{vknUnsure ? " (kontrol edin)" : ""}</span> : read(null)}</dd></div>
               <div><dt>Fiş No</dt><dd className="tnum" translate="no">{read(receipt.receiptNo)}</dd></div>
               <div><dt>Tarih</dt><dd className="tnum">{read(trDate(receipt.receiptDate))}</dd></div>
-              <div className="read-sum" data-src="base" {...traced("base")}><dt>Matrah</dt><dd className="num">{readTotal !== null ? <>{formatTrAmount(readTotal - readVat)}<span className="formula">{formatTrAmount(readTotal)} - {formatTrAmount(readVat)}</span></> : read(null)}</dd></div>
-              <div className="read-sum" data-src="vat" {...traced("vat")}><dt>KDV</dt><dd className="num">{formatTrAmount(readVat)}</dd></div>
-              <div className="read-sum read-total" data-src="total" {...traced("total")}><dt>Toplam</dt><dd className="num">{readTotal !== null ? <>{formatTrAmount(readTotal)}<span className="formula">{PAYMENT_LABELS[receipt.paymentMethod as PaymentMethod] ?? "Ödeme okunamadı"}</span></> : read(null)}</dd></div>
+              </> : kind === "z_report" ? <>
+              <div><dt>İşyeri</dt><dd>{read(receipt.vendorName)}</dd></div>
+              <div><dt>VKN</dt><dd className="tnum">{read(receipt.taxNumber)}</dd></div>
+              <div><dt>Z No</dt><dd className="tnum" translate="no">{read(receipt.receiptNo)}</dd></div>
+              <div><dt>Tarih</dt><dd className="tnum">{read(trDate(receipt.receiptDate))}</dd></div>
+              <div><dt>Nakit</dt><dd className="num">{read(x.cashTotal)}</dd></div>
+              <div><dt>Kredi kartı</dt><dd className="num">{read(x.cardTotal)}</dd></div>
+              {x.invoicedTotal ? <div><dt>Faturalı satış</dt><dd className="num flagged">{x.invoicedTotal}</dd></div> : null}
+              </> : <>
+              <div><dt>Satıcı</dt><dd>{read(receipt.vendorName)}</dd></div>
+              <div><dt>Fatura No</dt><dd className="tnum" translate="no">{read(receipt.receiptNo)}</dd></div>
+              <div><dt>Tarih</dt><dd className="tnum">{read(trDate(receipt.receiptDate))}</dd></div>
+              <div><dt>Tutar</dt><dd className="num">{x.total ? `${x.total} ${x.currency ?? ""}`.trim() : read(null)}</dd></div>
+              {x.currency && x.currency !== "TRY" ? <div><dt>Kur</dt><dd className="num">{x.fx ? <>{x.fx.rate.toLocaleString("tr-TR", { maximumFractionDigits: 4 })}<span className="formula">TCMB döviz alış, {trDate(x.fx.bulletinDate)}</span></> : <span className="dash">Alınamadı</span>}</dd></div> : null}
+              </>}
+              <div className="read-sum" data-src="base" {...traced("base")}><dt>{kind === "foreign" ? "Matrah (TL)" : "Matrah"}</dt><dd className="num">{readBase !== null && readTotal !== null ? <>{formatTrAmount(readBase)}{kind === "foreign" ? null : <span className="formula">{formatTrAmount(readTotal)} - {formatTrAmount(readVat)}</span>}</> : read(null)}</dd></div>
+              <div className="read-sum" data-src="vat" {...traced("vat")}><dt>{kind === "foreign" ? "Sorumlu KDV" : kind === "z_report" ? "Hesaplanan KDV" : "KDV"}</dt><dd className="num">{formatTrAmount(readVat)}</dd></div>
+              <div className="read-sum read-total" data-src="total" {...traced("total")}><dt>{kind === "foreign" ? "Toplam (TL)" : "Toplam"}</dt><dd className="num">{readTotal !== null ? <>{formatTrAmount(readTotal)}{kind === "z_report" ? null : <span className="formula">{PAYMENT_LABELS[receipt.paymentMethod as PaymentMethod] ?? "Ödeme okunamadı"}</span>}</> : read(null)}</dd></div>
             </dl>
-            <p className="muted small">{invoice ? "Faturanın XML'inden alındı; satırları faturayla karşılaştırın." : photo ? "Fotoğraf yalnızca bu cihazda, bu oturumda görünür." : "Fotoğraf bu cihazda değil; sunucu fotoğrafı saklamaz. Satırları kâğıt fişle karşılaştırın."}</p>
+            <p className="muted small">{invoice ? "Faturanın XML'inden alındı; satırları faturayla karşılaştırın." : kind !== "receipt" && !photo ? "Belge sunucuda saklanmaz. Satırları belgeyle karşılaştırın." : photo ? "Fotoğraf yalnızca bu cihazda, bu oturumda görünür." : "Fotoğraf bu cihazda değil; sunucu fotoğrafı saklamaz. Satırları kâğıt fişle karşılaştırın."}</p>
           </section>
         </div>
 

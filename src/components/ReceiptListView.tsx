@@ -9,6 +9,7 @@ import { RowPending } from "@/components/RowPending";
 import { LucaMeter } from "@/components/LucaMeter";
 import { MoveTransition } from "@/components/MoveTransition";
 import { MonthPicker } from "@/components/MonthPicker";
+import { DOC_KIND_LABEL, docKind } from "@/lib/doc-kind";
 import { monthLabel } from "@/lib/month";
 import { CATEGORIES } from "@/lib/default-rules";
 import { MAX_LINES_PER_FILE, MAX_RECEIPTS_PER_FILE } from "@/lib/luca/export";
@@ -48,9 +49,10 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
   // shortcut: a receipt's whole expense side is booked to its first expense code; split per line if users start mixing 770 codes on one receipt.
   const sums = new Map<string, number>();
   const counted = tab.status ? receipts : receipts.filter((r) => r.status !== "draft");
-  for (const r of counted) if (r.expenseCode && r.expenseKurus) sums.set(r.expenseCode, (sums.get(r.expenseCode) ?? 0) + r.expenseKurus);
+  // A Z report is sales, not an expense: it stays out of the expense and KDV sums.
+  for (const r of counted) if (r.expenseCode && r.expenseKurus && docKind(r.category) !== "z_report") sums.set(r.expenseCode, (sums.get(r.expenseCode) ?? 0) + r.expenseKurus);
   const byAccount = [...sums].sort((a, b) => b[1] - a[1]);
-  const vatTotal = counted.reduce((n, r) => n + (r.expenseCode ? r.vatKurus : 0), 0);
+  const vatTotal = counted.reduce((n, r) => n + (r.expenseCode && docKind(r.category) !== "z_report" ? r.vatKurus : 0), 0);
 
   return (
     <main id="icerik" tabIndex={-1} className="canvas canvas-list">
@@ -117,11 +119,12 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                         <MoveTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{r.vendorName ?? "Okunamayan fiş"}</span></MoveTransition>
                         <RowPending />
                       </Link>
+                      {DOC_KIND_LABEL[docKind(r.category)] ? <span className="r-kind">{DOC_KIND_LABEL[docKind(r.category)]}</span> : null}
                       {notes ? <span className="r-notes">{notes} uyarı</span> : null}
                     </td>
                     <td className="r-no num" translate="no">{r.receiptNo ?? <span className="dash">-</span>}</td>
                     <td className="r-date num">{trDate(r.receiptDate) ?? <span className="dash">Tarih yok</span>}</td>
-                    <td className="r-code num" translate="no">{r.expenseCode ?? <span className="dash">-</span>}</td>
+                    <td className="r-code num" translate="no">{docKind(r.category) === "z_report" ? <span className="dash">Satış</span> : r.expenseCode ?? <span className="dash">-</span>}</td>
                     <td className="r-total num">{r.totalKurus === null ? <span className="dash">-</span> : <>{formatTrAmount(r.totalKurus)}<span className="unit">&nbsp;TL</span></>}</td>
                     <td className="r-status"><span className={`status status-${r.status}`}>{STATUS_LABELS[r.status]}</span></td>
                   </tr>

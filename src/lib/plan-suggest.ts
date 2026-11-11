@@ -41,6 +41,21 @@ export function suggestRules(rows: readonly RuleRow[], plan: readonly Account[])
     }
     if (r.kind === "payment" && r.key === "card") return find("3", (n) => n.includes("kredi kart"));
     if (r.kind === "payment" && r.key === "cash") return find("100", () => true);
+    // Foreign services: the expense under 760/770 that names abroad or advertising; the KDV pair the plan calls "sorumlu" or KDV 2.
+    if (r.kind === "foreign" && r.key === "expense") return byWords(["760", "770"], ["yurt dışı", "yurtdışı", "dijital", "reklam"]);
+    if (r.kind === "foreign" && r.key === "vatIn") return find("191", (n) => n.includes("sorumlu"));
+    if (r.kind === "foreign" && r.key === "vatOut") return find("360", (n) => /kdv ?2|sorumlu/.test(n));
+    // Sales: cash and card takings, and per rate the 600 sales and 391 KDV that name the rate as a number of their own.
+    if (r.kind === "sales" && r.key === "cash") return find("100", () => true);
+    if (r.kind === "sales" && r.key === "card") return find("108", (n) => n.includes("kredi kart")) ?? find("108", () => true);
+    if (r.kind === "sales") {
+      const [part, rate] = r.key.split(":");
+      const named = (prefix: string) => leaves.filter((a) => a.code.startsWith(prefix) && !/iade|ihracat|tevkifat|tax free|demirbaş|ilave/.test(a.lower));
+      if (part === "revenue" && rate === "0") return named("600").find((a) => /kdv ?siz|%0\b|% 0\b/.test(a.lower));
+      const hit = (prefix: string) => named(prefix).find((a) => new RegExp(`(^|\\D)0?${Number(rate)}(\\D|$)`).test(a.lower));
+      if (part === "revenue") return hit("600");
+      if (part === "vat") return hit("391");
+    }
   };
   // A plan with no sub-accounts under these (Luca's bare template) is posted to the main account itself.
   const main = (r: RuleRow) => {

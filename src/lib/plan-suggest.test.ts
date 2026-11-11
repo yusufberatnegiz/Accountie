@@ -64,3 +64,25 @@ describe("suggestRules", () => {
     expect(code(out, "expense", "telecom")).not.toBe("770");
   });
 });
+
+describe("suggestRules: yurt dışı fatura ve Z raporu", () => {
+  // Names as they appear in real Luca plans (the firm that books Google: 760.012, 191.100, 360.004).
+  const plan = [
+    { code: "100", name: "KASA" }, { code: "100.01", name: "Kasa" },
+    { code: "108", name: "DİĞER HAZIR DEĞERLER" }, { code: "108.01", name: "Kredi Kartı Satışları" },
+    { code: "191", name: "İNDİRİLECEK KDV" }, { code: "191.100", name: "SORUMLU SIFATIYLA BEYAN EDİLEN KDV" },
+    { code: "360", name: "ÖDENECEK VERGİ VE FONLAR" }, { code: "360.001", name: "ÖDENECEK GELİR VERGİSİ" }, { code: "360.004", name: "ÖDENECEK KDV 2" },
+    { code: "391", name: "HESAPLANAN KDV" }, { code: "391.01", name: "% 01 Hesaplanan Kdv" }, { code: "391.10", name: "% 10 Hesaplanan Kdv" },
+    { code: "391.20", name: "% 20 Hesaplanan Kdv" }, { code: "391.40", name: "Alışlardan İade Kdv" },
+    { code: "600", name: "YURTİÇİ SATIŞLAR" }, { code: "600.00", name: "Kdv Siz Satışlar" }, { code: "600.01", name: "% 01 Kdv Li Satışlar" },
+    { code: "600.10", name: "% 10 Kdv Li Satışlar" }, { code: "600.20", name: "% 20 Kdv Li Satışlar" },
+    { code: "760", name: "PAZARLAMA SATIŞ VE DAĞITIM GİDERLERİ" }, { code: "760.001", name: "REKLAM GİDERİ" }, { code: "760.012", name: "YURTDIŞI REKLAM GİDERLERİ" },
+  ];
+  it("planın kendi hesaplarına eşler", () => {
+    const out = suggestRules(rulesToRows(DEFAULT_RULES), plan);
+    expect([code(out, "foreign", "expense"), code(out, "foreign", "vatIn"), code(out, "foreign", "vatOut")]).toEqual(["760.012", "191.100", "360.004"]);
+    expect([code(out, "sales", "cash"), code(out, "sales", "card")]).toEqual(["100.01", "108.01"]);
+    expect(["revenue:0", "revenue:1", "revenue:10", "revenue:20"].map((k) => code(out, "sales", k))).toEqual(["600.00", "600.01", "600.10", "600.20"]);
+    expect(["vat:1", "vat:10", "vat:20"].map((k) => code(out, "sales", k))).toEqual(["391.01", "391.10", "391.20"]);
+  });
+});

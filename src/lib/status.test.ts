@@ -18,7 +18,9 @@ describe("panel list", () => {
 
   it("splits each receipt's debits into matrah and 191 VAT, which add up to the total", () => {
     expect(PREVIEW_LIST.find((r) => r.receiptNo === "0412")).toMatchObject({ expenseKurus: 589091, vatKurus: 58909 });
-    for (const r of PREVIEW_LIST) expect(r.expenseKurus + r.vatKurus).toBe(r.totalKurus);
+    for (const r of PREVIEW_LIST.filter((x) => x.category !== "foreign")) expect(r.expenseKurus + r.vatKurus).toBe(r.totalKurus);
+    // A foreign invoice's KDV (sorumlu sıfatıyla) comes on top of what was paid: matrah is the whole amount, KDV 20% of it.
+    expect(PREVIEW_LIST.find((x) => x.category === "foreign")).toMatchObject({ expenseKurus: 501078, vatKurus: 100216, totalKurus: 501078 });
   });
 });
 

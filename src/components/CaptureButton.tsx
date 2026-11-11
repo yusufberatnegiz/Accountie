@@ -64,11 +64,13 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       setSlow(false);
       setStage(0);
       setStatus(list.length > 1 ? `Fiş okunuyor (${i + 1}/${list.length})` : "Fiş okunuyor");
-      const blob = await shrink(file);
-      setThumb(URL.createObjectURL(blob));
+      // A PDF (an invoice from Google or Meta) goes as it is: nothing to shrink, no photo to show.
+      const pdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      const blob = pdf ? file : await shrink(file);
+      setThumb(pdf ? "" : URL.createObjectURL(blob));
       setStage(1);
       const form = new FormData();
-      form.set("image", blob, "fis.jpg");
+      form.set("image", blob, pdf ? "belge.pdf" : "fis.jpg");
       const firm = document.querySelector<HTMLElement>(".app")?.dataset.firm;
       if (firm) form.set("firma", firm);
       let failure = "Bağlantı kurulamadı. Tekrar deneyin.";
@@ -87,7 +89,7 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       // One photo may hold several receipts side by side; each gets the photo for its review screen.
       const { ids } = (await res.json()) as { ids: string[] };
       setStage(2);
-      for (const id of ids) setPhoto(id, blob);
+      if (!pdf) for (const id of ids) setPhoto(id, blob);
       lastId = ids[0];
       added += ids.length;
     }
@@ -105,7 +107,7 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
     <input
       className="visually-hidden"
       type="file"
-      accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+      accept={capture ? "image/jpeg,image/png,image/webp,image/heic,image/heif" : "image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"}
       capture={capture ? "environment" : undefined}
       multiple={!capture}
       disabled={busy}

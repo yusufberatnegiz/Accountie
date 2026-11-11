@@ -130,6 +130,8 @@
 /* --raised is 1.07:1 on white; --active is a step the eye catches in both themes. */
 @media (hover: hover) and (pointer: fine) { .receipts tbody tr:hover { background: var(--active); } }
 .r-notes { display: block; font-size: var(--fs-small); color: var(--warn-ink); }
+.kind-tag { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--s2); border-radius: var(--radius-chip); font-size: var(--fs-small); white-space: nowrap; flex: none; color: var(--muted); box-shadow: inset 0 0 0 1px var(--border); }
+.r-kind { display: block; font-size: var(--fs-small); color: var(--muted); } /* Z raporu, yurt dışı fatura */
 .r-code { color: var(--ink); }
 .list-foot { padding: var(--s4) var(--s5); border-top: 1px solid var(--rule); }
 .empty-row { display: grid; gap: var(--s3); justify-items: start; padding: var(--s6) var(--s5); }
@@ -184,9 +186,9 @@ details.side-block:not([open]) { gap: 0; }
   .review > .actions .btn:enabled:not(:hover) { background: var(--surface); border-color: var(--border); }
   .review > .action-bar { grid-row: 5; padding: var(--s4); border-top-color: var(--rule); border-radius: 0 0 var(--radius-card) var(--radius-card); }
   .review > .danger-zone { grid-row: 6; }
-  /* Evrak No, date, BT and Açıklama in one row, Açıklama the widest. */
-  .info .form-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.6fr) minmax(0, 2fr); align-items: start; }
-  .info .form-grid > .span-all { grid-column: auto; }
+  /* Evrak No, date and BT in one row, Açıklama under them at full width: the date field keeps its own width (it overlapped BT below ~1400px). */
+  .info .form-grid { grid-template-columns: minmax(6rem, 1fr) minmax(max-content, 1fr) minmax(5.5rem, 0.6fr); align-items: start; }
+  .info .bt-field > span { white-space: nowrap; }
 }
 /* The receipt column travels beside the lines, but only where all of it fits the screen; with the photo it would hide its own foot. */
 @media (min-width: 1100px) and (min-height: 820px) { .source:not(:has(.photo)) { position: sticky; top: var(--s4); } }
@@ -380,7 +382,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .receipts .r-no { overflow: hidden; text-overflow: ellipsis; text-align: left; }
   .receipts .r-code { color: var(--ink); }
   .receipts .r-status { grid-column: 5; grid-row: 2; text-align: right; }
-  .r-notes { display: block; margin: 0; }
+  :is(.r-notes, .r-kind) { display: block; margin: 0; }
   .side { grid-template-columns: minmax(0, 1fr); }
   /* The tablet keeps the journal a table (one line per row), so the balance strip is on the first screen above the tray. */
   .journal .col-code { width: 8rem; }

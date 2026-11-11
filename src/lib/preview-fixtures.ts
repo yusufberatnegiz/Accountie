@@ -2,6 +2,7 @@
 import type { Firm, ReceiptDetail, VendorRule } from "@/db/queries";
 import { DEFAULT_RULES, rulesToRows } from "./default-rules";
 import { buildJournalLines, warn, type ReceiptData } from "./journal";
+import { buildForeignLines, buildSalesLines, type ForeignData, type SalesData } from "./journal-kinds";
 // A müşavir's mükellefs: invented ÖRNEK names, enough of them to show the search. The first holds the preview receipts.
 const FIRM_NAMES = ["BALIK LOKANTASI LTD.ŞTİ","İNŞAAT A.Ş.","KUAFÖR","MOBİLYA SAN.TİC.LTD.ŞTİ","ECZANE","OTO SERVİS","KIRTASİYE","DİŞ KLİNİĞİ","LOJİSTİK A.Ş.","FIRIN","YAZILIM LTD.ŞTİ","TEKSTİL","KAFE","NAKLİYAT","OPTİK","ÇİÇEKÇİLİK","MATBAA","ELEKTRİK MALZEMELERİ","HIRDAVAT","SPOR SALONU","VETERİNER KLİNİĞİ","TURİZM SEYAHAT","GIDA PAZARLAMA","OTO KİRALAMA","MİMARLIK OFİSİ","REKLAM AJANSI","KUYUMCU","BUTİK OTEL","PASTANE","BİLGİSAYAR TEKNİK","TEMİZLİK HİZMETLERİ","KASAP","EMLAK","DANIŞMANLIK LTD.ŞTİ","KREŞ","ZİRAAT ÜRÜNLERİ"];
 export const PREVIEW_FIRMS: Firm[] = FIRM_NAMES.map((name, i) => ({
@@ -18,6 +19,13 @@ const baseFields = (id: string, data: ReceiptData) => {
     warnings, lines, model: null as string | null,
   };
 };
+
+const PREVIEW_Z: SalesData = {
+  vendorName: "ÖRNEK BALIK LOKANTASI", zNo: "0128", date: "2026-09-07", totalKurus: 1452000, cashKurus: 452000, cardKurus: 1000000, invoicedKurus: null,
+  vatLines: [{ rate: 10, grossKurus: 1320000, vatKurus: 120000 }, { rate: 20, grossKurus: 132000, vatKurus: 22000 }],
+};
+const PREVIEW_FX = { rate: 50.1078, bulletinDate: "2026-08-29" };
+const PREVIEW_FOREIGN: ForeignData = { vendorName: "ÖRNEK REKLAM HİZMETLERİ LTD.", invoiceNo: "5234567890", date: "2026-09-01", currency: "USD", totalMinor: 10000, vatMinor: 0, paymentMethod: "card" };
 
 export const PREVIEW_RECEIPTS: ReceiptDetail[] = [
   base("00000000-0000-4000-8000-000000000001", {
@@ -61,13 +69,26 @@ export const PREVIEW_RECEIPTS: ReceiptDetail[] = [
     vendorName: "ÖRNEK İLETİŞİM BAYİ", receiptNo: "1276", date: "2026-08-27",
     vatLines: [{ rate: 20, grossKurus: 89900, vatKurus: 14983 }], totalKurus: 89900, paymentMethod: "card", category: "telecom",
   }), status: "exported" },
+  // The two other documents: a Z report booked as the day's sales, and a Google invoice in dollars at the TCMB rate.
+  {
+    ...baseFields("00000000-0000-4000-8000-000000000011", { vendorName: "ÖRNEK BALIK LOKANTASI", receiptNo: "0128", date: "2026-09-07", vatLines: [], totalKurus: 1452000, paymentMethod: "cash", category: "other" }),
+    category: "z_report", paymentMethod: "other", receiptNo: "0128",
+    ...buildSalesLines(PREVIEW_Z, DEFAULT_RULES),
+    extraction: { documentKind: "z_report", cashTotal: "4.520,00", cardTotal: "10.000,00", invoicedTotal: null, currency: "TRY", total: "14.520,00" },
+  } as ReceiptDetail,
+  {
+    ...baseFields("00000000-0000-4000-8000-000000000012", { vendorName: "ÖRNEK REKLAM HİZMETLERİ LTD.", receiptNo: "5234567890", date: "2026-09-01", vatLines: [], totalKurus: 501078, paymentMethod: "card", category: "other" }),
+    category: "foreign", taxNumber: null,
+    ...buildForeignLines(PREVIEW_FOREIGN, DEFAULT_RULES, PREVIEW_FX),
+    extraction: { documentKind: "foreign_invoice", currency: "USD", total: "100,00", fx: PREVIEW_FX },
+  } as ReceiptDetail,
 ];
 
 export const PREVIEW_RULE_ROWS = rulesToRows(DEFAULT_RULES);
 export const PREVIEW_EMAIL = "muhasebe@buro.example";
 
 /** The list screen's row shape, computed from the fixtures the way listReceipts computes it in SQL. */
-export const PREVIEW_LIST = PREVIEW_RECEIPTS.map(({ lines, taxNumber, paymentMethod, category, ...r }) => ({
+export const PREVIEW_LIST = PREVIEW_RECEIPTS.map(({ lines, taxNumber, paymentMethod, extraction, ...r }) => ({
   ...r,
   expenseCode: lines.find((l) => l.debitKurus > 0 && !l.accountCode.startsWith("191"))?.accountCode ?? null,
   lineCount: lines.length,

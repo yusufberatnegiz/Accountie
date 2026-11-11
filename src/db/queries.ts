@@ -107,6 +107,9 @@ export async function getRules(userId: string, firmId?: string | null): Promise<
     const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
     rows = [...rows.map((r) => own.find((o) => same(o, r)) ?? r), ...own.filter((o) => !rows.some((r) => same(o, r)))];
   }
+  // Rules added after the user's table was made (foreign invoice, Z report) show with their defaults until saved.
+  const missing = rulesToRows(DEFAULT_RULES).filter((d) => !rows.some((r) => r.kind === d.kind && r.key === d.key));
+  rows = [...rows, ...missing];
   return { rules: rulesFromRows(rows), rows };
 }
 
@@ -175,6 +178,7 @@ export async function hasDuplicateReceipt(userId: string, taxNumber: string, rec
 // The list shows each receipt's expense account (first debit line that is not VAT) and its line count (for Luca's 400-line file limit).
 const listColumns = {
   ...summaryColumns,
+  category: receipts.category,
   warnings: receipts.warnings,
   expenseCode: sql<string | null>`(select jl.account_code from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
   lineCount: sql<number>`(select count(*)::int from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId})`,
@@ -195,7 +199,7 @@ export async function listReceipts(userId: string, firmId: string, { status, mon
 
 export async function getReceipt(userId: string, id: string) {
   const db = getDb();
-  const [receipt] = await db.select({ ...summaryColumns, firmId: receipts.firmId, taxNumber: receipts.taxNumber, paymentMethod: receipts.paymentMethod, category: receipts.category, warnings: receipts.warnings, model: receipts.model })
+  const [receipt] = await db.select({ ...summaryColumns, firmId: receipts.firmId, taxNumber: receipts.taxNumber, paymentMethod: receipts.paymentMethod, category: receipts.category, warnings: receipts.warnings, model: receipts.model, extraction: receipts.extraction })
     .from(receipts).where(and(eq(receipts.id, id), eq(receipts.userId, userId)));
   if (!receipt) return null;
   const lines: JournalLine[] = await db.select(lineColumns).from(journalLines)

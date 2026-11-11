@@ -49,6 +49,12 @@ export const WARNING_MESSAGES: Record<string, string> = {
   receipt_no_unsure: "Fiş no okunamadı. Evrak No'yu kontrol edin.",
   duplicate: "Bu VKN, fiş no ve tarihle kayıtlı başka bir fiş var. Aynı fiş iki kez aktarılmasın.",
   extraction_failed: "Fiş okunamadı, tekrar deneyin veya elle girin.",
+  currency_unsure: "Faturanın para birimi okunamadı. Tutarları faturayla karşılaştırın.",
+  foreign_rate_missing: "Döviz kuru alınamadı. TL tutarlarını TCMB döviz alış kuruyla elle girin.",
+  foreign_vat_charged: "Faturada KDV görünüyor; sorumlu sıfatıyla KDV hesaplanmadı. Satırları faturayla karşılaştırın.",
+  foreign_withholding: "Yurt dışından alınan hizmette gelir veya kurumlar vergisi stopajı gerekebilir; muhtasarı kontrol edin.",
+  z_payment_split: "Nakit ve kartlı tahsilat Z raporundan tam okunamadı ya da toplamı tutmuyor. Tahsilat satırlarını kontrol edin.",
+  z_unknown_rate: "Kural tablosunda olmayan KDV oranı var. Satış ve KDV hesabını seçin.",
 };
 
 export const warn = (code: string): Warning => ({ code, message: WARNING_MESSAGES[code] });

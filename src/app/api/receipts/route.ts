@@ -5,12 +5,14 @@ import { withVendorAccount } from "@/lib/vendor-rule";
 import { activeFirm } from "@/lib/firm";
 import { getSessionUser, getUserId } from "@/lib/auth/session";
 import { extractReceipt, locateReceipts, type ExtractResult } from "@/lib/extract/extract";
-import { toReceiptData } from "@/lib/extract/schema";
+import { kindOf, toForeignData, toReceiptData, toSalesData } from "@/lib/extract/schema";
+import { buildForeignLines, buildSalesLines, foreignTotalTl } from "@/lib/journal-kinds";
+import { tcmbRate } from "@/lib/tcmb";
 import { NO_STORE, fail, unauthorized } from "@/lib/http";
-import { ALLOWED_IMAGE_TYPES, cropReceipt, MAX_UPLOAD_BYTES, normalizeImage, sniffImageType } from "@/lib/image";
+import { ALLOWED_IMAGE_TYPES, cropReceipt, isPdf, MAX_UPLOAD_BYTES, normalizeImage, sniffImageType } from "@/lib/image";
 import { allow, clientIp } from "@/lib/rate-limit";
 import type { Rules } from "@/lib/default-rules";
-import { buildJournalLines, warn, type ReceiptData, type Warning } from "@/lib/journal";
+import { buildJournalLines, warn, type JournalLine, type ReceiptData, type Warning } from "@/lib/journal";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -27,21 +29,25 @@ export async function POST(request: Request) {
     return fail("Çok fazla fiş yüklendi. Biraz bekleyip tekrar deneyin.", 429);
   }
   // Rejected before the body is buffered; multipart overhead is allowed for.
-  if (Number(request.headers.get("content-length") ?? 0) > MAX_UPLOAD_BYTES + 64 * 1024) return fail("Fotoğraf 4 MB'tan büyük olamaz.", 413);
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_UPLOAD_BYTES + 64 * 1024) return fail("Dosya 4 MB'tan büyük olamaz.", 413);
 
   const form = await request.formData().catch(() => null);
   const file = form?.get("image");
   if (!(file instanceof File)) return fail("Fiş fotoğrafı eksik.", 400);
-  if (file.size > MAX_UPLOAD_BYTES) return fail("Fotoğraf 4 MB'tan büyük olamaz.", 413);
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) return fail("Sadece JPEG, PNG, WebP veya HEIC fotoğraf yüklenebilir.", 415);
+  if (file.size > MAX_UPLOAD_BYTES) return fail("Dosya 4 MB'tan büyük olamaz.", 413);
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type) && file.type !== "application/pdf") return fail("Sadece JPEG, PNG, WebP, HEIC fotoğraf ya da PDF yüklenebilir.", 415);
 
   const bytes = Buffer.from(await file.arrayBuffer());
-  if (!sniffImageType(bytes)) return fail("Dosya bir fotoğraf değil. JPEG, PNG, WebP veya HEIC yükleyin.", 415);
-  let jpeg: Buffer;
-  try {
-    jpeg = await normalizeImage(bytes);
-  } catch {
-    return fail("Fotoğraf açılamadı. Başka bir fotoğraf deneyin; iPhone fotoğrafını (HEIC) JPEG olarak paylaşın.", 415);
+  // A PDF (an invoice saved from Google or Meta) goes to the reader as it is: no decoding, cropping or splitting.
+  const pdf = isPdf(bytes);
+  if (!pdf && !sniffImageType(bytes)) return fail("Dosya bir fotoğraf ya da PDF değil. JPEG, PNG, WebP, HEIC ya da PDF yükleyin.", 415);
+  let jpeg: Buffer = bytes;
+  if (!pdf) {
+    try {
+      jpeg = await normalizeImage(bytes);
+    } catch {
+      return fail("Fotoğraf açılamadı. Başka bir fotoğraf deneyin; iPhone fotoğrafını (HEIC) JPEG olarak paylaşın.", 415);
+    }
   }
 
   // Counted only for valid photos that are about to reach the model.
@@ -51,6 +57,11 @@ export async function POST(request: Request) {
   const { firm } = await activeFirm(userId, typeof wanted === "string" ? wanted : null);
   const { rules } = await getRules(userId, firm.id);
   if (typeof wanted === "string" && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's data
+  if (pdf) {
+    const one = await readAndSave(userId, firm.id, jpeg, rules, "application/pdf");
+    if (!one) return fail("Fiş kaydedilemedi. Tekrar deneyin.", 500);
+    return NextResponse.json({ id: one.id, ids: [one.id], readable: one.readable }, { status: 201 });
+  }
   // Several receipts laid side by side in one photo: each is cut from the full-size upload and read on its own.
   const boxes = await locateReceipts(jpeg).catch(() => []);
   let images = [jpeg];
@@ -71,14 +82,15 @@ export async function POST(request: Request) {
   return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable) }, { status: 201 });
 }
 
-async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: Rules): Promise<{ id: string; readable: boolean } | null> {
+async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: Rules, mediaType: "image/jpeg" | "application/pdf" = "image/jpeg"): Promise<{ id: string; readable: boolean } | null> {
   let result: ExtractResult;
   try {
-    result = await extractReceipt(jpeg);
+    result = await extractReceipt(jpeg, undefined, mediaType);
   } catch (err) {
     console.error("receipt extraction crashed", { error: err instanceof Error ? err.name : "unknown" });
     result = { ok: false, inputTokens: 0, outputTokens: 0 };
   }
+  if (result.ok && kindOf(result.extraction) !== "receipt") return saveOther(userId, firmId, result, rules);
 
   const data = result.ok ? toReceiptData(result.extraction) : EMPTY;
   const taxNumber = result.ok ? result.extraction.taxNumber : null;
@@ -114,6 +126,35 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
     return null;
   }
   return { id, readable: result.ok };
+}
+
+/** A Z report or a foreign service invoice: its own lines (src/lib/journal-kinds.ts), no seller learning, the TL rate kept with the read. */
+async function saveOther(userId: string, firmId: string, result: Extract<ExtractResult, { ok: true }>, rules: Rules): Promise<{ id: string; readable: boolean } | null> {
+  const x = result.extraction;
+  const extra = result.problems.map(warn);
+  const meta = { model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens };
+  let receipt: NewReceipt;
+  let built: { lines: JournalLine[]; warnings: Warning[] };
+  if (kindOf(x) === "z_report") {
+    const data = toSalesData(x);
+    built = buildSalesLines(data, rules);
+    // The VKN on a Z report is the firm's own: kept to find the same report uploaded twice, never to learn a seller.
+    const taxNumber = x.taxNumber && isValidTaxNumber(x.taxNumber) ? x.taxNumber : null;
+    if (taxNumber && data.zNo && data.date && (await hasDuplicateReceipt(userId, taxNumber, data.zNo, data.date).catch(() => false))) extra.unshift(warn("duplicate"));
+    receipt = { vendorName: data.vendorName, taxNumber, receiptNo: data.zNo, receiptDate: data.date, totalKurus: data.totalKurus, paymentMethod: "other", category: "z_report", extraction: x, warnings: [], ...meta };
+  } else {
+    const data = toForeignData(x);
+    const fx = data.currency !== "TRY" && data.date ? await tcmbRate(data.currency, data.date).catch(() => null) : null;
+    built = buildForeignLines(data, rules, fx);
+    receipt = { vendorName: data.vendorName, taxNumber: null, receiptNo: data.invoiceNo, receiptDate: data.date, totalKurus: foreignTotalTl(data, fx), paymentMethod: data.paymentMethod, category: "foreign", extraction: { ...x, fx }, warnings: [], ...meta };
+  }
+  receipt.warnings = [...built.warnings, ...extra.filter((w) => !built.warnings.some((b) => b.code === w.code))];
+  try {
+    return { id: await createReceipt(userId, firmId, receipt, built.lines), readable: true };
+  } catch (err) {
+    console.error("receipt save failed", { error: err instanceof Error ? err.name : "unknown" });
+    return null;
+  }
 }
 
 export async function GET(request: Request) {

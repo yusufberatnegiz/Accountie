@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, rulesToRows } from "./default-rules";
+import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, RULE_KINDS, rulesToRows } from "./default-rules";
 
 // Client-writable fields only. status, user_id, model, token counts and timestamps are never accepted.
 export const LineInputSchema = z.object({
@@ -26,7 +26,7 @@ const ALLOWED_RULE_KEYS = new Map(
 
 export const RulesPutSchema = z.object({
   rows: z.array(z.object({
-    kind: z.enum(["expense", "vat", "payment", "setting"]),
+    kind: z.enum(RULE_KINDS),
     key: z.string().max(40),
     accountCode: z.string().trim().min(1).max(20),
     accountName: z.string().trim().max(120),

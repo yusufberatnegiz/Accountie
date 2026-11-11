@@ -12,12 +12,18 @@ import { suggestRules } from "@/lib/plan-suggest";
 const SAMPLE = { total: 648000, vat: 58909 };
 const vatAt = (rate: number) => Math.round((SAMPLE.total * rate) / (100 + rate));
 const PAID: Record<string, string> = { cash: "Nakit ödenen fiş", card: "Kartla ödenen fiş", other: "Başka yolla ödenen fiş" };
+// The other two documents' examples: a 1.250,00 TL Google invoice paid by card, and a 1.200,00 TL Z report (200,00 cash, 1.000,00 card).
+const FOREIGN_SAMPLE = 125000;
+const Z_SAMPLE = { total: 120000, cash: 20000 };
+const rateOf = (key: string) => Number(/:(\d+)$/.exec(key)?.[1] ?? 20);
 
 const GROUPS: { kind: RuleKind; title: string; text: string; first: string; caption: (r: RuleRow) => string }[] = [
   { kind: "expense", title: "Gider hesapları", text: "Fiş türüne göre borç satırına yazılan hesap.", first: "meal", caption: (r) => `${r.label} fişi` },
   { kind: "vat", title: "İndirilecek KDV", text: "Fişteki KDV oranına göre 191 hesabı. KDV yeniden hesaplanmaz, fişteki tutar yazılır.", first: "10", caption: (r) => `${r.label} içeren fiş` },
   { kind: "payment", title: "Ödeme ve alacak", text: "Ödeme şekline göre alacak satırına yazılan hesap. Fiş ekranında fiş başına değiştirilebilir.", first: "card", caption: (r) => PAID[r.key] ?? r.label },
-  { kind: "setting", title: "Belge türü", text: "Luca'daki BT sütununa yazılır. Yazar kasa fişi için ÖK.", first: "documentType", caption: (r) => `Her satırın BT sütunu ${r.accountCode}` },
+  { kind: "setting", title: "Belge türü", text: "Luca'daki BT sütununa yazılır. Yazar kasa fişi için ÖK; yurt dışı fatura ve Z raporunun kendi BT'si var.", first: "documentType", caption: (r) => `${r.label}: ${r.accountCode}` },
+  { kind: "foreign", title: "Yurt dışı faturalar", text: "Google, Meta, AWS gibi yurt dışı hizmet faturası. Gider ve sorumlu sıfatıyla hesaplanan %20 KDV (191 borç, 360 alacak); ödeme satırı yukarıdaki ödeme kuralından gelir. Dövizli tutar TCMB döviz alış kuruyla TL'ye çevrilir.", first: "expense", caption: () => "Kartla ödenen Google faturası" },
+  { kind: "sales", title: "Z raporu (satışlar)", text: "Yazar kasa Z raporu günün satışı olarak yazılır: nakit ve kartlı tahsilat borç, oran başına satış (600) ve hesaplanan KDV (391) alacak.", first: "revenue:20", caption: (r) => (r.key.startsWith("revenue:0") ? "KDV'siz satış içeren Z raporu" : `%${rateOf(r.key)} satış içeren Z raporu`) },
 ];
 
 // With the firm's Luca plan imported, a code Luca does not have is as wrong as a malformed one.
@@ -87,14 +93,41 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
         const shown = groupRows.find((r) => active && same(r, active)) ?? groupRows.find((r) => r.key === g.first) ?? groupRows[0];
         // The sample receipt's three Luca lines under the current rules; this group's line is lit, and it follows the rule in focus.
         const pick = (kind: RuleKind, key: string) => (kind === g.kind ? shown : undefined) ?? rows.find((r) => r.kind === kind && r.key === key);
+        const rule = (kind: RuleKind, key: string) => rows.find((r) => r.kind === kind && r.key === key);
+        const lit = (row: RuleRow | undefined) => !!row && !!shown && same(row, shown);
         const vatRow = pick("vat", "10");
         const rate = Number(vatRow?.key ?? 10);
         const vat = rate === 10 ? SAMPLE.vat : vatAt(rate);
-        const lines = [
-          { kind: "expense", row: pick("expense", "meal"), side: "Borç", amount: SAMPLE.total - vat },
-          { kind: "vat", row: vatRow, side: "Borç", amount: vat },
-          { kind: "payment", row: pick("payment", "card"), side: "Alacak", amount: SAMPLE.total },
-        ];
+        let total = SAMPLE.total;
+        let lines: { id: string; row?: RuleRow; side: string; amount: number; lit: boolean }[];
+        if (g.kind === "foreign") {
+          total = FOREIGN_SAMPLE;
+          const fvat = Math.round(FOREIGN_SAMPLE / 5);
+          lines = [
+            { id: "expense", row: rule("foreign", "expense"), side: "Borç", amount: FOREIGN_SAMPLE, lit: false },
+            { id: "vatIn", row: rule("foreign", "vatIn"), side: "Borç", amount: fvat, lit: false },
+            { id: "vatOut", row: rule("foreign", "vatOut"), side: "Alacak", amount: fvat, lit: false },
+            { id: "payment", row: rule("payment", "card"), side: "Alacak", amount: FOREIGN_SAMPLE, lit: false },
+          ];
+        } else if (g.kind === "sales") {
+          total = Z_SAMPLE.total;
+          const r = shown ? rateOf(shown.key) : 20;
+          const zvat = Math.round((Z_SAMPLE.total * r) / (100 + r));
+          lines = [
+            { id: "cash", row: rule("sales", "cash"), side: "Borç", amount: Z_SAMPLE.cash, lit: false },
+            { id: "card", row: rule("sales", "card"), side: "Borç", amount: Z_SAMPLE.total - Z_SAMPLE.cash, lit: false },
+            { id: "revenue", row: rule("sales", `revenue:${r}`), side: "Alacak", amount: Z_SAMPLE.total - zvat, lit: false },
+            ...(zvat ? [{ id: "vat", row: rule("sales", `vat:${r}`), side: "Alacak", amount: zvat, lit: false }] : []),
+          ];
+        } else {
+          lines = [
+            { id: "expense", row: pick("expense", "meal"), side: "Borç", amount: SAMPLE.total - vat, lit: g.kind === "expense" },
+            { id: "vat", row: vatRow, side: "Borç", amount: vat, lit: g.kind === "vat" },
+            { id: "payment", row: pick("payment", "card"), side: "Alacak", amount: SAMPLE.total, lit: g.kind === "payment" },
+          ];
+        }
+        // The rule in focus is lit in the other two examples; a whole group with no focus lights its first line.
+        if (g.kind === "foreign" || g.kind === "sales") for (const l of lines) l.lit = lit(l.row);
         const setting = g.kind === "setting";
         return (
           <section key={g.kind} id={`kural-${g.kind}`} className="setting-row" aria-labelledby={`grp-${g.kind}`}>
@@ -102,12 +135,12 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
               <h2 id={`grp-${g.kind}`}>{g.title}</h2>
               <p className="muted small">{g.text}</p>
               <figure className="setting-preview">
-                <figcaption><span>{shown ? g.caption(shown) : ""}</span><span className="muted">Toplam {formatTrAmount(SAMPLE.total)}</span></figcaption>
+                <figcaption><span>{shown ? g.caption(shown) : ""}</span><span className="muted">Toplam {formatTrAmount(total)}</span></figcaption>
                 <table className="preview-lines">
                   <caption className="visually-hidden">Örnek fişin Luca satırları</caption>
                   <tbody>
                     {lines.map((l) => (
-                      <tr key={l.kind} data-traced={l.kind === g.kind ? "" : undefined}>
+                      <tr key={l.id} data-traced={l.lit ? "" : undefined}>
                         <td><span className="tnum" translate="no">{l.row?.accountCode}</span> <span className="muted">{l.row?.accountName}</span></td>
                         <td className="num to-luca">{l.side} {formatTrAmount(l.amount)}</td>
                       </tr>

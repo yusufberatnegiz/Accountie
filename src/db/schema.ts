@@ -76,7 +76,7 @@ export const journalLines = pgTable("journal_lines", {
 export const accountRules = pgTable("account_rules", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
-  kind: text("kind", { enum: ["expense", "vat", "payment", "setting"] }).notNull(),
+  kind: text("kind", { enum: ["expense", "vat", "payment", "setting", "foreign", "sales"] }).notNull(),
   key: text("key").notNull(),
   label: text("label").notNull(),
   accountCode: text("account_code").notNull(),
@@ -91,7 +91,7 @@ export const firmRules = pgTable("firm_rules", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
   firmId: uuid("firm_id").notNull().references(() => firms.id),
-  kind: text("kind", { enum: ["expense", "vat", "payment", "setting"] }).notNull(),
+  kind: text("kind", { enum: ["expense", "vat", "payment", "setting", "foreign", "sales"] }).notNull(),
   key: text("key").notNull(),
   label: text("label").notNull(),
   accountCode: text("account_code").notNull(),

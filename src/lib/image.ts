@@ -26,6 +26,9 @@ export async function cropReceipt(input: Buffer, box: { left: number; top: numbe
   return normalizeImage(crop);
 }
 
+/** A PDF by its magic bytes ("%PDF-"); it is never decoded here, only passed to the reader. */
+export const isPdf = (b: Uint8Array) => b.length >= 5 && String.fromCharCode(...b.subarray(0, 5)) === "%PDF-";
+
 // Magic-byte check before the decoder sees the file: sharp also opens SVG, GIF, TIFF, PDF..., which we never want.
 const HEIF_BRANDS = new Set(["heic", "heix", "hevc", "hevx", "heim", "heis", "mif1", "msf1"]);
 
