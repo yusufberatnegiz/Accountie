@@ -24,7 +24,7 @@ const PREVIEW_Z: SalesData = {
   vendorName: "ÖRNEK BALIK LOKANTASI", zNo: "0128", date: "2026-09-07", totalKurus: 1452000, cashKurus: 452000, cardKurus: 1000000, invoicedKurus: null,
   vatLines: [{ rate: 10, grossKurus: 1320000, vatKurus: 120000 }, { rate: 20, grossKurus: 132000, vatKurus: 22000 }],
 };
-const PREVIEW_FX = { rate: 50.1078, bulletinDate: "2026-08-29" };
+const PREVIEW_FX = { rate: 50.1078, bulletinDate: "2026-08-31" }; // Monday, the business day before the 1 September invoice
 const PREVIEW_FOREIGN: ForeignData = { vendorName: "ÖRNEK REKLAM HİZMETLERİ LTD.", invoiceNo: "5234567890", date: "2026-09-01", currency: "USD", totalMinor: 10000, vatMinor: 0, paymentMethod: "card" };
 
 export const PREVIEW_RECEIPTS: ReceiptDetail[] = [

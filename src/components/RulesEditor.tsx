@@ -172,7 +172,7 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
                       <td className="rule-label">{r.label}</td>
                       <td className="rule-code"><input name={`kod-${r.kind}-${r.key}`} autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={invalid(r, names)} list={setting || !plan.length ? undefined : "plan-kodlari"} value={r.accountCode} onChange={(e) => { const code = e.target.value.trim(); const name = setting ? undefined : names.get(code); update(r, name === undefined ? { accountCode: code } : { accountCode: code, accountName: name }); }} /></td>
                       {/* The name is for people only (Luca matches the code), so it reads as text until pointed at or focused. */}
-                      {setting ? null : <td className="rule-name"><input name={`ad-${r.kind}-${r.key}`} autoComplete="off" className="field field-quiet" aria-label={`${r.label} hesap adı`} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
+                      {setting ? null : <td className="rule-name"><input name={`ad-${r.kind}-${r.key}`} autoComplete="off" className="field field-quiet" aria-label={`${r.label} hesap adı`} title={r.accountName} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
                     </tr>
                   ))}
                 </tbody>

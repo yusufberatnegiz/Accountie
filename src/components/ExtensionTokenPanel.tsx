@@ -52,7 +52,7 @@ export function ExtensionTokenPanel() {
   }
 
   async function revoke() {
-    if (busy) return;
+    if (busy || !confirm("Eklenti anahtarı iptal edilsin mi? Eklenti, yeniden bağlanana kadar onaylı fişleri okuyamaz.")) return;
     setBusy(true);
     setMessage("");
     const res = await fetch("/api/extension-tokens", { method: "DELETE" }).catch(() => null);

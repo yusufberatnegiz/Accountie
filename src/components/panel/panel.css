@@ -362,6 +362,11 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .sk-label { font-size: var(--fs-section); font-weight: var(--w-strong); }
 
 /* ---------- Tablet: side blocks under the list ---------- */
+/* Laptop widths: the label column gives way so a rule's account name fits its field (they were cut at 1280px). */
+@media (max-width: 1440px) {
+  .setting-row { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: var(--s6); }
+  .rules-table .rule-label { width: 26%; }
+}
 @media (max-width: 1180px) {
   .canvas-list { grid-template-columns: minmax(0, 1fr); }
   .side { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: stretch; }
