@@ -83,6 +83,7 @@ export default function LandingPage() {
 
         <section className="l-flow l-wrap" aria-labelledby="flow-title" data-reveal>
           <h2 className="l-h2" id="flow-title">Üç kaynak, tek yevmiye.</h2>
+          <p className="l-flow-lede">Fotoğraf, XML ya da GİB portalı: hepsi aynı kural tablosuyla aynı satırlara iner. Luca’ya giden her kayıt önce dengeden geçer.</p>
           <div className="l-flow-map">
             <svg className="l-beams" viewBox="0 0 1000 360" preserveAspectRatio="none" aria-hidden="true">
               {BEAMS.map((d, i) => (

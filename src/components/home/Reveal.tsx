@@ -25,8 +25,9 @@ export function Reveal() {
       card.style.setProperty("--my", `${e.clientY - r.top}px`);
     };
     const cards = [...document.querySelectorAll<HTMLElement>(".l-cards li")];
-    for (const c of cards) c.addEventListener("pointermove", glow);
-    return () => { io.disconnect(); for (const c of cards) c.removeEventListener("pointermove", glow); };
+    const dim = (e: PointerEvent) => { const card = e.currentTarget as HTMLElement; card.style.removeProperty("--mx"); card.style.removeProperty("--my"); };
+    for (const c of cards) { c.addEventListener("pointermove", glow); c.addEventListener("pointerleave", dim); }
+    return () => { io.disconnect(); for (const c of cards) { c.removeEventListener("pointermove", glow); c.removeEventListener("pointerleave", dim); } };
   }, []);
   return null;
 }

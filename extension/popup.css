@@ -63,7 +63,8 @@ table { border-collapse: collapse; width: 100%; font-size: 12px; }
 th, td { text-align: left; padding: 3px 4px; border-bottom: 1px solid var(--rule); }
 td:nth-child(n+2), th:nth-child(n+2) { text-align: right; font-variant-numeric: tabular-nums; }
 #status { margin: 0; font-size: 13px; }
-#selection { min-height: 2.9em; } /* two lines kept: the buttons under it do not jump as the hint changes */
+#selection { min-height: 2.9em; }
+#selection:empty { min-height: 0; } /* no receipts: nothing to hint, no gap */ /* two lines kept: the buttons under it do not jump as the hint changes */
 #status:empty { display: none; }
 #status.error, #selection.error { color: var(--negative); }
 
