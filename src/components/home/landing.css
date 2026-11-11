@@ -99,6 +99,41 @@
   .js .faq-a-inline { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; padding: 0; }
 }
 
+/* ---------- live stage pickers ---------- */
+.l-pick { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s3) var(--s5); margin-bottom: var(--s4); }
+.l-pick > div { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.l-chip { min-height: 40px; padding: 0 16px; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); color: var(--ink); font: inherit; font-size: var(--step-small); font-weight: var(--w-medium); cursor: pointer;
+  transition: border-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
+.l-chip:active { transform: scale(0.97); }
+.l-chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+@media (hover: hover) and (pointer: fine) { .l-chip:not([aria-pressed="true"]):hover { border-color: var(--border); background: var(--active); } }
+.l-chip:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* ---------- fact figures roll up like a counter ---------- */
+.l-roll { display: inline-flex; }
+.l-drum { display: inline-block; height: 1em; overflow: hidden; }
+.l-drum > span { display: block; width: 1ch; text-align: center; word-spacing: 1em; line-height: 1em; transform: translateY(calc(var(--d) * -1em)); white-space: normal; }
+
+/* ---------- three sources, one ledger: beams run into the hub and on to Luca ---------- */
+.l-flow { margin-top: var(--s10); }
+.l-flow-map { position: relative; margin-top: var(--s7); aspect-ratio: 1000 / 360; max-height: 420px; width: 100%; }
+.l-beams { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.l-beam-base { fill: none; stroke: var(--rule); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.l-beam { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; vector-effect: non-scaling-stroke; stroke-dasharray: 120 880; stroke-dashoffset: 1000; opacity: 0; }
+.l-nodes { list-style: none; margin: 0; padding: 0; }
+.l-node { position: absolute; transform: translateY(-50%); display: grid; gap: 2px; padding: var(--s3) var(--s4); background: var(--surface); border-radius: 16px; box-shadow: 0 0 0 1px var(--rule), var(--shadow-lift); }
+.l-node b { font-weight: var(--w-medium); }
+.l-node span { font-size: var(--step-small); color: var(--muted); }
+.l-src { left: 0; width: 21%; }
+.l-hub { left: 47%; top: 50%; width: 17%; background: var(--primary); color: var(--on-primary); box-shadow: var(--shadow-lift); }
+.l-hub span { color: color-mix(in srgb, var(--on-primary) 72%, transparent); }
+.l-out { left: 79%; top: 50%; width: 21%; }
+
+/* ---------- step cards follow the pointer with a soft light (Reveal.tsx sets --mx/--my) ---------- */
+@media (hover: hover) and (pointer: fine) {
+  .l-cards li { background: radial-gradient(260px circle at var(--mx, -999px) var(--my, -999px), var(--accent-soft), transparent 70%), var(--surface); }
+}
+
 /* ---------- closing call and footer ---------- */
 .l-cta { margin-top: var(--s10); }
 .l-cta-title { font-size: clamp(3rem, 7.6vw, 7rem); }
@@ -127,7 +162,15 @@
   .reveal .l-stage.in .l-ledger { animation: l-rise 700ms var(--ease-out) 120ms both; }
   .reveal .l-stage.in .l-flight { animation: l-draw 600ms var(--ease-out) 600ms both; }
   .faq-a { animation: l-swap 220ms var(--ease-out) both; }
+  .reveal .l-facts:not(.in) .l-drum > span { transform: translateY(0); }
+  .reveal .l-facts .l-drum > span { transition: transform 1100ms var(--ease-expo) calc(var(--i) * 90ms + 200ms); }
+  .l-flow.in .l-beam { opacity: 1; animation: l-beam 3.2s linear infinite; }
+  .reveal .l-flow:not(.in) .l-node { opacity: 0; transform: translateY(calc(-50% + 12px)); }
+  .reveal .l-flow .l-node { transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out); }
+  .reveal .l-flow.in .l-hub { transition-delay: 240ms; }
+  .reveal .l-flow.in .l-out { transition-delay: 420ms; }
 }
+@keyframes l-beam { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
 @keyframes l-rise { from { opacity: 0.4; transform: translateY(16px); } }
 @keyframes l-draw { from { clip-path: inset(0 100% 0 0); } }
 @keyframes l-swap { from { opacity: 0.35; transform: translateY(8px); } }
@@ -150,6 +193,15 @@
   .js .faq-pane { display: none; }
   .faq-chev { transform: none; }
   .faq-list li[data-open] .faq-chev { transform: rotate(180deg); }
+}
+@media (max-width: 860px) {
+  .l-flow-map { aspect-ratio: auto; max-height: none; }
+  .l-beams { display: none; }
+  .l-nodes { display: grid; gap: var(--s5); }
+  .l-node { position: relative; inset: auto !important; width: auto !important; transform: none !important; } /* the sources carry their desktop top inline */
+  .l-node + .l-node::before { content: ""; position: absolute; left: 50%; top: calc(-1 * var(--s5)); height: var(--s5); border-left: 2px dashed var(--accent); }
+  .reveal .l-flow:not(.in) .l-node { transform: translateY(12px) !important; }
+  .l-pick { justify-content: flex-start; }
 }
 @media (max-width: 720px) {
   .l-hero { padding-top: calc(64px + var(--s7)); }

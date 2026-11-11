@@ -4,8 +4,8 @@ import { CookieNote } from "@/components/site/CookieNote";
 import { SiteBar } from "@/components/site/SiteBar";
 import { Faq, type Qa } from "@/components/home/Faq";
 import { Reveal } from "@/components/home/Reveal";
-import { journalFor, SAMPLES, shownAccountName } from "@/components/home/samples";
-import { Thermal } from "@/components/home/Thermal";
+import { Stage } from "@/components/home/Stage";
+import { journalFor, SAMPLES } from "@/components/home/samples";
 import { formatTrAmount } from "@/lib/money";
 import "@/components/home/landing.css";
 
@@ -20,12 +20,31 @@ export const metadata: Metadata = {
 // The hero's receipt and the lines the product makes from it with the default rules (partner card).
 const SAMPLE = SAMPLES[0];
 const LINES = journalFor(SAMPLE, "partner").lines;
-const TOTAL = formatTrAmount(SAMPLE.receipt.totalKurus ?? 0);
+
+// Three sources into the hub, the hub into Luca (viewBox 1000x360; nodes sit at the same points in percent).
+const BEAMS = [
+  "M 210 60 C 340 60, 360 180, 470 180",
+  "M 210 180 L 470 180",
+  "M 210 300 C 340 300, 360 180, 470 180",
+  "M 640 180 L 790 180",
+];
+
+/** A figure that rolls up from 0 when its section enters (landing.css). The text is the real figure; the drums are decoration. */
+function roll(text: string) {
+  return (
+    <>
+      <span className="visually-hidden">{text}</span>
+      <span className="l-roll" aria-hidden="true">{[...text].map((c, i) => /\d/.test(c)
+        ? <span key={i} className="l-drum" style={{ "--d": Number(c), "--i": i } as React.CSSProperties}><span>0 1 2 3 4 5 6 7 8 9</span></span>
+        : <span key={i}>{c}</span>)}</span>
+    </>
+  );
+}
 
 const FAQ: Qa[] = [
   { q: "Fiş fotoğrafı nereye gidiyor?", a: "Okunmak için yapay zeka hizmetine (Anthropic, ABD) gönderilir. Accountie fotoğrafı sunucuda saklamaz; kontrol ekranındaki görüntü yalnız sizin cihazınızda durur." },
   { q: "Luca’ya kendisi mi kaydediyor?", a: "Hayır. Excel dosyasını Luca’ya siz yüklersiniz; eklenti satırları doldurur, Kaydet’e basmaz. Onayınız olmadan kayıt oluşmaz." },
-  { q: "Hangi belgeler okunuyor?", a: "Yazar kasa (ÖKC) fişleri. Fatura, e-Arşiv ve gider pusulası şimdilik okunmuyor." },
+  { q: "Hangi belgeler okunuyor?", a: "Yazar kasa (ÖKC) fişlerinin fotoğrafı, e-Fatura XML dosyaları ve GİB e-Arşiv portalındaki faturalar. Kağıt fatura ve gider pusulası şimdilik okunmuyor." },
   { q: "KDV’yi yeniden hesaplıyor mu?", a: "Hayır. Matrah, toplamdan fişte yazan KDV düşülerek bulunur. KDV okunamazsa orandan hesaplanır ve satıra not düşülür." },
   { q: "Okuma yanlış çıkarsa?", a: "Okunamayan alan boş kalır ve işaretlenir. Toplam ile KDV tutmazsa fiş bir kez daha okunur, yine tutmazsa uyarıyla size gelir." },
   { q: "Hesap kodlarını kim seçiyor?", a: "Siz. Yapay zeka yalnız kategori önerir; hesap kodu kendi kural tablonuzdan gelir." },
@@ -52,34 +71,32 @@ export default function LandingPage() {
         </section>
 
         <section className="l-stage l-wrap" id="ornek" aria-label="Örnek fiş ve Luca satırları" data-reveal>
-          <div className="l-plate">
-            <div className="l-receipt"><Thermal sample={SAMPLE} printedPayment="KREDİ KARTI" hot={{ kind: "vat", rate: 10 }} /></div>
-            <span className="l-flight" aria-hidden="true"><span>{formatTrAmount(SAMPLE.receipt.vatLines[0].vatKurus ?? 0)}</span></span>
-            <figure className="l-ledger">
-              <figcaption><b>Fiş {SAMPLE.receipt.receiptNo} · Örnek Balık Lokantası</b><span className="status status-draft">Kontrol bekliyor</span></figcaption>
-              <table>
-                <thead><tr><th scope="col">Hesap</th><th scope="col">Açıklama</th><th scope="col" className="num">Borç</th><th scope="col" className="num">Alacak</th></tr></thead>
-                <tbody>
-                  {LINES.map((l) => (
-                    <tr key={l.accountCode} className={l.accountCode.startsWith("191") ? "l-hot" : undefined}>
-                      <td className="to-luca code" translate="no">{l.accountCode}</td>
-                      <td>{shownAccountName(l.accountName)}</td>
-                      <td className="num">{l.debitKurus ? formatTrAmount(l.debitKurus) : ""}</td>
-                      <td className="num">{l.creditKurus ? formatTrAmount(l.creditKurus) : ""}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="l-balance"><span>Fark yok, dengede</span><span className="num">Borç {TOTAL} · Alacak {TOTAL} · 0,00 ✓</span></p>
-            </figure>
-          </div>
+          <Stage />
         </section>
 
         <section className="l-facts l-wrap" aria-label="Kısaca" data-reveal>
-          <p><b>3</b><span>satır: gider, KDV, ödeme. Hesap kodunu model değil sizin kural tablonuz seçer.</span></p>
-          <p><b>0,00</b><span>fark olmadan onay düğmesi açılmaz.</span></p>
-          <p><b>1</b><span>Excel dosyası; Luca’nın Excel veri aktarımı ekranından yüklenir.</span></p>
-          <p><b>~15 sn</b><span>fotoğraftan satırlara.</span></p>
+          <p><b>{roll("3")}</b><span>satır: gider, KDV, ödeme. Hesap kodunu model değil sizin kural tablonuz seçer.</span></p>
+          <p><b>{roll("0,00")}</b><span>fark olmadan onay düğmesi açılmaz.</span></p>
+          <p><b>{roll("1")}</b><span>tıkla, seçili fişler eklentiyle Luca Fiş Detayına alt alta yazılır; Kaydet’e siz basarsınız.</span></p>
+          <p><b>{roll("~15 sn")}</b><span>fotoğraftan satırlara.</span></p>
+        </section>
+
+        <section className="l-flow l-wrap" aria-labelledby="flow-title" data-reveal>
+          <h2 className="l-h2" id="flow-title">Üç kaynak, tek yevmiye.</h2>
+          <div className="l-flow-map">
+            <svg className="l-beams" viewBox="0 0 1000 360" preserveAspectRatio="none" aria-hidden="true">
+              {BEAMS.map((d, i) => (
+                <g key={d}><path className="l-beam-base" d={d} /><path className="l-beam" d={d} pathLength={1000} style={{ animationDelay: `${i * 0.45}s` }} /></g>
+              ))}
+            </svg>
+            <ul className="l-nodes">
+              <li className="l-node l-src" style={{ top: "16.7%" }}><b>Yazar kasa fişi</b><span>Telefonla fotoğraf</span></li>
+              <li className="l-node l-src" style={{ top: "50%" }}><b>e-Fatura</b><span>XML dosyası</span></li>
+              <li className="l-node l-src" style={{ top: "83.3%" }}><b>e-Arşiv</b><span>GİB portalından</span></li>
+              <li className="l-node l-hub"><b>Accountie</b><span>Okur, kurala göre satır kurar, dengeyi denetler</span></li>
+              <li className="l-node l-out"><b>Luca</b><span>Excel dosyası ya da eklentiyle Fiş Detayı</span></li>
+            </ul>
+          </div>
         </section>
 
         <section className="l-rule l-wrap" id="kural" aria-labelledby="rule-title" data-reveal>
