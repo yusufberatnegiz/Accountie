@@ -100,9 +100,9 @@ async function load() {
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 // Receipts written into the open Luca entry and not yet marked; several can share one entry, one under another.
-const filledIds = async () => (await chrome.storage.session.get("filledIds")).filledIds ?? [];
-const addFilled = async (id) => chrome.storage.session.set({ filledIds: [...new Set([...(await filledIds()), id])] });
-const dropFilled = async (id) => chrome.storage.session.set({ filledIds: (await filledIds()).filter((x) => x !== id) });
+const filledIds = async () => (await chrome.storage.local.get("filledIds")).filledIds ?? [];
+const addFilled = async (id) => chrome.storage.local.set({ filledIds: [...new Set([...(await filledIds()), id])] });
+const dropFilled = async (id) => chrome.storage.local.set({ filledIds: (await filledIds()).filter((x) => x !== id) });
 // Auto save needs all three selectors checked on Luca's real screen (selectors.js); until then the extension only fills.
 const autoReady = () => !!(AccountieSelectors.save && AccountieSelectors.saved && AccountieSelectors.newEntry);
 
@@ -213,7 +213,7 @@ async function autoAll() {
 async function done() {
   const ids = await filledIds();
   for (const id of ids) await api(`/api/extension/receipts/${encodeURIComponent(id)}/transferred`, "POST");
-  await chrome.storage.session.remove("filledIds");
+  await chrome.storage.local.remove("filledIds");
   await load();
   status(`${ids.length} fiş Accountie'de aktarıldı olarak işaretlendi.`);
 }
@@ -222,7 +222,7 @@ async function done() {
 async function clearFilled() {
   // The rows must be gone from Luca first: otherwise the same receipts would be written under them a second time.
   if (!confirm("Bu fişlerin satırlarını Luca'daki açık kayıttan sildiniz mi? Silmediyseniz fişler aynı kayda ikinci kez yazılır.")) return;
-  await chrome.storage.session.remove("filledIds");
+  await chrome.storage.local.remove("filledIds");
   await load();
   status("Yazıldı işaretleri kaldırıldı; fişler yeniden seçilebilir.");
 }
@@ -230,7 +230,7 @@ async function clearFilled() {
 async function forget() {
   token = "";
   receipts = [];
-  await chrome.storage.session.remove("token");
+  await chrome.storage.local.remove("token");
   $("list-view").hidden = true;
   $("token-form").hidden = false;
   $("token-form").after($("status"));
@@ -275,8 +275,8 @@ $("token-form").addEventListener("submit", (e) => {
   e.preventDefault();
   token = $("token").value.trim();
   $("token").value = "";
-  // Session storage: cleared when the browser closes, never synced.
-  guard(async () => { await chrome.storage.session.set({ token }); await load(); })();
+  // Local storage: kept on this computer across restarts, never synced; "Anahtarı sil" removes it.
+  guard(async () => { await chrome.storage.local.set({ token }); await load(); })();
 });
 $("cards").addEventListener("change", updateSelection);
 $("toggle-all").addEventListener("click", () => {
@@ -293,6 +293,6 @@ $("clear-filled").addEventListener("click", guard(clearFilled, "clear-filled"));
 $("import").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("import.html") }));
 $("forget").addEventListener("click", guard(async () => { await forget(); status("Anahtar silindi."); }));
 
-chrome.storage.session.get("token").then(({ token: saved }) => {
+chrome.storage.local.get("token").then(({ token: saved }) => {
   if (saved) { token = saved; guard(load)(); }
 });

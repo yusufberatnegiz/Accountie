@@ -102,9 +102,8 @@ export async function resetPassword(_prev: ResetState, formData: FormData): Prom
   back({ mesaj: "sifre-yeni" });
 }
 
+// The extension key outlives a sign-out on purpose (an office computer keeps working); a password reset or "Anahtarı iptal et" ends it.
 export async function logout() {
-  const userId = await getUserId();
-  if (userId) await revokeExtensionTokens(userId);
   await (await getAuth()).signOut();
   redirect("/giris");
 }

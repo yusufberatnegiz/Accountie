@@ -279,10 +279,11 @@ export async function revokeExtensionTokens(userId: string): Promise<void> {
   await getDb().delete(extensionTokens).where(eq(extensionTokens.userId, userId));
 }
 
-/** Owner of a live (unexpired) token, or null. */
-export async function userIdForTokenHash(tokenHash: string): Promise<string | null> {
-  const [row] = await getDb().select({ userId: extensionTokens.userId }).from(extensionTokens)
-    .where(and(eq(extensionTokens.tokenHash, tokenHash), gt(extensionTokens.expiresAt, new Date())));
+/** Owner of a live (unexpired) token, or null; a live token's expiry moves to `extendMs` from now in the same statement. */
+export async function userIdForTokenHash(tokenHash: string, extendMs: number): Promise<string | null> {
+  const now = new Date();
+  const [row] = await getDb().update(extensionTokens).set({ expiresAt: new Date(now.getTime() + extendMs) })
+    .where(and(eq(extensionTokens.tokenHash, tokenHash), gt(extensionTokens.expiresAt, now))).returning({ userId: extensionTokens.userId });
   return row?.userId ?? null;
 }
 

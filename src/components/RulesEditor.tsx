@@ -158,7 +158,7 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
       <section id="kural-eklenti" className="setting-row" aria-labelledby="grp-eklenti">
         <div className="setting-label">
           <h2 id="grp-eklenti">Chrome eklentisi (deneysel)</h2>
-          <p className="muted small desktop-only">Eklenti onaylı fişin satırlarını Luca&apos;da açık Fiş Detayı ekranına yazar; Kaydet&apos;e siz basarsınız. Anahtar 12 saat geçerlidir ve yalnızca sizin onaylı fişlerinizi okur.</p>
+          <p className="muted small desktop-only">Eklenti onaylı fişin satırlarını Luca&apos;da açık Fiş Detayı ekranına yazar; Kaydet&apos;e siz basarsınız. Anahtar her kullanımda 30 gün uzar; 30 gün kullanılmazsa, şifre değişince ya da iptal edilince biter. Yalnızca sizin onaylı fişlerinizi okur.</p>
           <p className="muted small desktop-only">Eklenti penceresindeki &quot;Luca&apos;dan firmaları çek&quot; düğmesi, Luca&apos;daki firmaları ve hesap planlarını buraya getirir.</p>
           <p className="muted small desktop-only">Luca&apos;da henüz denenmedi; alanları bulamayabilir. Excel ile aktarım birincil yoldur.</p>
           {/* Luca and Chrome extensions live on the computer; the key is made there. */}

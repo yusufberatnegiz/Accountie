@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_RULES } from "@/lib/default-rules";
 import { buildJournalLines } from "@/lib/journal";
-import { hashToken } from "@/lib/auth/extension-token";
+import { EXTENSION_TOKEN_TTL_MS, extensionUserId, hashToken } from "@/lib/auth/extension-token";
 
 vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
 vi.mock("@/db/queries", () => ({
@@ -32,6 +32,14 @@ beforeEach(() => {
   vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", taxNumber: null, lines }]);
 });
 
+describe("anahtar süresi", () => {
+  it("geçerli her istek anahtarı 30 gün ileri taşır (kullanılan anahtar bitmez, unutulan biter)", async () => {
+    expect(await extensionUserId(bearer())).toBe(USER);
+    expect(q.userIdForTokenHash).toHaveBeenCalledWith(hashToken(TOKEN), EXTENSION_TOKEN_TTL_MS);
+    expect(EXTENSION_TOKEN_TTL_MS).toBe(30 * 86_400_000);
+  });
+});
+
 describe("POST/DELETE /api/extension-tokens", () => {
   it("oturumsuz 401", async () => {
     vi.mocked(session.getUserId).mockResolvedValue(null);
@@ -50,9 +58,9 @@ describe("POST/DELETE /api/extension-tokens", () => {
     expect(userId).toBe(USER);
     expect(hash).toBe(hashToken(body.token));
     expect(hash).not.toContain(body.token.slice(4));
-    const hours = (expiresAt.getTime() - Date.now()) / 3_600_000;
-    expect(hours).toBeGreaterThan(11.9);
-    expect(hours).toBeLessThanOrEqual(12);
+    const days = (expiresAt.getTime() - Date.now()) / 86_400_000;
+    expect(days).toBeGreaterThan(29.9);
+    expect(days).toBeLessThanOrEqual(30);
   });
 
   it("DELETE kullanıcının anahtarlarını iptal eder", async () => {

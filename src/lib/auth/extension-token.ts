@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
 import { userIdForTokenHash } from "@/db/queries";
 
-export const EXTENSION_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+/** Sliding: every accepted request moves the expiry this far ahead, so a key in daily use never runs out and a forgotten one dies. */
+export const EXTENSION_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const TOKEN_PATTERN = /^Bearer (acx_[A-Za-z0-9_-]{43})$/;
 
@@ -13,5 +14,5 @@ export const hashToken = (token: string) => createHash("sha256").update(token).d
 /** User id for a valid `Authorization: Bearer acx_...` header. Cookies are ignored on purpose. */
 export async function extensionUserId(request: Request): Promise<string | null> {
   const token = TOKEN_PATTERN.exec(request.headers.get("authorization") ?? "")?.[1];
-  return token ? userIdForTokenHash(hashToken(token)) : null;
+  return token ? userIdForTokenHash(hashToken(token), EXTENSION_TOKEN_TTL_MS) : null;
 }

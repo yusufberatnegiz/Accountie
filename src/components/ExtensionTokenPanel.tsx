@@ -19,7 +19,7 @@ export function ExtensionTokenPanel() {
     }
     const body = await res.json();
     setToken(body.token);
-    setMessage(`Anahtar ${new Date(body.expiresAt).toLocaleString("tr-TR")} tarihine kadar geçerli. Eski anahtar artık çalışmaz.`);
+    setMessage("Anahtar her kullanımda 30 gün daha geçerli olur. 30 gün kullanılmazsa, şifrenizi değiştirince ya da iptal edince biter. Eski anahtar artık çalışmaz.");
   }
 
   async function copy() {

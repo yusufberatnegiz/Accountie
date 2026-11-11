@@ -79,8 +79,8 @@ Eklenti Chrome Web Store'da değil, klasörden yüklenir.
 
 Güvenlik:
 
-- Anahtar 12 saat geçerlidir, yalnızca sizin onaylı fişlerinizi okur ve bir fişi "aktarıldı" yapabilir. Yeni anahtar oluşturmak eskisini geçersiz kılar; **Anahtarı iptal et** hemen kapatır.
-- Eklenti anahtarı tarayıcı oturumu boyunca tutar (`chrome.storage.session`), tarayıcı kapanınca silinir.
+- Anahtar her kullanımda 30 gün uzar; 30 gün kullanılmazsa, şifre sıfırlanınca ya da iptal edilince biter. Yalnızca sizin onaylı fişlerinizi okur ve bir fişi "aktarıldı" yapabilir. Yeni anahtar oluşturmak eskisini geçersiz kılar; **Anahtarı iptal et** hemen kapatır.
+- Eklenti anahtarı bu bilgisayarda tutar (`chrome.storage.local`, eşitlenmez), tarayıcı kapanınca silinmez; **Anahtarı sil** siler. Ortak bilgisayarda günün sonunda paneldeki **Anahtarı iptal et** ile kapatın.
 - İzinler: `activeTab` (yalnızca simgesine tıkladığınız sekme), `scripting`, `storage` ve uygulama adresine erişim. Luca şifrenize veya çerezlerinize dokunmaz.
 
 ### Luca seçicileri

@@ -50,7 +50,7 @@ async function send(token, firm) {
 }
 
 async function run() {
-  const { token } = await chrome.storage.session.get("token");
+  const { token } = await chrome.storage.local.get("token");
   if (!token) return status("Önce eklenti penceresini açıp Accountie anahtarını girin.", true);
   const luca = await lucaFrame();
   if (!luca) return status("Açık Luca sekmesi bulunamadı. Luca'ya girip ana ekranı açın, sonra Başlat'a basın.", true);
