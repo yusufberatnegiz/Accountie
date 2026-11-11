@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { AuthForm } from "./AuthForm";
 import { CookieNote } from "@/components/site/CookieNote";
@@ -51,7 +50,7 @@ export function LoginView({ hata, mesaj, isSignup, turnstileSiteKey, next }: { h
       <AuthForm isSignup={isSignup} initialError={hata} turnstileSiteKey={turnstileSiteKey} next={next} />
       <p className="auth-switch">
         {isSignup ? "Hesabınız var mı? " : "Hesabınız yok mu? "}
-        <Link href={`${isSignup ? "/giris" : "/kayit"}${next ? `?sonra=${encodeURIComponent(next)}` : ""}`}>{isSignup ? "Giriş yapın" : "Hesap oluşturun"}</Link>
+        <a href={`${isSignup ? "/giris" : "/kayit"}${next ? `?sonra=${encodeURIComponent(next)}` : ""}`}>{isSignup ? "Giriş yapın" : "Hesap oluşturun"}</a>
       </p>
     </AuthShell>
   );

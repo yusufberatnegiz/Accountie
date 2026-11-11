@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // taste-skill working files and the headless Chrome profiles its scripts open
     ".taste-skill/**",
+    // brag video work folders (gitignored)
+    "brag-output*/**",
   ]),
 ]);
 

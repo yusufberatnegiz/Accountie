@@ -78,7 +78,6 @@ async function load() {
   $("token-form").hidden = true;
   $("list-view").hidden = false;
   $("auto").hidden = $("auto-note").hidden = !autoReady();
-  $("auto").disabled = receipts.length < 2;
   // The popup closes when the user clicks Luca's Kaydet; reopen with "Luca'da kaydettim" visible for every receipt filled since.
   const filled = (await filledIds()).filter((id) => receipts.some((r) => r.id === id));
   renderCards(filled);
@@ -88,6 +87,8 @@ async function load() {
   $("done").className = filled.length ? "primary" : "";
   $("fill").className = filled.length ? "" : "primary";
   $("clear-filled").hidden = !filled.length;
+  // Never while an entry waits for Kaydet: the run would write into it.
+  $("auto").disabled = receipts.length < 2 || filled.length > 0;
   $("done").after($("status"));
   $("done").hidden = !filled.length;
   if (filled.length) $("done").textContent = filled.length > 1 ? `Luca'da kaydettim (${filled.length} fiş)` : "Luca'da kaydettim";
@@ -145,12 +146,14 @@ async function fill() {
   // A receipt already written (and not yet marked) would go into Luca twice; its card is disabled, this is the last guard.
   if (picked.some((r) => filledNow.includes(r.id))) return status("Seçilenlerden biri zaten yazıldı. Luca'da kaydettiyseniz Luca'da kaydettim'e basın.", true);
   let written = 0;
+  let last = null;
   for (const [i, receipt] of picked.entries()) {
     $("fill").textContent = `Yazılıyor ${i + 1}/${picked.length}`;
     if (picked.length > 1) status(`${i + 1}/${picked.length}: ${receipt.documentNo} yazılıyor.`);
     await addFilled(receipt.id);
     filledNow = [...filledNow, receipt.id];
     const { summary, problems } = await fillAndCheck(tab.id, receipt);
+    last = summary;
     // Kept after partial fills too: the user completes the missing cells by hand and still has to mark the receipt.
     if (summary.gridFound) written++;
     else { await dropFilled(receipt.id); filledNow = filledNow.filter((x) => x !== receipt.id); }
@@ -159,14 +162,14 @@ async function fill() {
     if (!summary.ok) { await load(); return status(`${done}${receipt.documentNo} numaralı fişte durdum. ${summary.message}`, true); }
   }
   await load();
-  status(picked.length > 1 ? `${written} fiş alt alta yazıldı ve ekranla karşılaştırıldı. Luca'da kontrol edip Kaydet'e siz basın, sonra eklentiyi açıp Luca'da kaydettim'e basın.` : AccountieFill.summarize([{ gridFound: true, filled: 1, missing: [] }], picked[0].rows.length).message);
+  status(picked.length > 1 ? `${written} fiş alt alta yazıldı ve ekranla karşılaştırıldı. Luca'da kontrol edip Kaydet'e siz basın, sonra eklentiyi açıp Luca'da kaydettim'e basın.` : last.message);
 }
 
 /** Every approved receipt in turn: fill, check, save, wait for Luca's confirmation, mark, new entry. The last one is left for the user to save. */
 async function autoAll() {
   const tab = await lucaTab();
   if (!tab || !receipts.length) return;
-  const queue = [...receipts];
+  const queue = pickable().filter((r, _, all) => r.firm === all[0].firm);
   let saved = 0;
   const stop = async (receipt, text) => {
     if (receipt) await addFilled(receipt.id);
@@ -274,7 +277,8 @@ $("token-form").addEventListener("submit", (e) => {
 });
 $("cards").addEventListener("change", updateSelection);
 $("toggle-all").addEventListener("click", () => {
-  const open = pickable();
+  const firm = (receipts.find((r) => filledNow.includes(r.id)) ?? selected()[0] ?? pickable()[0])?.firm;
+  const open = pickable().filter((r) => r.firm === firm);
   const all = selected().length !== open.length;
   for (const r of open) $(`pick-${r.id}`).checked = all;
   updateSelection();

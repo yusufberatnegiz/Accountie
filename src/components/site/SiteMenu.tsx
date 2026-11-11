@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 /** The bar's links on narrow screens: a native disclosure, closed by Esc (focus back on the button), an outside click, focus leaving it or a chosen link. */
@@ -28,7 +27,8 @@ export function SiteMenu({ links }: { links: { href: string; label: string }[] }
         <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" /></svg>
       </summary>
       <nav className="site-menu-list" aria-label="Menü">
-        {links.map((l) => <Link key={l.href} href={l.href} onClick={() => { if (ref.current) ref.current.open = false; }}>{l.label}</Link>)}
+        {/* Plain links: /giris and /kayit need a full load for their own CSP (Turnstile); the rest are anchors on the homepage. */}
+        {links.map((l) => <a key={l.href} href={l.href} onClick={() => { if (ref.current) ref.current.open = false; }}>{l.label}</a>)}
       </nav>
     </details>
   );
