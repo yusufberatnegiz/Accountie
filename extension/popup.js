@@ -27,6 +27,9 @@ const selected = () => receipts.filter((r) => $(`pick-${r.id}`)?.checked);
 // Written into the open Luca entry and not yet marked: such a receipt cannot be picked again (it would go into Luca twice).
 let filledNow = [];
 const pickable = () => receipts.filter((r) => !filledNow.includes(r.id));
+// "Tümünü seç" works on one firm: the waiting entry's, else the first chosen or listed one.
+const firmOpen = () => { const firm = (receipts.find((r) => filledNow.includes(r.id)) ?? selected()[0] ?? pickable()[0])?.firm; return pickable().filter((r) => r.firm === firm); };
+const allPicked = (open) => open.length > 0 && selected().length === open.length && open.every((r) => $(`pick-${r.id}`)?.checked);
 
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
@@ -63,8 +66,8 @@ function updateSelection() {
   $("fill").disabled = picked.length === 0 || firms.size > 1;
   $("fill").textContent = picked.length > 1 ? `${picked.length} fişi Fiş Detayına yaz` : "Fiş Detayına yaz";
   const open = pickable();
-  $("toggle-all").textContent = open.length && picked.length === open.length ? "Seçimi kaldır" : "Tümünü seç";
-  $("toggle-all").hidden = open.length < 2;
+  $("toggle-all").textContent = allPicked(firmOpen()) ? "Seçimi kaldır" : "Tümünü seç";
+  $("toggle-all").hidden = firmOpen().length < 2;
   $("selection").className = firms.size > 1 ? "muted error" : "muted";
   $("selection").textContent = !picked.length ? (open.length ? "Aktarılacak fişleri seçin." : "")
     : firms.size > 1 ? (waiting ? `Açık Luca kaydı ${waiting.firm} firmasının. Başka firmanın fişi bu kayda yazılamaz; önce kaydı bitirin.` : `Seçilen fişler ${firms.size} ayrı firmadan. Luca'da tek firma açık olur; firma adı kırmızı ve kalın olanları seçimden çıkarın.`)
@@ -277,10 +280,9 @@ $("token-form").addEventListener("submit", (e) => {
 });
 $("cards").addEventListener("change", updateSelection);
 $("toggle-all").addEventListener("click", () => {
-  const firm = (receipts.find((r) => filledNow.includes(r.id)) ?? selected()[0] ?? pickable()[0])?.firm;
-  const open = pickable().filter((r) => r.firm === firm);
-  const all = selected().length !== open.length;
-  for (const r of open) $(`pick-${r.id}`).checked = all;
+  const open = firmOpen(), all = !allPicked(open);
+  // Selecting all keeps to that firm, so other firms' picks are dropped.
+  for (const r of pickable()) $(`pick-${r.id}`).checked = all && open.includes(r);
   updateSelection();
 });
 $("fill").addEventListener("click", guard(fill, "fill"));

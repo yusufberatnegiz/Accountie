@@ -69,7 +69,7 @@
 .l-rule-field { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); border-radius: 28px; overflow: hidden; background: var(--rule-field, var(--deep)); color: #f5efe5; box-shadow: 0 0 0 1px var(--rule); }
 .l-rule-text { display: flex; flex-direction: column; justify-content: space-between; gap: var(--s6); padding: var(--s8) var(--s7); }
 .l-rule-text p { margin: 0; max-width: 40ch; color: #c9bfb0; font-size: var(--step-body); }
-.l-rule .l-h2 { margin: var(--s4) 0 var(--s5); color: #f5efe5; }
+.l-rule .l-h2 { margin: var(--s4) 0 var(--s5); color: #f5efe5; font-size: clamp(2.25rem, 3.4vw, 3rem); } /* two lines in the narrow column */
 .l-small { font-size: var(--step-small); color: #b4a998 !important; }
 .l-rule-vis { display: grid; place-items: center; padding: var(--s8); background: var(--deep-raised); }
 .l-unbal { width: 100%; max-width: 520px; padding: var(--s5); border-radius: 16px; background: color-mix(in srgb, #f5efe5 8%, var(--deep-raised)); }
@@ -158,13 +158,13 @@
   .l-cards li { background: radial-gradient(260px circle at var(--mx, -999px) var(--my, -999px), var(--accent-soft), transparent 70%), var(--surface); }
 }
 
-/* Amber light trailing the pointer over the whole homepage (Reveal.tsx moves it; mouse only, never catches clicks). */
-.l-glow { position: fixed; z-index: 50; left: 0; top: 0; width: 320px; height: 320px; margin: -160px 0 0 -160px; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 24%, transparent), transparent); mix-blend-mode: multiply; opacity: 0; transition: opacity 300ms ease; }
-.l-glow.on { opacity: 1; }
-:root[data-look="dark"] .l-glow { mix-blend-mode: screen; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 32%, transparent), transparent); }
-@media (prefers-color-scheme: dark) { :root:not([data-look]) .l-glow { mix-blend-mode: screen; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 32%, transparent), transparent); } }
-@media not ((hover: hover) and (pointer: fine)) { .l-glow { display: none; } }
+/* Behind the pointer, on bare ground: figures from the stage's Luca lines surface and fade (Reveal.tsx; mouse only, never with reduced motion). */
+html:has(main.land) body { background: none; } /* html keeps the ground; the figures sit between it and the sections */
+.l-nums { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; --peak: 0.5; }
+:root[data-look="dark"] .l-nums { --peak: 0.45; }
+@media (prefers-color-scheme: dark) { :root:not([data-look]) .l-nums { --peak: 0.45; } }
+.l-num { position: absolute; left: 0; top: 0; color: var(--accent); font-size: 14px; font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; white-space: nowrap; animation: l-num 1600ms ease both; }
+@keyframes l-num { 0% { opacity: 0; transform: translateY(4px); } 15%, 55% { opacity: var(--peak); } 100% { opacity: 0; transform: translateY(-12px); } }
 
 /* ---------- closing call and footer ---------- */
 .l-cta { margin-top: var(--s10); }
@@ -198,8 +198,9 @@
   .reveal .l-facts .l-drum > span { transition: transform 1100ms var(--ease-expo) calc(var(--i) * 90ms + 200ms); }
   /* The receipt prints when the stage is reached: the paper unrolls from the top, rows come out one by one (--p, Thermal.tsx). */
   .reveal .l-stage:not(.in) .l-receipt .thermal { clip-path: inset(0 0 100% 0); }
-  .reveal .l-stage.in .l-receipt .thermal { animation: l-unroll 900ms var(--ease-out) both; }
-  .reveal .l-stage.in .l-receipt :is(.thermal-vendor, .thermal-row) { animation: l-print 320ms var(--ease-out) calc(var(--p, -1) * 45ms + 160ms) both; }
+  /* Once only: "printed" (Reveal.tsx) stops a new sample from reprinting row by row. */
+  .reveal .l-stage.in:not(.printed) .l-receipt .thermal { animation: l-unroll 900ms var(--ease-out) both; }
+  .reveal .l-stage.in:not(.printed) .l-receipt :is(.thermal-vendor, .thermal-row) { animation: l-print 320ms var(--ease-out) calc(var(--p, -1) * 45ms + 160ms) both; }
   .l-flight { transition: translate 320ms var(--ease-out); }
   /* The material: as the section passes, the heat print fades row by row, top first; the total holds a little longer. */
   @supports (animation-timeline: view()) {
