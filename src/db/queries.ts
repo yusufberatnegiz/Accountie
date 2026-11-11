@@ -3,7 +3,7 @@ import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "dri
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import type { JournalLine, Warning } from "@/lib/journal";
 import { getDb } from "./index";
-import { accountRules, extensionTokens, firmAccounts, firmRules, firms, gibCredentials, journalLines, rateLimitHits, receipts, vendorRules } from "./schema";
+import { accountRules, extensionTokens, firmAccounts, firmRules, firms, journalLines, rateLimitHits, receipts, vendorRules } from "./schema";
 
 export type ReceiptStatus = "draft" | "approved" | "exported";
 
@@ -315,35 +315,6 @@ export async function listVendorRules(userId: string, firmId: string): Promise<V
 export async function deleteVendorRule(userId: string, id: string): Promise<boolean> {
   const rows = await getDb().delete(vendorRules).where(and(eq(vendorRules.id, id), eq(vendorRules.userId, userId))).returning({ id: vendorRules.id });
   return rows.length > 0;
-}
-
-/** The firm's sealed GİB login (src/lib/gib/secret.ts), or null. Sealed values only: they are opened in the route that uses them. */
-export async function getGibCredential(userId: string, firmId: string): Promise<{ usernameSealed: string; passwordSealed: string; lastUsedAt: Date | null } | null> {
-  const [row] = await getDb().select({ usernameSealed: gibCredentials.usernameSealed, passwordSealed: gibCredentials.passwordSealed, lastUsedAt: gibCredentials.lastUsedAt })
-    .from(gibCredentials).where(and(eq(gibCredentials.userId, userId), eq(gibCredentials.firmId, firmId)));
-  return row ?? null;
-}
-
-export async function saveGibCredential(userId: string, firmId: string, usernameSealed: string, passwordSealed: string): Promise<void> {
-  const rows = await getDb().insert(gibCredentials).values({ userId, firmId, usernameSealed, passwordSealed })
-    .onConflictDoUpdate({ target: gibCredentials.firmId, set: { usernameSealed, passwordSealed, updatedAt: new Date(), lastUsedAt: null, failedLogins: 0 }, setWhere: eq(gibCredentials.userId, userId) })
-    .returning({ id: gibCredentials.id });
-  if (rows.length === 0) throw new Error("gib credential not saved"); // another user's row for this firm id: never report success
-}
-
-export async function deleteGibCredential(userId: string, firmId: string): Promise<void> {
-  await getDb().delete(gibCredentials).where(and(eq(gibCredentials.userId, userId), eq(gibCredentials.firmId, firmId)));
-}
-
-export async function touchGibCredential(userId: string, firmId: string): Promise<void> {
-  await getDb().update(gibCredentials).set({ lastUsedAt: new Date(), failedLogins: 0 }).where(and(eq(gibCredentials.userId, userId), eq(gibCredentials.firmId, firmId)));
-}
-
-/** One more GİB refusal for the stored login; returns the count since its last successful login. */
-export async function countGibFailure(userId: string, firmId: string): Promise<number> {
-  const [row] = await getDb().update(gibCredentials).set({ failedLogins: sql`${gibCredentials.failedLogins} + 1` })
-    .where(and(eq(gibCredentials.userId, userId), eq(gibCredentials.firmId, firmId))).returning({ n: gibCredentials.failedLogins });
-  return row?.n ?? 0;
 }
 
 /** One month across all of the user's firms: receipts per firm and status, for the month close on the Firmalar screen. */

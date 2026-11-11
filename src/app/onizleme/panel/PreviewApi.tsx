@@ -61,9 +61,6 @@ export function PreviewApi({ approved }: { approved: string[] }) {
         setStatus(chosen ?? approvedIds, "exported");
         return new Response("Önizleme: gerçek Luca dosyası yok.", { headers: { "content-disposition": 'attachment; filename="onizleme-luca.txt"' } });
       }
-      if (url === "/api/efatura" || url === "/api/gib/earsiv") {
-        return json({ created: 3, ids: [], remaining: 0, skipped: [{ file: "a.xml", number: "ABC2026000000398", reason: "Firmanın kendi kestiği fatura (satış); gider olarak alınmadı." }] });
-      }
       return json({});
     };
     return () => { window.fetch = real; };

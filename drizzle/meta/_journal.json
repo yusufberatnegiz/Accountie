@@ -85,6 +85,13 @@
       "when": 1794330590562,
       "tag": "20261110170950_luca_firm_plan",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794420776545,
+      "tag": "20261111181256_drop_gib_credentials",
+      "breakpoints": true
     }
   ]
 }

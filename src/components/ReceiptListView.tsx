@@ -131,7 +131,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
             </tbody>
           </table>
         )}
-        <p className="side-links small phone-only"><Link href={`${base}/efatura`}>e-Fatura / e-Arşiv</Link><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
+        <p className="side-links small phone-only"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
         {clean.length > 1 ? <div className="list-foot"><BulkApproveButton receiptIds={clean.map((r) => r.id)} /></div> : null}
         {tab.status === "exported" && receipts.length > 0 ? (
           <div className="list-foot desktop-only">
@@ -160,7 +160,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
             </ol>
             <p className="muted small">İndirilen fişler Aktarıldı olur. Luca dosyayı reddederse Aktarıldı sekmesinden tekrar indirin. Dosya düzeni Luca&apos;nın resmi şablonuyla henüz doğrulanmadı; ilk yüklemede önizlemedeki kodları ve tutarları fişle karşılaştırın.</p>
           </details>
-          <p className="side-links small"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link><Link href={`${base}/efatura`}>e-Fatura / e-Arşiv</Link></p>
+          <p className="side-links small"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
         </section>
 
         {byAccount.length ? (

@@ -24,13 +24,8 @@ export const metadata: Metadata = {
 const SAMPLE = SAMPLES[0];
 const LINES = journalFor(SAMPLE, "partner").lines;
 
-// Three sources into the hub, the hub into Luca (viewBox 1000x360; nodes sit at the same points in percent).
-const BEAMS = [
-  "M 210 60 C 340 60, 360 180, 470 180",
-  "M 210 180 L 470 180",
-  "M 210 300 C 340 300, 360 180, 470 180",
-  "M 640 180 L 790 180",
-];
+// The receipt into the hub, the hub into Luca (viewBox 1000x180; nodes sit at the same points in percent).
+const BEAMS = ["M 210 90 L 415 90", "M 585 90 L 790 90"];
 
 /** A figure that rolls up from 0 when its section enters (landing.css). The text is the real figure; the drums are decoration. */
 function roll(text: string) {
@@ -47,7 +42,7 @@ function roll(text: string) {
 const FAQ: Qa[] = [
   { q: "Fiş fotoğrafı nereye gidiyor?", a: "Okunmak için yapay zeka hizmetine (Anthropic, ABD) gönderilir. Accountie fotoğrafı sunucuda saklamaz; kontrol ekranındaki görüntü yalnız sizin cihazınızda durur." },
   { q: "Luca’ya kendisi mi kaydediyor?", a: "Hayır. Excel dosyasını Luca’ya siz yüklersiniz; eklenti satırları doldurur, Kaydet’e basmaz. Onayınız olmadan kayıt oluşmaz." },
-  { q: "Hangi belgeler okunuyor?", a: "Yazar kasa (ÖKC) fişlerinin fotoğrafı, e-Fatura XML dosyaları ve GİB e-Arşiv portalındaki faturalar. Kağıt fatura ve gider pusulası şimdilik okunmuyor." },
+  { q: "Hangi belgeler okunuyor?", a: "Yazar kasa (ÖKC) fişlerinin fotoğrafı. e-Fatura ve e-Arşiv faturalarını Luca kendisi alıyor. Kâğıt fatura ve gider pusulası şimdilik okunmuyor." },
   { q: "KDV’yi yeniden hesaplıyor mu?", a: "Hayır. Matrah, toplamdan fişte yazan KDV düşülerek bulunur. KDV okunamazsa orandan hesaplanır ve satıra not düşülür." },
   { q: "Okuma yanlış çıkarsa?", a: "Okunamayan alan boş kalır ve işaretlenir. Toplam ile KDV tutmazsa fiş bir kez daha okunur, yine tutmazsa uyarıyla size gelir." },
   { q: "Hesap kodlarını kim seçiyor?", a: "Siz. Yapay zeka yalnız kategori önerir; hesap kodu kendi kural tablonuzdan gelir." },
@@ -105,18 +100,16 @@ export default function LandingPage() {
         </section>
 
         <section className="l-flow l-wrap" aria-labelledby="flow-title" data-reveal>
-          <h2 className="l-h2" id="flow-title">Üç kaynak, tek yevmiye.</h2>
-          <p className="l-flow-lede">Fotoğraf, XML ya da GİB portalı: hepsi aynı kural tablosuyla aynı satırlara iner. Luca’ya giden her kayıt önce dengeden geçer.</p>
+          <h2 className="l-h2" id="flow-title">Fişten Luca’ya tek yol.</h2>
+          <p className="l-flow-lede">Fişin fotoğrafı sizin kural tablonuzla yevmiye satırlarına iner. Luca’ya giden her kayıt önce dengeden geçer.</p>
           <div className="l-flow-map">
-            <svg className="l-beams" viewBox="0 0 1000 360" preserveAspectRatio="none" aria-hidden="true">
+            <svg className="l-beams" viewBox="0 0 1000 180" preserveAspectRatio="none" aria-hidden="true">
               {BEAMS.map((d, i) => (
                 <g key={d}><path className="l-beam-base" d={d} /><path className="l-beam" d={d} pathLength={1000} style={{ animationDelay: `${i * 0.45}s` }} /></g>
               ))}
             </svg>
             <ul className="l-nodes">
-              <li className="l-node l-src" style={{ top: "16.7%" }}><b>Yazar kasa fişi</b><span>Telefonla fotoğraf</span></li>
-              <li className="l-node l-src" style={{ top: "50%" }}><b>e-Fatura</b><span>XML dosyası</span></li>
-              <li className="l-node l-src" style={{ top: "83.3%" }}><b>e-Arşiv</b><span>GİB portalından</span></li>
+              <li className="l-node l-src"><b>Yazar kasa fişi</b><span>Telefonla fotoğraf</span></li>
               <li className="l-node l-hub"><b>Accountie</b><span>Okur, kurala göre satır kurar, dengeyi denetler</span></li>
               <li className="l-node l-out"><b>Luca</b><span>Excel dosyası ya da eklentiyle Fiş Detayı</span></li>
             </ul>

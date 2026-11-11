@@ -185,7 +185,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     const nextLink = document.querySelector<HTMLElement>(".bar-next-draft");
     (nextLink?.offsetParent ? nextLink : statusLine.current)?.focus({ preventScroll: true });
   }, [receipt.status]);
-  const invoice = receipt.model === "e-fatura"; // imported from GİB XML (src/app/api/efatura): there is no photo to compare
+  const invoice = receipt.model === "e-fatura"; // an old receipt from the removed e-Fatura import: there is no photo to compare
   // Photo exists only in this tab; server render has none.
   const photo = useSyncExternalStore(noSubscribe, () => getPhoto(receipt.id), () => undefined);
   // Below 1100px the photo is a thumbnail over the lines that opens in place, so a line and the receipt share one screen.

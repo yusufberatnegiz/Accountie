@@ -157,7 +157,7 @@ describe("proxy panel CSP", () => {
 
 describe("proxy cross-site API guard", () => {
   const api = (method: string, headers: Record<string, string>) =>
-    proxy(new NextRequest("http://accountie.test/api/gib/credentials", { method, headers: { host: "accountie.test", ...headers } }));
+    proxy(new NextRequest("http://accountie.test/api/account-rules", { method, headers: { host: "accountie.test", ...headers } }));
 
   it("refuses a change sent from another site's page, lets the app, the extension and reads through", async () => {
     configBack();

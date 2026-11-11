@@ -744,10 +744,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .field-file::file-selector-button { font: inherit; font-weight: var(--w-medium); color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-control); padding: 6px 12px; margin-right: var(--s3); cursor: pointer; }
 .field-file:hover::file-selector-button { background: var(--plate); }
 
-/* Long waits (a GİB pull, a muavin) keep the pressed button's own tone with moving dots; the other buttons look disabled. */
+/* Long waits (a muavin) keep the pressed button's own tone with moving dots; the other buttons look disabled. */
 .btn[aria-busy="true"] { cursor: progress; }
 .btn .wait-dots { margin-left: 6px; vertical-align: middle; }
-.gib-confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
 /* Quiet links beside the Luca file and under the list on a phone: they lead to other screens, they are not the card's action. */
 .side-links { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); margin: 0; }
 .side-links a { color: var(--ink); text-underline-offset: 0.2em; }
