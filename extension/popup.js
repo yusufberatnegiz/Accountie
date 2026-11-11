@@ -211,7 +211,7 @@ async function autoAll() {
 }
 
 async function done() {
-  const ids = await filledIds();
+  const ids = (await filledIds()).filter((id) => receipts.some((r) => r.id === id)); // marks for receipts no longer listed are just dropped
   for (const id of ids) await api(`/api/extension/receipts/${encodeURIComponent(id)}/transferred`, "POST");
   await chrome.storage.local.remove("filledIds");
   await load();

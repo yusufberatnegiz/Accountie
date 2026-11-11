@@ -157,6 +157,13 @@ describe("şifre yenileme", () => {
     expect(A.signOut).toHaveBeenCalled();
     expect(vi.mocked(revokeExtensionTokens)).toHaveBeenCalledWith("kullanici-1");
   });
+
+  it("siteden çıkış eklenti anahtarını iptal etmez (ofis bilgisayarında eklenti çalışmaya devam eder)", async () => {
+    vi.mocked(revokeExtensionTokens).mockClear();
+    await redirectOf(actions.logout());
+    expect(A.signOut).toHaveBeenCalled();
+    expect(vi.mocked(revokeExtensionTokens)).not.toHaveBeenCalled();
+  });
 });
 
 describe("bot koruması", () => {
