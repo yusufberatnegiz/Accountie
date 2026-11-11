@@ -33,7 +33,7 @@ describe("POST /api/receipts", () => {
     expect(extractReceipt).not.toHaveBeenCalled();
   });
 
-  it("yeni hesap düşük günlük sınırla, fiş okuma IP başına da sınırlanır", async () => {
+  it("yeni hesap da aynı kullanıcı sınırıyla okur (ilk gün için ayrı sınır yok), fiş okuma IP başına da sınırlanır", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(true);
     vi.mocked(createReceipt).mockResolvedValue("r-1");
     const kinds = () => vi.mocked(hitRateLimit).mock.calls.map(([k]) => k.split(":")[0]);
@@ -42,7 +42,7 @@ describe("POST /api/receipts", () => {
     vi.mocked(hitRateLimit).mockClear();
     session.createdAt = new Date();
     await POST(jpeg());
-    expect(kinds()).toEqual(["receiptNew", "receiptIp", "receiptGlobal"]);
+    expect(kinds()).toEqual(["receipt", "receiptIp", "receiptGlobal"]);
     session.createdAt = new Date(0);
   });
 

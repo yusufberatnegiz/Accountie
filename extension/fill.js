@@ -16,7 +16,9 @@
     for (const type of ["input", "change", "blur"]) el.dispatchEvent(new Event(type, { bubbles: true }));
   }
 
-  const hasValue = (row, sel) => FIELDS.some((f) => { const el = sel.cells[f] ? row.querySelector(sel.cells[f]) : null; return !!(el && String(el.value || "").trim()); });
+  // Luca puts "0,00" in an empty row's Borç and Alacak: a zero amount is no value, so its first blank row is used, not skipped.
+  const filledCell = (field, value) => { const v = String(value || "").trim(); return (field === "debit" || field === "credit") ? v !== "" && kurus(v) !== 0 : v !== ""; };
+  const hasValue = (row, sel) => FIELDS.some((f) => { const el = sel.cells[f] ? row.querySelector(sel.cells[f]) : null; return !!el && filledCell(f, el.value); });
 
   // Another receipt already in the grid stays: the new one starts on the first row after the last filled one.
   function fillReceipt(doc, rows, sel) {
@@ -76,14 +78,15 @@
     return Number.isFinite(n) ? Math.round(n * 100) : NaN;
   }
 
-  /** What the grid holds now: every row with a value in any of our cells, top to bottom. */
-  function readGrid(doc, sel) {
+  /** What the grid holds now from table row `start` down: every row with a value in any of our cells, top to bottom. */
+  function readGrid(doc, sel, start = 0) {
     const grid = Array.from(doc.querySelectorAll(sel.row));
     if (grid.length === 0) return null;
-    return grid.map((row) => Object.fromEntries(FIELDS.map((f) => {
+    // Cut by table position first: a blank row among earlier receipts must not shift where this receipt begins.
+    return grid.slice(start).map((row) => Object.fromEntries(FIELDS.map((f) => {
       const el = sel.cells[f] ? row.querySelector(sel.cells[f]) : null;
       return [f, el ? String(el.value || "").trim() : ""];
-    }))).filter((r) => FIELDS.some((f) => r[f]));
+    }))).filter((r) => FIELDS.some((f) => filledCell(f, r[f])));
   }
 
   /** Differences between what was sent and what the grid shows, in Turkish; empty when Kaydet is safe. */

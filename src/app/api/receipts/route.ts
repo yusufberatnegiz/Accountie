@@ -17,16 +17,13 @@ export const maxDuration = 60;
 
 const EMPTY: ReceiptData = { vendorName: null, receiptNo: null, date: null, vatLines: [], totalKurus: null, paymentMethod: "other", category: "other" };
 
-const DAY_MS = 24 * 60 * 60_000;
-
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return unauthorized();
   const userId = user.id;
 
   // Before any parsing: every attempt counts, so a flood of bad uploads is throttled too.
-  const isNew = !(Date.now() - user.createdAt.getTime() >= DAY_MS); // unknown sign-up time counts as new
-  if (!(await allow(isNew ? "receiptNew" : "receipt", userId)) || !(await allow("receiptIp", clientIp(request.headers)))) {
+  if (!(await allow("receipt", userId)) || !(await allow("receiptIp", clientIp(request.headers)))) {
     return fail("Çok fazla fiş yüklendi. Biraz bekleyip tekrar deneyin.", 429);
   }
   // Rejected before the body is buffered; multipart overhead is allowed for.
@@ -61,7 +58,7 @@ export async function POST(request: Request) {
     images = [];
     for (const box of boxes) {
       // The photo was counted once above; every further receipt is one more read against the same limits.
-      if (images.length && (!(await allow(isNew ? "receiptNew" : "receipt", userId)) || !(await allow("receiptGlobal", "all")))) break;
+      if (images.length && (!(await allow("receipt", userId)) || !(await allow("receiptGlobal", "all")))) break;
       // A crop that fails (an odd box) is skipped; if none worked the photo is read whole.
       const crop = await cropReceipt(bytes, box).catch(() => null);
       if (crop) images.push(crop);

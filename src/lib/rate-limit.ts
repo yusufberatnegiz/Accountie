@@ -6,8 +6,6 @@ const MIN = 60_000;
 // [limit, window] pairs; no window may exceed one day (hitRateLimit sweeps older rows). Login: ~10 tries / 15 min per IP and per e-mail, as OWASP suggests; *Ip kinds are keyed by ipBucket.
 export const LIMITS = {
   receipt: [[10, MIN], [100, 24 * 60 * MIN]],
-  // Accounts younger than a day, so a batch of fresh sign-ups cannot drain receiptGlobal for everyone.
-  receiptNew: [[10, MIN], [20, 24 * 60 * MIN]],
   // Per network (IPv6 /64), sized for one office of accountants behind a shared address.
   receiptIp: [[300, 24 * 60 * MIN]],
   // Ceiling on vision-model spend across all accounts, since signup is open. Also set a spend limit in the Anthropic console.

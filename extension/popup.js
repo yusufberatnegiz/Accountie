@@ -135,10 +135,10 @@ async function fillAndCheck(tabId, receipt) {
   const results = await inTab(tabId, (rows) => globalThis.AccountieFill.fillReceipt(document, rows, globalThis.AccountieSelectors), [receipt.rows]);
   const summary = AccountieFill.summarize(results, receipt.rows.length);
   if (!summary.gridFound) return { summary, problems: [] };
-  const grids = (await inTab(tabId, () => globalThis.AccountieFill.readGrid(document, globalThis.AccountieSelectors))).filter(Boolean);
+  // Only this receipt's rows are read back (from its table row down); the ones above belong to receipts filled before.
+  const grids = (await inTab(tabId, (start) => globalThis.AccountieFill.readGrid(document, globalThis.AccountieSelectors, start), [summary.start])).filter(Boolean);
   const grid = grids.sort((a, b) => b.length - a.length)[0] ?? null;
-  // Only this receipt's rows are compared; the ones above it belong to receipts filled before.
-  return { summary, problems: AccountieFill.checkGrid(receipt.rows, grid && grid.slice(summary.start)) };
+  return { summary, problems: AccountieFill.checkGrid(receipt.rows, grid) };
 }
 
 /** The chosen receipts one under another in the open Fiş Detayı; stops at the first one the screen does not match. */

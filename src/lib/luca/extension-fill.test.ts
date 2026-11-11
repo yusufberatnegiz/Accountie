@@ -10,7 +10,7 @@ type Fill = {
   FIELDS: string[];
   fillReceipt(doc: unknown, rows: unknown[], sel: Selectors): { gridFound: boolean; filled: number; missing: { row: number; field: string }[]; extraRows: number; start: number };
   summarize(results: unknown[], rowCount: number): { ok: boolean; gridFound: boolean; message: string };
-  readGrid(doc: unknown, sel: Selectors): Record<string, string>[] | null;
+  readGrid(doc: unknown, sel: Selectors, start?: number): Record<string, string>[] | null;
   checkGrid(expected: unknown[], actual: Record<string, string>[] | null): string[];
 };
 type Selectors = { row: string; addRow: string | null; save?: string | null; saved?: string | null; newEntry?: string | null; cells: Record<string, string> };
@@ -54,6 +54,26 @@ describe("lucaGridRows", () => {
 });
 
 describe("eklenti satır doldurma", () => {
+  it("Luca'nın boş satırdaki 0,00 tutarlarını dolu saymaz: yazmaya en üstteki boş satırdan başlar", () => {
+    const doc = fakeDoc(3);
+    for (const r of doc.grid) { r.cells[".debit"].value = "0,00"; r.cells[".credit"].value = "0,00"; }
+    expect(fill.fillReceipt(doc, rows, SEL).start).toBe(0);
+    expect(doc.grid[0].cells[".accountCode"].value).toBe("770.08");
+    const empty = fakeDoc(2);
+    for (const r of empty.grid) r.cells[".debit"].value = "0,00";
+    expect(fill.readGrid(empty, SEL)).toEqual([]);
+  });
+
+  it("önceki fişlerin arasında 0,00'lı boş satır olsa da yeni fiş kendi satırından okunur, yanlış alarm vermez", () => {
+    const doc = fakeDoc(3);
+    doc.grid[0].cells[".accountCode"].value = "770.10";
+    doc.grid[1].cells[".debit"].value = "0,00";
+    doc.grid[2].cells[".accountCode"].value = "309.01";
+    const result = fill.fillReceipt(doc, rows, SEL);
+    expect(result.start).toBe(3);
+    expect(fill.checkGrid(rows, fill.readGrid(doc, SEL, result.start))).toEqual([]);
+  });
+
   it("üç satırı doldurur, boş tutarı yazmaz, input/change olaylarını tetikler", () => {
     const doc = fakeDoc(3);
     const result = fill.fillReceipt(doc, rows, SEL);
