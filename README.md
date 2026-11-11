@@ -72,8 +72,8 @@ Eklenti Chrome Web Store'da değil, klasörden yüklenir.
 
 1. Chrome'da `chrome://extensions` adresini açın, sağ üstten **Geliştirici modu**nu açın.
 2. **Paketlenmemiş öğe yükle** ile bu repodaki `extension/` klasörünü seçin.
-3. Accountie'de bilgisayardan **Kurallar** ekranını açın; **Chrome eklentisi (deneysel)** bölümünde **Eklenti anahtarı oluştur**'a basın, anahtarı kopyalayın.
-4. Luca'da (auygs.luca.com.tr) Fiş Detayı ekranını açın. Aynı sekmede eklenti simgesine tıklayın, anahtarı yapıştırıp **Fişleri getir**'e basın.
+3. Accountie'de bilgisayardan **Kurallar** ekranını açın; **Chrome eklentisi (deneysel)** bölümünde **Eklentiye bağla**'ya basın. Anahtar eklentiye kendiliğinden gider. Eklentiye ulaşılamazsa anahtar ekranda görünür; kopyalayıp eklentiye yapıştırın.
+4. Luca'da (auygs.luca.com.tr) Fiş Detayı ekranını açın. Aynı sekmede eklenti simgesine tıklayın; onaylı fişler gelir.
 5. Fişi seçin, önizlemeyi kontrol edin, **Fiş Detayına yaz**'a basın.
 6. Luca'da satırları kontrol edip **Kaydet**'e kendiniz basın. Ardından eklenti simgesine tekrar tıklayın (Kaydet'e basınca eklenti penceresi kapanır, yeniden açıldığında doldurduğunuz fiş seçili ve düğme görünür olur) ve **Luca'da kaydettim**'e basın; fiş Accountie'de "Aktarıldı" olur ve tekrar listelenmez. Bazı alanlar bulunamayıp elle tamamlandıysa da bu düğme görünür; Kaydet'ten sonra mutlaka basın, yoksa fiş sonraki Excel dosyasına tekrar girer.
 
@@ -82,6 +82,7 @@ Güvenlik:
 - Anahtar her kullanımda 30 gün uzar; 30 gün kullanılmazsa, şifre sıfırlanınca ya da iptal edilince biter. Yalnızca sizin onaylı fişlerinizi okur ve bir fişi "aktarıldı" yapabilir. Yeni anahtar oluşturmak eskisini geçersiz kılar; **Anahtarı iptal et** hemen kapatır.
 - Eklenti anahtarı bu bilgisayarda tutar (`chrome.storage.local`, eşitlenmez), tarayıcı kapanınca silinmez; eklentideki **Anahtarı unut** siler. Ortak bilgisayarda günün sonunda paneldeki **Anahtarı iptal et** ile kapatın.
 - İzinler: `activeTab` (yalnızca simgesine tıkladığınız sekme), `scripting`, `storage` ve uygulama adresine erişim. Luca şifrenize veya çerezlerinize dokunmaz.
+- **Eklentiye bağla**: eklenti yalnız `https://accountie.vercel.app` sayfalarından gelen ve anahtar biçimindeki mesajı kabul eder (`externally_connectable`, `extension/background.js`). Eklentinin kimliği `manifest.json`'daki `key` ile sabittir (`leffpncjckoidaabeaciahdhbnjihojg`, `src/lib/extension-id.ts`); her bilgisayarda aynıdır. Chrome Web Store'a çıkınca mağazanın verdiği kimlik `src/lib/extension-id.ts`'e yazılır.
 
 ### Luca seçicileri
 
