@@ -3,8 +3,8 @@
 import { startTransition, useLayoutEffect, useRef, useState } from "react";
 import { formatTrAmount } from "@/lib/money";
 import { Odometer } from "./Odometer";
-import { AKARYAKIT, journalFor, PAYMENTS, SAMPLES, shownAccountName, type Payment } from "./samples";
-import { Thermal } from "./Thermal";
+import { AKARYAKIT, journalFor, PAYMENTS, SAMPLES, shownAccountName, sourcesFor, type Payment } from "./samples";
+import { srcKey, Thermal } from "./Thermal";
 
 // The receipts the stage offers: the counter's three plus the fuel receipt, each with its own rates and lines.
 const STAGE = [SAMPLES[0], AKARYAKIT, SAMPLES[2], SAMPLES[1]];
@@ -21,7 +21,17 @@ export function Stage() {
   const sample = STAGE.find((s) => s.id === id) ?? STAGE[0];
   const { lines } = journalFor(sample, pay);
   const total = formatTrAmount(lines.reduce((s, l) => s + l.creditKurus, 0));
-  const vat = sample.receipt.vatLines.find((v) => (v.vatKurus ?? 0) > 0);
+  const sources = sourcesFor(sample);
+  // The line the dashed lead points at: the one under the pointer (a printed row or a ledger row), else the first KDV line.
+  const [point, setPoint] = useState<number | null>(null);
+  const hotIdx = point !== null && point < lines.length ? point : lines.findIndex((l) => l.accountCode.startsWith("191"));
+  const hotLine = lines[hotIdx];
+  const hotAmount = hotLine ? formatTrAmount(hotLine.debitKurus || hotLine.creditKurus) : "";
+  const fromPaper = (e: React.PointerEvent) => {
+    const k = (e.target as HTMLElement).closest<HTMLElement>("[data-src]")?.dataset.src;
+    const i = k ? sources.findIndex((s) => srcKey(s) === k) : -1;
+    if (i >= 0) setPoint(i);
+  };
   const paper = useRef<HTMLDivElement>(null);
   const shown = useRef(id);
   useLayoutEffect(() => {
@@ -40,12 +50,14 @@ export function Stage() {
       // Offsets, not client rects: the ledger may still be mid-rise (a transform) when this runs.
       let y = row.offsetHeight / 2;
       for (let el: HTMLElement | null = row; el && el !== p; el = el.offsetParent as HTMLElement | null) y += el.offsetTop;
-      line.style.top = `${y}px`;
+      // A translate, not top: the lead slides to a new row without layout work (CSS top is the no-script fallback).
+      line.style.top = "0px";
+      line.style.translate = `0 ${y}px`;
     };
     place();
     addEventListener("resize", place);
     return () => removeEventListener("resize", place);
-  }, [id, pay]);
+  }, [id, pay, hotIdx]);
 
   const chip =(on: boolean, label: string, pick: () => void) => (
     <button key={label} type="button" className="l-chip" aria-pressed={on} onClick={() => startTransition(pick)}>{label}</button>
@@ -57,9 +69,10 @@ export function Stage() {
         <div role="group" aria-label="Örnek fiş">{STAGE.map((s) => chip(s.id === id, s.label, () => setId(s.id)))}</div>
         <div role="group" aria-label="Ödeme">{PAYMENTS.map((p) => chip(p.id === pay, p.label, () => setPay(p.id)))}</div>
       </div>
-      <div className="l-plate" ref={plate}>
-        <div className="l-receipt" ref={paper}><Thermal sample={sample} printedPayment={PRINTED[pay]} hot={vat ? { kind: "vat", rate: vat.rate } : null} /></div>
-        {vat ? <span className="l-flight" aria-hidden="true"><span><Odometer value={formatTrAmount(vat.vatKurus ?? 0)} /></span></span> : null}
+      {/* Pointing at a printed row (or a ledger row) leads the dashed line to the journal line it became; a pointer extra, the table says it all. */}
+      <div className="l-plate" ref={plate} onPointerLeave={() => setPoint(null)}>
+        <div className="l-receipt" ref={paper} onPointerOver={fromPaper}><Thermal sample={sample} printedPayment={PRINTED[pay]} hot={sources[hotIdx] ?? null} /></div>
+        {hotLine ? <span className="l-flight" aria-hidden="true"><span><Odometer value={hotAmount} /></span></span> : null}
         <figure className="l-ledger">
           <figcaption><b>Fiş {sample.receipt.receiptNo} · {sample.label}</b><span className="status status-draft">Kontrol bekliyor</span></figcaption>
           <table>
@@ -67,7 +80,7 @@ export function Stage() {
             <tbody>
               {lines.map((l, i) => (
                 // Keyed by position: a row that stays rolls its digits, a new one simply appears.
-                <tr key={i} className={l.accountCode.startsWith("191") && l === lines.find((x) => x.accountCode.startsWith("191")) ? "l-hot" : undefined}>
+                <tr key={i} className={i === hotIdx ? "l-hot" : undefined} onPointerEnter={() => setPoint(i)}>
                   <td className="to-luca code" translate="no"><Odometer value={l.accountCode} /></td>
                   <td>{shownAccountName(l.accountName)}</td>
                   <td className="num">{l.debitKurus ? <Odometer value={formatTrAmount(l.debitKurus)} /> : ""}</td>

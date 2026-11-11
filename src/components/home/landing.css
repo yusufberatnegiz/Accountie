@@ -36,6 +36,28 @@
 .l-ledger .l-hot td { background: var(--accent-soft); }
 .l-balance { display: flex; justify-content: space-between; gap: var(--s3); margin: 0; padding: var(--s4) var(--s5); background: var(--positive-soft); color: var(--positive); font-weight: var(--w-medium); }
 
+.l-receipt .thermal-row { cursor: default; }
+
+/* ---------- the material: thermal paper fades, the Luca record stays ---------- */
+.l-paper { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s8); align-items: center; margin-top: var(--s10); }
+.l-paper-copy p { margin: var(--s4) 0 0; max-width: 30ch; font-size: var(--step-lead); line-height: 1.4; color: var(--muted); }
+.l-paper-desk { position: relative; height: 640px; margin: 0; border-radius: 28px; background: var(--plate); overflow: clip; }
+.l-paper-strip { position: absolute; left: 12%; top: -12px; width: 400px; transform: rotate(-1.5deg); transform-origin: 50% 0; filter: drop-shadow(0 22px 26px rgb(60 40 10 / 0.16)); }
+.l-paper-strip .thermal { font-size: 20px; line-height: 1.5; letter-spacing: 0.02em; }
+.l-paper-strip .thermal-paper { position: relative; padding: 64px var(--s6) var(--s9); gap: 6px; }
+.l-paper-strip .thermal-paper::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: url("/kagit-lif.png") 0 0 / 128px 128px; } /* paper fibre */
+.l-paper-luca { position: absolute; right: var(--s6); bottom: var(--s6); width: min(400px, 60%); padding: var(--s5); display: grid; gap: var(--s3); background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-lift), 0 0 0 1px var(--rule); }
+.l-paper-luca p { margin: 0; }
+.l-paper-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); font-weight: var(--w-medium); }
+.l-paper-total { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4); }
+.l-paper-total span { color: var(--muted); font-size: var(--step-small); }
+.l-paper-total strong { color: var(--accent); font-family: var(--font-head); font-weight: 300; font-size: clamp(2rem, 1.4rem + 1.6vw, 2.75rem); letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.l-paper-codes { list-style: none; margin: 0; padding: var(--s3) 0 0; border-top: 1px solid var(--rule); display: grid; gap: var(--s2); font-size: var(--step-small); }
+.l-paper-codes li { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: var(--s3); }
+.l-paper-codes li > span:first-child { color: var(--accent); font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
+.l-paper-codes li > span:last-child { color: var(--muted); }
+.l-paper-desk figcaption { position: absolute; left: var(--s6); bottom: var(--s6); max-width: 16ch; font-size: var(--step-small); color: var(--muted); }
+
 /* ---------- facts ---------- */
 .l-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s5); margin-top: var(--s10); }
 .l-facts p { margin: 0; padding-top: var(--s5); border-top: 1px solid var(--rule); }
@@ -137,8 +159,8 @@
 }
 
 /* Amber light trailing the pointer over the whole homepage (Reveal.tsx moves it; mouse only, never catches clicks). */
-.l-glow { position: fixed; z-index: 50; left: 0; top: 0; width: 560px; height: 560px; margin: -280px 0 0 -280px; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 38%, transparent), transparent); mix-blend-mode: multiply; opacity: 0; transition: opacity 300ms ease; }
+.l-glow { position: fixed; z-index: 50; left: 0; top: 0; width: 320px; height: 320px; margin: -160px 0 0 -160px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 24%, transparent), transparent); mix-blend-mode: multiply; opacity: 0; transition: opacity 300ms ease; }
 .l-glow.on { opacity: 1; }
 :root[data-look="dark"] .l-glow { mix-blend-mode: screen; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 32%, transparent), transparent); }
 @media (prefers-color-scheme: dark) { :root:not([data-look]) .l-glow { mix-blend-mode: screen; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 32%, transparent), transparent); } }
@@ -178,15 +200,12 @@
   .reveal .l-stage:not(.in) .l-receipt .thermal { clip-path: inset(0 0 100% 0); }
   .reveal .l-stage.in .l-receipt .thermal { animation: l-unroll 900ms var(--ease-out) both; }
   .reveal .l-stage.in .l-receipt :is(.thermal-vendor, .thermal-row) { animation: l-print 320ms var(--ease-out) calc(var(--p, -1) * 45ms + 160ms) both; }
-  /* Then the heat print fades as the stage scrolls away, top row first, as thermal paper does; the total holds a little longer. */
+  .l-flight { transition: translate 320ms var(--ease-out); }
+  /* The material: as the section passes, the heat print fades row by row, top first; the total holds a little longer. */
   @supports (animation-timeline: view()) {
-    .l-stage { view-timeline: --stage block; }
-    .reveal .l-stage.in .l-receipt :is(.thermal-vendor, .thermal-row) {
-      animation: l-print 320ms var(--ease-out) calc(var(--p, -1) * 45ms + 160ms) both, l-fade linear both;
-      animation-timeline: auto, --stage;
-      animation-range: normal, exit calc(var(--p, -1) * 3% + 5%) exit calc(var(--p, -1) * 3% + 35%);
-    }
-    .reveal .l-stage.in .l-receipt .thermal-total { animation-name: l-print, l-fade-half; }
+    .l-paper { view-timeline: --paper block; }
+    .l-paper-strip :is(.thermal-vendor, .thermal-row) { animation: l-fade linear both; animation-timeline: --paper; animation-range: cover calc(40% + var(--p, -1) * 2.5%) cover calc(58% + var(--p, -1) * 2.5%); }
+    .l-paper-strip .thermal-total { animation-name: l-fade-half; }
   }
   .l-flow.in .l-beam { animation: l-beam 3.2s linear 3; }
   .reveal .l-flow:not(.in) .l-node { opacity: 0; transform: translateY(calc(-50% + 12px)); }
@@ -204,6 +223,18 @@
 @keyframes l-swap { from { opacity: 0.35; transform: translateY(8px); } }
 
 /* ---------- smaller screens ---------- */
+@media (max-width: 960px) {
+  .l-paper { grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+  .l-paper-desk { height: auto; display: grid; padding: var(--s5) var(--s5) var(--s5); }
+  .l-paper-strip { position: relative; left: auto; top: auto; width: min(360px, 88%); justify-self: center; }
+  .l-paper-strip .thermal { font-size: 16px; letter-spacing: 0; }
+  .l-paper-luca { position: relative; inset: auto; justify-self: end; width: min(400px, 92%); margin-top: -96px; z-index: 1; }
+  .l-paper-desk figcaption { position: static; order: -1; max-width: none; padding-top: var(--s5); margin-bottom: var(--s4); }
+}
+@media (max-width: 720px) {
+  .l-paper-luca { width: 100%; }
+  .l-paper-total strong { white-space: nowrap; font-size: 2rem; }
+}
 @media (max-width: 1240px) {
   .l-plate { min-height: 0; grid-template-columns: 1fr; padding: var(--s7) var(--s5); gap: var(--s6); }
   .l-flight { display: none; }

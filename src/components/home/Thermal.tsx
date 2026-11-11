@@ -6,6 +6,9 @@ import "./thermal.css";
 const lucaDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : "");
 
 /** Which printed rows a traced journal line came from. */
+/** A source as a string (data-src on the printed rows): "items-10", "vat-10", "total". */
+export const srcKey = (s: Source | null | undefined) => (!s ? undefined : s.kind === "total" ? "total" : `${s.kind}-${s.rate}`);
+
 const lit = (hot: Source | null | undefined, row: Source) =>
   !!hot && hot.kind === row.kind && (hot.kind === "total" || (row.kind !== "total" && hot.rate === row.rate));
 
@@ -22,7 +25,7 @@ export function Thermal({ sample, printedPayment, hot, compact, base }: { sample
   const multi = r.vatLines.length > 1;
   let n = 0;
   const row = (key: string, cls: string, src: Source | null, a: string, b: string, amt?: string) => (
-    <p key={key} className={`thermal-row ${cls}`} data-lit={(src && lit(hot, src)) || undefined} data-amt={amt} style={{ "--p": n++ } as CSSProperties}>
+    <p key={key} className={`thermal-row ${cls}`} data-lit={(src && lit(hot, src)) || undefined} data-src={srcKey(src)} data-amt={amt} style={{ "--p": n++ } as CSSProperties}>
       <span>{a}</span><span>{b}</span>
     </p>
   );
@@ -34,7 +37,7 @@ export function Thermal({ sample, printedPayment, hot, compact, base }: { sample
         {row("no", "", null, "FİŞ NO", r.receiptNo ?? "")}
         <div className="thermal-items">
           {sample.items.map((it) => (
-            <p key={it.name} className="thermal-row thermal-item" data-lit={lit(hot, { kind: "items", rate: it.rate }) || undefined} style={{ "--p": n++ } as CSSProperties}>
+            <p key={it.name} className="thermal-row thermal-item" data-lit={lit(hot, { kind: "items", rate: it.rate }) || undefined} data-src={`items-${it.rate}`} style={{ "--p": n++ } as CSSProperties}>
               <span>{it.name}</span><span>%{it.rate} *{formatTrAmount(it.kurus)}</span>
             </p>
           ))}

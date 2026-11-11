@@ -5,12 +5,15 @@ import { SiteBar } from "@/components/site/SiteBar";
 import { Faq, type Qa } from "@/components/home/Faq";
 import { Reveal } from "@/components/home/Reveal";
 import { Stage } from "@/components/home/Stage";
-import { journalFor, SAMPLES } from "@/components/home/samples";
+import { journalFor, OTOPARK, SAMPLES, shownAccountName } from "@/components/home/samples";
+import { Thermal } from "@/components/home/Thermal";
 import { formatTrAmount } from "@/lib/money";
 import "@/components/home/landing.css";
 
 // Public and static: no session, no user data.
 export const dynamic = "force-static";
+
+const OTOPARK_LINES = journalFor(OTOPARK, "partner").lines;
 
 export const metadata: Metadata = {
   title: { absolute: "Accountie: yazar kasa fişinden Luca yevmiye kaydı" },
@@ -79,6 +82,26 @@ export default function LandingPage() {
           <p><b>{roll("0,00")}</b><span>fark olmadan onay düğmesi açılmaz.</span></p>
           <p><b>{roll("1")}</b><span>tıkla, seçili fişler eklentiyle Luca Fiş Detayına alt alta yazılır; Kaydet’e siz basarsınız.</span></p>
           <p><b>{roll("~15 sn")}</b><span>fotoğraftan satırlara.</span></p>
+        </section>
+
+        {/* The material, brought back from the old page: thermal print fades as the section passes, the Luca record laid over it stays whole. */}
+        <section className="l-paper l-wrap" aria-labelledby="paper-title" data-reveal>
+          <div className="l-paper-copy">
+            <h2 className="l-h2" id="paper-title">Termal fiş solar.</h2>
+            <p>Yazar kasa fişi ısıyla basılır ve zamanla okunmaz olur. Fiş okunurken satırlarını çıkarın; kayıt Luca’da kalır.</p>
+          </div>
+          <figure className="l-paper-desk">
+            {/* A picture of the material; its figures are in the card and the caption. */}
+            <div className="l-paper-strip" aria-hidden="true"><Thermal sample={OTOPARK} printedPayment="KREDİ KARTI" /></div>
+            <div className="l-paper-luca">
+              <p className="l-paper-head"><span>Fiş {OTOPARK.receipt.receiptNo}, Luca kaydı</span><span className="status status-exported">Aktarıldı</span></p>
+              <p className="l-paper-total"><span>Luca’da kayıtlı</span><strong>{formatTrAmount(OTOPARK_LINES.reduce((s, l) => s + l.creditKurus, 0))} TL</strong></p>
+              <ul className="l-paper-codes" aria-label="Hesap satırları">
+                {OTOPARK_LINES.map((l) => <li key={l.accountCode}><span translate="no">{l.accountCode}</span><span>{shownAccountName(l.accountName)}</span></li>)}
+              </ul>
+            </div>
+            <figcaption>Fiş {OTOPARK.receipt.receiptNo}: kâğıt solar, satırları Luca’da kalır.</figcaption>
+          </figure>
         </section>
 
         <section className="l-flow l-wrap" aria-labelledby="flow-title" data-reveal>
