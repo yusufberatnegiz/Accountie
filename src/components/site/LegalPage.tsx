@@ -34,6 +34,6 @@ export function LegalPage({ title, lead, sections, prefix }: { title: string; le
 export const PROVIDER = {
   name: "Yusuf Berat Negiz",
   address: "Sedir Mahallesi, Vatan Bulvarı, Osman Koca İş Merkezi, Kat 10, Daire 13, Muratpaşa / Antalya",
-  email: "[iletişim e-postası]",
+  email: "destek@accountie.app",
   court: "Antalya",
 };
