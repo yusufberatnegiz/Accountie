@@ -15,7 +15,7 @@ const SECTIONS: LegalSection[] = [
     body: [
       "Telefonda çektiğiniz fotoğraf tarayıcıda küçültülür ve sunucuya gönderilir. Sunucu konum ve cihaz bilgisini (EXIF, GPS) siler, fotoğrafı okunmak için yapay zekâ hizmetine gönderir: Anthropic, Amerika Birleşik Devletleri.",
       "Yüklediğiniz PDF belge (ör. yurt dışı hizmet faturası) olduğu gibi aynı hizmete okunmak için gönderilir.",
-      "Anthropic, API üzerinden gönderilen belgeleri kendi modellerini eğitmek için kullanmaz; kötüye kullanımı denetlemek için en çok 30 gün tutabilir, sonra siler. Accountie de belgelerinizi ve kayıtlarınızı yapay zekâ eğitimi için kullanmaz.",
+      "Anthropic, API üzerinden gönderilen belgeleri kendi modellerini eğitmek için kullanmaz; kural olarak en çok 30 gün tutar; kullanım politikası ihlali şüphesi ya da yasal zorunluluk hâlinde daha uzun tutabilir, sonra siler. Accountie de belgelerinizi ve kayıtlarınızı yapay zekâ eğitimi için kullanmaz.",
       "Fotoğraf ve belge Accountie'nin sunucusunda ve veritabanında saklanmaz. Kontrol ekranında gördüğünüz görüntü yalnız o tarayıcı sekmesinin belleğinde durur; sekmeyi kapatınca silinir.",
       "Dövizli bir faturada sunucu, TL karşılığı için Türkiye Cumhuriyet Merkez Bankası'nın herkese açık kur bülteninden o günün kurunu alır. Bu istekte yalnız tarih ve para birimi vardır.",
     ],

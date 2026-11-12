@@ -91,13 +91,15 @@ export function CreditsView({ balance, open, required, billing, usage, history, 
   }
 
   // The error is read with the field it is about: described by it as well as named in aria-errormessage.
+  const fieldError = (name: string) => (error?.field === name ? <span className="field-error" aria-hidden="true">{error.text}</span> : null);
   const invalid = (name: string, hint?: string) => (error?.field === name
     ? { "aria-invalid": true, "aria-errormessage": "odeme-hata", "aria-describedby": hint ? `${hint} odeme-hata` : "odeme-hata" }
     : hint ? { "aria-describedby": hint } : {});
   const balanceNote = !open ? "Satın alma yakında açılıyor; o zamana kadar fiş okuma ücretsiz."
-    : balance < 0 ? `Son yüklemede bakiye ${count(balance)} kontöre indi. Bu açık, yükleyeceğiniz paketten düşülür.`
+    : balance < 0 ? `Son yüklemede bakiye ${count(balance)} kontöre indi. Bu açık, yükleyeceğiniz paketten düşülür.${required ? " Yeni belge okumak için bir paket seçin." : ""}`
     : balance > 0 ? `Yaklaşık ${count(balance)} fiş ya da ${count(Math.floor(balance / 2))} fatura.${required ? "" : " Fiş okuma şimdilik ücretsiz; kontörünüz zorunluluk başlayınca kullanılmaya başlar."}`
-    : required ? "Fiş okumak için bir paket seçin." : "Fiş okuma şimdilik ücretsiz; kontör zorunlu olmadan önce e-postayla haber verilir.";
+    : !required ? "Fiş okuma şimdilik ücretsiz; kontör zorunlu olmadan önce e-postayla haber verilir."
+    : showRanOut ? "Bakiye bitti." : "Fiş okumak için bir paket seçin.";
 
   return (
     <main id="icerik" tabIndex={-1} className="canvas canvas-kontor">
@@ -113,7 +115,7 @@ export function CreditsView({ balance, open, required, billing, usage, history, 
           {outcome === "tamam" && added ? `Ödeme alındı. ${count(added)} kontör bakiyenize eklendi.` : done.text}{outcome === "bekliyor" ? <> <a href="mailto:destek@accountie.app">destek@accountie.app</a> adresine yazın.</> : null}
         </p>
       ) : showRanOut ? (
-        <p ref={message} tabIndex={-1} className="alert alert-warn" role="alert">{ranOut > 0 ? `${ranOut} fiş eklendi, ardından kontörünüz bitti.` : "Kontörünüz bitti."} Fiş okumaya devam etmek için bir paket seçin.</p>
+        <p ref={message} tabIndex={-1} className="alert alert-warn" role="alert">{ranOut > 0 ? `${ranOut} belge eklendi, ardından kontörünüz bitti.` : "Kontörünüz bitti."} Fiş okumaya devam etmek için bir paket seçin.</p>
       ) : null}
 
       <section className="panel kontor-balance" aria-labelledby="bakiye-baslik">
@@ -193,7 +195,8 @@ export function CreditsView({ balance, open, required, billing, usage, history, 
             <div><dt>İçindeki KDV (%20)</dt><dd className="tnum">{formatTrAmount(vatInsideKurus(pkg.priceKurus))} TL</dd></div>
             <div className="pay-total"><dt>Ödenecek</dt><dd className="tnum">{tl(pkg.priceKurus)}</dd></div>
           </dl>
-          <form className="pay-form" onSubmit={pay}>
+          {/* POST without script (a tap before hydration): the invoice details go in the body, never into the address. */}
+          <form className="pay-form" method="post" onSubmit={pay}>
             {/* Saved details fold to one line, so the button sits under the total; a new buyer gets the open form. */}
             {/* Nothing to fill while purchases are closed; while the payment page opens, the details stay as typed but out of reach. */}
             {open ? <details id="fatura" className="pay-details" open={!billing || undefined} inert={busy || undefined}>
@@ -204,13 +207,13 @@ export function CreditsView({ balance, open, required, billing, usage, history, 
               </summary>
               <fieldset className="pay-billing">
                 <legend className="visually-hidden">Fatura bilgileri</legend>
-                <label className="span-all">Ad soyad ya da unvan<input className="field" name="ad" required minLength={3} maxLength={200} autoComplete="name" defaultValue={billing?.name} {...invalid("ad")} /></label>
+                <label className="span-all">Ad soyad ya da unvan<input className="field" name="ad" required minLength={3} maxLength={200} autoComplete="name" defaultValue={billing?.name} {...invalid("ad")} />{fieldError("ad")}</label>
                 <label>VKN ya da TCKN<input className="field tnum" name="vkn" required inputMode="numeric" pattern="\d{10,11}" maxLength={11} autoComplete="off" title="10 haneli VKN ya da 11 haneli TCKN" defaultValue={billing?.taxNumber} {...invalid("vkn", "vkn-ipucu")} />
-                  <span id="vkn-ipucu" className="hint">10 haneli VKN ya da 11 haneli TCKN</span></label>
-                <label>Vergi dairesi<input className="field" name="vd" placeholder="İsteğe bağlı" maxLength={80} autoComplete="off" defaultValue={billing?.taxOffice ?? ""} {...invalid("vd")} /></label>
-                <label>Cep telefonu<input className="field tnum" name="tel" required type="tel" inputMode="tel" placeholder="05xx xxx xx xx" maxLength={16} autoComplete="tel" defaultValue={billing?.phone} {...invalid("tel")} /></label>
-                <label>İl<input className="field" name="il" required minLength={2} maxLength={60} autoComplete="address-level1" defaultValue={billing?.city} {...invalid("il")} /></label>
-                <label className="span-all">Fatura adresi<textarea className="field" name="adres" required minLength={10} maxLength={300} rows={2} autoComplete="street-address" defaultValue={billing?.address} {...invalid("adres")} /></label>
+                  <span id="vkn-ipucu" className="hint">10 haneli VKN ya da 11 haneli TCKN</span>{fieldError("vkn")}</label>
+                <label>Vergi dairesi<input className="field" name="vd" placeholder="İsteğe bağlı" maxLength={80} autoComplete="off" defaultValue={billing?.taxOffice ?? ""} {...invalid("vd")} />{fieldError("vd")}</label>
+                <label>Cep telefonu<input className="field tnum" name="tel" required type="tel" inputMode="tel" placeholder="05xx xxx xx xx" maxLength={16} autoComplete="tel" defaultValue={billing?.phone} {...invalid("tel")} />{fieldError("tel")}</label>
+                <label>İl<input className="field" name="il" required minLength={2} maxLength={60} autoComplete="address-level1" defaultValue={billing?.city} {...invalid("il")} />{fieldError("il")}</label>
+                <label className="span-all">Fatura adresi<textarea className="field" name="adres" required minLength={10} maxLength={300} rows={2} autoComplete="street-address" defaultValue={billing?.address} {...invalid("adres")} />{fieldError("adres")}</label>
               </fieldset>
             </details> : <p className="hint">Satın alma açılınca fatura bilgilerinizi burada girersiniz.</p>}
             <button type="submit" className="btn btn-primary btn-lg pay-submit" disabled={!open || undefined} aria-busy={busy || undefined} aria-describedby={error ? "odeme-hata" : undefined}>

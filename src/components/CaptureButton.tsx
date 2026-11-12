@@ -104,7 +104,7 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
     if (skipped) {
       setBusy(false);
       setStatus("");
-      setNotice(`${added} fiş eklendi. Kontör bittiği için ${skipped} fiş okunmadı. Kontör yükledikten sonra okunmayan fişleri ayrı çekin.`);
+      setNotice(`${added} belge eklendi. Kontör bittiği için ${skipped} fiş okunmadı. Kontör yükledikten sonra okunmayan fişleri ayrı çekin.`);
       startTransition(() => { addTransitionType("fis-eklendi"); router.refresh(); });
       return;
     }

@@ -51,7 +51,7 @@ const SECTIONS: LegalSection[] = [
       "Belgelerdeki kişisel veriler bakımından Kullanıcı veri sorumlusu, Accountie veri işleyendir (6698 sayılı KVKK). Kullanıcı, belgelerini yüklediği müşterilerini kişisel verilerinin bu hizmette işlenmesi hakkında aydınlatmakla yükümlüdür.",
       "Accountie veri işleyen olarak: veriyi yalnız Kullanıcının talimatı ve bu sözleşme çerçevesinde işler; gerekli teknik ve idari tedbirleri alır; çalışanlarını ve hizmet sağlayıcılarını gizlilikle bağlar; bir veri ihlalini öğrendiğinde Kullanıcıya en geç 24 saat içinde bildirir; Kullanıcının müşterileri bakımından sır saklama yükümlülüğüne (3568 sayılı Kanun md. 43) uygun davranır.",
       "Hizmetin sunulması için şu alt hizmet sağlayıcılar kullanılır: Anthropic (ABD, belge okuma), Supabase (Almanya'daki sunucular, veritabanı ve kimlik doğrulama), Vercel (ABD, uygulama barındırma), Cloudflare (ABD, bot denetimi). Kullanıcının kendi ödeme bilgilerini iyzico (Türkiye) işler; iyzico müşteri belgelerini işlemez. Bu listedeki değişiklikler gizlilik sayfasında yayımlanır.",
-      "Belge fotoğrafları ve PDF'ler Accountie'de saklanmaz; okuma için Anthropic'e gönderilir, Anthropic en çok 30 gün tutabilir ve model eğitiminde kullanmaz. Saklanan alanlar Gizlilik sayfasında ve Aydınlatma Metninde yazılıdır.",
+      "Belge fotoğrafları ve PDF'ler Accountie'de saklanmaz; okuma için Anthropic'e gönderilir; Anthropic bunları kural olarak en çok 30 gün tutar; kullanım politikası ihlali şüphesi ya da yasal zorunluluk hâlinde daha uzun tutabilir ve model eğitiminde kullanmaz. Saklanan alanlar Gizlilik sayfasında ve Aydınlatma Metninde yazılıdır.",
     ],
   },
   {

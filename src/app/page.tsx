@@ -42,7 +42,7 @@ function roll(text: string) {
 const FAQ: Qa[] = [
   { q: "Fiş fotoğrafı nereye gidiyor?", a: "Okunmak için yapay zeka hizmetine (Anthropic, ABD) gönderilir. Accountie fotoğrafı sunucuda saklamaz; kontrol ekranındaki görüntü yalnız sizin cihazınızda durur." },
   { q: "Luca’ya kendisi mi kaydediyor?", a: "Hayır. Excel dosyasını Luca’ya siz yüklersiniz; eklenti satırları doldurur, Kaydet’e basmaz. Onayınız olmadan kayıt oluşmaz." },
-  { q: "Hangi belgeler okunuyor?", a: "Yazar kasa (ÖKC) fişlerinin fotoğrafı. e-Fatura ve e-Arşiv faturalarını Luca kendisi alıyor. Kâğıt fatura ve gider pusulası şimdilik okunmuyor." },
+  { q: "Hangi belgeler okunuyor?", a: "Yazar kasa (ÖKC) fişi ve Z raporu fotoğrafı; yurt içi faturalar (bilet, otel, e-Arşiv PDF ya da kâğıt) ve Google, Meta gibi yurt dışı faturalar. Gider pusulası şimdilik okunmuyor." },
   { q: "KDV’yi yeniden hesaplıyor mu?", a: "Hayır. Matrah, toplamdan fişte yazan KDV düşülerek bulunur. KDV okunamazsa orandan hesaplanır ve satıra not düşülür." },
   { q: "Okuma yanlış çıkarsa?", a: "Okunamayan alan boş kalır ve işaretlenir. Toplam ile KDV tutmazsa fiş bir kez daha okunur, yine tutmazsa uyarıyla size gelir." },
   { q: "Hesap kodlarını kim seçiyor?", a: "Siz. Yapay zeka yalnız kategori önerir; hesap kodu kendi kural tablonuzdan gelir." },

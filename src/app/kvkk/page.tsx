@@ -24,14 +24,14 @@ const SECTIONS: LegalSection[] = [
       "İletişim: e-posta adresi.",
       "Müşteri işlem: hesabınıza bağlı firmalar (unvan, vergi numarası, hesap planı), fişlerden okunan alanlar, yevmiye kayıtları ve hesap kurallarınız; Kullanım Koşullarını kabul ettiğiniz tarih.",
       "Fatura ve ödeme: kontör satın alırken girdiğiniz ad soyad ya da unvan, VKN ya da TCKN, vergi dairesi, cep telefonu ve fatura adresi; satın alınan paket, tutar, tarih ve kontör hareketleri; ödeme başlatılırken IP adresi (yalnız iyzico'ya iletilir, saklanmaz). Kart bilgileri Accountie'ye gelmez.",
-      "İşlem güvenliği: oturum çerezi, şifrenin özeti (Accountie şifrenizi görmez), eklenti anahtarının özeti, giriş ve kayıt denemelerinin sayımı için tek yönlü özetlenmiş IP adresi ve e-posta.",
+      "İşlem güvenliği: oturum çerezi, şifrenin özeti (Accountie şifrenizi görmez), eklenti anahtarının özeti, giriş, kayıt ve ödeme dönüşü denemelerinin sayımı için tek yönlü özetlenmiş IP adresi ve e-posta.",
     ],
   },
   {
     title: "Amaçlar ve hukuki sebepler",
     body: [
       "Hesabınızı açmak, hizmeti sunmak, fişleri okuyup kayıt hazırlamak ve size hizmetle ilgili bildirim göndermek: sözleşmenin kurulması ve ifası için gerekli olması (KVKK md. 5/2-c).",
-      "Kontör satmak, ödemeyi almak ve fatura düzenlemek: sözleşmenin ifası (md. 5/2-c) ve vergi mevzuatından doğan hukuki yükümlülük (md. 5/2-ç).",
+      "Kontör satmak, ödemeyi almak ve fatura düzenlemek: sözleşmenin ifası (md. 5/2-c) ve vergi mevzuatından doğan hukuki yükümlülük (md. 5/2-ç). Fatura bilgilerinizi sonraki alımlar için hesabınızda tutmak: sözleşmenin ifası (md. 5/2-c).",
       "Hesabın ve hizmetin güvenliğini sağlamak, kötüye kullanımı önlemek: meşru menfaat (md. 5/2-f) ve veri güvenliği yükümlülüğü (md. 12).",
       "Kanunen saklanması gereken kayıtları saklamak ve yetkili kurumların taleplerini karşılamak: hukuki yükümlülük (md. 5/2-ç).",
       "Accountie size reklam ya da kampanya e-postası göndermez. Gönderecek olursa, önceden ayrıca izninizi alır.",
@@ -48,7 +48,7 @@ const SECTIONS: LegalSection[] = [
     body: [
       "Veriler, hizmetin sunulması için şu hizmet sağlayıcılara aktarılır:",
       "Supabase: veritabanı ve kimlik doğrulama. Sunucular Frankfurt, Almanya'da; şirket ABD'dedir.",
-      "Anthropic (ABD): fiş ve fatura okuma. Belge model eğitiminde kullanılmaz; Anthropic kötüye kullanım denetimi için en çok 30 gün tutabilir.",
+      "Anthropic (ABD): fiş ve fatura okuma. Belge model eğitiminde kullanılmaz; Anthropic belgeyi kural olarak en çok 30 gün tutar; kullanım politikası ihlali şüphesi ya da yasal zorunluluk hâlinde daha uzun tutabilir.",
       "Vercel (ABD): uygulamanın barındırılması.",
       "Cloudflare (ABD): formlarda bot denetimi, açıksa.",
       "Kontör ödemesi için ad, e-posta, cep telefonu, kimlik ya da vergi numarası, fatura adresi ve IP adresi iyzico Ödeme Hizmetleri A.Ş.'ye (Türkiye) aktarılır. Kart bilgilerini yalnız iyzico işler. iyzico, lisanslı bir ödeme kuruluşu olarak bu verileri kendi yasal yükümlülükleri için ayrıca veri sorumlusu sıfatıyla işler. Bu aktarımın hukuki sebebi sözleşmenin ifası ve hukuki yükümlülüktür (md. 8, 5/2-c ve 5/2-ç).",
@@ -66,9 +66,10 @@ const SECTIONS: LegalSection[] = [
     title: "Saklama süresi",
     body: [
       "Hesap verileri, hesap açık kaldığı sürece saklanır. Hesabı panelde \"Hesabı sil\" ile sildiğinizde hemen silinir; veritabanı yedeklerinden en geç 30 gün içinde düşer.",
-      "Fiş fotoğrafı ve PDF belgeler Accountie'de saklanmaz; okuma hizmeti (Anthropic) en çok 30 gün tutabilir.",
+      "Fiş fotoğrafı ve PDF belgeler Accountie'de saklanmaz; okuma hizmeti (Anthropic) kural olarak en çok 30 gün tutar; kullanım politikası ihlali şüphesi ya da yasal zorunluluk hâlinde daha uzun tutabilir.",
       "Giriş denemesi sayımları bir gün sonra silinir.",
-      "Tamamlanan ödemelerin kaydı ve o andaki fatura bilgileri, hesap silinse de vergi ve ticaret mevzuatının öngördüğü süre (en çok 10 yıl) boyunca saklanır. Tamamlanmayan ödemenin fatura bilgileri ödeme kapanınca, açık kalan bir ödemeninki en geç 7 gün sonra silinir.",
+      "Tamamlanan ödemelerin kaydı ve o andaki fatura bilgileri, hesap silinse de vergi ve ticaret mevzuatının öngördüğü süre (en çok 10 yıl) boyunca saklanır. Tamamlanmayan bir ödemenin kaydındaki fatura bilgileri ödeme kapanınca silinir; sonucu belirsiz kalan ödeme iyzico'ya sorularak kapatılır.",
+      "Fatura bilgileriniz bir sonraki alımda hazır gelsin diye hesabınızda da saklanır; Kontör sayfasında değiştirebilir, hesabı silince silinir.",
       "Kanunen daha uzun süre saklanması gereken kayıtlar o süre boyunca saklanır, ardından silinir.",
     ],
   },

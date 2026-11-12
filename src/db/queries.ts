@@ -136,21 +136,25 @@ export async function saveRules(userId: string, rows: readonly RuleRow[], firmId
  */
 export async function hitRateLimit(key: string, windows: readonly (readonly [limit: number, windowMs: number])[]): Promise<boolean> {
   const now = Date.now();
+  const sweep = Math.random() < 0.05;
   const results = await getDb().transaction(async (tx) => {
     // One key at a time: under READ COMMITTED parallel requests would not see each other's uncommitted hit and all pass.
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${key}))`);
     // Sweep of rows older than any window (a day), on the created_at index, now and then rather than on every call.
-    if (Math.random() < 0.05) {
-      await tx.delete(rateLimitHits).where(lt(rateLimitHits.createdAt, new Date(now - 24 * 60 * 60_000)));
-      // Same chance, same place: checkouts open for 7 days were abandoned; closed, their invoice details dropped (KVKK).
-      await tx.update(payments).set({ status: "failed", billing: {} }).where(and(eq(payments.status, "pending"), lt(payments.createdAt, new Date(now - 7 * 24 * 60 * 60_000))));
-    }
+    if (sweep) await tx.delete(rateLimitHits).where(lt(rateLimitHits.createdAt, new Date(now - 24 * 60 * 60_000)));
     const counts = await Promise.all(windows.map(([, ms]) =>
       tx.select({ n: count() }).from(rateLimitHits).where(and(eq(rateLimitHits.key, key), gt(rateLimitHits.createdAt, new Date(now - ms))))));
     const ok = windows.every(([limit], i) => (counts[i][0]?.n ?? 0) < limit);
     if (ok) await tx.insert(rateLimitHits).values({ key });
     return ok;
   });
+  // Same chance, apart from the limit (it never fails one): a checkout that never opened (no token) and is a day old is
+  // closed with its invoice details. An opened one is closed only by settlePayment, after asking iyzico (it may be paid).
+  if (sweep) {
+    await getDb().update(payments).set({ status: "failed", billing: {} })
+      .where(and(eq(payments.status, "pending"), isNull(payments.token), lt(payments.createdAt, new Date(now - 24 * 60 * 60_000))))
+      .catch(() => {});
+  }
   return results;
 }
 
