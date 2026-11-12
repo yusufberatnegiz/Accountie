@@ -30,8 +30,8 @@ const FIELD: Record<string, string> = { name: "ad", taxNumber: "vkn", taxOffice:
  * per-receipt price and the saving against the smallest), and one order column that names the amount on its button.
  * Paying happens on iyzico's own page. `open`: purchases can be taken; `required`: reading needs credits (KONTOR_ZORUNLU).
  */
-export function CreditsView({ balance, open, required, billing, usage, history, outcome, added, ranOut, endpoint = "/api/payments" }: {
-  balance: number; open: boolean; required: boolean; billing: Billing | null; usage: CreditUse[]; history: Purchase[]; outcome?: string; added?: number; ranOut?: number; endpoint?: string;
+export function CreditsView({ balance, open, required, billing, usage, history, outcome, added, ranOut, waiting = 0, endpoint = "/api/payments" }: {
+  balance: number; open: boolean; required: boolean; billing: Billing | null; usage: CreditUse[]; history: Purchase[]; outcome?: string; added?: number; ranOut?: number; waiting?: number; endpoint?: string;
 }) {
   const [picked, setPicked] = useState(PACKAGES[1].id);
   const [busy, setBusy] = useState(false);
@@ -126,7 +126,7 @@ export function CreditsView({ balance, open, required, billing, usage, history, 
             <span className="tnum">{balance < 0 ? <><span aria-hidden="true">−</span><span className="visually-hidden">eksi </span>{count(-balance)}</> : count(balance)}</span> <span className="kontor-unit">kontör</span>
           </p>
         </div>
-        <p className="kontor-note">{balanceNote}</p>
+        <p className="kontor-note">{balanceNote}{waiting ? ` Sonucu beklenen ${waiting} ödeme var; bu sayfa her açılışta iyzico'ya yeniden sorar.` : ""}</p>
       </section>
 
       <div className="kontor-grid">
@@ -152,7 +152,7 @@ export function CreditsView({ balance, open, required, billing, usage, history, 
             </div>
             <p className="hint">Fiyatlara KDV dahildir. Kontörün süresi dolmaz ve iade edilmez. Satıcısı ve toplamı okunamayan belgeden kontör düşmez.</p>
             {/* On a phone the order column is far below: the choice and a way down to it, right under the cards. */}
-            <p className="pack-chosen"><span>Seçilen: {pkg.name}, <span className="tnum">{tl(pkg.priceKurus)}</span></span><a href="#odeme-baslik">Ödemeye geç</a></p>
+            {open ? <p className="pack-chosen"><span>Seçilen: {pkg.name}, <span className="tnum">{tl(pkg.priceKurus)}</span></span><a href="#odeme-baslik">Ödemeye geç</a></p> : null}
           </section>
 
           <section className="panel kontor-usage" aria-labelledby="kullanim-baslik">
@@ -221,7 +221,7 @@ export function CreditsView({ balance, open, required, billing, usage, history, 
             </button>
             {error ? <p id="odeme-hata" className="alert alert-error" role="alert">{error.text}</p> : null}
             {open ? <p className="hint">
-              Ödeyerek <Link href="/kosullar#k-5" prefetch={false}>Kullanım Koşullarını</Link> (6. madde: kontör ve iade) ve <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Hizmet Satış Sözleşmesini</Link> kabul edersiniz.
+              Ödeyerek <Link href="/kosullar#k-5" prefetch={false}>Kullanım Koşullarını</Link> (6. madde: kontör ve iade) ve <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Hizmet Satış Sözleşmesini</Link> kabul edersiniz. Fatura bilgileriniz <Link href="/kvkk" prefetch={false}>KVKK Aydınlatma Metnine</Link> göre işlenir.
               Kart bilgilerinizi iyzico&apos;nun güvenli ödeme sayfasında girersiniz; Accountie kart bilgisi görmez ve saklamaz. Tek çekim yapılır.
             </p> : null}
           </form>

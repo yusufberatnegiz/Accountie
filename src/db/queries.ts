@@ -487,10 +487,10 @@ export async function getPaymentStatus(id: string): Promise<"pending" | "paid" |
   return row?.status ?? null;
 }
 
-/** The user's checkouts still waiting for a result (a review, an unreachable iyzico, a closed payment page), oldest first. */
+/** The user's checkouts still waiting for a result (a review, an unreachable iyzico, a closed payment page), newest first. */
 export async function listOpenPayments(userId: string, limit = 5) {
   return getDb().select({ id: payments.id, amountKurus: payments.amountKurus, status: payments.status, token: payments.token, createdAt: payments.createdAt })
-    .from(payments).where(and(eq(payments.userId, userId), eq(payments.status, "pending"), sql`${payments.token} is not null`)).orderBy(asc(payments.createdAt)).limit(limit);
+    .from(payments).where(and(eq(payments.userId, userId), eq(payments.status, "pending"), sql`${payments.token} is not null`)).orderBy(desc(payments.createdAt)).limit(limit);
 }
 
 /** The user's purchase paid in the last `withinMs`, if any: what a "payment received" message may name. */

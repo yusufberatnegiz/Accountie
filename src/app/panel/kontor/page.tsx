@@ -22,9 +22,16 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
   const cfg = iyzicoConfig();
   // Checkouts still waiting (a review, an iyzico that did not answer) are asked again, together and for a few seconds at most:
   // a slow iyzico never holds the page; what is not settled now is asked on the next visit.
+  let waiting = 0;
   if (cfg) {
     const open = await listOpenPayments(user.id);
-    if (open.length) await Promise.race([Promise.all(open.map((p) => settlePayment(cfg, p).catch(() => null))), new Promise((r) => setTimeout(r, SETTLE_WAIT_MS))]);
+    // Paid within the last day and still unanswered: shown, so a charged buyer never sees the payment vanish.
+    const dayAgo = new Date(new Date().getTime() - 86_400_000);
+    const recent = open.filter((p) => p.createdAt > dayAgo);
+    if (open.length) {
+      const settled = await Promise.race([Promise.all(open.map((p) => settlePayment(cfg, p).catch(() => null))), new Promise<null>((r) => setTimeout(() => r(null), SETTLE_WAIT_MS))]);
+      waiting = settled ? recent.filter((p) => settled[open.indexOf(p)] === "inceleme" || settled[open.indexOf(p)] === "bekliyor").length : recent.length;
+    }
   }
   const [{ firm }, balance, billing, usage, history, paid] = await Promise.all([
     activeFirm(user.id), getBalance(user.id), getBillingProfile(user.id), creditUseByFirm(user.id), listPayments(user.id), recentPaid(user.id, PAID_RECENTLY_MS),
@@ -34,7 +41,7 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
   const outcome = paid && (odeme === "tamam" || odeme === "bekliyor" || odeme === "inceleme") ? "tamam" : odeme === "tamam" ? undefined : odeme;
   return (
     <AppShell current="kontor" email={user.email} firmId={firm.id}>
-      <CreditsView balance={balance} open={cfg !== null} required={creditsRequired()} billing={billing} usage={usage} history={history} outcome={outcome} added={paid?.credits} ranOut={ranOut} />
+      <CreditsView balance={balance} open={cfg !== null} required={creditsRequired()} billing={billing} usage={usage} history={history} outcome={outcome} added={paid?.credits} ranOut={ranOut} waiting={waiting} />
     </AppShell>
   );
 }
