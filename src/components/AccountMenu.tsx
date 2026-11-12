@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef } from "react";
 import { logout } from "@/app/giris/actions";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
@@ -33,6 +34,7 @@ export function AccountMenu({ email }: { email?: string }) {
           <form action={logout}>
             <button className="btn account-logout" type="submit">Çıkış yap</button>
           </form>
+          <Link className="account-delete" href="/panel/hesap">Hesabı sil</Link>
         </div>
       </dialog>
     </>

@@ -62,7 +62,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "Saklama süresi",
     body: [
-      "Hesap verileri, hesap açık kaldığı sürece saklanır. Hesap kapatılınca 30 gün içinde silinir.",
+      "Hesap verileri, hesap açık kaldığı sürece saklanır. Hesabı panelde \"Hesabı sil\" ile sildiğinizde hemen silinir; veritabanı yedeklerinden en geç 30 gün içinde düşer.",
       "Fiş fotoğrafı ve PDF belgeler Accountie'de saklanmaz; okuma hizmeti (Anthropic) en çok 30 gün tutabilir.",
       "Giriş denemesi sayımları bir gün sonra silinir.",
       "Kanunen daha uzun süre saklanması gereken kayıtlar o süre boyunca saklanır, ardından silinir.",

@@ -55,7 +55,8 @@ const SECTIONS: LegalSection[] = [
     title: "Haklarınız",
     body: [
       "Kişisel verilerinizin işlenip işlenmediğini öğrenme, düzeltilmesini ve silinmesini isteme hakkınız vardır (6698 sayılı KVKK, madde 11).",
-      `Hesabın silinmesi ve diğer talepler için: ${PROVIDER.email}. Başvuru yolları ve süreler Aydınlatma Metninde yazılıdır.`,
+      "Hesabınızı ve bütün verilerinizi panelde Hesap menüsündeki \"Hesabı sil\" ile kendiniz silebilirsiniz; silme hemen yapılır.",
+      `Diğer talepler için: ${PROVIDER.email}. Başvuru yolları ve süreler Aydınlatma Metninde yazılıdır.`,
     ],
   },
 ];

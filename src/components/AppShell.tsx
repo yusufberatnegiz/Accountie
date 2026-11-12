@@ -6,7 +6,7 @@ import { CaptureButton } from "@/components/CaptureButton";
 import { FirmShortcut } from "@/components/FirmShortcut";
 import "./panel/panel.css";
 
-type Current = "fisler" | "fis" | "kurallar" | "firmalar";
+type Current = "fisler" | "fis" | "kurallar" | "firmalar" | "hesap";
 
 // Drawn icons, 16px outline at 1.5px (docs/design/YON.md 5.2).
 const ICONS = {

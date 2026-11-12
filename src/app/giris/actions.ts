@@ -4,8 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuth } from "@/lib/auth/server";
-import { getUserId, inRecovery } from "@/lib/auth/session";
-import { revokeExtensionTokens } from "@/db/queries";
+import { getSessionUser, getUserId, inRecovery } from "@/lib/auth/session";
+import { deleteAccount, revokeExtensionTokens } from "@/db/queries";
 import { AFTER_LOGIN, safeNextPath } from "@/lib/auth/next-path";
 import { allow, clientIp } from "@/lib/rate-limit";
 import { verifyTurnstile } from "@/lib/turnstile";
@@ -106,4 +106,30 @@ export async function resetPassword(_prev: ResetState, formData: FormData): Prom
 export async function logout() {
   await (await getAuth()).signOut();
   redirect("/giris");
+}
+
+export type DeleteState = { error: "bos-sifre" | "kimlik" | "cok-deneme" | "sunucu" } | undefined;
+
+/**
+ * Hesabı sil (Hesap menüsü > Hesabı sil): the password is asked again, so a session left open on a shared computer cannot
+ * wipe the account. Every row and the auth user go in one transaction; then the session ends.
+ */
+export async function deleteMyAccount(_prev: DeleteState, formData: FormData): Promise<DeleteState> {
+  const user = await getSessionUser();
+  if (!user) redirect("/giris");
+  const password = formData.get("password");
+  if (typeof password !== "string" || !password || password.length > 128) return { error: "bos-sifre" };
+  // Same per-address limit as login: the password box here must not be a way round it.
+  if (!(await allow("loginEmail", user.email))) return { error: "cok-deneme" };
+  const auth = await getAuth();
+  const { error } = await auth.signInWithPassword({ email: user.email, password });
+  if (error) return { error: "kimlik" };
+  try {
+    await deleteAccount(user.id);
+  } catch {
+    return { error: "sunucu" };
+  }
+  // The auth user is gone, so its refresh token is too; signOut only clears this browser's cookies (it may fail remotely, harmlessly).
+  await auth.signOut().catch(() => undefined);
+  back({ mesaj: "hesap-silindi" });
 }

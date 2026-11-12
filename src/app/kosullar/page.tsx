@@ -86,8 +86,8 @@ const SECTIONS: LegalSection[] = [
   {
     title: "10. Süre ve fesih",
     body: [
-      "Sözleşme, hesap açılınca başlar ve süresizdir. Kullanıcı istediği an hesabının kapatılmasını isteyebilir.",
-      "Hesap kapatılınca Kullanıcının fişleri, kayıtları, kuralları ve firmaları 30 gün içinde silinir. Kanunen saklanması gereken kayıtlar (ör. ödeme ve fatura kayıtları) yalnız bu süre boyunca saklanır.",
+      "Sözleşme, hesap açılınca başlar ve süresizdir. Kullanıcı istediği an, panelde Hesap menüsündeki \"Hesabı sil\" ile hesabını kapatabilir.",
+      "Hesap silinince Kullanıcının fişleri, kayıtları, kuralları, firmaları ve giriş bilgileri hemen silinir; veritabanı yedeklerinden en geç 30 gün içinde düşer. Kanunen saklanması gereken kayıtlar (ör. ödeme ve fatura kayıtları) yalnız bu süre boyunca saklanır.",
       "Kullanıcı, kapatma öncesinde onaylı kayıtlarını Luca dosyası (Excel) olarak indirebilir.",
       "Kullanıcı bu sözleşmeye aykırı davranırsa Accountie, aykırılığı yazılı olarak bildirip makul süre verdikten sonra, ağır hâllerde hemen, sözleşmeyi feshedebilir.",
     ],

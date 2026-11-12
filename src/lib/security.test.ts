@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), revokeExtensionTokens: vi.fn() }));
+vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), revokeExtensionTokens: vi.fn(), deleteAccount: vi.fn() }));
 // Supabase Auth as the server actions see it (getAuth() resolves to the auth client).
 type Reply = (...args: unknown[]) => Promise<{ data?: unknown; error: null | { status: number } }>;
 const A = vi.hoisted(() => ({
@@ -17,7 +17,7 @@ vi.mock("@/lib/auth/server", () => ({ getAuth: async () => A }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": "203.0.113.9, 10.0.0.1", origin: "https://accountie.test" }) }));
 vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error(`REDIRECT ${url}`); } }));
 
-const { hitRateLimit, revokeExtensionTokens } = await import("@/db/queries");
+const { hitRateLimit, revokeExtensionTokens, deleteAccount } = await import("@/db/queries");
 const { sniffImageType } = await import("./image");
 const { clientIp, ipBucket, LIMITS } = await import("./rate-limit");
 const actions = await import("@/app/giris/actions");
@@ -246,5 +246,33 @@ describe("e-posta bağlantısı dönüşü (/auth/callback)", () => {
     vi.mocked(A.exchangeCodeForSession as unknown as Reply).mockResolvedValueOnce({ error: { status: 400 } });
     const reset = await go("?code=eski&tur=sifre");
     expect(reset.pathname + reset.search).toBe("/giris/sifre/yeni?hata=1");
+  });
+});
+
+describe("hesabı sil", () => {
+  beforeEach(() => { vi.clearAllMocks(); vi.mocked(hitRateLimit).mockResolvedValue(true); });
+
+  it("şifre yanlışsa ya da boşsa hiçbir şey silinmez", async () => {
+    vi.mocked(A.signInWithPassword as unknown as Reply).mockResolvedValueOnce({ error: { status: 400 } });
+    expect(await actions.deleteMyAccount(undefined, form({ password: "yanlis-sifre" }))).toEqual({ error: "kimlik" });
+    expect(await actions.deleteMyAccount(undefined, form({ password: "" }))).toEqual({ error: "bos-sifre" });
+    expect(deleteAccount).not.toHaveBeenCalled();
+  });
+
+  it("şifre oturumun kendi e-postasıyla denetlenir; doğruysa hesap silinir, oturum kapanır", async () => {
+    const res = await redirectOf(actions.deleteMyAccount(undefined, form({ password: "dogru-sifre" })));
+    expect(A.signInWithPassword).toHaveBeenCalledWith({ email: "a@ornek.com", password: "dogru-sifre" });
+    expect(deleteAccount).toHaveBeenCalledWith("kullanici-1");
+    expect(A.signOut).toHaveBeenCalled();
+    expect(res).toBe("REDIRECT /giris?mesaj=hesap-silindi");
+  });
+
+  it("deneme sınırı aşılınca şifre denenmez; silme başarısızsa oturum açık kalır", async () => {
+    vi.mocked(hitRateLimit).mockResolvedValueOnce(false);
+    expect(await actions.deleteMyAccount(undefined, form({ password: "x" }))).toEqual({ error: "cok-deneme" });
+    expect(A.signInWithPassword).not.toHaveBeenCalled();
+    vi.mocked(deleteAccount).mockRejectedValueOnce(new Error("db"));
+    expect(await actions.deleteMyAccount(undefined, form({ password: "dogru-sifre" }))).toEqual({ error: "sunucu" });
+    expect(A.signOut).not.toHaveBeenCalled();
   });
 });

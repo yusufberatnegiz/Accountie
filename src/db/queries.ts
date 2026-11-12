@@ -279,6 +279,20 @@ export async function createExtensionToken(userId: string, tokenHash: string, ex
   });
 }
 
+/** Every table holding a user's rows, children before parents (foreign keys). A test checks no user_id table is missing. */
+export const USER_TABLES = [journalLines, receipts, vendorRules, firmRules, firmAccounts, accountRules, extensionTokens, firms] as const;
+
+/**
+ * Deletes the account for good: every row of the user, then the Supabase Auth user (its sessions and identities go with it),
+ * in one transaction, so a failure leaves the account whole. The app connects as the database owner, which may delete from auth.users.
+ */
+export async function deleteAccount(userId: string): Promise<void> {
+  await getDb().transaction(async (tx) => {
+    for (const table of USER_TABLES) await tx.delete(table).where(eq(table.userId, userId));
+    await tx.execute(sql`delete from auth.users where id = ${userId}::uuid`);
+  });
+}
+
 export async function revokeExtensionTokens(userId: string): Promise<void> {
   await getDb().delete(extensionTokens).where(eq(extensionTokens.userId, userId));
 }
