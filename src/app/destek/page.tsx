@@ -23,6 +23,13 @@ const SECTIONS: LegalSection[] = [
     ],
   },
   {
+    title: "Ödeme ve kontör",
+    body: [
+      "Ödemeyle ilgili yazarken ödeme tarihini, tutarı, paketi ve iyzico'nun gönderdiği e-postadaki ödeme numarasını yazın. Kart numaranızı göndermeyin.",
+      "Kartınızdan çekildiği hâlde kontör eklenmediyse önce panelde Kontör sayfasını açın: sayfa bekleyen ödemeyi iyzico'ya yeniden sorar. Bir saat içinde eklenmezse bize yazın.",
+    ],
+  },
+  {
     title: "Hesap ve veriler",
     body: [
       "Hesabınızı panelde Hesap menüsünden \"Hesabı sil\" ile kendiniz silebilirsiniz; bütün verileriniz hemen silinir. Kanunen saklanması gereken ödeme kayıtları bunun dışındadır.",

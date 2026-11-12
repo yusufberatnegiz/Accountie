@@ -202,6 +202,8 @@ export const payments = pgTable("payments", {
   token: text("token"),
   providerPaymentId: text("provider_payment_id"),
   billing: jsonb("billing").notNull(),
+  // The Kullanım Koşulları version shown beside the pay button (TERMS_VERSION): what the buyer accepted by paying.
+  termsVersion: text("terms_version").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   paidAt: timestamp("paid_at", { withTimezone: true }),
 }, (t) => [

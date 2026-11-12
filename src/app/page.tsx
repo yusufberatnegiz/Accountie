@@ -46,7 +46,7 @@ const FAQ: Qa[] = [
   { q: "KDV’yi yeniden hesaplıyor mu?", a: "Hayır. Matrah, toplamdan fişte yazan KDV düşülerek bulunur. KDV okunamazsa orandan hesaplanır ve satıra not düşülür." },
   { q: "Okuma yanlış çıkarsa?", a: "Okunamayan alan boş kalır ve işaretlenir. Toplam ile KDV tutmazsa fiş bir kez daha okunur, yine tutmazsa uyarıyla size gelir." },
   { q: "Hesap kodlarını kim seçiyor?", a: "Siz. Yapay zeka yalnız kategori önerir; hesap kodu kendi kural tablonuzdan gelir." },
-  { q: "Ücretli mi?", a: "Fiyat henüz belirlenmedi. Ücretlendirme başlamadan önce hesabınızdaki e-postaya haber verilir." },
+  { q: "Ücretli mi?", a: "Belge okuma kontörle ücretlendirilir: fiş ve Z raporu 1, fatura 2 kontör. Paketler 100 kontör 750 TL'den başlar (KDV dahil), kontörün süresi dolmaz. Kontör zorunlu olmadan önce hesabınızdaki e-postaya haber verilir." },
   { q: "Kişisel verilerim nasıl işleniyor?", a: "Hangi verinin hangi hizmete gittiği ve neyin saklandığı gizlilik sayfasında yazılı. Bağlantısı sayfanın altında." },
   { q: "Telefonda uygulama gibi açılır mı?", a: "Evet. Ana ekrana eklediğinizde ayrı bir uygulama gibi açılır, Fiş çek tek dokunuştur." },
 ];
@@ -180,6 +180,8 @@ export default function LandingPage() {
           <Link href="/gizlilik" prefetch={false}>Gizlilik</Link>
           <Link href="/kvkk" prefetch={false}>KVKK</Link>
           <Link href="/kosullar" prefetch={false}>Kullanım Koşulları</Link>
+          <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Satış</Link>
+          <Link href="/iptal-iade" prefetch={false}>İptal ve İade</Link>
           <Link href="/destek" prefetch={false}>Bize ulaşın</Link>
         </nav>
       </footer>

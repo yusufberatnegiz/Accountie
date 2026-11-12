@@ -10,7 +10,7 @@ export const loginSchema = z.object({ email: z.email().max(200), password: z.str
 // The terms box must be ticked: an unticked checkbox is simply absent from the form data.
 export const signupSchema = loginSchema.extend({ name: z.string().trim().min(2).max(100), password: z.string().min(8).max(128), terms: z.literal("on") });
 /** The date of the Kullanım Koşulları text in force; stored with the account when the box is ticked. Change it when /kosullar changes. */
-export const TERMS_VERSION = "2026-11-12";
+export const TERMS_VERSION = "2026-11-13";
 
 export type AuthField = "name" | "email" | "password" | "terms";
 /** What a failed attempt hands back to the form: a fixed error code, the field it belongs to, and what was typed (never the password). */

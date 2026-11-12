@@ -31,10 +31,11 @@ export const creditCost = (read: { ok: boolean; kind?: string }): number =>
   !read.ok ? 0 : read.kind === "domestic_invoice" || read.kind === "foreign_invoice" ? 2 : 1;
 
 /**
- * Credits are required only once payments can be taken: without iyzico keys nobody could buy any, and accounts in use
- * before kontör existed keep working. shortcut: one switch for every user; per-account exemptions need a column.
+ * Credits are required only when both hold: payments can be taken (iyzico keys; without them nobody could buy any) and the
+ * requirement was switched on (KONTOR_ZORUNLU=1), which Koşullar md. 6 says happens at least 30 days after users are told.
+ * Until then purchases may be open while reading stays free. shortcut: one switch for every user; per-account dates need a column.
  */
-export const creditsRequired = () => Boolean(process.env.IYZICO_API_KEY && process.env.IYZICO_SECRET_KEY);
+export const creditsRequired = () => Boolean(process.env.IYZICO_API_KEY && process.env.IYZICO_SECRET_KEY && process.env.KONTOR_ZORUNLU === "1");
 
 /** The KDV inside a KDV-inclusive price (20%), for the summary. */
 export const vatInsideKurus = (priceKurus: number) => Math.round((priceKurus * 20) / 120);

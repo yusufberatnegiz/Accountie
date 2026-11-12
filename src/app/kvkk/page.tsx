@@ -23,7 +23,7 @@ const SECTIONS: LegalSection[] = [
       "Kimlik: ad soyad.",
       "İletişim: e-posta adresi.",
       "Müşteri işlem: hesabınıza bağlı firmalar (unvan, vergi numarası, hesap planı), fişlerden okunan alanlar, yevmiye kayıtları ve hesap kurallarınız; Kullanım Koşullarını kabul ettiğiniz tarih.",
-      "Fatura ve ödeme: kontör satın alırken girdiğiniz ad soyad ya da unvan, VKN ya da TCKN, vergi dairesi, cep telefonu ve fatura adresi; satın alınan paket, tutar, tarih ve kontör hareketleri. Kart bilgileri Accountie'ye gelmez.",
+      "Fatura ve ödeme: kontör satın alırken girdiğiniz ad soyad ya da unvan, VKN ya da TCKN, vergi dairesi, cep telefonu ve fatura adresi; satın alınan paket, tutar, tarih ve kontör hareketleri; ödeme başlatılırken IP adresi (yalnız iyzico'ya iletilir, saklanmaz). Kart bilgileri Accountie'ye gelmez.",
       "İşlem güvenliği: oturum çerezi, şifrenin özeti (Accountie şifrenizi görmez), eklenti anahtarının özeti, giriş ve kayıt denemelerinin sayımı için tek yönlü özetlenmiş IP adresi ve e-posta.",
     ],
   },
@@ -59,7 +59,7 @@ const SECTIONS: LegalSection[] = [
     title: "Müşteri belgeleri",
     body: [
       "Yüklediğiniz fiş, Z raporu ve faturalarda müşterilerinize ve onların satıcılarına ait veriler bulunabilir (ör. şahıs firmalarında vergi numarası olarak TC kimlik numarası).",
-      "Bu veriler bakımından veri sorumlusu siz, Accountie ise veri işleyensiniz. Accountie bu verileri yalnız sizin talimatınızla ve Kullanım Koşullarının 5. maddesindeki şartlarla işler.",
+      "Bu veriler bakımından veri sorumlusu sizsiniz, Accountie ise veri işleyendir. Accountie bu verileri yalnız sizin talimatınızla ve Kullanım Koşullarının 5. maddesindeki şartlarla işler.",
     ],
   },
   {
@@ -68,7 +68,7 @@ const SECTIONS: LegalSection[] = [
       "Hesap verileri, hesap açık kaldığı sürece saklanır. Hesabı panelde \"Hesabı sil\" ile sildiğinizde hemen silinir; veritabanı yedeklerinden en geç 30 gün içinde düşer.",
       "Fiş fotoğrafı ve PDF belgeler Accountie'de saklanmaz; okuma hizmeti (Anthropic) en çok 30 gün tutabilir.",
       "Giriş denemesi sayımları bir gün sonra silinir.",
-      "Ödeme ve fatura kayıtları, hesap silinse de vergi ve ticaret mevzuatının öngördüğü süre (en çok 10 yıl) boyunca saklanır.",
+      "Tamamlanan ödemelerin kaydı ve o andaki fatura bilgileri, hesap silinse de vergi ve ticaret mevzuatının öngördüğü süre (en çok 10 yıl) boyunca saklanır. Tamamlanmayan ödemenin fatura bilgileri ödeme kapanınca, açık kalan bir ödemeninki en geç 7 gün sonra silinir.",
       "Kanunen daha uzun süre saklanması gereken kayıtlar o süre boyunca saklanır, ardından silinir.",
     ],
   },

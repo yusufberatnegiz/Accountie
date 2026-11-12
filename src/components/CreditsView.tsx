@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { PACKAGES, perCreditKurus, savingPercent, vatInsideKurus } from "@/lib/credits";
 import { formatTrAmount } from "@/lib/money";
 
@@ -9,30 +10,47 @@ export type CreditUse = { firmId: string | null; name: string | null; used: numb
 export type Purchase = { id: string; packageId: string; credits: number; amountKurus: number; paidAt: Date | string | null };
 
 const tl = (kurus: number) => `${formatTrAmount(kurus).replace(/,00$/, "")} TL`;
-const count = (n: number) => n.toLocaleString("tr-TR");
+// A true minus sign: at display size the hyphen reads as a dash.
+const count = (n: number) => (n < 0 ? `−${(-n).toLocaleString("tr-TR")}` : n.toLocaleString("tr-TR"));
 const day = (d: Date | string | null) => (d ? new Date(d).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul" }) : "-");
 
-// What iyzico's callback says, in the buyer's words (src/app/api/payments/callback/route.ts).
-const OUTCOME: Record<string, { text: string; error?: boolean }> = {
-  tamam: { text: "Ödeme alındı. Kontörler bakiyenize eklendi." },
-  hata: { text: "Ödeme tamamlanmadı ve kontör eklenmedi. Kart bilgilerini kontrol edip tekrar deneyebilirsiniz.", error: true },
-  inceleme: { text: "Ödeme bankanın incelemesinde. Onaylanınca kontörler bakiyenize kendiliğinden eklenir." },
-  bekliyor: { text: "Ödemenin sonucu henüz alınamadı. Birkaç dakika sonra bu sayfayı yenileyin; kontör eklenmediyse destek@accountie.app adresine yazın.", error: true },
+// What the payment's result was (src/lib/settle-payment.ts), in the buyer's words; green only for credits really added.
+const OUTCOME: Record<string, { text: string; tone: "ok" | "error" | "warn" }> = {
+  tamam: { text: "Ödeme alındı. Kontörler bakiyenize eklendi.", tone: "ok" },
+  hata: { text: "Ödeme tamamlanmadı ve kontör eklenmedi. Kart bilgilerini kontrol edip tekrar deneyebilirsiniz.", tone: "error" },
+  inceleme: { text: "Ödeme bankanın incelemesinde. Bu sayfa her açılışta sonucu yeniden sorar; onaylanınca kontörler bakiyenize eklenir.", tone: "warn" },
+  bekliyor: { text: "Ödemenin sonucu henüz alınamadı. Bu sayfa her açılışta sonucu yeniden sorar. Kontör bir saat içinde eklenmezse", tone: "warn" },
 };
 
+// Server field names (BillingSchema) to the form's own.
+const FIELD: Record<string, string> = { name: "ad", taxNumber: "vkn", taxOffice: "vd", phone: "tel", address: "adres", city: "il" };
+
 /**
- * The kontör screen: the balance, the four packages (each with its per-receipt price and saving against the smallest),
- * the order summary with the invoice details, and what was used and bought. Paying happens on iyzico's own page.
+ * The kontör screen, after Anthropic's billing page: the balance first and large, quiet package cards (each with its
+ * per-receipt price and the saving against the smallest), and one order column that names the amount on its button.
+ * Paying happens on iyzico's own page. `open`: purchases can be taken; `required`: reading needs credits (KONTOR_ZORUNLU).
  */
-export function CreditsView({ balance, open, billing, usage, history, outcome, ranOut, endpoint = "/api/payments" }: {
-  balance: number; open: boolean; billing: Billing | null; usage: CreditUse[]; history: Purchase[]; outcome?: string; ranOut?: number; endpoint?: string;
+export function CreditsView({ balance, open, required, billing, usage, history, outcome, ranOut, endpoint = "/api/payments" }: {
+  balance: number; open: boolean; required: boolean; billing: Billing | null; usage: CreditUse[]; history: Purchase[]; outcome?: string; ranOut?: number; endpoint?: string;
 }) {
   const [picked, setPicked] = useState(PACKAGES[1].id);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<{ text: string; field?: string } | null>(null);
+  const message = useRef<HTMLParagraphElement>(null);
   const pkg = PACKAGES.find((p) => p.id === picked) ?? PACKAGES[1];
   const done = outcome ? OUTCOME[outcome] : undefined;
+  // Only while it is still true: after a purchase the same address no longer says the balance ran out.
+  const showRanOut = ranOut !== undefined && balance <= 0;
   const usedTotal = usage.reduce((n, u) => n + u.used, 0);
+
+  // A result arriving with the page (back from iyzico, or sent here by an upload) is read out first, not found by scrolling.
+  useEffect(() => { message.current?.focus(); }, []);
+  // Back from iyzico through the browser's history: the page comes from its cache with the button still busy.
+  useEffect(() => {
+    const restore = (e: PageTransitionEvent) => { if (e.persisted) setBusy(false); };
+    addEventListener("pageshow", restore);
+    return () => removeEventListener("pageshow", restore);
+  }, []);
 
   async function pay(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,7 +58,7 @@ export function CreditsView({ balance, open, billing, usage, history, outcome, r
     const data = new FormData(e.currentTarget);
     const field = (k: string) => String(data.get(k) ?? "").trim();
     setBusy(true);
-    setError("");
+    setError(null);
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -49,12 +67,23 @@ export function CreditsView({ balance, open, billing, usage, history, outcome, r
     const body = res ? await res.json().catch(() => null) : null;
     if (!res?.ok || typeof body?.url !== "string") {
       setBusy(false);
-      setError(body?.error ?? "Bağlantı kurulamadı. Tekrar deneyin.");
+      const at = typeof body?.field === "string" ? FIELD[body.field] : undefined;
+      setError({ text: body?.error ?? "Bağlantı kurulamadı. Tekrar deneyin.", field: at });
+      if (at) {
+        document.getElementById("fatura")?.setAttribute("open", "");
+        document.querySelector<HTMLInputElement>(`[name="${at}"]`)?.focus();
+      }
       return;
     }
     // iyzico's hosted page: the card is typed there, never here. The button stays busy until the page leaves.
     window.location.assign(body.url);
   }
+
+  const invalid = (name: string) => (error?.field === name ? { "aria-invalid": true, "aria-errormessage": "odeme-hata" } : {});
+  const balanceNote = !open ? "Satın alma yakında açılıyor; o zamana kadar fiş okuma ücretsiz."
+    : balance < 0 ? `Son yüklemede bakiye ${count(balance)} kontöre indi. Bu açık, yükleyeceğiniz paketten düşülür.`
+    : balance > 0 ? `Yaklaşık ${count(balance)} fiş ya da ${count(Math.floor(balance / 2))} fatura.`
+    : required ? "Fiş okumak için bir paket seçin." : "Fiş okuma şimdilik ücretsiz; kontör zorunlu olmadan önce e-postayla haber verilir.";
 
   return (
     <main id="icerik" tabIndex={-1} className="canvas canvas-kontor">
@@ -65,9 +94,12 @@ export function CreditsView({ balance, open, billing, usage, history, outcome, r
         </div>
       </div>
 
-      {done ? <p className={done.error ? "alert alert-error" : "alert alert-ok"} role={done.error ? "alert" : "status"}>{done.text}</p> : null}
-      {ranOut !== undefined ? (
-        <p className="alert alert-warn" role="alert">{ranOut > 0 ? `${ranOut} fiş eklendi, ardından kontörünüz bitti.` : "Kontörünüz bitti."} Fiş okumaya devam etmek için bir paket seçin.</p>
+      {done ? (
+        <p ref={message} tabIndex={-1} className={done.tone === "ok" ? "alert alert-ok" : done.tone === "error" ? "alert alert-error" : "alert alert-warn"} role={done.tone === "error" ? "alert" : "status"}>
+          {done.text}{outcome === "bekliyor" ? <> <a href="mailto:destek@accountie.app">destek@accountie.app</a> adresine yazın.</> : null}
+        </p>
+      ) : showRanOut ? (
+        <p ref={message} tabIndex={-1} className="alert alert-warn" role="alert">{ranOut > 0 ? `${ranOut} fiş eklendi, ardından kontörünüz bitti.` : "Kontörünüz bitti."} Fiş okumaya devam etmek için bir paket seçin.</p>
       ) : null}
 
       <section className="panel kontor-balance" aria-labelledby="bakiye-baslik">
@@ -75,36 +107,66 @@ export function CreditsView({ balance, open, billing, usage, history, outcome, r
           <h2 id="bakiye-baslik" className="kontor-label">Bakiye</h2>
           <p className="kontor-figure" data-negative={balance < 0 || undefined}><span className="tnum">{count(balance)}</span> <span className="kontor-unit">kontör</span></p>
         </div>
-        <p className="kontor-note">
-          {balance < 0
-            ? `Son yüklemede bakiye ${count(balance)} kontöre indi. Bu açık, yükleyeceğiniz paketten düşülür.`
-            : balance > 0 ? `Yaklaşık ${count(balance)} fiş ya da ${count(Math.floor(balance / 2))} fatura.` : "Fiş okumak için bir paket seçin."}
-          {open ? null : " Satın alma yakında açılıyor; o zamana kadar fiş okumak için kontör gerekmiyor."}
-        </p>
+        <p className="kontor-note">{balanceNote}</p>
       </section>
 
       <div className="kontor-grid">
-        <section className="panel kontor-packs" aria-labelledby="paket-baslik">
-          <h2 id="paket-baslik">Paket seçin</h2>
-          <div className="pack-list" role="radiogroup" aria-labelledby="paket-baslik">
-            {PACKAGES.map((p) => {
-              const saving = savingPercent(p);
-              return (
-                <label key={p.id} className="pack" data-selected={p.id === picked || undefined}>
-                  <input className="visually-hidden" type="radio" name="paket" value={p.id} checked={p.id === picked} onChange={() => setPicked(p.id)} />
-                  <span className="pack-head">
-                    <span className="pack-name">{p.name}</span>
-                    {saving ? <span className="pill pill-positive">Fiş başı %{saving} tasarruf</span> : null}
-                  </span>
-                  <span className="pack-credits"><span className="tnum">{count(p.credits)}</span> kontör</span>
-                  <span className="pack-price tnum">{tl(p.priceKurus)}</span>
-                  <span className="pack-unit">Fiş başı <span className="tnum">{formatTrAmount(perCreditKurus(p))}</span> TL</span>
-                </label>
-              );
-            })}
-          </div>
-          <p className="hint">Fiyatlara KDV dahildir. Kontörün süresi dolmaz ve iade edilmez. Okunamayan belgeden kontör düşmez.</p>
-        </section>
+        <div className="kontor-main">
+          <section className="panel kontor-packs" aria-labelledby="paket-baslik">
+            <h2 id="paket-baslik">Paket seçin</h2>
+            <div className="pack-list" role="radiogroup" aria-labelledby="paket-baslik" inert={busy || undefined}>
+              {PACKAGES.map((p) => {
+                const saving = savingPercent(p);
+                return (
+                  <label key={p.id} className="pack" data-selected={p.id === picked || undefined}>
+                    <input className="visually-hidden" type="radio" name="paket" value={p.id} checked={p.id === picked} onChange={() => { setPicked(p.id); setError(null); }} />
+                    <span className="pack-head">
+                      <span className="pack-name">{p.name}</span>
+                      {saving ? <span className="pill pill-positive">Fiş başı %{saving} tasarruf</span> : null}
+                    </span>
+                    <span className="pack-credits"><span className="tnum">{count(p.credits)}</span> kontör</span>
+                    <span className="pack-price tnum">{tl(p.priceKurus)}</span>
+                    <span className="pack-unit"><span className="tnum">{formatTrAmount(perCreditKurus(p))}</span> TL / fiş</span>
+                  </label>
+                );
+              })}
+            </div>
+            <p className="hint">Fiyatlara KDV dahildir. Kontörün süresi dolmaz ve iade edilmez. Hiçbir alanı okunamayan belgeden kontör düşmez.</p>
+            {/* On a phone the order column is far below: the choice and a way down to it, right under the cards. */}
+            <p className="pack-chosen"><span>Seçilen: {pkg.name}, <span className="tnum">{tl(pkg.priceKurus)}</span></span><a href="#odeme-baslik">Ödemeye geç</a></p>
+          </section>
+
+          <section className="panel kontor-usage" aria-labelledby="kullanim-baslik">
+            <div className="kontor-section-head">
+              <h2 id="kullanim-baslik">Bu ay firmalara göre</h2>
+              {usedTotal ? <p className="hint"><span className="tnum">{count(usedTotal)}</span> kontör</p> : null}
+            </div>
+            {usage.length ? (
+              <table className="kontor-table">
+                <thead><tr><th>Firma</th><th className="num">Belge</th><th className="num">Kontör</th></tr></thead>
+                <tbody>
+                  {usage.map((u) => (
+                    <tr key={u.firmId ?? "silinen"}><td>{u.name ?? <span className="muted">Silinen firma</span>}</td><td className="num tnum">{count(u.documents)}</td><td className="num tnum">{count(u.used)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : <p className="kontor-empty">Bu ay kontör kullanılmadı. Okunan her belge, yüklendiği firmanın satırına yazılır.</p>}
+          </section>
+
+          <section className="panel kontor-history" aria-labelledby="gecmis-baslik">
+            <div className="kontor-section-head"><h2 id="gecmis-baslik">Satın almalar</h2></div>
+            {history.length ? (
+              <table className="kontor-table">
+                <thead><tr><th>Tarih</th><th className="num">Kontör</th><th className="num">Tutar</th></tr></thead>
+                <tbody>
+                  {history.map((h) => (
+                    <tr key={h.id}><td>{day(h.paidAt)}</td><td className="num tnum">{count(h.credits)}</td><td className="num tnum">{tl(h.amountKurus)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : <p className="kontor-empty">Henüz satın alma yok.</p>}
+          </section>
+        </div>
 
         <section className="panel kontor-pay" aria-labelledby="odeme-baslik">
           <h2 id="odeme-baslik">Ödeme</h2>
@@ -114,55 +176,35 @@ export function CreditsView({ balance, open, billing, usage, history, outcome, r
             <div><dt>İçindeki KDV (%20)</dt><dd className="tnum">{formatTrAmount(vatInsideKurus(pkg.priceKurus))} TL</dd></div>
             <div className="pay-total"><dt>Ödenecek</dt><dd className="tnum">{tl(pkg.priceKurus)}</dd></div>
           </dl>
-          <form className="pay-form" onSubmit={pay} aria-describedby={error ? "odeme-hata" : undefined}>
-            <fieldset className="pay-billing">
-              <legend>Fatura bilgileri</legend>
-              <label className="span-all">Ad soyad ya da unvan<input className="field" name="ad" required minLength={3} maxLength={200} autoComplete="name" defaultValue={billing?.name} /></label>
-              <label>VKN ya da TCKN<input className="field tnum" name="vkn" required inputMode="numeric" pattern="\d{10,11}" maxLength={11} autoComplete="off" defaultValue={billing?.taxNumber} /></label>
-              <label>Vergi dairesi<input className="field" name="vd" placeholder="İsteğe bağlı" maxLength={80} autoComplete="off" defaultValue={billing?.taxOffice ?? ""} /></label>
-              <label>Cep telefonu<input className="field tnum" name="tel" required type="tel" inputMode="tel" placeholder="05xx xxx xx xx" maxLength={16} autoComplete="tel" defaultValue={billing?.phone} /></label>
-              <label>İl<input className="field" name="il" required minLength={2} maxLength={60} autoComplete="address-level1" defaultValue={billing?.city} /></label>
-              <label className="span-all">Fatura adresi<textarea className="field" name="adres" required minLength={10} maxLength={300} rows={2} autoComplete="street-address" defaultValue={billing?.address} /></label>
-            </fieldset>
-            {error ? <p id="odeme-hata" className="alert alert-error" role="alert">{error}</p> : null}
-            <button type="submit" className="btn btn-primary btn-lg pay-submit" aria-disabled={busy || !open || undefined}>
-              {!open ? "Satın alma yakında açılıyor" : busy ? "Ödeme sayfası açılıyor…" : `${tl(pkg.priceKurus)} öde`}
+          <form className="pay-form" onSubmit={pay}>
+            {/* Saved details fold to one line, so the button sits under the total; a new buyer gets the open form. */}
+            {/* Nothing to fill while purchases are closed; while the payment page opens, the details stay as typed but out of reach. */}
+            {open ? <details id="fatura" className="pay-details" open={!billing || undefined} inert={busy || undefined}>
+              <summary>
+                <span className="pay-details-title">Fatura bilgileri</span>
+                {billing ? <span className="pay-details-who">{billing.name}, {billing.city}</span> : null}
+                {billing ? <span className="pay-details-edit" aria-hidden="true">Değiştir</span> : null}
+              </summary>
+              <fieldset className="pay-billing">
+                <legend className="visually-hidden">Fatura bilgileri</legend>
+                <label className="span-all">Ad soyad ya da unvan<input className="field" name="ad" required minLength={3} maxLength={200} autoComplete="name" defaultValue={billing?.name} {...invalid("ad")} /></label>
+                <label>VKN ya da TCKN<input className="field tnum" name="vkn" required inputMode="numeric" pattern="\d{10,11}" maxLength={11} autoComplete="off" title="10 haneli VKN ya da 11 haneli TCKN" aria-describedby="vkn-ipucu" defaultValue={billing?.taxNumber} {...invalid("vkn")} />
+                  <span id="vkn-ipucu" className="hint">10 haneli VKN ya da 11 haneli TCKN</span></label>
+                <label>Vergi dairesi<input className="field" name="vd" placeholder="İsteğe bağlı" maxLength={80} autoComplete="off" defaultValue={billing?.taxOffice ?? ""} {...invalid("vd")} /></label>
+                <label>Cep telefonu<input className="field tnum" name="tel" required type="tel" inputMode="tel" placeholder="05xx xxx xx xx" maxLength={16} autoComplete="tel" defaultValue={billing?.phone} {...invalid("tel")} /></label>
+                <label>İl<input className="field" name="il" required minLength={2} maxLength={60} autoComplete="address-level1" defaultValue={billing?.city} {...invalid("il")} /></label>
+                <label className="span-all">Fatura adresi<textarea className="field" name="adres" required minLength={10} maxLength={300} rows={2} autoComplete="street-address" defaultValue={billing?.address} {...invalid("adres")} /></label>
+              </fieldset>
+            </details> : <p className="hint">Satın alma açılınca fatura bilgilerinizi burada girersiniz.</p>}
+            <button type="submit" className="btn btn-primary btn-lg pay-submit" disabled={!open || undefined} aria-busy={busy || undefined} aria-describedby={error ? "odeme-hata" : undefined}>
+              {!open ? "Satın alma yakında açılıyor" : busy ? <>Ödeme sayfası açılıyor<span className="wait-dots" aria-hidden="true"><i /><i /><i /></span></> : `${tl(pkg.priceKurus)} öde`}
             </button>
-            <p className="hint">Kart bilgilerinizi iyzico&apos;nun güvenli ödeme sayfasında girersiniz; Accountie kart bilgisi görmez ve saklamaz. Ödeme 3D Secure ile onaylanır, tek çekim yapılır.</p>
+            {error ? <p id="odeme-hata" className="alert alert-error" role="alert">{error.text}</p> : null}
+            <p className="hint">
+              Ödeyerek <Link href="/kosullar#k-5" prefetch={false}>Kullanım Koşullarını</Link> (6. madde: kontör ve iade) ve <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Hizmet Satış Sözleşmesini</Link> kabul edersiniz.
+              Kart bilgilerinizi iyzico&apos;nun güvenli ödeme sayfasında girersiniz; Accountie kart bilgisi görmez ve saklamaz. Tek çekim yapılır.
+            </p>
           </form>
-        </section>
-      </div>
-
-      <div className="kontor-grid kontor-records">
-        <section className="panel kontor-usage" aria-labelledby="kullanim-baslik">
-          <div className="kontor-section-head">
-            <h2 id="kullanim-baslik">Bu ay firmalara göre</h2>
-            <p className="hint">{usedTotal ? `${count(usedTotal)} kontör` : "Bu ay kontör kullanılmadı"}</p>
-          </div>
-          {usage.length ? (
-            <table className="kontor-table">
-              <thead><tr><th>Firma</th><th className="num">Belge</th><th className="num">Kontör</th></tr></thead>
-              <tbody>
-                {usage.map((u) => (
-                  <tr key={u.firmId ?? "silinen"}><td>{u.name ?? <span className="muted">Silinen firma</span>}</td><td className="num tnum">{count(u.documents)}</td><td className="num tnum">{count(u.used)}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          ) : <p className="muted">Okunan her belge, yüklendiği firmanın satırına yazılır.</p>}
-        </section>
-
-        <section className="panel kontor-history" aria-labelledby="gecmis-baslik">
-          <div className="kontor-section-head"><h2 id="gecmis-baslik">Satın almalar</h2></div>
-          {history.length ? (
-            <table className="kontor-table">
-              <thead><tr><th>Tarih</th><th className="num">Kontör</th><th className="num">Tutar</th></tr></thead>
-              <tbody>
-                {history.map((h) => (
-                  <tr key={h.id}><td>{day(h.paidAt)}</td><td className="num tnum">{count(h.credits)}</td><td className="num tnum">{tl(h.amountKurus)}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          ) : <p className="muted">Henüz satın alma yok.</p>}
         </section>
       </div>
     </main>

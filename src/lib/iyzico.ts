@@ -92,17 +92,21 @@ export async function initializeCheckout(cfg: IyzicoConfig, args: { paymentId: s
   return { token: json.token, pageUrl: json.paymentPageUrl };
 }
 
+export type CheckoutOutcome = { state: "paid"; providerPaymentId: string } | { state: "failed" } | { state: "pending"; review: boolean };
+
 /**
  * The checkout's result, from iyzico itself. Paid only when the call succeeded, the payment succeeded, fraud review approved
- * it, and it is this checkout for this amount (conversationId and paidPrice match what we created).
+ * it, and it is this checkout for this amount (basketId is the payment we created; conversationId is only echoed back).
+ * Failed only when iyzico says so plainly (payment FAILURE or fraud rejected). Anything else (an error answer, a 5xx, a
+ * review) stays pending, so a charged payment is never closed as failed by a passing fault; it is asked again later.
  */
-export async function checkoutResult(cfg: IyzicoConfig, token: string, expect: { paymentId: string; amountKurus: number }, fetcher: Fetch = fetch): Promise<{ paid: true; providerPaymentId: string } | { paid: false; review: boolean }> {
+export async function checkoutResult(cfg: IyzicoConfig, token: string, expect: { paymentId: string; amountKurus: number }, fetcher: Fetch = fetch): Promise<CheckoutOutcome> {
   const json = await call(cfg, "/payment/iyzipos/checkoutform/auth/ecom/detail", { locale: "tr", conversationId: expect.paymentId, token }, fetcher);
-  const paid = json.status === "success" && json.paymentStatus === "SUCCESS" && Number(json.fraudStatus) === 1
-    && json.conversationId === expect.paymentId && json.basketId === expect.paymentId
-    && Math.round(Number(json.paidPrice) * 100) === expect.amountKurus && (json.currency ?? "TRY") === "TRY"
+  if (json.status !== "success") return { state: "pending", review: false };
+  if (json.paymentStatus === "FAILURE" || Number(json.fraudStatus) === -1) return { state: "failed" };
+  const ours = json.basketId === expect.paymentId && Math.round(Number(json.paidPrice) * 100) === expect.amountKurus && (json.currency ?? "TRY") === "TRY"
     && (typeof json.paymentId === "string" || typeof json.paymentId === "number");
-  // Taken but held for fraud review (fraudStatus 0): stays pending, never marked failed.
-  const review = json.status === "success" && json.paymentStatus === "SUCCESS" && Number(json.fraudStatus) === 0;
-  return paid ? { paid: true, providerPaymentId: String(json.paymentId) } : { paid: false, review };
+  if (json.paymentStatus === "SUCCESS" && Number(json.fraudStatus) === 1 && ours) return { state: "paid", providerPaymentId: String(json.paymentId) };
+  // A success for another basket or amount is never ours to credit; it is not a plain failure either, so a person looks at it.
+  return { state: "pending", review: json.paymentStatus === "SUCCESS" && Number(json.fraudStatus) === 0 && ours };
 }

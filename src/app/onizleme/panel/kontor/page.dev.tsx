@@ -25,7 +25,7 @@ export default async function PreviewCredits({ searchParams }: { searchParams: P
       <PreviewTheme tema={tema} />
       <PreviewApi approved={[]} />
       <AppShell current="kontor" base="/onizleme/panel" email={PREVIEW_EMAIL}>
-        <CreditsView balance={bakiye !== undefined ? Number(bakiye) : 641} open={!kapali} billing={bos ? null : BILLING} usage={bos ? [] : USAGE} history={bos ? [] : HISTORY}
+        <CreditsView balance={bakiye !== undefined ? Number(bakiye) : 641} open={!kapali} required billing={bos ? null : BILLING} usage={bos ? [] : USAGE} history={bos ? [] : HISTORY}
           outcome={odeme} ranOut={bitti !== undefined ? Number(bitti) : undefined} />
       </AppShell>
     </>

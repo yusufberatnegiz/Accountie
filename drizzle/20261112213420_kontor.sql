@@ -38,6 +38,7 @@ CREATE TABLE "payments" (
 	"token" text,
 	"provider_payment_id" text,
 	"billing" jsonb NOT NULL,
+	"terms_version" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"paid_at" timestamp with time zone
 );

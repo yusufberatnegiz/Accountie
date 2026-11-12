@@ -22,6 +22,8 @@ export const LIMITS = {
   reconcile: [[30, MIN], [600, 24 * 60 * MIN]],
   // Starting a checkout calls iyzico; a real buyer starts a few.
   payment: [[10, 10 * MIN], [50, 24 * 60 * MIN]],
+  // iyzico's callback, per network: a buyer comes back once per checkout.
+  paymentCallbackIp: [[30, 10 * MIN]],
 } as const;
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex").slice(0, 32);

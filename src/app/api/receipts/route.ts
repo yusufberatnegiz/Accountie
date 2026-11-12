@@ -102,10 +102,16 @@ type Saved = { id: string; readable: boolean; kind: string } | null;
 async function readMetered(metered: boolean, userId: string, firmId: string, image: Buffer, rules: Rules, mediaType?: "image/jpeg" | "application/pdf"): Promise<Saved | "no_credit"> {
   const entry = metered ? await reserveCredit(userId, firmId, MIN_BALANCE) : null;
   if (metered && !entry) return "no_credit";
-  const saved = await readAndSave(userId, firmId, image, rules, mediaType);
-  if (entry) {
-    await settleCredit(userId, entry, saved ? creditCost({ ok: saved.readable, kind: saved.kind }) : 0, saved?.id ?? null)
-      .catch((err) => console.error("credit settle failed", { error: err instanceof Error ? err.name : "unknown" }));
+  let saved: Saved = null;
+  try {
+    saved = await readAndSave(userId, firmId, image, rules, mediaType);
+  } finally {
+    // Also when the read throws: the reserved credit is given back, never kept for a document that was not read.
+    if (entry) {
+      const cost = saved ? creditCost({ ok: saved.readable, kind: saved.kind }) : 0;
+      const settle = () => settleCredit(userId, entry, cost, saved?.id ?? null, MIN_BALANCE);
+      await settle().catch(settle).catch((err) => console.error("credit settle failed", { error: err instanceof Error ? err.name : "unknown" }));
+    }
   }
   return saved;
 }

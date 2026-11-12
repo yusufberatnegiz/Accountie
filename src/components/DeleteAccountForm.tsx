@@ -18,7 +18,7 @@ export function DeleteAccountForm() {
   const error = state ? ERRORS[state.error] : undefined;
   return (
     <form action={action} className="stack delete-form"
-      onSubmit={(e) => { if (!confirm("Hesabınız ve bütün verileriniz kalıcı olarak silinsin mi? Bu işlem geri alınamaz.")) e.preventDefault(); }}>
+      onSubmit={(e) => { if (!confirm("Hesabınız ve verileriniz, kalan kontörünüz dahil, kalıcı olarak silinsin mi? Bu işlem geri alınamaz.")) e.preventDefault(); }}>
       <label className="stack" htmlFor="sil-sifre">
         <span>Onaylamak için şifreniz</span>
         <input ref={field} className="field" id="sil-sifre" name="password" type="password" autoComplete="current-password" maxLength={128} required

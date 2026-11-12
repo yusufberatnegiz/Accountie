@@ -189,11 +189,13 @@ describe("POST /api/receipts", () => {
 });
 
 describe("POST /api/receipts kontör", () => {
-  const metered = () => { process.env.IYZICO_API_KEY = "k"; process.env.IYZICO_SECRET_KEY = "s"; };
-  afterEach(() => { delete process.env.IYZICO_API_KEY; delete process.env.IYZICO_SECRET_KEY; });
+  const metered = () => { process.env.IYZICO_API_KEY = "k"; process.env.IYZICO_SECRET_KEY = "s"; process.env.KONTOR_ZORUNLU = "1"; };
+  afterEach(() => { delete process.env.IYZICO_API_KEY; delete process.env.IYZICO_SECRET_KEY; delete process.env.KONTOR_ZORUNLU; });
 
-  it("iyzico anahtarı yokken kontör istenmez", async () => {
+  it("iyzico anahtarı yokken ya da zorunluluk açılmadan kontör istenmez", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(true);
+    process.env.IYZICO_API_KEY = "k";
+    process.env.IYZICO_SECRET_KEY = "s";
     vi.mocked(createReceipt).mockResolvedValue("r-1");
     expect((await POST(jpeg())).status).toBe(201);
     expect(getBalance).not.toHaveBeenCalled();
@@ -219,11 +221,24 @@ describe("POST /api/receipts kontör", () => {
     vi.mocked(extractReceipt).mockResolvedValue(read({ documentKind: "domestic_invoice", category: "transport", total: "120,00", vatLines: [{ rate: 20, gross: "120,00", vat: "20,00" }] }));
     expect((await POST(pdf())).status).toBe(201);
     expect(reserveCredit).toHaveBeenCalledWith("user-1", "firm-1", -4);
-    expect(settleCredit).toHaveBeenLastCalledWith("user-1", "led-1", 2, "r-f");
+    expect(settleCredit).toHaveBeenLastCalledWith("user-1", "led-1", 2, "r-f", -4);
     vi.mocked(extractReceipt).mockResolvedValue({ ok: false, inputTokens: 0, outputTokens: 0 });
     vi.mocked(createReceipt).mockResolvedValue("r-x");
     await POST(jpeg());
-    expect(settleCredit).toHaveBeenLastCalledWith("user-1", "led-1", 0, "r-x");
+    expect(settleCredit).toHaveBeenLastCalledWith("user-1", "led-1", 0, "r-x", -4);
+  });
+
+  it("kayıt istisna atsa da ayrılan kontör geri verilir", async () => {
+    metered();
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(getBalance).mockResolvedValue(3);
+    vi.mocked(reserveCredit).mockResolvedValue("led-2");
+    vi.mocked(extractReceipt).mockResolvedValue(read({}));
+    vi.mocked(createReceipt).mockRejectedValue(new Error("db"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    await POST(jpeg()).catch(() => null);
+    log.mockRestore();
+    expect(settleCredit).toHaveBeenLastCalledWith("user-1", "led-2", 0, null, -4);
   });
 
   it("çok fişli fotoğrafta bakiye tabana inince kalan fişler okunmaz ve sayısı söylenir", async () => {

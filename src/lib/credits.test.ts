@@ -31,3 +31,18 @@ describe("kontör paketleri", () => {
     expect(MIN_BALANCE).toBe(-4);
   });
 });
+
+describe("kontör zorunluluğu", () => {
+  it("yalnız iyzico anahtarları ve KONTOR_ZORUNLU=1 birlikteyken", async () => {
+    const { creditsRequired } = await import("./credits");
+    const env = process.env;
+    expect(creditsRequired()).toBe(false);
+    env.IYZICO_API_KEY = "k"; env.IYZICO_SECRET_KEY = "s";
+    expect(creditsRequired()).toBe(false);
+    env.KONTOR_ZORUNLU = "1";
+    expect(creditsRequired()).toBe(true);
+    delete env.IYZICO_API_KEY;
+    expect(creditsRequired()).toBe(false);
+    delete env.IYZICO_SECRET_KEY; delete env.KONTOR_ZORUNLU;
+  });
+});

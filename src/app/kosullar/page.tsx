@@ -23,7 +23,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "2. Hizmetin konusu",
     body: [
-      "Accountie, Kullanıcının yüklediği yazar kasa fişi, Z raporu ve yurt dışı hizmet faturası gibi belgeleri yapay zekâ ile okur ve Kullanıcının hesap kurallarına göre yevmiye kaydı taslağı hazırlar.",
+      "Accountie, Kullanıcının yüklediği yazar kasa fişi, Z raporu, yurt içi fatura (bilet, otel, e-Arşiv) ve yurt dışı hizmet faturası gibi belgeleri yapay zekâ ile okur ve Kullanıcının hesap kurallarına göre yevmiye kaydı taslağı hazırlar.",
       "Hazırlanan kayıtlar Excel dosyası olarak ya da Accountie Chrome eklentisiyle Luca'ya aktarılabilir.",
       "Accountie muhasebe kaydını kendisi yapmaz, beyanname vermez, mesleki danışmanlık sunmaz.",
     ],
@@ -50,17 +50,17 @@ const SECTIONS: LegalSection[] = [
       "Kullanıcının yüklediği belgeler ve bunlardan hazırlanan kayıtlar Kullanıcıya aittir. Accountie bunları yalnız hizmeti sunmak için işler; satmaz, reklam için kullanmaz, yapay zekâ eğitimi için kullanmaz ve kullandırmaz.",
       "Belgelerdeki kişisel veriler bakımından Kullanıcı veri sorumlusu, Accountie veri işleyendir (6698 sayılı KVKK). Kullanıcı, belgelerini yüklediği müşterilerini kişisel verilerinin bu hizmette işlenmesi hakkında aydınlatmakla yükümlüdür.",
       "Accountie veri işleyen olarak: veriyi yalnız Kullanıcının talimatı ve bu sözleşme çerçevesinde işler; gerekli teknik ve idari tedbirleri alır; çalışanlarını ve hizmet sağlayıcılarını gizlilikle bağlar; bir veri ihlalini öğrendiğinde Kullanıcıya en geç 24 saat içinde bildirir; Kullanıcının müşterileri bakımından sır saklama yükümlülüğüne (3568 sayılı Kanun md. 43) uygun davranır.",
-      "Hizmetin sunulması için şu alt hizmet sağlayıcılar kullanılır: Anthropic (ABD, belge okuma), Supabase (Almanya'daki sunucular, veritabanı ve kimlik doğrulama), Vercel (ABD, uygulama barındırma), Cloudflare (ABD, bot denetimi), iyzico (Türkiye, ödeme). Bu listedeki değişiklikler gizlilik sayfasında yayımlanır.",
+      "Hizmetin sunulması için şu alt hizmet sağlayıcılar kullanılır: Anthropic (ABD, belge okuma), Supabase (Almanya'daki sunucular, veritabanı ve kimlik doğrulama), Vercel (ABD, uygulama barındırma), Cloudflare (ABD, bot denetimi). Kullanıcının kendi ödeme bilgilerini iyzico (Türkiye) işler; iyzico müşteri belgelerini işlemez. Bu listedeki değişiklikler gizlilik sayfasında yayımlanır.",
       "Belge fotoğrafları ve PDF'ler Accountie'de saklanmaz; okuma için Anthropic'e gönderilir, Anthropic en çok 30 gün tutabilir ve model eğitiminde kullanmaz. Saklanan alanlar Gizlilik sayfasında ve Aydınlatma Metninde yazılıdır.",
     ],
   },
   {
     title: "6. Ücret",
     body: [
-      "Belge okuma kontörle ücretlendirilir. Kontör paketleri ve KDV dahil fiyatları panelin Kontör sayfasında yazar. Ödeme iyzico üzerinden kartla, tek çekim alınır; kart bilgileri Accountie'ye gelmez.",
-      "Okunan her yazar kasa fişi ve Z raporu 1, her fatura (yurt içi ya da yurt dışı) 2 kontör düşer. Bir fotoğraftaki her fiş ayrı sayılır. Okunamayan belgeden kontör düşmez.",
+      "Belge okuma kontörle ücretlendirilir. Kontör paketleri ve KDV dahil fiyatları panelin Kontör sayfasında yazar. Ödeme iyzico üzerinden kartla, tek çekim alınır; kart bilgileri Accountie'ye gelmez. Satın alma ayrıca Mesafeli Hizmet Satış Sözleşmesine tabidir.",
+      "Okunan her yazar kasa fişi ve Z raporu 1, her fatura (yurt içi ya da yurt dışı) 2 kontör düşer. Bir fotoğraftaki her fiş ayrı sayılır. Hiçbir alanı okunamayan (boş kayıt açılan) belgeden kontör düşmez.",
       "Kontör Kullanıcının hesabına yüklenir ve bütün firmalarında ortak kullanılır. Kontörün süresi dolmaz. Satın alınan kontör iade edilmez ve paraya çevrilmez; hesap silinince kalan kontör de silinir.",
-      "Bakiye bir yükleme sırasında biterse o fotoğraftaki fişler okunmaya devam eder; bakiye en çok 4 kontör eksiye inebilir ve bu açık bir sonraki paketten düşülür. Bakiye sıfır ya da eksiyken yeni belge okunmaz; kayıtlı fişler görüntülenmeye ve Luca'ya aktarılmaya devam eder.",
+      "Bakiye bir yükleme sırasında biterse o fotoğraftaki fişler okunmaya devam eder; bakiye en çok 4 kontör eksiye inebilir ve bu açık bir sonraki paketten düşülür; Accountie bu açık için ayrıca ödeme istemez. Bakiye sıfır ya da eksiyken yeni belge okunmaz; kayıtlı fişler görüntülenmeye ve Luca'ya aktarılmaya devam eder.",
       "Fiyat değişikliği daha önce satın alınmış kontörleri etkilemez. Kontör zorunluluğu başlamadan en az 30 gün önce Kullanıcının e-posta adresine bildirilir; o zamana kadar belge okuma ücretsizdir.",
     ],
   },
@@ -90,7 +90,7 @@ const SECTIONS: LegalSection[] = [
     title: "10. Süre ve fesih",
     body: [
       "Sözleşme, hesap açılınca başlar ve süresizdir. Kullanıcı istediği an, panelde Hesap menüsündeki \"Hesabı sil\" ile hesabını kapatabilir.",
-      "Hesap silinince Kullanıcının fişleri, kayıtları, kuralları, firmaları ve giriş bilgileri hemen silinir; veritabanı yedeklerinden en geç 30 gün içinde düşer. Kanunen saklanması gereken kayıtlar (ör. ödeme ve fatura kayıtları) yalnız bu süre boyunca saklanır.",
+      "Hesap silinince Kullanıcının fişleri, kayıtları, kuralları, firmaları ve giriş bilgileri hemen silinir; veritabanı yedeklerinden en geç 30 gün içinde düşer. Kanunen saklanması gereken kayıtlar (ör. ödeme ve fatura kayıtları) hesap silinse de mevzuatın öngördüğü süre boyunca saklanır, ardından silinir.",
       "Kullanıcı, kapatma öncesinde onaylı kayıtlarını Luca dosyası (Excel) olarak indirebilir.",
       "Kullanıcı bu sözleşmeye aykırı davranırsa Accountie, aykırılığı yazılı olarak bildirip makul süre verdikten sonra, ağır hâllerde hemen, sözleşmeyi feshedebilir.",
     ],

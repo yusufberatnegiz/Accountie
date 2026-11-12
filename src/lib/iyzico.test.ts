@@ -48,14 +48,16 @@ describe("iyzico", () => {
 
   const ok = { status: "success", paymentStatus: "SUCCESS", fraudStatus: 1, conversationId: "pay-1", basketId: "pay-1", paidPrice: 3000, currency: "TRY", paymentId: "998877" };
   const expectPay = { paymentId: "pay-1", amountKurus: 300_000 };
-  it("ödendi sayılması için sonuç, tutar ve kimlik tutmalı", async () => {
+  it("ödendi yalnız sonuç, sepet, tutar ve para birimi tutunca; başarısız yalnız iyzico açıkça deyince; gerisi bekler", async () => {
     const result = (body: object) => checkoutResult(cfg, "tok-1", expectPay, reply(body));
-    expect(await result(ok)).toEqual({ paid: true, providerPaymentId: "998877" });
-    expect(await result({ ...ok, paidPrice: 750 })).toEqual({ paid: false, review: false });
-    expect(await result({ ...ok, conversationId: "baska" })).toEqual({ paid: false, review: false });
-    expect(await result({ ...ok, paymentStatus: "FAILURE" })).toEqual({ paid: false, review: false });
-    expect(await result({ ...ok, status: "failure" })).toEqual({ paid: false, review: false });
-    expect(await result({ ...ok, currency: "USD" })).toEqual({ paid: false, review: false });
-    expect(await result({ ...ok, fraudStatus: 0 })).toEqual({ paid: false, review: true });
+    expect(await result(ok)).toEqual({ state: "paid", providerPaymentId: "998877" });
+    expect(await result({ ...ok, paidPrice: 750 })).toEqual({ state: "pending", review: false });
+    expect(await result({ ...ok, basketId: "baska" })).toEqual({ state: "pending", review: false });
+    expect(await result({ ...ok, currency: "USD" })).toEqual({ state: "pending", review: false });
+    expect(await result({ ...ok, paymentStatus: "FAILURE" })).toEqual({ state: "failed" });
+    expect(await result({ ...ok, fraudStatus: -1 })).toEqual({ state: "failed" });
+    // An error answer (a passing fault, a 5xx with JSON) never closes a payment that may have been charged.
+    expect(await result({ status: "failure", errorCode: "10000", errorMessage: "Sistem hatası" })).toEqual({ state: "pending", review: false });
+    expect(await result({ ...ok, fraudStatus: 0 })).toEqual({ state: "pending", review: true });
   });
 });

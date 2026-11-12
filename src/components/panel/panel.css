@@ -783,7 +783,11 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
    After Anthropic's billing page: the balance first and large, the packages as quiet cards, one order summary that names the
    amount on the button, records below. Green only for the saving pill and a successful payment. */
 .rail-desktop { display: contents; }
-@media (max-width: 720px) { .rail-desktop { display: none; } }
+@media (max-width: 720px) {
+  .rail-desktop { display: none; }
+  .rail-item[data-here] { background: color-mix(in srgb, var(--ink) 10%, var(--ground)); color: var(--ink); }
+  .rail-item[data-here] .rail-label { font-weight: var(--w-strong); }
+}
 .account-credits { width: 100%; }
 .canvas-kontor { max-width: 1180px; }
 .kontor-balance { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s3) var(--s6); padding: var(--s5) var(--s6); }
@@ -791,14 +795,20 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 .kontor-figure { margin: var(--s1) 0 0; font-family: var(--font-head); font-weight: 300; font-size: 3rem; line-height: 1.05; letter-spacing: -0.02em; }
 .kontor-figure[data-negative] { color: var(--negative); }
 .kontor-unit { font-family: var(--font-text, inherit); font-size: var(--fs-section); font-weight: var(--w-medium); letter-spacing: 0; color: var(--muted); }
-.kontor-note { margin: 0; max-width: 52ch; color: var(--muted); font-size: var(--fs-body); }
+.kontor-note { margin: 0; max-width: 52ch; color: var(--muted); font-size: var(--fs-body); text-align: right; }
+@media (max-width: 720px) { .kontor-note { text-align: left; } }
 .kontor-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--s4); align-items: start; }
+.kontor-main { display: grid; gap: var(--s4); min-width: 0; }
+/* The order column stays in view while the packages and records scroll beside it. */
+.kontor-pay { position: sticky; top: var(--s5); }
 .kontor-packs, .kontor-pay, .kontor-usage, .kontor-history { padding: var(--s5); display: grid; gap: var(--s4); }
 .kontor-packs h2, .kontor-pay h2, .kontor-usage h2, .kontor-history h2 { margin: 0; font-size: var(--fs-section); }
 .pack-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); }
 .pack { position: relative; display: grid; gap: var(--s1); padding: var(--s4); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); cursor: pointer; font-weight: 400;
   transition: border-color var(--t-hover) ease, background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
-@media (hover: hover) and (pointer: fine) { .pack:hover { border-color: var(--ink); } }
+/* Hover only a step: the ink edge and fill belong to the chosen card. */
+@media (hover: hover) and (pointer: fine) { .pack:not([data-selected]):hover { border-color: var(--control-edge); background: var(--active); } }
+@media (prefers-reduced-motion: reduce) { .pack:active { transform: none; } }
 .pack:active { transform: scale(0.99); }
 .pack[data-selected] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--raised); }
 .pack:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -818,19 +828,32 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 .pay-billing { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); margin: 0; padding: 0; border: 0; min-width: 0; }
 .pay-billing legend { padding: 0; margin-bottom: var(--s3); font-weight: var(--w-medium); }
 .pay-submit { width: 100%; }
-.kontor-section-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
+.kontor-section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--s1) var(--s3); }
+.kontor-empty { margin: 0; font-size: var(--fs-small); color: var(--muted); }
+.pack-chosen { display: none; }
+.pay-details > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s3); padding: var(--s1) 0; cursor: pointer; list-style: none; border-radius: var(--radius-chip); }
+.pay-details > summary::-webkit-details-marker { display: none; }
+.pay-details > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pay-details-title { font-weight: var(--w-medium); }
+.pay-details-who { flex: 1 1 12ch; min-width: 0; color: var(--muted); font-size: var(--fs-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pay-details-edit { color: var(--link, var(--ink)); font-size: var(--fs-body); text-decoration: underline; text-underline-offset: 0.2em; }
+.pay-details[open] .pay-details-who, .pay-details[open] .pay-details-edit { display: none; }
+.pay-details[open] > summary { margin-bottom: var(--s3); }
+.pay-billing .hint { font-weight: 400; }
 .kontor-section-head .hint { margin: 0; }
-.kontor-records { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .kontor-table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
 .kontor-table th { padding: 0 0 var(--s2); text-align: left; font-size: var(--fs-small); font-weight: var(--w-medium); color: var(--muted); border-bottom: 1px solid var(--rule); }
 .kontor-table td { padding: var(--s2) 0; border-bottom: 1px solid var(--rule); }
 .kontor-table tr:last-child td { border-bottom: 0; }
 .kontor-table .num { text-align: right; padding-left: var(--s3); }
-@media (max-width: 1100px) { .kontor-grid, .kontor-records { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1100px) { .kontor-grid { grid-template-columns: minmax(0, 1fr); } .kontor-pay { position: static; } }
 @media (max-width: 720px) {
   .kontor-balance { padding: var(--s4); }
   .kontor-figure { font-size: 2.5rem; }
   .pack-list { grid-template-columns: minmax(0, 1fr); }
+  .kontor-pay { position: static; }
+  .pack-chosen { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); margin: 0; padding-top: var(--s3); border-top: 1px solid var(--rule); font-weight: var(--w-medium); }
+  .pack-chosen a { display: inline-flex; align-items: center; min-height: var(--touch); color: var(--ink); text-underline-offset: 0.2em; }
   .pay-billing { grid-template-columns: minmax(0, 1fr); }
   .kontor-packs, .kontor-pay, .kontor-usage, .kontor-history { padding: var(--s4); }
 }

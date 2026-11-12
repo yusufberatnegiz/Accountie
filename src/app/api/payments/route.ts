@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPayment, saveBillingProfile, setPaymentToken } from "@/db/queries";
+import { TERMS_VERSION } from "@/app/giris/validation";
 import { CheckoutSchema } from "@/lib/api-schemas";
 import { getSessionUser } from "@/lib/auth/session";
 import { packageById } from "@/lib/credits";
@@ -18,13 +19,17 @@ export async function POST(request: Request) {
   if (!(await allow("payment", user.id))) return fail("Çok fazla ödeme denemesi. Biraz bekleyip tekrar deneyin.", 429);
 
   const parsed = CheckoutSchema.safeParse(await readJson(request));
-  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? "Fatura bilgileri eksik.", 400);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    // The field it is about (billing.taxNumber -> taxNumber), so the form can mark and focus it.
+    return NextResponse.json({ error: issue?.message ?? "Fatura bilgileri eksik.", field: issue?.path[0] === "billing" ? issue.path[1] : undefined }, { status: 400 });
+  }
   const pkg = packageById(parsed.data.packageId);
   if (!pkg) return fail("Paket bulunamadı.", 400);
   const billing = parsed.data.billing;
 
   await saveBillingProfile(user.id, billing);
-  const paymentId = await createPayment(user.id, { packageId: pkg.id, credits: pkg.credits, amountKurus: pkg.priceKurus }, billing);
+  const paymentId = await createPayment(user.id, { packageId: pkg.id, credits: pkg.credits, amountKurus: pkg.priceKurus, termsVersion: TERMS_VERSION }, billing);
   const result = await initializeCheckout(cfg, {
     paymentId,
     pkg,

@@ -1,5 +1,5 @@
 {
-  "id": "22a30afd-0194-484d-8609-74ae0ffb43a2",
+  "id": "c74e8595-3511-4014-b155-7963715ded22",
   "prevId": "c3579bf5-cad3-4a7e-ba53-9797a9d56dc8",
   "version": "7",
   "dialect": "postgresql",
@@ -918,6 +918,12 @@
         "billing": {
           "name": "billing",
           "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "terms_version": {
+          "name": "terms_version",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },

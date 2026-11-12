@@ -292,6 +292,8 @@ export const KEPT_TABLES = [payments] as const;
 export async function deleteAccount(userId: string): Promise<void> {
   await getDb().transaction(async (tx) => {
     for (const table of USER_TABLES) await tx.delete(table).where(eq(table.userId, userId));
+    // A checkout left open would credit a deleted account if its result came later; closed now, its details dropped.
+    await tx.update(payments).set({ status: "failed", billing: {} }).where(and(eq(payments.userId, userId), eq(payments.status, "pending")));
     await tx.execute(sql`delete from auth.users where id = ${userId}::uuid`);
   });
 }
@@ -390,15 +392,21 @@ export async function reserveCredit(userId: string, firmId: string, floor: numbe
 }
 
 /**
- * After the read, the real cost: 0 gives the reserved credit back (nothing was read or saved), 2 takes one more (an invoice;
- * it may pass the floor by one, the document is already read). The ledger row then names the receipt it paid for.
+ * After the read, the real cost: 0 gives the reserved credit back (nothing was read or saved), 2 takes one more (an invoice)
+ * unless that would pass the floor. The ledger row then names the receipt it paid for.
  */
-export async function settleCredit(userId: string, entryId: string, cost: number, receiptId: string | null): Promise<void> {
+export async function settleCredit(userId: string, entryId: string, cost: number, receiptId: string | null, floor: number): Promise<void> {
   await getDb().transaction(async (tx) => {
-    if (cost !== 1) await tx.update(creditBalances).set({ balance: sql`${creditBalances.balance} + ${1 - cost}` }).where(eq(creditBalances.userId, userId));
     const mine = and(eq(creditLedger.id, entryId), eq(creditLedger.userId, userId));
-    if (cost === 0) await tx.delete(creditLedger).where(mine);
-    else await tx.update(creditLedger).set({ delta: -cost, reason: cost === 2 ? "invoice" : "receipt", receiptId }).where(mine);
+    if (cost === 0) {
+      await tx.update(creditBalances).set({ balance: sql`${creditBalances.balance} + 1` }).where(eq(creditBalances.userId, userId));
+      await tx.delete(creditLedger).where(mine);
+      return;
+    }
+    // An invoice's second credit only while the balance stays at or above the floor; at the floor the invoice costs 1.
+    const extra = cost === 2 ? await tx.update(creditBalances).set({ balance: sql`${creditBalances.balance} - 1` })
+      .where(and(eq(creditBalances.userId, userId), sql`${creditBalances.balance} - 1 >= ${floor}`)).returning({ balance: creditBalances.balance }) : [];
+    await tx.update(creditLedger).set({ delta: -1 - extra.length, reason: cost === 2 ? "invoice" : "receipt", receiptId }).where(mine);
   });
 }
 
@@ -426,7 +434,7 @@ export async function saveBillingProfile(userId: string, billing: Billing): Prom
 }
 
 /** A checkout about to start; the invoice details are copied onto it, so the record stays right if the profile changes later. */
-export async function createPayment(userId: string, p: { packageId: string; credits: number; amountKurus: number }, billing: Billing): Promise<string> {
+export async function createPayment(userId: string, p: { packageId: string; credits: number; amountKurus: number; termsVersion: string }, billing: Billing): Promise<string> {
   const [row] = await getDb().insert(payments).values({ userId, ...p, billing }).returning({ id: payments.id });
   return row.id;
 }
@@ -458,8 +466,20 @@ export async function markPaymentPaid(id: string, providerPaymentId: string): Pr
   });
 }
 
+/** A checkout that did not pay: closed, and its invoice details dropped (nothing was sold, nothing has to be kept). */
 export async function markPaymentFailed(id: string): Promise<void> {
-  await getDb().update(payments).set({ status: "failed" }).where(and(eq(payments.id, id), eq(payments.status, "pending")));
+  await getDb().update(payments).set({ status: "failed", billing: {} }).where(and(eq(payments.id, id), eq(payments.status, "pending")));
+}
+
+export async function getPaymentStatus(id: string): Promise<"pending" | "paid" | "failed" | null> {
+  const [row] = await getDb().select({ status: payments.status }).from(payments).where(eq(payments.id, id));
+  return row?.status ?? null;
+}
+
+/** The user's checkouts still waiting for a result (a review, an unreachable iyzico, a closed payment page), oldest first. */
+export async function listOpenPayments(userId: string, limit = 5) {
+  return getDb().select({ id: payments.id, amountKurus: payments.amountKurus, status: payments.status, token: payments.token, createdAt: payments.createdAt })
+    .from(payments).where(and(eq(payments.userId, userId), eq(payments.status, "pending"), sql`${payments.token} is not null`)).orderBy(asc(payments.createdAt)).limit(limit);
 }
 
 /** The user's paid checkouts, newest first, for the purchase history. */
