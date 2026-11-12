@@ -4,6 +4,7 @@ import { AccountMenu } from "@/components/AccountMenu";
 import { BrandMark } from "@/components/BrandMark";
 import { CaptureButton } from "@/components/CaptureButton";
 import { FirmShortcut } from "@/components/FirmShortcut";
+import { FoldButton } from "@/components/FoldButton";
 import "./panel/panel.css";
 
 type Current = "fisler" | "fis" | "kurallar" | "firmalar" | "hesap";
@@ -38,7 +39,7 @@ export function AppShell({ current, base = "/panel", email, firmId, children }: 
         <CaptureButton pickers={["camera"]} variant="rail" base={base} />
         {item(`${base}/kurallar`, "Kurallar", "table", current === "kurallar")}
         {item(`${base}/firmalar`, "Firmalar", "building", current === "firmalar")}
-        <div className="rail-end"><AccountMenu email={email} /></div>
+        <div className="rail-end"><FoldButton part="rail" /><AccountMenu email={email} /></div>
       </nav>
       {children}
     </div>

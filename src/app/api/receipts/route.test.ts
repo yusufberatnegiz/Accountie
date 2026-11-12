@@ -151,7 +151,7 @@ describe("POST /api/receipts", () => {
     expect(lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus])).toEqual([["760.01", 500000, 0], ["191.04", 100000, 0], ["360.01", 0, 100000], ["331.01", 0, 500000]]);
   });
 
-  it("yurt içi faturayı (uçak bileti) gider fişi gibi kaydeder, belge türü FT olur", async () => {
+  it("yurt içi faturayı (uçak bileti) gider fişi gibi kaydeder, belge türü fatura BT'si (MF) olur", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(true);
     vi.mocked(createReceipt).mockResolvedValue("r-b");
     vi.mocked(extractReceipt).mockResolvedValue(read({ documentKind: "domestic_invoice", vendorName: "ÖRNEK HAVAYOLLARI A.Ş.", taxNumber: "1111111114", receiptNo: "ABC2026000000123", category: "transport", total: "1.300,00", vatLines: [{ rate: 20, gross: "1.200,00", vat: "200,00" }, { rate: 0, gross: "100,00", vat: "0,00" }] }));
@@ -160,7 +160,7 @@ describe("POST /api/receipts", () => {
     const [, , receipt, lines] = vi.mocked(createReceipt).mock.calls[0];
     expect(receipt).toMatchObject({ category: "transport", taxNumber: "1111111114", receiptNo: "ABC2026000000123", totalKurus: 130000 });
     expect(lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus])).toEqual([["770.05", 100000, 0], ["191.03.20", 20000, 0], ["770.05", 10000, 0], ["331.01", 0, 130000]]);
-    expect(lines.every((l) => l.documentType === "FT" && l.documentNo === "ABC2026000000123")).toBe(true);
+    expect(lines.every((l) => l.documentType === "MF" && l.documentNo === "ABC2026000000123")).toBe(true);
   });
 
   it("Z raporunu gelir fişi olarak kaydeder, aynı Z no ve tarihle kayıtlıysa uyarır", async () => {

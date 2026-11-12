@@ -14,7 +14,7 @@ describe("yurt dışı hizmet faturası", () => {
     const r = buildForeignLines(google, DEFAULT_RULES, null);
     expect(lines(r)).toEqual([["760.01", 125000, 0], ["191.04", 25000, 0], ["360.01", 0, 25000], ["331.01", 0, 125000]]);
     expect(r.balanced).toBe(true);
-    expect(r.lines.every((l) => l.documentType === "FT" && l.documentNo === "5234567890" && l.description === "GOOGLE IRELAND LIMITED")).toBe(true);
+    expect(r.lines.every((l) => l.documentType === "MF" && l.documentNo === "5234567890" && l.description === "GOOGLE IRELAND LIMITED")).toBe(true);
     expect(approvalProblem(r.lines)).toBeNull();
     expect(codes(r)).toEqual(["foreign_withholding"]);
   });

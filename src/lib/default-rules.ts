@@ -76,7 +76,8 @@ export const DEFAULT_RULES: Rules = {
     expense: { code: "760.01", name: "Yurt Dışı Reklam ve Hizmet Giderleri" },
     vatIn: { code: "191.04", name: "Sorumlu Sıfatıyla Ödenen KDV" },
     vatOut: { code: "360.01", name: "Ödenecek KDV (sorumlu sıfatıyla)" },
-    documentType: "FT",
+    // The office books every invoice (ticket, hotel, e-Arşiv, foreign) as MF; one setting covers domestic and foreign.
+    documentType: "MF",
   },
   sales: {
     cash: { code: "100.01", name: "Kasa" },
@@ -114,7 +115,7 @@ export function rulesToRows(rules: Rules): RuleRow[] {
     ...Object.entries(rules.vat).map(([key, a]) => row("vat", key, `%${key} KDV`, a)),
     ...Object.entries(rules.payment).map(([key, a]) => row("payment", key, PAYMENT_LABELS[key as PaymentMethod], a)),
     { kind: "setting", key: "documentType", label: "Varsayılan BT", accountCode: rules.documentType, accountName: "" },
-    { kind: "setting", key: "foreignDocumentType", label: "Yurt dışı fatura BT", accountCode: foreign.documentType, accountName: "" },
+    { kind: "setting", key: "foreignDocumentType", label: "Fatura BT", accountCode: foreign.documentType, accountName: "" },
     { kind: "setting", key: "salesDocumentType", label: "Z raporu BT", accountCode: sales.documentType, accountName: "" },
     ...(["expense", "vatIn", "vatOut"] as const).map((key) => row("foreign", key, FOREIGN_LABELS[key], foreign[key])),
     row("sales", "cash", "Nakit tahsilat", sales.cash),

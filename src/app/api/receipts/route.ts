@@ -98,7 +98,7 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
   const taxNumber = result.ok ? result.extraction.taxNumber : null;
   // A seller this firm has corrected before gets its learned expense account (src/lib/vendor-rule.ts); a failed lookup falls back.
   const learned = taxNumber && isValidTaxNumber(taxNumber) ? await getVendorRule(userId, firmId, taxNumber).catch(() => null) : null;
-  const { lines, warnings } = buildJournalLines(data, { ...withVendorAccount(rules, data.category, learned && { code: learned.accountCode, name: learned.accountName }), ...(kind === "domestic_invoice" && { documentType: "FT" }) });
+  const { lines, warnings } = buildJournalLines(data, { ...withVendorAccount(rules, data.category, learned && { code: learned.accountCode, name: learned.accountName }), ...(kind === "domestic_invoice" && { documentType: rules.foreign.documentType }) });
   const extra = result.ok ? result.problems : ["extraction_failed"];
   const allWarnings: Warning[] = [...warnings, ...extra.filter((c) => !warnings.some((w) => w.code === c)).map(warn)];
   // Warn only, never block: the user decides. A failed lookup must not lose the upload.

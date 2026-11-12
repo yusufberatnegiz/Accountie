@@ -768,16 +768,16 @@ p.side-links.phone-only { display: none; }
    of four quiet tiles sums the month above the list. */
 .rail-brand { display: none; }
 @media (min-width: 1100px) {
-  .app { grid-template-columns: 232px minmax(0, 1fr); }
-  .rail { align-items: stretch; padding: var(--s4) var(--s3); background: var(--stage); border-right-color: var(--rule); }
-  .rail-mark { display: flex; justify-content: flex-start; gap: var(--s3); width: auto; height: 44px; padding: 0 var(--s2); margin-bottom: var(--s5); font-weight: var(--w-strong); color: var(--ink); text-decoration: none; }
-  .rail-brand { display: inline; }
-  .rail-item { grid-template-rows: none; grid-template-columns: 18px 1fr; justify-items: start; align-items: center; gap: var(--s3); width: 100%; min-height: 40px; padding: 0 var(--s3); border-radius: var(--radius-control); }
-  .rail-item[aria-current="page"] { background: var(--surface); box-shadow: 0 0 0 1px var(--rule); }
-  .rail-item[aria-current="page"]::before { inset-inline: auto; left: 0; top: 10px; bottom: 10px; width: 2px; height: auto; }
-  .rail-label { font-size: var(--fs-body); }
-  .rail-end { justify-items: stretch; }
-  .account-sheet { inset-inline-start: 248px; }
+  :root:not([data-rail="dar"]) .app { grid-template-columns: 232px minmax(0, 1fr); }
+  :root:not([data-rail="dar"]) .rail { align-items: stretch; padding: var(--s4) var(--s3); background: var(--stage); border-right-color: var(--rule); }
+  :root:not([data-rail="dar"]) .rail-mark { display: flex; justify-content: flex-start; gap: var(--s3); width: auto; height: 44px; padding: 0 var(--s2); margin-bottom: var(--s5); font-weight: var(--w-strong); color: var(--ink); text-decoration: none; }
+  :root:not([data-rail="dar"]) .rail-brand { display: inline; }
+  :root:not([data-rail="dar"]) .rail-item { grid-template-rows: none; grid-template-columns: 18px 1fr; justify-items: start; align-items: center; gap: var(--s3); width: 100%; min-height: 40px; padding: 0 var(--s3); border-radius: var(--radius-control); }
+  :root:not([data-rail="dar"]) .rail-item[aria-current="page"] { background: var(--surface); box-shadow: 0 0 0 1px var(--rule); }
+  :root:not([data-rail="dar"]) .rail-item[aria-current="page"]::before { inset-inline: auto; left: 0; top: 10px; bottom: 10px; width: 2px; height: auto; }
+  :root:not([data-rail="dar"]) .rail-label { font-size: var(--fs-body); }
+  :root:not([data-rail="dar"]) .rail-end { justify-items: stretch; }
+  :root:not([data-rail="dar"]) .account-sheet { inset-inline-start: 248px; }
 }
 
 .tabs { gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
@@ -804,3 +804,14 @@ p.side-links.phone-only { display: none; }
 .delete-form { max-width: 360px; }
 .delete-form .btn-danger { justify-self: start; }
 .account-delete { display: inline-flex; align-items: center; min-height: var(--touch); font-size: var(--fs-body); color: var(--muted); }
+
+/* Fold buttons (FoldButton): the sidebar folds back to the 80px rail; the list's side column hides so the list takes the width.
+   Both only where they change something: the wide sidebar from 1100px, the side column beside the list from 1181px. */
+.rail-fold { display: none; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; }
+@media (min-width: 1100px) { .rail-fold { display: grid; } }
+.side-fold { display: none; }
+@media (min-width: 1181px) {
+  .side-fold { display: inline-flex; }
+  [data-side="dar"] .canvas-list { grid-template-columns: minmax(0, 1fr); }
+  [data-side="dar"] .canvas-list > .side { display: none; }
+}

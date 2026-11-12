@@ -51,7 +51,7 @@ export function DeleteAccountView() {
           <li>Eklenti anahtarları: eklenti hemen çalışmaz olur</li>
           <li>Giriş bilgileriniz (ad, e-posta, şifre)</li>
         </ul>
-        <p className="muted">Luca&apos;ya aktardığınız kayıtlar Luca&apos;da kalır. Onaylı ama aktarmadığınız fişler varsa önce Fişler sayfasından <strong>Luca için indir</strong> ile dosyasını alın.</p>
+        <p className="muted">Luca&apos;ya aktardığınız kayıtlar Luca&apos;da kalır. Onaylı ama aktarmadığınız fişler varsa önce Fişler sayfasından Excel ile aktarım bölümündeki <strong>Excel indir</strong> ile dosyasını alın.</p>
         <DeleteAccountForm />
       </section>
     </main>

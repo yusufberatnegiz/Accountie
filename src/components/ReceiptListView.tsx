@@ -3,6 +3,7 @@ import type { listReceipts, ReceiptStatus } from "@/db/queries";
 import { BulkApproveButton } from "@/components/BulkApproveButton";
 import { CaptureButton } from "@/components/CaptureButton";
 import { ExportButton } from "@/components/ExportButton";
+import { FoldButton } from "@/components/FoldButton";
 import { InstallHint } from "@/components/InstallHint";
 import { ListTabs } from "@/components/ListTabs";
 import { RowPending } from "@/components/RowPending";
@@ -67,6 +68,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
         <div className="title-actions">
           {months ? <MonthPicker months={months} value={month} path={base} /> : null}
           {all.length || month ? <CaptureButton base={base} /> : null}
+          <FoldButton part="side" />
         </div>
       </div>
 
@@ -92,9 +94,9 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                 {/* First run: the whole way to Luca, in the order it happens. */}
                 <ol className="first-run">
                   <li><strong>Hesap kodlarını kontrol edin.</strong> Varsayılan plan kopyalandı; <Link href={`${base}/kurallar`}>hesap kurallarında</Link> kendi kodlarınızı yazın.</li>
-                  <li><strong>Fişi çekin.</strong> Satıcı, tarih, KDV ve toplam okunur, satırlar hazırlanır.</li>
+                  <li><strong>Fişi çekin ya da faturayı yükleyin.</strong> Satıcı, tarih, KDV ve toplam okunur, satırlar hazırlanır.</li>
                   <li><strong>Kontrol edip onaylayın.</strong> Borç ile alacak eşit olmadan onay verilmez.</li>
-                  <li><strong>Luca için indirin.</strong> Onaylı fişler tek Excel dosyasında, Luca&apos;nın Excel veri aktarımı ekranına yüklenir.</li>
+                  <li><strong>Luca&apos;ya aktarın.</strong> Chrome eklentisi onaylı fişleri Luca&apos;nın Fiş Detayı ekranına yazar. İsterseniz Excel dosyası olarak da indirebilirsiniz.</li>
                 </ol>
               </>
             )}
@@ -146,24 +148,41 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
       </section>
 
       <aside className="side" aria-label="Luca'ya aktarım">
+        {/* The extension is the way to Luca; Excel stays apart for offices that use Luca's Excel import (admin users only). */}
         <section className="panel side-block desktop-only" aria-labelledby="luca-title">
           <div className="side-head">
-            <h2 id="luca-title">Luca dosyası</h2>
+            <h2 id="luca-title">Luca&apos;ya aktarım</h2>
+            <p className="muted small">{ready.length ? `${ready.length} onaylı fiş hazır` : "Hazır fiş yok"}</p>
+          </div>
+          <details className="howto" open={all.length === 0 || undefined}>
+            <summary>Eklentiyle aktarım adımları</summary>
+            <ol className="guide">
+              <li>Accountie Luca Doldurucu eklentisini Chrome&apos;a kurun, <Link href={`${base}/kurallar`}>Kurallar</Link> sayfasında Eklentiye bağla&apos;ya basın. Bunu bir kez yaparsınız.</li>
+              <li>Luca&apos;da firmayı seçin, yeni bir fiş açıp Fiş Detayı ekranına gelin.</li>
+              <li>Eklentiyi o sekmede açın, onaylı fişleri seçip Fiş Detayına yaz&apos;a basın.</li>
+              <li>Eklenti satırları ekrandan geri okuyup karşılaştırır. Fark yoksa Luca&apos;da Kaydet&apos;e basın, sonra eklentide Luca&apos;da kaydettim&apos;e basın; fişler Aktarıldı olur.</li>
+            </ol>
+          </details>
+          <p className="side-links small"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
+        </section>
+
+        <section className="panel side-block desktop-only" aria-labelledby="excel-title">
+          <div className="side-head">
+            <h2 id="excel-title">Excel ile aktarım</h2>
             <p className="muted small">{ready.length ? `${ready.length} onaylı fiş${files > 1 ? `, ${files} dosya` : ""}` : "Hazır fiş yok"}</p>
           </div>
           <LucaMeter label="Fiş" value={ready.length} max={MAX_RECEIPTS_PER_FILE} />
           <LucaMeter label="Satır" value={readyLines} max={MAX_LINES_PER_FILE} />
-          {ready.length ? <ExportButton label="Luca için indir" month={month} /> : <p className="muted small">Onayladığınız fişler bu dosyaya girer.</p>}
-          <details className="howto" open={all.length === 0 || undefined}>
-            <summary>Luca&apos;da yükleme adımları</summary>
+          {ready.length ? <ExportButton label="Excel indir" month={month} /> : <p className="muted small">Onayladığınız fişler bu dosyaya girer.</p>}
+          <details className="howto">
+            <summary>Luca&apos;da Excel yükleme adımları</summary>
             <ol className="guide">
-              <li>Luca&apos;da Muhasebe, Fiş İşlemleri, Excel veri aktarımı ekranını açın.</li>
+              <li>Luca&apos;da Muhasebe, Fiş İşlemleri, Excel veri aktarımı ekranını açın. Bu ekran yalnız Luca yönetici kullanıcısına açıktır.</li>
               <li>Dosyayı seçin, doğrulama kodunu yazıp Yükle&apos;ye basın.</li>
               <li>Önizlemeyi kontrol edip Fiş Kes ile fişleri oluşturun.</li>
             </ol>
             <p className="muted small">İndirilen fişler Aktarıldı olur. Luca dosyayı reddederse Aktarıldı sekmesinden tekrar indirin. Dosya düzeni Luca&apos;nın resmi şablonuyla henüz doğrulanmadı; ilk yüklemede önizlemedeki kodları ve tutarları fişle karşılaştırın.</p>
           </details>
-          <p className="side-links small"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
         </section>
 
         {byAccount.length ? (

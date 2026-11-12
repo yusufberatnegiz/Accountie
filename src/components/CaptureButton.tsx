@@ -30,10 +30,10 @@ async function shrink(file: File): Promise<Blob> {
   }
 }
 
-type Picker = "camera" | "gallery";
+type Picker = "camera" | "gallery" | "invoice";
 
 /** `head`: the screen's title-row buttons. `rail`: the camera button in the phone's bottom bar (hidden on desktop). */
-export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head", primary = true, base = "/panel" }: { pickers?: Picker[]; variant?: "head" | "rail" | "bar"; primary?: boolean; base?: string }) {
+export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], variant = "head", primary = true, base = "/panel" }: { pickers?: Picker[]; variant?: "head" | "rail" | "bar"; primary?: boolean; base?: string }) {
   const router = useRouter();
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -118,9 +118,12 @@ export function CaptureButton({ pickers = ["camera", "gallery"], variant = "head
       }}
     />
   );
+  // An invoice (a ticket, a hotel, an e-Arşiv PDF, Google or Meta) goes the same way; the server tells the kinds apart.
   const picker = (kind: Picker) => kind === "camera"
     ? <label key={kind} className={primary ? "btn btn-primary capture-camera" : "btn capture-camera"} aria-disabled={busy}>Fiş çek{input(true)}</label>
-    : <label key={kind} className="btn capture-gallery" aria-disabled={busy}>Galeriden seç{input(false)}</label>;
+    : kind === "invoice"
+      ? <label key={kind} className="btn capture-invoice" aria-disabled={busy} title="PDF ya da fotoğraf: bilet, otel, e-Arşiv, yurt dışı fatura">Fatura yükle{input(false)}</label>
+      : <label key={kind} className="btn capture-gallery" aria-disabled={busy}>Galeriden seç{input(false)}</label>;
 
   return (
     <div className={`capture capture-${variant}`}>
