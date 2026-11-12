@@ -13,7 +13,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "Veri sorumlusu",
     body: [
-      `${PROVIDER.name}, ${PROVIDER.address}, ${PROVIDER.taxNo}. İletişim: ${PROVIDER.email}, ${PROVIDER.kep}.`,
+      `${PROVIDER.name}, ${PROVIDER.address}. İletişim: ${PROVIDER.email}.`,
       "Bu metin, Accountie hesabı açan kullanıcıların kişisel verileri içindir. Kullanıcının yüklediği fiş ve faturalardaki üçüncü kişilere ait veriler için ayrıca aşağıdaki \"Müşteri belgeleri\" bölümüne bakın.",
     ],
   },
@@ -79,7 +79,7 @@ const SECTIONS: LegalSection[] = [
       "Silinmesini ya da yok edilmesini isteme, bu işlemlerin aktarılan kişilere bildirilmesini isteme.",
       "Otomatik sistemlerle analiz sonucu aleyhinize bir sonuç çıkmasına itiraz etme.",
       "Kanuna aykırı işleme nedeniyle uğradığınız zararın giderilmesini isteme.",
-      `Başvurunuzu ${PROVIDER.email} adresine kayıtlı e-postanızdan, ${PROVIDER.kep} KEP adresine ya da yazılı olarak ${PROVIDER.address} adresine iletebilirsiniz.`,
+      `Başvurunuzu kayıtlı e-postanızdan ${PROVIDER.email} adresine ya da yazılı olarak ${PROVIDER.address} adresine iletebilirsiniz.`,
       "Başvurular en geç 30 gün içinde ücretsiz olarak sonuçlandırılır (Veri Sorumlusuna Başvuru Usul ve Esasları Hakkında Tebliğ).",
     ],
   },

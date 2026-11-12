@@ -15,7 +15,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "1. Taraflar",
     body: [
-      `Bu sözleşme, Accountie hizmetini sunan ${PROVIDER.name} (${PROVIDER.address}; ${PROVIDER.taxNo}) ("Accountie") ile Accountie hesabı açan kişi ya da büro ("Kullanıcı") arasındadır.`,
+      `Bu sözleşme, Accountie hizmetini sunan ${PROVIDER.name} (${PROVIDER.address}) ("Accountie") ile Accountie hesabı açan kişi ya da büro ("Kullanıcı") arasındadır.`,
       "Kullanıcı, kayıt formundaki kutuyu işaretleyerek bu koşulları okuduğunu ve kabul ettiğini beyan eder. Kabul tarihi ve kabul edilen metnin tarihi hesapla birlikte kaydedilir.",
       "Hizmet mali müşavirler, muhasebe büroları ve işletmeler içindir. Kullanıcı, hizmeti mesleki ya da ticari amaçla kullandığını beyan eder; bu nedenle tüketici mevzuatı (6502 sayılı Kanun) bu sözleşmeye uygulanmaz.",
     ],
@@ -96,7 +96,7 @@ const SECTIONS: LegalSection[] = [
     title: "11. Değişiklikler ve bildirimler",
     body: [
       "Accountie bu koşulları değiştirebilir. Değişiklik, yürürlükten en az 15 gün önce e-postayla bildirilir ve bu sayfada yayımlanır. Kullanıcı değişikliği kabul etmezse hesabını kapatabilir.",
-      `Kullanıcıya bildirimler hesabındaki e-posta adresine yapılır. Accountie'ye bildirimler: ${PROVIDER.email}, ${PROVIDER.kep}.`,
+      `Kullanıcıya bildirimler hesabındaki e-posta adresine yapılır. Accountie'ye bildirimler ${PROVIDER.email} adresine ya da yazılı olarak yukarıdaki adrese yapılır.`,
     ],
   },
   {

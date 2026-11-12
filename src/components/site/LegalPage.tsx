@@ -28,14 +28,12 @@ export function LegalPage({ title, lead, sections, prefix }: { title: string; le
 }
 
 /**
- * Who runs the service. shortcut: placeholders until the company exists; fill these before any sale or the store listing,
- * the pages show them as written.
+ * Who runs the service, as the pages print it. shortcut: a person, no tax number or KEP yet; add the company's title,
+ * MERSİS/VKN and KEP here once it exists (before charging).
  */
 export const PROVIDER = {
-  name: "[Unvan / ad soyad]",
-  address: "[Adres]",
-  taxNo: "[Vergi dairesi ve vergi no / MERSİS no]",
+  name: "Yusuf Berat Negiz",
+  address: "Sedir Mahallesi, Vatan Bulvarı, Osman Koca İş Merkezi, Kat 10, Daire 13, Muratpaşa / Antalya",
   email: "[iletişim e-postası]",
-  kep: "[KEP adresi]",
-  court: "[İl]",
+  court: "Antalya",
 };
