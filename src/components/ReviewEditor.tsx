@@ -189,7 +189,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const invoice = receipt.model === "e-fatura"; // an old receipt from the removed e-Fatura import: there is no photo to compare
   // A Z report (sales) and a foreign service invoice keep the same screen; what was read and which line is the payment differ.
   const kind = docKind(receipt.category);
-  const x = (receipt.extraction ?? {}) as { currency?: string | null; total?: string | null; cashTotal?: string | null; cardTotal?: string | null; invoicedTotal?: string | null; fx?: { rate: number; bulletinDate: string } | null };
+  const x = (receipt.extraction ?? {}) as { documentKind?: string | null; currency?: string | null; total?: string | null; cashTotal?: string | null; cardTotal?: string | null; invoicedTotal?: string | null; fx?: { rate: number; bulletinDate: string } | null };
   const vatOutCode = rules.foreign.vatOut.code;
   // The line the "Alacak hesabı" choice changes: a receipt's credit, a foreign invoice's credit that is not the KDV it owes; a Z report has none.
   const isPayment = (l: { accountCode: string; credit: string }) => kind !== "z_report" && kurus(l.credit) > 0 && !(kind === "foreign" && l.accountCode === vatOutCode);
@@ -314,7 +314,9 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     if (kind === "foreign") return isPayment(l) ? "total" : isVat(l.accountCode) || l.accountCode === vatOutCode ? "vat" : "base";
     return sourceOf(l.accountCode, credit);
   };
-  const docWord = kind === "z_report" ? "Z raporu" : kind === "foreign" ? "Fatura" : "Fiş";
+  // A domestic invoice (a ticket, a hotel) is booked like a receipt but is called what it is.
+  const isInvoice = kind === "foreign" || x.documentKind === "domestic_invoice";
+  const docWord = kind === "z_report" ? "Z raporu" : isInvoice ? "Fatura" : "Fiş";
   const vknUnsure = receipt.warnings.some((w) => w.code === "tax_number_invalid");
   const gap = Math.abs(debit - credit);
   const finding = invalid ? "Tutar biçimi hatalı: tutarları 7.931,82 biçiminde yazın."
@@ -482,7 +484,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           ) : null}
           {/* The receipt as read; the journal line in focus lights the figure it came from. */}
           <section className="panel read" id="fis-kaynak" aria-labelledby="okunan-baslik">
-            <h2 id="okunan-baslik">{invoice ? "e-Faturadan alınan" : kind === "z_report" ? "Z raporundan okunan" : kind === "foreign" ? "Faturadan okunan" : "Fişten okunan"}</h2>
+            <h2 id="okunan-baslik">{invoice ? "e-Faturadan alınan" : kind === "z_report" ? "Z raporundan okunan" : isInvoice ? "Faturadan okunan" : "Fişten okunan"}</h2>
             <dl className="read-values">
               {kind === "receipt" ? <>
               <div><dt>Satıcı</dt><dd>{read(receipt.vendorName)}</dd></div>
@@ -517,7 +519,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
         {/* Header fields that every line carries: under the lines and before the actions, so Tab and the eye run the same way (YON 23.16). Locked, they sit atop the lines instead. */}
         {editable ? (
         <section className="panel panel-pad info" aria-labelledby="bilgi-baslik">
-          <h2 id="bilgi-baslik">{kind === "z_report" ? "Z raporu bilgileri" : kind === "foreign" ? "Fatura bilgileri" : "Fiş bilgileri"}</h2>
+          <h2 id="bilgi-baslik">{kind === "z_report" ? "Z raporu bilgileri" : isInvoice ? "Fatura bilgileri" : "Fiş bilgileri"}</h2>
           <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>
           <div className="form-grid">
             <label>
@@ -604,12 +606,12 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
         {editable ? (
           <section className="danger-zone" aria-labelledby="sil-baslik">
             <div>
-              <h2 id="sil-baslik">{kind === "z_report" ? "Z raporunu sil" : kind === "foreign" ? "Faturayı sil" : "Fişi sil"}</h2>
+              <h2 id="sil-baslik">{kind === "z_report" ? "Z raporunu sil" : isInvoice ? "Faturayı sil" : "Fişi sil"}</h2>
               <p className="muted small">Taslak ve satırları kalıcı olarak silinir.</p>
             </div>
             <button className="btn btn-danger" type="button" disabled={working}
               onClick={() => confirm(deleteQuestion) && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) router.push(base); })}>
-              {kind === "z_report" ? "Z raporunu sil" : kind === "foreign" ? "Faturayı sil" : "Fişi sil"}
+              {kind === "z_report" ? "Z raporunu sil" : isInvoice ? "Faturayı sil" : "Fişi sil"}
             </button>
           </section>
         ) : null}

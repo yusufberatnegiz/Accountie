@@ -119,7 +119,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                         <MoveTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{r.vendorName ?? "Okunamayan fiş"}</span></MoveTransition>
                         <RowPending />
                       </Link>
-                      {DOC_KIND_LABEL[docKind(r.category)] ? <span className="r-kind">{DOC_KIND_LABEL[docKind(r.category)]}</span> : null}
+                      {r.invoice || DOC_KIND_LABEL[docKind(r.category)] ? <span className="r-kind">{r.invoice ? "Fatura" : DOC_KIND_LABEL[docKind(r.category)]}</span> : null}
                       {notes ? <span className="r-notes">{notes} uyarı</span> : null}
                     </td>
                     <td className="r-no num" translate="no" title={r.receiptNo ?? undefined}>{r.receiptNo ?? <span className="dash">-</span>}</td>

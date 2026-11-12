@@ -91,13 +91,14 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
     console.error("receipt extraction crashed", { error: err instanceof Error ? err.name : "unknown" });
     result = { ok: false, inputTokens: 0, outputTokens: 0 };
   }
-  if (result.ok && kindOf(result.extraction) !== "receipt") return saveOther(userId, firmId, result, rules);
+  const kind = result.ok ? kindOf(result.extraction) : "receipt";
+  if (result.ok && kind !== "receipt" && kind !== "domestic_invoice") return saveOther(userId, firmId, result, rules);
 
   const data = result.ok ? toReceiptData(result.extraction) : EMPTY;
   const taxNumber = result.ok ? result.extraction.taxNumber : null;
   // A seller this firm has corrected before gets its learned expense account (src/lib/vendor-rule.ts); a failed lookup falls back.
   const learned = taxNumber && isValidTaxNumber(taxNumber) ? await getVendorRule(userId, firmId, taxNumber).catch(() => null) : null;
-  const { lines, warnings } = buildJournalLines(data, withVendorAccount(rules, data.category, learned && { code: learned.accountCode, name: learned.accountName }));
+  const { lines, warnings } = buildJournalLines(data, { ...withVendorAccount(rules, data.category, learned && { code: learned.accountCode, name: learned.accountName }), ...(kind === "domestic_invoice" && { documentType: "FT" }) });
   const extra = result.ok ? result.problems : ["extraction_failed"];
   const allWarnings: Warning[] = [...warnings, ...extra.filter((c) => !warnings.some((w) => w.code === c)).map(warn)];
   // Warn only, never block: the user decides. A failed lookup must not lose the upload.
@@ -113,7 +114,7 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
     totalKurus: data.totalKurus,
     paymentMethod: data.paymentMethod,
     category: data.category,
-    extraction: result.ok ? result.extraction : null,
+    extraction: result.ok ? { ...result.extraction, fallback: result.fallback } : null,
     warnings: allWarnings,
     model: result.ok ? result.model : null,
     inputTokens: result.inputTokens,
@@ -142,12 +143,12 @@ async function saveOther(userId: string, firmId: string, result: Extract<Extract
     // The VKN on a Z report is the firm's own: kept to find the same report uploaded twice, never to learn a seller.
     const taxNumber = x.taxNumber && isValidTaxNumber(x.taxNumber) ? x.taxNumber : null;
     if (taxNumber && data.zNo && data.date && (await hasDuplicateReceipt(userId, taxNumber, data.zNo, data.date).catch(() => false))) extra.unshift(warn("duplicate"));
-    receipt = { vendorName: data.vendorName, taxNumber, receiptNo: data.zNo, receiptDate: data.date, totalKurus: data.totalKurus, paymentMethod: "other", category: "z_report", extraction: x, warnings: [], ...meta };
+    receipt = { vendorName: data.vendorName, taxNumber, receiptNo: data.zNo, receiptDate: data.date, totalKurus: data.totalKurus, paymentMethod: "other", category: "z_report", extraction: { ...x, fallback: result.fallback }, warnings: [], ...meta };
   } else {
     const data = toForeignData(x);
     const fx = data.currency !== "TRY" && data.date ? await tcmbRate(data.currency, data.date).catch(() => null) : null;
     built = buildForeignLines(data, rules, fx);
-    receipt = { vendorName: data.vendorName, taxNumber: null, receiptNo: data.invoiceNo, receiptDate: data.date, totalKurus: foreignTotalTl(data, fx), paymentMethod: data.paymentMethod, category: "foreign", extraction: { ...x, fx }, warnings: [], ...meta };
+    receipt = { vendorName: data.vendorName, taxNumber: null, receiptNo: data.invoiceNo, receiptDate: data.date, totalKurus: foreignTotalTl(data, fx), paymentMethod: data.paymentMethod, category: "foreign", extraction: { ...x, fx, fallback: result.fallback }, warnings: [], ...meta };
   }
   receipt.warnings = [...built.warnings, ...extra.filter((w) => !built.warnings.some((b) => b.code === w.code))];
   try {

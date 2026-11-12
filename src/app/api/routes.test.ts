@@ -77,7 +77,7 @@ describe("POST /api/receipts", () => {
   it("öğrenilmiş satıcının fişi kategori yerine öğrenilen gider hesabıyla hazırlanır", async () => {
     vi.mocked(q.getVendorRule).mockResolvedValueOnce({ id: "v1", taxNumber: "1111111114", vendorName: null, accountCode: "770.05", accountName: "Ulaşım Giderleri" });
     vi.mocked(extractReceipt).mockResolvedValue({
-      ok: true, model: "claude-haiku-5-5", problems: [], inputTokens: 1, outputTokens: 1,
+      ok: true, model: "claude-haiku-5-5", fallback: false, problems: [], inputTokens: 1, outputTokens: 1,
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
         receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
@@ -92,7 +92,7 @@ describe("POST /api/receipts", () => {
 
   it("örnek fişi okuyup üç satırla kaydeder", async () => {
     vi.mocked(extractReceipt).mockResolvedValue({
-      ok: true, model: "claude-haiku-5-5", problems: [], inputTokens: 3000, outputTokens: 300,
+      ok: true, model: "claude-haiku-5-5", fallback: false, problems: [], inputTokens: 3000, outputTokens: 300,
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
         receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",

@@ -15,7 +15,7 @@ const { POST } = await import("./route");
 const { tcmbRate } = await import("@/lib/tcmb");
 
 const read = (over: Record<string, unknown>) => ({
-  ok: true as const, model: "m", inputTokens: 1, outputTokens: 1, problems: [],
+  ok: true as const, model: "m", fallback: false, inputTokens: 1, outputTokens: 1, problems: [],
   extraction: {
     vendorName: "x", taxOffice: null, taxNumber: null, date: "31.10.2026", time: null, receiptNo: null, zNo: null, ekuNo: null, vatLines: [],
     total: "100,00", paymentMethod: "card" as const, category: "other" as const, unreadableFields: [], documentKind: "receipt" as const,
@@ -74,7 +74,7 @@ describe("POST /api/receipts", () => {
     vi.mocked(createReceipt).mockResolvedValue("r-2");
     vi.mocked(hasDuplicateReceipt).mockResolvedValue(true);
     vi.mocked(extractReceipt).mockResolvedValue({
-      ok: true, model: "m", inputTokens: 1, outputTokens: 1, problems: [],
+      ok: true, model: "m", fallback: true, inputTokens: 1, outputTokens: 1, problems: [],
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null, receiptNo: "0047",
         zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
@@ -85,6 +85,7 @@ describe("POST /api/receipts", () => {
     expect(res.status).toBe(201);
     expect(hasDuplicateReceipt).toHaveBeenCalledWith("user-1", "1111111114", "0047", "2026-09-05");
     expect(vi.mocked(createReceipt).mock.calls[0][2].warnings.map((w) => w.code)).toContain("duplicate");
+    expect(vi.mocked(createReceipt).mock.calls[0][2].extraction).toMatchObject({ fallback: true });
   });
 
   it("tek karedeki birden çok fişi ayrı ayrı okuyup her birini ayrı fiş olarak kaydeder", async () => {
@@ -148,6 +149,18 @@ describe("POST /api/receipts", () => {
     const [, , receipt, lines] = vi.mocked(createReceipt).mock.calls[0];
     expect(receipt).toMatchObject({ category: "foreign", taxNumber: null, totalKurus: 500000, receiptNo: "5234567890" });
     expect(lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus])).toEqual([["760.01", 500000, 0], ["191.04", 100000, 0], ["360.01", 0, 100000], ["331.01", 0, 500000]]);
+  });
+
+  it("yurt içi faturayı (uçak bileti) gider fişi gibi kaydeder, belge türü FT olur", async () => {
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(createReceipt).mockResolvedValue("r-b");
+    vi.mocked(extractReceipt).mockResolvedValue(read({ documentKind: "domestic_invoice", vendorName: "ÖRNEK HAVAYOLLARI A.Ş.", taxNumber: "1111111114", receiptNo: "ABC2026000000123", category: "transport", total: "1.300,00", vatLines: [{ rate: 20, gross: "1.200,00", vat: "200,00" }, { rate: 0, gross: "100,00", vat: "0,00" }] }));
+    const res = await POST(pdf());
+    expect(res.status).toBe(201);
+    const [, , receipt, lines] = vi.mocked(createReceipt).mock.calls[0];
+    expect(receipt).toMatchObject({ category: "transport", taxNumber: "1111111114", receiptNo: "ABC2026000000123", totalKurus: 130000 });
+    expect(lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus])).toEqual([["770.05", 100000, 0], ["191.03.20", 20000, 0], ["770.05", 10000, 0], ["331.01", 0, 130000]]);
+    expect(lines.every((l) => l.documentType === "FT" && l.documentNo === "ABC2026000000123")).toBe(true);
   });
 
   it("Z raporunu gelir fişi olarak kaydeder, aynı Z no ve tarihle kayıtlıysa uyarır", async () => {

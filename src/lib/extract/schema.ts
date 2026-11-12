@@ -6,14 +6,14 @@ import type { ForeignData, SalesData } from "../journal-kinds";
 import { parseTrAmount, vatFromGross } from "../money";
 
 // Amounts stay text exactly as printed ("8.725,00"); parseTrAmount converts them in tested code.
-export const DOCUMENT_KINDS = ["receipt", "z_report", "foreign_invoice"] as const;
+export const DOCUMENT_KINDS = ["receipt", "z_report", "foreign_invoice", "domestic_invoice"] as const;
 export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
 
 export const ReceiptExtractionSchema = z.object({
-  documentKind: z.enum(DOCUMENT_KINDS).describe("receipt: yazar kasa (ÖKC) satış fişi. z_report: yazar kasanın gün sonu Z raporu. foreign_invoice: yurt dışı şirketin (Google, Meta, AWS, yazılım aboneliği gibi) faturası veya ödeme makbuzu"),
+  documentKind: z.enum(DOCUMENT_KINDS).describe("receipt: yazar kasa (ÖKC) satış fişi. z_report: yazar kasanın gün sonu Z raporu. foreign_invoice: yurt dışı şirketin (Google, Meta, AWS, yazılım aboneliği gibi) faturası veya ödeme makbuzu. domestic_invoice: Türkiye'de kesilmiş e-fatura, e-arşiv fatura veya kâğıt fatura (uçak, otobüs, tren bileti, otel, hizmet faturası)"),
   vendorName: z.string().max(200).nullable().describe("Fişin en üstündeki satıcı unvanı, yazıldığı gibi"),
   taxOffice: z.string().max(200).nullable().describe("Vergi dairesi adı"),
-  taxNumber: z.string().max(20).nullable().describe("VKN veya TCKN, sadece rakamlar"),
+  taxNumber: z.string().max(20).nullable().describe("Satıcının VKN veya TCKN'si, sadece rakamlar. Faturada alıcının (SAYIN) numarası değil"),
   date: z.string().max(40).nullable().describe("Fiş tarihi, yazıldığı gibi (GG.AA.YYYY)"),
   time: z.string().max(40).nullable(),
   receiptNo: z.string().max(40).nullable().describe("FİŞ NO, baştaki sıfırlarla"),

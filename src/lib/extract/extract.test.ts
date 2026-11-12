@@ -126,7 +126,7 @@ describe("extractReceipt", () => {
     expect(request).not.toHaveProperty("temperature");
     expect(request.thinking).toEqual({ type: "disabled" });
     expect(request.messages[0].content[0]).toMatchObject({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: image.toString("base64") } });
-    expect(result).toMatchObject({ ok: true, model: "claude-haiku-5-5", problems: [], inputTokens: 3000, outputTokens: 300 });
+    expect(result).toMatchObject({ ok: true, model: "claude-haiku-5-5", problems: [], fallback: false, inputTokens: 3000, outputTokens: 300 });
   });
 
   it("kontrol başarısızsa bir kez Sonnet ile tekrar okur", async () => {
@@ -135,7 +135,7 @@ describe("extractReceipt", () => {
     expect(parse).toHaveBeenCalledTimes(2);
     expect(parse.mock.calls[1][0].model).toBe("claude-sonnet-5-5");
     expect(parse.mock.calls[1][0]).not.toHaveProperty("thinking");
-    expect(result).toMatchObject({ ok: true, model: "claude-sonnet-5-5", problems: [], inputTokens: 6000, outputTokens: 600 });
+    expect(result).toMatchObject({ ok: true, model: "claude-sonnet-5-5", problems: [], fallback: true, inputTokens: 6000, outputTokens: 600 });
   });
 
   it("Sonnet de geçemezse sorunlarla döner", async () => {
@@ -149,7 +149,7 @@ describe("extractReceipt", () => {
   it("Sonnet daha kötü okursa ilk okumayı tutar", async () => {
     const { client } = mockClient(response({ ...goodOutput, total: "8.752,00" }), response({ ...goodOutput, total: "8.752,00", date: "31.02.2026" }));
     const result = await extractReceipt(image, client);
-    expect(result).toMatchObject({ ok: true, model: "claude-haiku-5-5", problems: ["total_mismatch"] });
+    expect(result).toMatchObject({ ok: true, model: "claude-haiku-5-5", problems: ["total_mismatch"], fallback: true });
   });
 
   it("refusal durumunda Sonnet ile tekrar dener", async () => {

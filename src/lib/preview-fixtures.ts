@@ -90,6 +90,7 @@ export const PREVIEW_EMAIL = "muhasebe@buro.example";
 /** The list screen's row shape, computed from the fixtures the way listReceipts computes it in SQL. */
 export const PREVIEW_LIST = PREVIEW_RECEIPTS.map(({ lines, taxNumber, paymentMethod, extraction, ...r }) => ({
   ...r,
+  invoice: (extraction as { documentKind?: string } | null)?.documentKind === "domestic_invoice",
   expenseCode: lines.find((l) => l.debitKurus > 0 && !l.accountCode.startsWith("191"))?.accountCode ?? null,
   lineCount: lines.length,
   expenseKurus: lines.reduce((n, l) => n + (l.accountCode.startsWith("191") ? 0 : l.debitKurus), 0),
