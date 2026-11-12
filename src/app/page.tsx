@@ -180,6 +180,7 @@ export default function LandingPage() {
           <Link href="/gizlilik" prefetch={false}>Gizlilik</Link>
           <Link href="/kvkk" prefetch={false}>KVKK</Link>
           <Link href="/kosullar" prefetch={false}>Kullanım Koşulları</Link>
+          <Link href="/destek" prefetch={false}>Bize ulaşın</Link>
         </nav>
       </footer>
       <CookieNote />
