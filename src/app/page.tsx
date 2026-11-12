@@ -178,6 +178,8 @@ export default function LandingPage() {
           <a href="/kayit">Hesap oluştur</a>
           <a href="#sss">Sık sorulanlar</a>
           <Link href="/gizlilik" prefetch={false}>Gizlilik</Link>
+          <Link href="/kvkk" prefetch={false}>KVKK</Link>
+          <Link href="/kosullar" prefetch={false}>Kullanım Koşulları</Link>
         </nav>
       </footer>
       <CookieNote />

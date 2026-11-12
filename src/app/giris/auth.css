@@ -53,3 +53,6 @@
   html:has(.cookie-note) { scroll-padding-bottom: 96px; }
   .auth .auth-main { padding-bottom: calc(var(--s8) + 72px); }
 }
+.auth-check { display: flex; gap: 10px; align-items: flex-start; font-size: var(--fs-body); line-height: 1.45; cursor: pointer; }
+.auth-check input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--ink); }
+.auth-check a { color: var(--ink); }

@@ -12,6 +12,7 @@ export const ERRORS: Record<string, string> = {
   "bicim-ad": "Ad soyad en az 2 karakter olmalı.",
   "bicim-eposta": "Geçerli bir e-posta adresi yazın, örneğin ornek@buro.com.tr.",
   "bicim-sifre": "Şifre en az 8 karakter olmalı.",
+  "bicim-kosullar": "Hesap oluşturmak için Kullanım Koşullarını kabul edin.",
   "bos-sifre": "Şifrenizi yazın.",
   bicim: "E-posta ve şifreyi kontrol edin.",
   "kayit-bicim": "Ad soyad, e-posta ve şifreyi kontrol edin.",
@@ -26,7 +27,7 @@ export const ERRORS: Record<string, string> = {
 };
 
 // An old ?hata= link that names a field marks that field, as a failed attempt does.
-const FIELD_OF: Record<string, AuthField> = { "bicim-ad": "name", "bicim-eposta": "email", "bicim-sifre": "password", "bos-sifre": "password" };
+const FIELD_OF: Record<string, AuthField> = { "bicim-ad": "name", "bicim-eposta": "email", "bicim-sifre": "password", "bos-sifre": "password", "bicim-kosullar": "terms" };
 export const initialState = (code?: string): AuthState =>
   // kimlik marks the password field, as the login action does.
   code && ERRORS[code] ? { error: code, field: FIELD_OF[code] ?? (code === "kimlik" ? "password" : undefined) } : undefined;
@@ -61,7 +62,7 @@ export function AuthForm({ isSignup, initialError, turnstileSiteKey, next }: { i
   const fixedNow = fixed.of === state ? fixed.fields : [];
   const values = (form: HTMLFormElement) => {
     const f = new FormData(form);
-    return { name: isSignup ? f.get("name") : undefined, email: f.get("email"), password: f.get("password") };
+    return { name: isSignup ? f.get("name") : undefined, email: f.get("email"), password: f.get("password"), terms: isSignup ? f.get("terms") : undefined };
   };
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     const result = checkAuthForm(isSignup, values(e.currentTarget));
@@ -86,10 +87,19 @@ export function AuthForm({ isSignup, initialError, turnstileSiteKey, next }: { i
       <EmailField error={at("email")} defaultValue={state?.email} />
       <PasswordField label="Şifre" name="password" autoComplete={isSignup ? "new-password" : "current-password"} hint={isSignup ? "En az 8 karakter" : undefined} error={at("password")}
         aside={isSignup ? undefined : <Link href="/giris/sifre">Şifremi unuttum</Link>} />
+      {isSignup ? (
+        <div className="auth-field auth-terms">
+          <label className="auth-check">
+            <input type="checkbox" id="auth-terms" name="terms" required aria-invalid={at("terms") ? true : undefined} aria-describedby={at("terms") ? "auth-terms-error" : undefined} />
+            <span><Link href="/kosullar" target="_blank">Kullanım Koşullarını</Link> okudum, kabul ediyorum.</span>
+          </label>
+          {at("terms") ? <p className="field-error" id="auth-terms-error">{at("terms")}</p> : null}
+        </div>
+      ) : null}
       <TurnstileWidget siteKey={turnstileSiteKey} />
       <SubmitButton label={isSignup ? "Hesap oluştur" : "Giriş yap"} pendingLabel={isSignup ? "Hesap oluşturuluyor…" : "Giriş yapılıyor…"} />
       {isSignup ? (
-        <p className="auth-consent">Hesap oluşturmadan önce <Link href="/gizlilik">gizlilik sayfasını</Link> okuyun: fiş fotoğrafı okunmak için Anthropic’e (ABD) gönderilir; Accountie fotoğrafı sunucuda ve veritabanında saklamaz.</p>
+        <p className="auth-consent">Kişisel verileriniz <Link href="/kvkk" target="_blank">Aydınlatma Metni</Link>nde anlatıldığı gibi işlenir: fiş fotoğrafı okunmak için Anthropic’e (ABD) gönderilir, Accountie fotoğrafı saklamaz.</p>
       ) : null}
     </form>
   );

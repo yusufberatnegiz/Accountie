@@ -21,6 +21,7 @@ const { hitRateLimit, revokeExtensionTokens } = await import("@/db/queries");
 const { sniffImageType } = await import("./image");
 const { clientIp, ipBucket, LIMITS } = await import("./rate-limit");
 const actions = await import("@/app/giris/actions");
+const { TERMS_VERSION } = await import("@/app/giris/validation");
 const callback = await import("@/app/auth/callback/route");
 
 const bytes = (...b: (number | string)[]) => Uint8Array.from(b.flatMap((x) => typeof x === "string" ? [...x].map((c) => c.charCodeAt(0)) : [x]));
@@ -85,7 +86,7 @@ describe("oran sınırı", () => {
 
   it("sınır aşılınca kayıt denenmez", async () => {
     vi.mocked(hitRateLimit).mockResolvedValue(false);
-    const res = await redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678" })));
+    const res = await redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", terms: "on" })));
     expect(res).toContain("hata=kayit-cok");
     expect(A.signUp).not.toHaveBeenCalled();
   });
@@ -105,8 +106,17 @@ describe("giriş ve kayıt formu", () => {
     expect(await actions.signup(undefined, form({ name: "A", email: "a@ornek.com", password: "12345678" }))).toMatchObject({ error: "bicim-ad", field: "name" });
     expect(await actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "kisa" }))).toMatchObject({ error: "bicim-sifre", field: "password" });
     // Every invalid field comes back at once; focus goes to the first.
-    expect(await actions.signup(undefined, form({ name: "", email: "abc", password: "" }))).toMatchObject({ field: "name", fields: ["name", "email", "password"] });
+    expect(await actions.signup(undefined, form({ name: "", email: "abc", password: "" }))).toMatchObject({ field: "name", fields: ["name", "email", "password", "terms"] });
     expect(A.signUp).not.toHaveBeenCalled();
+  });
+
+  it("Kullanım Koşulları işaretlenmeden hesap açılmaz; işaretlenince sürümü ve zamanı hesaba yazılır", async () => {
+    expect(await actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678" }))).toMatchObject({ error: "bicim-kosullar", field: "terms" });
+    expect(A.signUp).not.toHaveBeenCalled();
+    await redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", terms: "on" })));
+    const data = (vi.mocked(A.signUp).mock.calls as unknown as [{ options: { data: Record<string, string> } }][])[0][0].options.data;
+    expect(data).toMatchObject({ name: "Ali Veli", terms: TERMS_VERSION });
+    expect(Date.parse(data.termsAcceptedAt)).not.toBeNaN();
   });
 });
 
@@ -117,7 +127,7 @@ describe("giriş sonrası dönüş", () => {
     for (const bad of ["//evil.example", "https://evil.example/panel", "/panel/../giris", "/"]) expect(await go(bad), bad).toBe("REDIRECT /panel");
   });
   it("e-posta doğrulaması açıkken kayıt, doğrulanmış panel yolunu girişe taşır", async () => {
-    const signup = (sonra: string) => redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", sonra })));
+    const signup = (sonra: string) => redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", terms: "on", sonra })));
     expect(await signup("/panel/fis/abc-1")).toBe("REDIRECT /giris?mesaj=kayit-tamam&sonra=/panel/fis/abc-1");
     expect(await signup("//evil.example")).toBe("REDIRECT /giris?mesaj=kayit-tamam");
   });
@@ -174,7 +184,7 @@ describe("bot koruması", () => {
     expect(await redirectOf(actions.login(undefined, form({ email: "a@ornek.com", password: "12345678" })))).toContain("hata=bot");
     expect(A.signInWithPassword).not.toHaveBeenCalled();
     expect(hitRateLimit).not.toHaveBeenCalled(); // Turnstile'sız deneme kurbanın e-posta limitini dolduramaz
-    const res = await redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678" })));
+    const res = await redirectOf(actions.signup(undefined, form({ name: "Ali Veli", email: "a@ornek.com", password: "12345678", terms: "on" })));
     expect(res).toContain("hata=bot");
     expect(A.signUp).not.toHaveBeenCalled();
   });

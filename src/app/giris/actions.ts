@@ -9,7 +9,7 @@ import { revokeExtensionTokens } from "@/db/queries";
 import { AFTER_LOGIN, safeNextPath } from "@/lib/auth/next-path";
 import { allow, clientIp } from "@/lib/rate-limit";
 import { verifyTurnstile } from "@/lib/turnstile";
-import { invalid, loginSchema, signupSchema, typedBack, type AuthField, type AuthState } from "./validation";
+import { invalid, loginSchema, signupSchema, TERMS_VERSION, typedBack, type AuthField, type AuthState } from "./validation";
 
 export type { AuthField, AuthState };
 
@@ -37,7 +37,7 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
 }
 
 export async function signup(_prev: AuthState, formData: FormData): Promise<AuthState> {
-  const raw = { name: formData.get("name"), email: formData.get("email"), password: formData.get("password") };
+  const raw = { name: formData.get("name"), email: formData.get("email"), password: formData.get("password"), terms: formData.get("terms") };
   const input = signupSchema.safeParse(raw);
   if (!input.success) return invalid(input.error.issues, raw, true);
   const typed = typedBack(raw);
@@ -48,7 +48,7 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   const { name, email, password } = input.data;
   // The confirmation link comes back to /auth/callback on this origin (Next has matched Origin to Host for this action).
   const origin = (await headers()).get("origin");
-  const { data, error } = await (await getAuth()).signUp({ email, password, options: { data: { name }, ...(origin ? { emailRedirectTo: `${origin}/auth/callback` } : {}) } });
+  const { data, error } = await (await getAuth()).signUp({ email, password, options: { data: { name, terms: TERMS_VERSION, termsAcceptedAt: new Date().toISOString() }, ...(origin ? { emailRedirectTo: `${origin}/auth/callback` } : {}) } });
   if (error) return { error: "kayit", field: "email", ...typed };
   // A session exists right away unless e-mail confirmation is on; then the user confirms the address and signs in.
   if (data?.session) redirect(safeNextPath(formData.get("sonra")) ?? AFTER_LOGIN);
