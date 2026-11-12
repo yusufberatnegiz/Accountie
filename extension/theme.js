@@ -11,7 +11,7 @@
   apply();
   media.addEventListener("change", apply);
   try {
-    for (const tab of await chrome.tabs.query({ url: "https://accountie.vercel.app/*" })) {
+    for (const tab of await chrome.tabs.query({ url: ["https://accountie.app/*", "https://www.accountie.app/*"] })) {
       const [frame] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: () => localStorage.getItem("tema") });
       if (!frame) continue;
       choice = frame.result === "light" || frame.result === "dark" ? frame.result : "system";

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Accountie Luca Doldurucu",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Onaylı fişleri Luca Fiş Detayına yazar, ekranla karşılaştırır; son fişi siz kaydedersiniz.",
   "icons": {
     "16": "icons/icon-16.png",
@@ -23,14 +23,15 @@
     "storage"
   ],
   "host_permissions": [
-    "https://accountie.vercel.app/*",
+    "https://accountie.app/*",
+    "https://www.accountie.app/*",
     "https://*.luca.com.tr/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "externally_connectable": {
-    "matches": ["https://accountie.vercel.app/*"]
+    "matches": ["https://accountie.app/*", "https://www.accountie.app/*"]
   },
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqC89IEfCFckYekKVPSfrnn97rhB6vO5/poHR+EVAAOcY+TWr5DFQysiPfSc+xk0goFDJr/s4eeyoNIo50gKvzKDwb05aIxHsVanXLebyUvHsjo2GCPmP6uIYuGOTAiStYHMzjV14r6avqYuWOHP4wRfmBWQzyzfi0mvBDQIFAvGYJL5NTRQvSDeJg6Z9F+TbSTgCaf/852RoRLNpVSa7NP2Ub+6XCSc34e2rbVyaNzFWvLD4yj33vngqM7NbWwCFoH4qAdPJMhkn8DIbuEIck6KcNLoy6LBQ9AKEO+1bohG9MKc3Ux7rppNB4tqF1OMEun9dxXABnOgrpPxLCDJhtwIDAQAB",
   "content_security_policy": {

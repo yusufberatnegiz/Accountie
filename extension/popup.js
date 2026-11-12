@@ -1,6 +1,6 @@
 /* global chrome, AccountieFill, AccountieSelectors */
 // Change together with host_permissions in manifest.json (e.g. http://localhost:3000 for development).
-const APP_ORIGIN = "https://accountie.vercel.app";
+const APP_ORIGIN = "https://accountie.app";
 // Luca birden çok sunucuda çalışır (auygs, auygs16, ...).
 const LUCA_HOST = /^auygs\d*\.luca\.com\.tr$/;
 

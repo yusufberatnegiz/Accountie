@@ -2,7 +2,7 @@
 
 Yazar kasa fişinin fotoğrafından Luca için yevmiye kaydı hazırlayan web uygulaması. Luca kullanan muhasebe büroları ve mali müşavirler için.
 
-Canlı: [accountie.vercel.app](https://accountie.vercel.app)
+Canlı: [accountie.app](https://accountie.app)
 
 ## Ne yapar
 
@@ -24,7 +24,7 @@ Canlı: [accountie.vercel.app](https://accountie.vercel.app)
 
 Next.js 16 (App Router), TypeScript, Drizzle ORM ve Supabase Postgres (Frankfurt), Supabase Auth, Anthropic Claude (fiş okuma), Cloudflare Turnstile, Vercel. Testler Vitest ile.
 
-## Canlıya alma (accountie.vercel.app)
+## Canlıya alma (accountie.app)
 
 Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
 
@@ -33,7 +33,7 @@ Sırayla yapın. Bir adım bitmeden sonrakine geçmeyin.
    - *Bilgi, sınırlar:* Giriş IP başına (IPv6'da /64 ağı başına) ve e-posta başına (saatte 30 deneme) sınırlıdır. Fiş okuma kullanıcı başına (dakikada 10, günde 100), ağ başına (günde 300) ve tüm uygulama için (günde 2000) sınırlıdır.
 2. **Tablolar.** Supabase'e 2026-11-08'de uygulandı: `drizzle/` altındaki bütün dosyalar sırayla; RLS açık, Data API kapalı, `anon` ve `authenticated` izinleri geri alındı. Yeni bir göç gelince Supabase SQL Editor'de yalnız yeni dosyanın içeriğini çalıştırın. Dosyalar yalnız ekler; tek istisna `20261111181256_drop_gib_credentials.sql`, kaldırılan e-Arşiv bağlantısının şifreli GİB girişleri tablosunu siler (uygulamadan önce yedek alın).
 3. **Veritabanı rolü.** `DATABASE_URL` tabloların sahibi `postgres` rolüyle bağlanır. Kullanıcı ayrımı uygulama kodundaki `user_id` filtreleriyle yapılır; RLS ve geri alınan izinler ikinci güvencedir.
-4. **Supabase Auth.** Authentication, URL Configuration: Site URL `https://accountie.vercel.app`; Redirect URLs listesine `https://accountie.vercel.app/auth/callback` ve yerel deneme için `http://localhost:3000/auth/callback`. Kayıt doğrulama ve şifre yenileme e-postaları bu adrese döner. Email sağlayıcısında "Confirm email" açık kalsın. Canlıda kendi SMTP'nizi bağlayın (Authentication, Emails, SMTP Settings); Supabase'in yerleşik e-postası saatte birkaç iletiyle sınırlıdır.
+4. **Supabase Auth.** Authentication, URL Configuration: Site URL `https://accountie.app`; Redirect URLs listesine `https://accountie.app/auth/callback`, `https://www.accountie.app/auth/callback` ve yerel deneme için `http://localhost:3000/auth/callback`. Kayıt doğrulama ve şifre yenileme e-postaları bu adrese döner. Email sağlayıcısında "Confirm email" açık kalsın. Canlıda kendi SMTP'nizi bağlayın (Authentication, Emails, SMTP Settings); Supabase'in yerleşik e-postası saatte birkaç iletiyle sınırlıdır.
 5. **Yayın.** `git push` ile main dalını gönderin; Vercel otomatik yayınlar. Ortam değişkeni sonradan eklendiyse Vercel'de Deployments, son yayın, Redeploy.
 6. **Fiş okuma denemesi.** Bilgisayarda, repo klasöründe bir kez `npm install` çalıştırın, sonra gerçek anahtarla tek fiş okuyun (PowerShell):
 
@@ -82,7 +82,7 @@ Güvenlik:
 - Anahtar her kullanımda 30 gün uzar; 30 gün kullanılmazsa, şifre sıfırlanınca ya da iptal edilince biter. Yalnızca sizin onaylı fişlerinizi okur ve bir fişi "aktarıldı" yapabilir. Yeni anahtar oluşturmak eskisini geçersiz kılar; **Anahtarı iptal et** hemen kapatır.
 - Eklenti anahtarı bu bilgisayarda tutar (`chrome.storage.local`, eşitlenmez), tarayıcı kapanınca silinmez; eklentideki **Anahtarı unut** siler. Ortak bilgisayarda günün sonunda paneldeki **Anahtarı iptal et** ile kapatın.
 - İzinler: `activeTab` (yalnızca simgesine tıkladığınız sekme), `scripting`, `storage` ve uygulama adresine erişim. Luca şifrenize veya çerezlerinize dokunmaz.
-- **Eklentiye bağla**: eklenti yalnız `https://accountie.vercel.app` sayfalarından gelen ve anahtar biçimindeki mesajı kabul eder (`externally_connectable`, `extension/background.js`). Eklentinin kimliği `manifest.json`'daki `key` ile sabittir (`leffpncjckoidaabeaciahdhbnjihojg`, `src/lib/extension-id.ts`); her bilgisayarda aynıdır. Chrome Web Store'a çıkınca mağazanın verdiği kimlik `src/lib/extension-id.ts`'e yazılır.
+- **Eklentiye bağla**: eklenti yalnız `https://accountie.app` (ve www) sayfalarından gelen ve anahtar biçimindeki mesajı kabul eder (`externally_connectable`, `extension/background.js`). Eklentinin kimliği `manifest.json`'daki `key` ile sabittir (`leffpncjckoidaabeaciahdhbnjihojg`, `src/lib/extension-id.ts`); her bilgisayarda aynıdır. Chrome Web Store'a çıkınca mağazanın verdiği kimlik `src/lib/extension-id.ts`'e yazılır.
 
 ### Luca seçicileri
 

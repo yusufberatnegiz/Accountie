@@ -1,7 +1,7 @@
 /* global chrome, AccountieLuca, sirketDonem */
 // İlk kurulum: Luca'daki firmaları ve hesap planlarını okuyup Accountie'ye gönderir. Uzun sürer, o yüzden açılır pencerede
 // değil kendi sekmesinde çalışır. Luca'ya dokunan her şey luca-import.js içindedir.
-const APP_ORIGIN = "https://accountie.vercel.app"; // popup.js ile aynı
+const APP_ORIGIN = "https://accountie.app"; // popup.js ile aynı
 const YEAR = String(new Date().getFullYear());
 const MAX_ERRORS_IN_A_ROW = 5;
 
