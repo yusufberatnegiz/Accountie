@@ -90,7 +90,7 @@
 .capture-buttons { display: flex; gap: var(--s2); }
 
 /* ---------- List screen ---------- */
-.canvas-list { grid-template-columns: minmax(0, 1fr) 384px; align-items: start; }
+.canvas-list { grid-template-columns: minmax(0, 1fr); align-items: start; }
 .list-panel { min-width: 0; }
 /* A short list reaches down to the Luca column; the column's cards keep their own height, so none holds an empty band. */
 .canvas-list > .list-panel { align-self: stretch; }
@@ -143,22 +143,6 @@
 .first-run a { color: var(--ink); }
 
 .side { display: grid; gap: var(--s4); align-content: start; min-width: 0; }
-.side-block { padding: var(--s5); display: grid; gap: var(--s4); }
-.side-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
-/* A long heading keeps one line; its scope note goes under it. */
-.side-head-stack { display: grid; gap: var(--s1); }
-.side-block > summary { cursor: pointer; list-style-position: inside; border-radius: var(--radius-chip); }
-.side-block > summary h2 { display: inline; }
-details.side-block:not([open]) { gap: 0; }
-/* Luca file meter: the true ratio of 50 receipts / 400 lines, both ends labelled, no stub at zero. */
-.meter { display: grid; gap: var(--s2); }
-.meter-head { display: flex; justify-content: space-between; font-size: var(--fs-body); color: var(--muted); }
-.meter-head .meter-value { color: var(--ink); font-weight: var(--w-strong); }
-/* The empty track must be seen on its own (an empty file is a state): a step toward the control edge, in both themes. */
-.meter-track { display: block; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--control-edge) 28%, var(--surface)); overflow: hidden; }
-/* Ink, not blue: blue is kept for the figures that go to Luca (YON 23.10). */
-.meter-fill { display: block; height: 100%; background: var(--ink); transform-origin: left center; }
-.guide { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s1); font-size: var(--fs-body); }
 .phone-only-inline { display: none; }
 @media (max-width: 720px) { .phone-only-inline { display: inline; } }
 
@@ -527,20 +511,6 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .journal .field.tnum { padding-inline: var(--s2); letter-spacing: -0.01em; }
 }
 
-/* Luca upload steps, folded under the meter. */
-.howto { display: grid; gap: var(--s3); font-size: var(--fs-body); }
-.howto > summary { cursor: pointer; font-weight: var(--w-medium); border-radius: var(--radius-chip); }
-.howto[open] > summary { margin-bottom: var(--s3); }
-/* The note under the steps: the panel's 16px beat above it, on the steps' text edge. */
-.howto .guide + p { margin: var(--s4) 0 0; padding-left: var(--s5); }
-/* Spend by expense account: a ranked list with thin grey bars, the top account in ink. */
-.by-account { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
-.by-account li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s1) var(--s3); font-size: var(--fs-body); }
-.by-account .acc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.by-account .acc-track { grid-column: 1 / -1; display: block; height: 8px; border-radius: 999px; background: var(--rule); overflow: hidden; }
-/* One tone for every bar (length already ranks them), at least 3:1 against the track in both themes; the figure stays in ink (YON 23.25). */
-.by-account .acc-bar { display: block; height: 100%; background: color-mix(in srgb, var(--ink) 55%, var(--surface)); transform-origin: left center; }
-.by-account-foot { display: flex; justify-content: space-between; gap: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--rule); font-size: var(--fs-body); }
 
 /* Locked (approved) lines read as plain text on the column edges, and what goes to Luca stays ledger blue. */
 /* The edge goes in the same frame as the padding (no 180ms fade), so no frame shows text against a still-drawn border. */
@@ -757,8 +727,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 /* Quiet links beside the Luca file and under the list on a phone: they lead to other screens, they are not the card's action. */
 .side-links { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); margin: 0; }
 .side-links a { color: var(--ink); text-underline-offset: 0.2em; }
-p.side-links.phone-only { display: none; }
-@media (max-width: 720px) { p.side-links.phone-only { display: flex; padding: var(--s3) var(--s4) var(--s4); } p.side-links.phone-only a { display: inline-flex; align-items: center; min-height: var(--touch); } }
+p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
+@media (max-width: 720px) { p.side-links.list-links a { display: inline-flex; align-items: center; min-height: var(--touch); } }
 .field-file::file-selector-button { transition: background-color 180ms ease, transform 140ms ease; }
 .field-file:active::file-selector-button { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) { .field-file:active::file-selector-button { transform: none; } }
@@ -805,13 +775,6 @@ p.side-links.phone-only { display: none; }
 .delete-form .btn-danger { justify-self: start; }
 .account-delete { display: inline-flex; align-items: center; min-height: var(--touch); font-size: var(--fs-body); color: var(--muted); }
 
-/* Fold buttons (FoldButton): the sidebar folds back to the 80px rail; the list's side column hides so the list takes the width.
-   Both only where they change something: the wide sidebar from 1100px, the side column beside the list from 1181px. */
+/* Fold button (FoldButton): the sidebar folds back to the 80px rail, only where it is wide (from 1100px). */
 .rail-fold { display: none; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; }
 @media (min-width: 1100px) { .rail-fold { display: grid; } }
-.side-fold { display: none; }
-@media (min-width: 1181px) {
-  .side-fold { display: inline-flex; }
-  [data-side="dar"] .canvas-list { grid-template-columns: minmax(0, 1fr); }
-  [data-side="dar"] .canvas-list > .side { display: none; }
-}

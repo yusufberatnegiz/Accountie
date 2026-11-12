@@ -3,17 +3,13 @@ import type { listReceipts, ReceiptStatus } from "@/db/queries";
 import { BulkApproveButton } from "@/components/BulkApproveButton";
 import { CaptureButton } from "@/components/CaptureButton";
 import { ExportButton } from "@/components/ExportButton";
-import { FoldButton } from "@/components/FoldButton";
 import { InstallHint } from "@/components/InstallHint";
 import { ListTabs } from "@/components/ListTabs";
 import { RowPending } from "@/components/RowPending";
-import { LucaMeter } from "@/components/LucaMeter";
 import { MoveTransition } from "@/components/MoveTransition";
 import { MonthPicker } from "@/components/MonthPicker";
 import { DOC_KIND_LABEL, docKind } from "@/lib/doc-kind";
 import { monthLabel } from "@/lib/month";
-import { CATEGORIES } from "@/lib/default-rules";
-import { MAX_LINES_PER_FILE, MAX_RECEIPTS_PER_FILE } from "@/lib/luca/export";
 import { formatTrAmount } from "@/lib/money";
 import { listFinding, STATUS_LABELS } from "@/lib/status";
 
@@ -23,12 +19,6 @@ export const TABS: { slug: string; label: string; status?: ReceiptStatus }[] = [
   { slug: "onayli", label: "Onaylandı", status: "approved" },
   { slug: "aktarildi", label: "Aktarıldı", status: "exported" },
 ];
-
-// Default names only: a renamed account still shows its code, which is what Luca matches on.
-const accountNames: Record<string, string> = Object.fromEntries(CATEGORIES.map((c) => [c.account.code, c.label]));
-
-// What the per-account totals add up: the receipts in the open tab; under Tümü only approved and exported ones, so a draft never reads as a booked figure.
-const SCOPES: Record<string, string> = { taslak: "Taslak fişler", onayli: "Onaylı fişler", aktarildi: "Aktarılan fişler" };
 
 type Row = Awaited<ReturnType<typeof listReceipts>>[number];
 
@@ -41,18 +31,12 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
   const count = (s?: ReceiptStatus) => (s ? all.filter((r) => r.status === s).length : all.length);
   const receipts = tab.status ? all.filter((r) => r.status === tab.status) : all;
   const ready = all.filter((r) => r.status === "approved");
-  const readyLines = ready.reduce((n, r) => n + r.lineCount, 0);
-  const files = Math.max(Math.ceil(ready.length / MAX_RECEIPTS_PER_FILE), Math.ceil(readyLines / MAX_LINES_PER_FILE));
   const drafts = count("draft");
   // Only drafts without a single warning; the rest still need a look on their own screen.
   const clean = tab.status === "draft" || !tab.status ? receipts.filter((r) => r.status === "draft" && r.warnings.length === 0) : [];
-  // Matrah per expense account in the current view, most first: the debits Luca books on 770, VAT apart on 191.
-  // shortcut: a receipt's whole expense side is booked to its first expense code; split per line if users start mixing 770 codes on one receipt.
-  const sums = new Map<string, number>();
+  // Under Tümü only approved and exported receipts count, so a draft never reads as a booked figure.
   const counted = tab.status ? receipts : receipts.filter((r) => r.status !== "draft");
-  // A Z report is sales, not an expense: it stays out of the expense and KDV sums.
-  for (const r of counted) if (r.expenseCode && r.expenseKurus && docKind(r.category) !== "z_report") sums.set(r.expenseCode, (sums.get(r.expenseCode) ?? 0) + r.expenseKurus);
-  const byAccount = [...sums].sort((a, b) => b[1] - a[1]);
+  // A Z report is sales, not an expense: it stays out of the KDV sum.
   const vatTotal = counted.reduce((n, r) => n + (r.expenseCode && docKind(r.category) !== "z_report" ? r.vatKurus : 0), 0);
 
   return (
@@ -68,7 +52,6 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
         <div className="title-actions">
           {months ? <MonthPicker months={months} value={month} path={base} /> : null}
           {all.length || month ? <CaptureButton base={base} /> : null}
-          <FoldButton part="side" />
         </div>
       </div>
 
@@ -136,7 +119,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
             </tbody>
           </table>
         )}
-        <p className="side-links small phone-only"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
+        <p className="side-links small list-links"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
         {clean.length > 1 ? <div className="list-foot"><BulkApproveButton receiptIds={clean.map((r) => r.id)} /></div> : null}
         {tab.status === "exported" && receipts.length > 0 ? (
           <div className="list-foot desktop-only">
@@ -147,70 +130,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
         ) : null}
       </section>
 
-      <aside className="side" aria-label="Luca'ya aktarım">
-        {/* The extension is the way to Luca; Excel stays apart for offices that use Luca's Excel import (admin users only). */}
-        <section className="panel side-block desktop-only" aria-labelledby="luca-title">
-          <div className="side-head">
-            <h2 id="luca-title">Luca&apos;ya aktarım</h2>
-            <p className="muted small">{ready.length ? `${ready.length} onaylı fiş hazır` : "Hazır fiş yok"}</p>
-          </div>
-          <details className="howto" open={all.length === 0 || undefined}>
-            <summary>Eklentiyle aktarım adımları</summary>
-            <ol className="guide">
-              <li>Accountie Luca Doldurucu eklentisini Chrome&apos;a kurun, <Link href={`${base}/kurallar`}>Kurallar</Link> sayfasında Eklentiye bağla&apos;ya basın. Bunu bir kez yaparsınız.</li>
-              <li>Luca&apos;da firmayı seçin, yeni bir fiş açıp Fiş Detayı ekranına gelin.</li>
-              <li>Eklentiyi o sekmede açın, onaylı fişleri seçip Fiş Detayına yaz&apos;a basın.</li>
-              <li>Eklenti satırları ekrandan geri okuyup karşılaştırır. Fark yoksa Luca&apos;da Kaydet&apos;e basın, sonra eklentide Luca&apos;da kaydettim&apos;e basın; fişler Aktarıldı olur.</li>
-            </ol>
-          </details>
-          <p className="side-links small"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
-        </section>
-
-        <section className="panel side-block desktop-only" aria-labelledby="excel-title">
-          <div className="side-head">
-            <h2 id="excel-title">Excel ile aktarım</h2>
-            <p className="muted small">{ready.length ? `${ready.length} onaylı fiş${files > 1 ? `, ${files} dosya` : ""}` : "Hazır fiş yok"}</p>
-          </div>
-          <LucaMeter label="Fiş" value={ready.length} max={MAX_RECEIPTS_PER_FILE} />
-          <LucaMeter label="Satır" value={readyLines} max={MAX_LINES_PER_FILE} />
-          {ready.length ? <ExportButton label="Excel indir" month={month} /> : <p className="muted small">Onayladığınız fişler bu dosyaya girer.</p>}
-          <details className="howto">
-            <summary>Luca&apos;da Excel yükleme adımları</summary>
-            <ol className="guide">
-              <li>Luca&apos;da Muhasebe, Fiş İşlemleri, Excel veri aktarımı ekranını açın. Bu ekran yalnız Luca yönetici kullanıcısına açıktır.</li>
-              <li>Dosyayı seçin, doğrulama kodunu yazıp Yükle&apos;ye basın.</li>
-              <li>Önizlemeyi kontrol edip Fiş Kes ile fişleri oluşturun.</li>
-            </ol>
-            <p className="muted small">İndirilen fişler Aktarıldı olur. Luca dosyayı reddederse Aktarıldı sekmesinden tekrar indirin. Dosya düzeni Luca&apos;nın resmi şablonuyla henüz doğrulanmadı; ilk yüklemede önizlemedeki kodları ve tutarları fişle karşılaştırın.</p>
-          </details>
-        </section>
-
-        {byAccount.length ? (
-          <section className="panel side-block desktop-only" aria-labelledby="hesap-title">
-            <div className="side-head side-head-stack">
-              <h2 id="hesap-title">Gider hesaplarına göre</h2>
-              <p className="muted small">{SCOPES[tab.slug] ?? "Onaylı ve aktarılan fişler"}, matrah</p>
-            </div>
-            <ol className="by-account">
-              {byAccount.slice(0, 5).map(([code, kurus]) => (
-                <li key={code}>
-                  <span className="acc-name"><span className="tnum" translate="no">{code}</span> <span className="muted">{accountNames[code] ?? ""}</span></span>
-                  <span className="num">{formatTrAmount(kurus)}</span>
-                  <span className="acc-track" aria-hidden="true"><span className="acc-bar" style={{ transform: `scaleX(${kurus / byAccount[0][1]})` }} /></span>
-                </li>
-              ))}
-            </ol>
-            {byAccount.length > 5 ? <p className="muted small">ve {byAccount.length - 5} hesap daha</p> : null}
-            {/* The VAT side of the same receipts, apart from the expense accounts above. */}
-            <p className="by-account-foot">
-              <span><span className="tnum" translate="no">191</span> <span className="muted">İndirilecek KDV</span></span>
-              <span className="num">{formatTrAmount(vatTotal)}</span>
-            </p>
-          </section>
-        ) : null}
-
-        <div className="phone-only"><InstallHint /></div>
-      </aside>
+      <div className="side phone-only"><InstallHint /></div>
     </main>
   );
 }

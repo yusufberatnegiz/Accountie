@@ -8,8 +8,8 @@ import { THEME_INIT_SCRIPT } from "./theme";
 // the first paint (YON 23.28), and the phone never waits displaced for the web fonts (jury tur 8: ~700 ms); 3 s is the cap.
 // The first input marks the counter still: its short scenario jumps to its end.
 const JS_FLAG = "(function(d,w){var h=d.documentElement,n=0;function g(){h.classList.add('go')}function s(){var c=d.querySelector('.counter');c&&c.setAttribute('data-still','')}function p(){if(n)return;n=1;requestAnimationFrame(function(){requestAnimationFrame(g)})}function f(){h.classList.add('js');try{new PerformanceObserver(function(l){l.getEntriesByName('first-contentful-paint').length&&p()}).observe({type:'paint',buffered:true})}catch(e){p()}setTimeout(p,3000);['pointerdown','keydown','wheel','touchstart'].forEach(function(e){w.addEventListener(e,s,{once:true,passive:true})})}d.visibilityState!=='hidden'?f():d.addEventListener('visibilitychange',f,{once:true})})(document,window)";
-// The folded sidebar and side column (FoldButton, same keys), set before first paint so the layout never jumps.
-const FOLD_INIT = "try{var r=document.documentElement;localStorage.getItem('accountie-rail')&&(r.dataset.rail='dar');localStorage.getItem('accountie-side')&&(r.dataset.side='dar')}catch(e){}";
+// The folded sidebar (FoldButton, same key), set before first paint so the layout never jumps.
+const FOLD_INIT = "try{var r=document.documentElement;localStorage.getItem('accountie-rail')&&(r.dataset.rail='dar')}catch(e){}";
 /** The root layout's <head> script. Constant text: the panel CSP allows it by hash. */
 export const HEAD_SCRIPT = THEME_INIT_SCRIPT + ";" + FOLD_INIT + ";" + JS_FLAG;
 /** Production only: public/sw.js serves public/cevrimdisi.html when a navigation fails offline (caches nothing else). */

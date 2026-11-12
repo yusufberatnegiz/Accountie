@@ -37,30 +37,6 @@ export function PanelLoading() {
           </tbody>
         </table>
       </section>
-      <aside className="side desktop-only" aria-hidden="true">
-        <section className="panel side-block">
-          <div className="side-head"><p className="sk-label">Luca&apos;ya aktarım</p><p className="muted small">Onaylı fişler sayılıyor…</p></div>
-          <p className="small">Eklentiyle aktarım adımları</p>
-        </section>
-        <section className="panel side-block">
-          <div className="side-head"><p className="sk-label">Excel ile aktarım</p><p className="muted small">Onaylı fişler sayılıyor…</p></div>
-          {["Fiş", "Satır"].map((l) => (
-            <div key={l} className="meter"><div className="meter-head"><span>{l}</span><span className="sk sk-cell" /></div><span className="meter-track" /></div>
-          ))}
-          {/* The filled card's button and folded steps at their real size, so the column ends where the filled screen's does. */}
-          <span className="btn" aria-disabled="true" style={{ justifySelf: "start" }}>Excel indir</span>
-          <p className="small">Luca&apos;da Excel yükleme adımları</p>
-        </section>
-        <section className="panel side-block">
-          <div className="side-head side-head-stack"><p className="sk-label">Gider hesaplarına göre</p><p className="muted small">Onaylı ve aktarılan fişler, matrah</p></div>
-          <ul className="by-account">
-            {[70, 52, 40, 28, 18].map((w) => <li key={w}><span className="sk" style={{ width: `${w + 20}%` }} /><span className="sk sk-num" /><span className="acc-track" /></li>)}
-          </ul>
-          <span className="sk" style={{ width: "30%" }} />
-          {/* The filled card's foot: the 191 VAT line under the expense accounts. */}
-          <p className="by-account-foot"><span><span className="tnum">191</span> <span className="muted">İndirilecek KDV</span></span><span className="sk sk-num" /></p>
-        </section>
-      </aside>
     </main>
   );
 }

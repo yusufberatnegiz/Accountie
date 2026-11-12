@@ -10,17 +10,16 @@ describe("panel list", () => {
     expect(listFinding(0, 0)).toMatch(/^Bekleyen fiş yok/);
   });
 
-  it("preview rows carry the expense account and line count like the SQL list", () => {
+  it("preview rows carry the expense account like the SQL list", () => {
     const first = PREVIEW_LIST.find((r) => r.receiptNo === "0412");
-    expect(first).toMatchObject({ expenseCode: "770.08", lineCount: 3 });
+    expect(first).toMatchObject({ expenseCode: "770.08" });
     expect(PREVIEW_LIST).toHaveLength(PREVIEW_RECEIPTS.length);
   });
 
-  it("splits each receipt's debits into matrah and 191 VAT, which add up to the total", () => {
-    expect(PREVIEW_LIST.find((r) => r.receiptNo === "0412")).toMatchObject({ expenseKurus: 589091, vatKurus: 58909 });
-    for (const r of PREVIEW_LIST.filter((x) => x.category !== "foreign")) expect(r.expenseKurus + r.vatKurus).toBe(r.totalKurus);
-    // A foreign invoice's KDV (sorumlu sıfatıyla) comes on top of what was paid: matrah is the whole amount, KDV 20% of it.
-    expect(PREVIEW_LIST.find((x) => x.category === "foreign")).toMatchObject({ expenseKurus: 501078, vatKurus: 100216, totalKurus: 501078 });
+  it("takes each receipt's 191 VAT debits", () => {
+    expect(PREVIEW_LIST.find((r) => r.receiptNo === "0412")).toMatchObject({ vatKurus: 58909 });
+    // A foreign invoice's KDV (sorumlu sıfatıyla) comes on top of what was paid: 20% of the whole amount.
+    expect(PREVIEW_LIST.find((x) => x.category === "foreign")).toMatchObject({ vatKurus: 100216, totalKurus: 501078 });
   });
 });
 

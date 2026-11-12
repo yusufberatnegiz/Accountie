@@ -39,7 +39,7 @@ export function AppShell({ current, base = "/panel", email, firmId, children }: 
         <CaptureButton pickers={["camera"]} variant="rail" base={base} />
         {item(`${base}/kurallar`, "Kurallar", "table", current === "kurallar")}
         {item(`${base}/firmalar`, "Firmalar", "building", current === "firmalar")}
-        <div className="rail-end"><FoldButton part="rail" /><AccountMenu email={email} /></div>
+        <div className="rail-end"><FoldButton /><AccountMenu email={email} /></div>
       </nav>
       {children}
     </div>
