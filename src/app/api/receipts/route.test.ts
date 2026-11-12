@@ -228,6 +228,17 @@ describe("POST /api/receipts kontör", () => {
     expect(settleCredit).toHaveBeenLastCalledWith("user-1", "led-1", 0, "r-x", -4);
   });
 
+  it("satıcısı ve toplamı okunamayan boş kayıt kontör yemez", async () => {
+    metered();
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(getBalance).mockResolvedValue(3);
+    vi.mocked(reserveCredit).mockResolvedValue("led-3");
+    vi.mocked(createReceipt).mockResolvedValue("r-bos");
+    vi.mocked(extractReceipt).mockResolvedValue(read({ vendorName: null, total: null }));
+    expect((await POST(jpeg())).status).toBe(201);
+    expect(settleCredit).toHaveBeenLastCalledWith("user-1", "led-3", 0, "r-bos", -4);
+  });
+
   it("kayıt istisna atsa da ayrılan kontör geri verilir", async () => {
     metered();
     vi.mocked(hitRateLimit).mockResolvedValue(true);

@@ -23,7 +23,7 @@ const SECTIONS: LegalSection[] = [
     title: "İade",
     body: [
       "Satın alınan kontör iade edilmez ve paraya çevrilmez. Kontörün süresi dolmaz; kullanmadığınız kontör hesabınızda kalır.",
-      "Hiçbir alanı okunamayan belgeden kontör düşmez; bu düşmeyen kontör iade sayılmaz, bakiyenizde kalır.",
+      "Satıcısı ve toplamı okunamayan belgeden kontör düşmez; bu düşmeyen kontör iade sayılmaz, bakiyenizde kalır.",
       `Aynı ödeme iki kez çekildiyse ya da hatalı bir tutar tahsil edildiyse ${PROVIDER.email} adresine ödeme tarihini, tutarı ve iyzico\u2019nun gönderdiği ödeme numarasını yazın. Fazla çekilen tutar karta iade edilir; kartınıza yansıma süresi bankanıza bağlıdır.`,
     ],
   },

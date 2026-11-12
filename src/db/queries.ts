@@ -140,7 +140,11 @@ export async function hitRateLimit(key: string, windows: readonly (readonly [lim
     // One key at a time: under READ COMMITTED parallel requests would not see each other's uncommitted hit and all pass.
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${key}))`);
     // Sweep of rows older than any window (a day), on the created_at index, now and then rather than on every call.
-    if (Math.random() < 0.05) await tx.delete(rateLimitHits).where(lt(rateLimitHits.createdAt, new Date(now - 24 * 60 * 60_000)));
+    if (Math.random() < 0.05) {
+      await tx.delete(rateLimitHits).where(lt(rateLimitHits.createdAt, new Date(now - 24 * 60 * 60_000)));
+      // Same chance, same place: checkouts open for 7 days were abandoned; closed, their invoice details dropped (KVKK).
+      await tx.update(payments).set({ status: "failed", billing: {} }).where(and(eq(payments.status, "pending"), lt(payments.createdAt, new Date(now - 7 * 24 * 60 * 60_000))));
+    }
     const counts = await Promise.all(windows.map(([, ms]) =>
       tx.select({ n: count() }).from(rateLimitHits).where(and(eq(rateLimitHits.key, key), gt(rateLimitHits.createdAt, new Date(now - ms))))));
     const ok = windows.every(([limit], i) => (counts[i][0]?.n ?? 0) < limit);
@@ -397,16 +401,19 @@ export async function reserveCredit(userId: string, firmId: string, floor: numbe
  */
 export async function settleCredit(userId: string, entryId: string, cost: number, receiptId: string | null, floor: number): Promise<void> {
   await getDb().transaction(async (tx) => {
-    const mine = and(eq(creditLedger.id, entryId), eq(creditLedger.userId, userId));
+    // Only a row still unsettled (no receipt yet, -1) is settled: a retry after a lost commit reply changes nothing.
+    const open = and(eq(creditLedger.id, entryId), eq(creditLedger.userId, userId), eq(creditLedger.delta, -1), isNull(creditLedger.receiptId));
     if (cost === 0) {
-      await tx.update(creditBalances).set({ balance: sql`${creditBalances.balance} + 1` }).where(eq(creditBalances.userId, userId));
-      await tx.delete(creditLedger).where(mine);
+      const gone = await tx.delete(creditLedger).where(open).returning({ id: creditLedger.id });
+      if (gone.length) await tx.update(creditBalances).set({ balance: sql`${creditBalances.balance} + 1` }).where(eq(creditBalances.userId, userId));
       return;
     }
+    const [row] = await tx.update(creditLedger).set({ reason: cost === 2 ? "invoice" : "receipt", receiptId }).where(open).returning({ id: creditLedger.id });
+    if (!row || cost !== 2) return;
     // An invoice's second credit only while the balance stays at or above the floor; at the floor the invoice costs 1.
-    const extra = cost === 2 ? await tx.update(creditBalances).set({ balance: sql`${creditBalances.balance} - 1` })
-      .where(and(eq(creditBalances.userId, userId), sql`${creditBalances.balance} - 1 >= ${floor}`)).returning({ balance: creditBalances.balance }) : [];
-    await tx.update(creditLedger).set({ delta: -1 - extra.length, reason: cost === 2 ? "invoice" : "receipt", receiptId }).where(mine);
+    const extra = await tx.update(creditBalances).set({ balance: sql`${creditBalances.balance} - 1` })
+      .where(and(eq(creditBalances.userId, userId), sql`${creditBalances.balance} - 1 >= ${floor}`)).returning({ balance: creditBalances.balance });
+    if (extra.length) await tx.update(creditLedger).set({ delta: -2 }).where(eq(creditLedger.id, entryId));
   });
 }
 
@@ -480,6 +487,13 @@ export async function getPaymentStatus(id: string): Promise<"pending" | "paid" |
 export async function listOpenPayments(userId: string, limit = 5) {
   return getDb().select({ id: payments.id, amountKurus: payments.amountKurus, status: payments.status, token: payments.token, createdAt: payments.createdAt })
     .from(payments).where(and(eq(payments.userId, userId), eq(payments.status, "pending"), sql`${payments.token} is not null`)).orderBy(asc(payments.createdAt)).limit(limit);
+}
+
+/** The user's purchase paid in the last `withinMs`, if any: what a "payment received" message may name. */
+export async function recentPaid(userId: string, withinMs: number): Promise<{ credits: number } | null> {
+  const [row] = await getDb().select({ credits: payments.credits }).from(payments)
+    .where(and(eq(payments.userId, userId), eq(payments.status, "paid"), gt(payments.paidAt, new Date(Date.now() - withinMs)))).orderBy(desc(payments.paidAt)).limit(1);
+  return row ?? null;
 }
 
 /** The user's paid checkouts, newest first, for the purchase history. */

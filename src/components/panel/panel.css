@@ -789,18 +789,19 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
   .rail-item[data-here] .rail-label { font-weight: var(--w-strong); }
 }
 .account-credits { width: 100%; }
-.canvas-kontor { max-width: 1180px; }
+.canvas-kontor { align-content: start; }
 .kontor-balance { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s3) var(--s6); padding: var(--s5) var(--s6); }
 .kontor-label { margin: 0; font-size: var(--fs-body); font-weight: var(--w-medium); color: var(--muted); }
 .kontor-figure { margin: var(--s1) 0 0; font-family: var(--font-head); font-weight: 300; font-size: 3rem; line-height: 1.05; letter-spacing: -0.02em; }
 .kontor-figure[data-negative] { color: var(--negative); }
 .kontor-unit { font-family: var(--font-text, inherit); font-size: var(--fs-section); font-weight: var(--w-medium); letter-spacing: 0; color: var(--muted); }
 .kontor-note { margin: 0; max-width: 52ch; color: var(--muted); font-size: var(--fs-body); text-align: right; }
-@media (max-width: 720px) { .kontor-note { text-align: left; } }
+@media (max-width: 1100px) { .kontor-note { text-align: left; } }
 .kontor-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--s4); align-items: start; }
 .kontor-main { display: grid; gap: var(--s4); min-width: 0; }
-/* The order column stays in view while the packages and records scroll beside it. */
-.kontor-pay { position: sticky; top: var(--s5); }
+/* The order column stays in view while the packages and records scroll beside it, where the screen is tall enough to hold it whole. */
+@media (min-width: 1101px) and (min-height: 860px) { .kontor-pay { position: sticky; top: var(--s5); } }
+.pay-billing label { align-content: start; }
 .kontor-packs, .kontor-pay, .kontor-usage, .kontor-history { padding: var(--s5); display: grid; gap: var(--s4); }
 .kontor-packs h2, .kontor-pay h2, .kontor-usage h2, .kontor-history h2 { margin: 0; font-size: var(--fs-section); }
 .pack-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); }
@@ -846,14 +847,22 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 .kontor-table td { padding: var(--s2) 0; border-bottom: 1px solid var(--rule); }
 .kontor-table tr:last-child td { border-bottom: 0; }
 .kontor-table .num { text-align: right; padding-left: var(--s3); }
-@media (max-width: 1100px) { .kontor-grid { grid-template-columns: minmax(0, 1fr); } .kontor-pay { position: static; } }
+/* One column: the order right after the packages, the records after it (the left column's sections lose their wrapper). */
+@media (max-width: 1100px) {
+  .kontor-grid { grid-template-columns: minmax(0, 1fr); }
+  .kontor-main { display: contents; }
+  .kontor-packs { order: 1; }
+  .kontor-pay { order: 2; }
+  .kontor-usage { order: 3; }
+  .kontor-history { order: 4; }
+  .pack-chosen { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); margin: 0; padding-top: var(--s3); border-top: 1px solid var(--rule); font-weight: var(--w-medium); }
+  .pack-chosen a { display: inline-flex; align-items: center; min-height: var(--touch); color: var(--ink); text-underline-offset: 0.2em; }
+}
+@media (pointer: coarse) { .pay-details > summary { min-height: var(--touch); align-items: center; } }
 @media (max-width: 720px) {
   .kontor-balance { padding: var(--s4); }
   .kontor-figure { font-size: 2.5rem; }
   .pack-list { grid-template-columns: minmax(0, 1fr); }
-  .kontor-pay { position: static; }
-  .pack-chosen { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); margin: 0; padding-top: var(--s3); border-top: 1px solid var(--rule); font-weight: var(--w-medium); }
-  .pack-chosen a { display: inline-flex; align-items: center; min-height: var(--touch); color: var(--ink); text-underline-offset: 0.2em; }
   .pay-billing { grid-template-columns: minmax(0, 1fr); }
   .kontor-packs, .kontor-pay, .kontor-usage, .kontor-history { padding: var(--s4); }
 }

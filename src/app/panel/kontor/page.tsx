@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { CreditsView } from "@/components/CreditsView";
-import { creditUseByFirm, getBalance, getBillingProfile, listOpenPayments, listPayments } from "@/db/queries";
+import { creditUseByFirm, getBalance, getBillingProfile, listOpenPayments, listPayments, recentPaid } from "@/db/queries";
 import { getSessionUser } from "@/lib/auth/session";
 import { creditsRequired } from "@/lib/credits";
 import { activeFirm } from "@/lib/firm";
@@ -12,21 +12,29 @@ import { settlePayment } from "@/lib/settle-payment";
 export const metadata: Metadata = { title: "Kontör" };
 export const dynamic = "force-dynamic";
 
+const SETTLE_WAIT_MS = 4_000;
+const PAID_RECENTLY_MS = 15 * 60_000;
+
 export default async function CreditsPage({ searchParams }: { searchParams: Promise<{ odeme?: string; bitti?: string }> }) {
   const user = await getSessionUser();
   if (!user) redirect("/giris");
   const { odeme, bitti } = await searchParams;
   const cfg = iyzicoConfig();
-  // Checkouts still waiting (a bank review, an iyzico that did not answer) are asked again on each visit, before the balance is read.
-  let settledNow = false;
-  if (cfg) for (const p of await listOpenPayments(user.id)) settledNow = (await settlePayment(cfg, p).catch(() => null)) === "tamam" || settledNow;
-  const [{ firm }, balance, billing, usage, history] = await Promise.all([
-    activeFirm(user.id), getBalance(user.id), getBillingProfile(user.id), creditUseByFirm(user.id), listPayments(user.id),
+  // Checkouts still waiting (a review, an iyzico that did not answer) are asked again, together and for a few seconds at most:
+  // a slow iyzico never holds the page; what is not settled now is asked on the next visit.
+  if (cfg) {
+    const open = await listOpenPayments(user.id);
+    if (open.length) await Promise.race([Promise.all(open.map((p) => settlePayment(cfg, p).catch(() => null))), new Promise((r) => setTimeout(r, SETTLE_WAIT_MS))]);
+  }
+  const [{ firm }, balance, billing, usage, history, paid] = await Promise.all([
+    activeFirm(user.id), getBalance(user.id), getBillingProfile(user.id), creditUseByFirm(user.id), listPayments(user.id), recentPaid(user.id, PAID_RECENTLY_MS),
   ]);
-  const ranOut = bitti !== undefined && /^d{1,4}$/.test(bitti) ? Number(bitti) : undefined;
+  const ranOut = bitti !== undefined && /^\d{1,4}$/.test(bitti) ? Number(bitti) : undefined;
+  // "Added" only for a purchase really paid moments ago, whatever the address says; otherwise a waiting result keeps its own word.
+  const outcome = paid && (odeme === "tamam" || odeme === "bekliyor" || odeme === "inceleme") ? "tamam" : odeme === "tamam" ? undefined : odeme;
   return (
     <AppShell current="kontor" email={user.email} firmId={firm.id}>
-      <CreditsView balance={balance} open={cfg !== null} required={creditsRequired()} billing={billing} usage={usage} history={history} outcome={settledNow ? "tamam" : odeme} ranOut={ranOut} />
+      <CreditsView balance={balance} open={cfg !== null} required={creditsRequired()} billing={billing} usage={usage} history={history} outcome={outcome} added={paid?.credits} ranOut={ranOut} />
     </AppShell>
   );
 }

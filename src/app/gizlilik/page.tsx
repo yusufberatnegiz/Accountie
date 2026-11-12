@@ -13,7 +13,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "Fiş fotoğrafı ve belgeler",
     body: [
-      "Telefonda çektiğiniz fotoğraf tarayıcıda küçültülür ve sunucuya gönderilir. Sunucu konum ve cihaz bilgisini (EXIF, GPS) siler, fotoğrafı okunmak için yapay zeka hizmetine gönderir: Anthropic, Amerika Birleşik Devletleri.",
+      "Telefonda çektiğiniz fotoğraf tarayıcıda küçültülür ve sunucuya gönderilir. Sunucu konum ve cihaz bilgisini (EXIF, GPS) siler, fotoğrafı okunmak için yapay zekâ hizmetine gönderir: Anthropic, Amerika Birleşik Devletleri.",
       "Yüklediğiniz PDF belge (ör. yurt dışı hizmet faturası) olduğu gibi aynı hizmete okunmak için gönderilir.",
       "Anthropic, API üzerinden gönderilen belgeleri kendi modellerini eğitmek için kullanmaz; kötüye kullanımı denetlemek için en çok 30 gün tutabilir, sonra siler. Accountie de belgelerinizi ve kayıtlarınızı yapay zekâ eğitimi için kullanmaz.",
       "Fotoğraf ve belge Accountie'nin sunucusunda ve veritabanında saklanmaz. Kontrol ekranında gördüğünüz görüntü yalnız o tarayıcı sekmesinin belleğinde durur; sekmeyi kapatınca silinir.",
@@ -24,7 +24,7 @@ const SECTIONS: LegalSection[] = [
     title: "Saklananlar",
     body: [
       "Hesabınız: ad soyad ve e-posta. Giriş, kimlik doğrulama hizmeti Supabase Auth üzerinden yapılır; şifreniz orada özetlenerek tutulur, Accountie şifreyi saklamaz.",
-      "Fişten okunan alanlar: satıcı adı, vergi numarası, fiş numarası, tarih, KDV satırları, toplam, ödeme şekli ve kategori. Bunlardan hazırlanan yevmiye satırları ve sizin hesap kurallarınız.",
+      "Fiş, Z raporu ve faturadan okunan alanlar: satıcı adı, vergi numarası, belge numarası, tarih, KDV satırları, toplam, para birimi, ödeme şekli ve kategori. Bunlardan hazırlanan yevmiye satırları, sizin hesap kurallarınız ve firmalarınızın unvanı, vergi numarası ve hesap planı.",
       "Veriler Supabase Postgres veritabanında (Frankfurt, Almanya), yalnız sizin hesabınıza bağlı olarak tutulur. Başka bir kullanıcı sizin fişlerinizi göremez.",
     ],
   },
@@ -72,6 +72,6 @@ const SECTIONS: LegalSection[] = [
 export default function PrivacyPage() {
   return (
     <LegalPage title="Gizlilik" prefix="g" sections={SECTIONS}
-      lead={<><span translate="no">Accountie</span> yazar kasa fişinden Luca yevmiye kaydı hazırlar. Bu sayfa hangi verinin nereye gittiğini ve neyin saklandığını sade bir dille anlatır. Resmi metinler: <Link href="/kvkk">KVKK Aydınlatma Metni</Link> ve <Link href="/kosullar">Kullanım Koşulları</Link>.</>} />
+      lead={<><span translate="no">Accountie</span> yazar kasa fişi, Z raporu ve faturadan Luca yevmiye kaydı hazırlar. Bu sayfa hangi verinin nereye gittiğini ve neyin saklandığını sade bir dille anlatır. Resmi metinler: <Link href="/kvkk">KVKK Aydınlatma Metni</Link> ve <Link href="/kosullar">Kullanım Koşulları</Link>.</>} />
   );
 }

@@ -93,7 +93,8 @@ export async function POST(request: Request) {
   return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable), skipped }, { status: 201 });
 }
 
-type Saved = { id: string; readable: boolean; kind: string } | null;
+// billable: something was read (a seller or a total); an empty record costs no credit (Koşullar md. 6).
+type Saved = { id: string; readable: boolean; billable: boolean; kind: string } | null;
 
 /**
  * One document read against the balance: 1 credit is taken before the read (none left above the floor: "no_credit", the model
@@ -108,7 +109,7 @@ async function readMetered(metered: boolean, userId: string, firmId: string, ima
   } finally {
     // Also when the read throws: the reserved credit is given back, never kept for a document that was not read.
     if (entry) {
-      const cost = saved ? creditCost({ ok: saved.readable, kind: saved.kind }) : 0;
+      const cost = saved ? creditCost({ ok: saved.billable, kind: saved.kind }) : 0;
       const settle = () => settleCredit(userId, entry, cost, saved?.id ?? null, MIN_BALANCE);
       await settle().catch(settle).catch((err) => console.error("credit settle failed", { error: err instanceof Error ? err.name : "unknown" }));
     }
@@ -160,7 +161,7 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
     console.error("receipt save failed", { error: err instanceof Error ? err.name : "unknown" });
     return null;
   }
-  return { id, readable: result.ok, kind };
+  return { id, readable: result.ok, billable: result.ok && (data.vendorName !== null || data.totalKurus !== null), kind };
 }
 
 /** A Z report or a foreign service invoice: its own lines (src/lib/journal-kinds.ts), no seller learning, the TL rate kept with the read. */
@@ -185,7 +186,7 @@ async function saveOther(userId: string, firmId: string, result: Extract<Extract
   }
   receipt.warnings = [...built.warnings, ...extra.filter((w) => !built.warnings.some((b) => b.code === w.code))];
   try {
-    return { id: await createReceipt(userId, firmId, receipt, built.lines), readable: true, kind: kindOf(x) };
+    return { id: await createReceipt(userId, firmId, receipt, built.lines), readable: true, billable: receipt.vendorName !== null || receipt.totalKurus !== null, kind: kindOf(x) };
   } catch (err) {
     console.error("receipt save failed", { error: err instanceof Error ? err.name : "unknown" });
     return null;

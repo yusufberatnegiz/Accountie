@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/db/queries", () => ({
   hitRateLimit: vi.fn(async () => true), saveBillingProfile: vi.fn(), createPayment: vi.fn(async () => "pay-1"), setPaymentToken: vi.fn(),
-  paymentByToken: vi.fn(), markPaymentPaid: vi.fn(async () => true), markPaymentFailed: vi.fn(), getPaymentStatus: vi.fn(),
+  paymentByToken: vi.fn(), markPaymentPaid: vi.fn(async () => true), markPaymentFailed: vi.fn(async () => {}), getPaymentStatus: vi.fn(),
 }));
 vi.mock("@/lib/auth/session", () => ({ getSessionUser: async () => ({ id: "user-1", email: "a@ornek.test", createdAt: new Date(0) }) }));
 vi.mock("@/lib/iyzico", async (orig) => ({ ...(await orig<typeof import("@/lib/iyzico")>()), initializeCheckout: vi.fn(), checkoutResult: vi.fn() }));
@@ -58,6 +58,8 @@ describe("POST /api/payments", () => {
     const res = await start(startReq({ packageId: "k100", billing: BILLING }));
     expect(res.status).toBe(502);
     expect(q.setPaymentToken).not.toHaveBeenCalled();
+    // Never opened: closed at once, so its invoice details do not stay behind.
+    expect(q.markPaymentFailed).toHaveBeenCalledWith("pay-1");
   });
 });
 

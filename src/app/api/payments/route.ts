@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createPayment, saveBillingProfile, setPaymentToken } from "@/db/queries";
+import { createPayment, markPaymentFailed, saveBillingProfile, setPaymentToken } from "@/db/queries";
 import { TERMS_VERSION } from "@/app/giris/validation";
 import { CheckoutSchema } from "@/lib/api-schemas";
 import { getSessionUser } from "@/lib/auth/session";
@@ -39,7 +39,11 @@ export async function POST(request: Request) {
     console.error("iyzico initialize failed", { error: err instanceof Error ? err.name : "unknown" });
     return { error: "Ödeme sayfası açılamadı. Biraz sonra tekrar deneyin." };
   });
-  if ("error" in result) return fail(result.error, 502);
+  if ("error" in result) {
+    // Never opened: closed now, so its invoice details do not stay behind.
+    await markPaymentFailed(paymentId).catch(() => {});
+    return fail(result.error, 502);
+  }
   await setPaymentToken(user.id, paymentId, result.token);
   return NextResponse.json({ url: result.pageUrl }, { status: 201 });
 }
