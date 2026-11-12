@@ -37,3 +37,7 @@ export function checkAuthForm(isSignup: boolean, raw: { name?: unknown; email: u
   const input = (isSignup ? signupSchema : loginSchema).safeParse(raw);
   return input.success ? undefined : invalid(input.error.issues, raw, isSignup);
 }
+
+/** The link types the e-mail templates send to /giris/onay; anything else is refused before Supabase is asked. */
+const LINK_TYPES = ["recovery", "email", "signup", "magiclink"] as const;
+export const isLinkType = (t: unknown): t is (typeof LINK_TYPES)[number] => typeof t === "string" && (LINK_TYPES as readonly string[]).includes(t);

@@ -9,7 +9,7 @@ import { deleteAccount, revokeExtensionTokens } from "@/db/queries";
 import { AFTER_LOGIN, safeNextPath } from "@/lib/auth/next-path";
 import { allow, clientIp } from "@/lib/rate-limit";
 import { verifyTurnstile } from "@/lib/turnstile";
-import { invalid, loginSchema, signupSchema, TERMS_VERSION, typedBack, type AuthField, type AuthState } from "./validation";
+import { invalid, isLinkType, loginSchema, signupSchema, TERMS_VERSION, typedBack, type AuthField, type AuthState } from "./validation";
 
 export type { AuthField, AuthState };
 
@@ -132,4 +132,20 @@ export async function deleteMyAccount(_prev: DeleteState, formData: FormData): P
   // The auth user is gone, so its refresh token is too; signOut only clears this browser's cookies (it may fail remotely, harmlessly).
   await auth.signOut().catch(() => undefined);
   back({ mesaj: "hesap-silindi" });
+}
+
+/**
+ * The second half of an e-mailed link (/giris/onay): the one-time token is spent only here, when the person presses the button.
+ * Mail scanners (Outlook Safe Links and the like) open the link itself, a plain page, so they no longer use the token up.
+ * Works in any browser, unlike the PKCE ?code= link, which needed the browser that asked for it.
+ */
+export async function confirmLink(formData: FormData) {
+  const tokenHash = formData.get("token_hash");
+  const type = formData.get("type");
+  const recovery = type === "recovery";
+  const failed = recovery ? "/giris/sifre/yeni?hata=1" : "/giris?mesaj=baglanti";
+  if (typeof tokenHash !== "string" || !tokenHash || tokenHash.length > 512 || !isLinkType(type)) redirect(failed);
+  const { error } = await (await getAuth()).verifyOtp({ token_hash: tokenHash, type }).catch(() => ({ error: true }));
+  if (error) redirect(failed);
+  redirect(recovery ? "/giris/sifre/yeni" : AFTER_LOGIN);
 }

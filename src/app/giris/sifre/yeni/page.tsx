@@ -7,7 +7,7 @@ import { NewPasswordForm } from "../../ResetForms";
 export const metadata: Metadata = { title: "Yeni şifre" };
 export const dynamic = "force-dynamic";
 
-/** The e-mailed link reaches here through /auth/callback, which opened a recovery session (or sent ?hata=1 when it could not). */
+/** The e-mailed link reaches here through /giris/onay (older e-mails: /auth/callback), which opened a recovery session or sent ?hata=1. */
 export default async function NewPasswordPage({ searchParams }: { searchParams: Promise<{ hata?: string }> }) {
   const { hata } = await searchParams;
   const valid = !hata && (await inRecovery());

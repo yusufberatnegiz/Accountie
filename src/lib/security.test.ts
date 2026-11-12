@@ -10,6 +10,7 @@ const A = vi.hoisted(() => ({
   updateUser: vi.fn(async () => ({ error: null })),
   signOut: vi.fn(async () => ({ error: null })),
   exchangeCodeForSession: vi.fn(async () => ({ error: null })),
+  verifyOtp: vi.fn(async () => ({ error: null })),
   getUser: vi.fn(async () => ({ data: { user: { id: "kullanici-1", email: "a@ornek.com", created_at: "2026-01-01T00:00:00Z" } }, error: null })),
   getClaims: vi.fn(async () => ({ data: { claims: { amr: [{ method: "recovery", timestamp: Math.floor(Date.now() / 1000) - 60 }] } }, error: null })),
 }));
@@ -274,5 +275,24 @@ describe("hesabı sil", () => {
     vi.mocked(deleteAccount).mockRejectedValueOnce(new Error("db"));
     expect(await actions.deleteMyAccount(undefined, form({ password: "dogru-sifre" }))).toEqual({ error: "sunucu" });
     expect(A.signOut).not.toHaveBeenCalled();
+  });
+});
+
+describe("e-posta bağlantısı ara sayfası (/giris/onay)", () => {
+  beforeEach(() => vi.clearAllMocks());
+  const confirm = (fields: Record<string, string>) => redirectOf(actions.confirmLink(form(fields)) as Promise<unknown>);
+
+  it("şifre bağlantısı yalnız düğmeyle harcanır ve yeni şifre ekranına gider", async () => {
+    expect(await confirm({ token_hash: "pkce_abc", type: "recovery" })).toBe("REDIRECT /giris/sifre/yeni");
+    expect(A.verifyOtp).toHaveBeenCalledWith({ token_hash: "pkce_abc", type: "recovery" });
+    expect(await confirm({ token_hash: "pkce_abc", type: "email" })).toBe("REDIRECT /panel");
+  });
+
+  it("bozuk ya da tanınmayan bağlantı Supabase'e sorulmadan reddedilir; kullanılmış kod hata sayfasına gider", async () => {
+    expect(await confirm({ token_hash: "x", type: "invite" })).toBe("REDIRECT /giris?mesaj=baglanti");
+    expect(await confirm({ token_hash: "", type: "recovery" })).toBe("REDIRECT /giris/sifre/yeni?hata=1");
+    expect(A.verifyOtp).not.toHaveBeenCalled();
+    vi.mocked(A.verifyOtp as unknown as Reply).mockResolvedValueOnce({ error: { status: 403 } });
+    expect(await confirm({ token_hash: "pkce_eski", type: "recovery" })).toBe("REDIRECT /giris/sifre/yeni?hata=1");
   });
 });
