@@ -34,6 +34,7 @@ export function AccountMenu({ email }: { email?: string }) {
           <form action={logout}>
             <button className="btn account-logout" type="submit">Çıkış yap</button>
           </form>
+          <Link className="btn account-credits" href="/panel/kontor">Kontör</Link>
           <Link className="account-delete" href="/panel/hesap">Hesabı sil</Link>
         </div>
       </dialog>

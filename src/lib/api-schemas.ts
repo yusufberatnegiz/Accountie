@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidTaxNumber } from "./checks";
 import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, RULE_KINDS, rulesToRows } from "./default-rules";
 
 // Client-writable fields only. status, user_id, model, token counts and timestamps are never accepted.
@@ -14,6 +15,18 @@ export const LineInputSchema = z.object({
   quantity: z.number().int().min(0).max(1_000_000),
   babs: z.boolean(),
 });
+
+// The invoice details a checkout needs (iyzico asks for an identity number, a phone and an address too).
+export const BillingSchema = z.object({
+  name: z.string().trim().min(3, "Ad soyad ya da unvan yazın.").max(200),
+  taxNumber: z.string().trim().refine(isValidTaxNumber, "VKN (10 hane) ya da TCKN (11 hane) geçerli değil."),
+  taxOffice: z.string().trim().max(80).transform((v) => v || null),
+  phone: z.string().trim().refine((v) => /^(\+?90|0)?5\d{9}$/.test(v.replace(/[\s()-]/g, "")), "Cep telefonunu 05xx xxx xx xx biçiminde yazın."),
+  address: z.string().trim().min(10, "Fatura adresini yazın.").max(300),
+  city: z.string().trim().min(2, "İli yazın.").max(60),
+});
+
+export const CheckoutSchema = z.object({ packageId: z.string().max(20), billing: BillingSchema });
 
 export const PatchReceiptSchema = z.object({ lines: z.array(LineInputSchema).min(1).max(100) });
 

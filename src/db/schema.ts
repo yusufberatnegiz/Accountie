@@ -156,3 +156,56 @@ export const vendorRules = pgTable("vendor_rules", {
   index("vendor_rules_user_idx").on(t.userId),
   ownerPolicy("vendor_rules_owner"),
 ]);
+
+// Kontör (src/lib/credits.ts): one balance per user, every firm draws on it. Changed only together with a credit_ledger row.
+export const creditBalances = pgTable("credit_balances", {
+  userId: text("user_id").primaryKey(),
+  balance: integer("balance").notNull().default(0),
+}, () => [ownerPolicy("credit_balances_owner")]);
+
+// Every change to a balance: a purchase (+), a read document (-1 or -2). The per-firm usage and any dispute are read from here.
+export const creditLedger = pgTable("credit_ledger", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  firmId: uuid("firm_id"),
+  receiptId: uuid("receipt_id"),
+  paymentId: uuid("payment_id"),
+  delta: integer("delta").notNull(),
+  reason: text("reason", { enum: ["purchase", "receipt", "invoice"] }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("credit_ledger_user_created_idx").on(t.userId, t.createdAt),
+  ownerPolicy("credit_ledger_owner"),
+]);
+
+// What the buyer's invoice is made out to; iyzico requires a name, an identity number, a phone and an address too.
+export const billingProfiles = pgTable("billing_profiles", {
+  userId: text("user_id").primaryKey(),
+  name: text("name").notNull(),
+  taxNumber: text("tax_number").notNull(),
+  taxOffice: text("tax_office"),
+  phone: text("phone").notNull(),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, () => [ownerPolicy("billing_profiles_owner")]);
+
+// One iyzico checkout. Kept when the account is deleted: a sale's record must be kept by law (VUK). Credited once: only the
+// pending -> paid update adds the credits, so a callback that arrives twice never pays twice.
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  packageId: text("package_id").notNull(),
+  credits: integer("credits").notNull(),
+  amountKurus: integer("amount_kurus").notNull(),
+  status: text("status", { enum: ["pending", "paid", "failed"] }).notNull().default("pending"),
+  token: text("token"),
+  providerPaymentId: text("provider_payment_id"),
+  billing: jsonb("billing").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("payments_token_idx").on(t.token),
+  index("payments_user_created_idx").on(t.userId, t.createdAt),
+  ownerPolicy("payments_owner"),
+]);

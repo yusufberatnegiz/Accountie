@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(), getRules: vi.fn(), listReceipts: vi.fn(), getVendorRule: vi.fn(async () => null) }));
+vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(), getRules: vi.fn(), listReceipts: vi.fn(), getVendorRule: vi.fn(async () => null), getBalance: vi.fn(async () => 0), reserveCredit: vi.fn(), settleCredit: vi.fn(async () => {}) }));
 const session = vi.hoisted(() => ({ createdAt: new Date(0) }));
 vi.mock("@/lib/auth/session", () => ({ getUserId: async () => "user-1", getSessionUser: async () => ({ id: "user-1", createdAt: session.createdAt }) }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
@@ -8,7 +8,7 @@ vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipt
 vi.mock("@/lib/tcmb", () => ({ tcmbRate: vi.fn(async () => ({ rate: 50, bulletinDate: "2026-10-30" })) }));
 vi.mock("@/lib/image", async (orig) => ({ ...(await orig<typeof import("@/lib/image")>()), normalizeImage: async (b: Buffer) => b, cropReceipt: vi.fn(async () => Buffer.from("crop")) }));
 
-const { hitRateLimit, createReceipt, getRules, hasDuplicateReceipt } = await import("@/db/queries");
+const { hitRateLimit, createReceipt, getRules, hasDuplicateReceipt, getBalance, reserveCredit, settleCredit } = await import("@/db/queries");
 const { DEFAULT_RULES } = await import("@/lib/default-rules");
 const { extractReceipt, locateReceipts } = await import("@/lib/extract/extract");
 const { POST } = await import("./route");
@@ -185,5 +185,67 @@ describe("POST /api/receipts", () => {
     expect(res.status).toBe(500);
     expect(JSON.stringify(await res.json())).toContain("kaydedilemedi");
     log.mockRestore();
+  });
+});
+
+describe("POST /api/receipts kontör", () => {
+  const metered = () => { process.env.IYZICO_API_KEY = "k"; process.env.IYZICO_SECRET_KEY = "s"; };
+  afterEach(() => { delete process.env.IYZICO_API_KEY; delete process.env.IYZICO_SECRET_KEY; });
+
+  it("iyzico anahtarı yokken kontör istenmez", async () => {
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(createReceipt).mockResolvedValue("r-1");
+    expect((await POST(jpeg())).status).toBe(201);
+    expect(getBalance).not.toHaveBeenCalled();
+    expect(reserveCredit).not.toHaveBeenCalled();
+  });
+
+  it("bakiye 1'in altındayken modeli çağırmadan kontör sayfasına yönlendirir", async () => {
+    metered();
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(getBalance).mockResolvedValue(0);
+    const res = await POST(jpeg());
+    expect(res.status).toBe(402);
+    expect(await res.json()).toMatchObject({ kontor: true });
+    expect(extractReceipt).not.toHaveBeenCalled();
+  });
+
+  it("fatura 2 kontör düşer ve fişe bağlanır; okunamayan belge kontör yemez", async () => {
+    metered();
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(getBalance).mockResolvedValue(1);
+    vi.mocked(reserveCredit).mockResolvedValue("led-1");
+    vi.mocked(createReceipt).mockResolvedValue("r-f");
+    vi.mocked(extractReceipt).mockResolvedValue(read({ documentKind: "domestic_invoice", category: "transport", total: "120,00", vatLines: [{ rate: 20, gross: "120,00", vat: "20,00" }] }));
+    expect((await POST(pdf())).status).toBe(201);
+    expect(reserveCredit).toHaveBeenCalledWith("user-1", "firm-1", -4);
+    expect(settleCredit).toHaveBeenLastCalledWith("user-1", "led-1", 2, "r-f");
+    vi.mocked(extractReceipt).mockResolvedValue({ ok: false, inputTokens: 0, outputTokens: 0 });
+    vi.mocked(createReceipt).mockResolvedValue("r-x");
+    await POST(jpeg());
+    expect(settleCredit).toHaveBeenLastCalledWith("user-1", "led-1", 0, "r-x");
+  });
+
+  it("çok fişli fotoğrafta bakiye tabana inince kalan fişler okunmaz ve sayısı söylenir", async () => {
+    metered();
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(getBalance).mockResolvedValue(1);
+    vi.mocked(locateReceipts).mockResolvedValue([{ left: 0, top: 0, right: 300, bottom: 1000 }, { left: 350, top: 0, right: 650, bottom: 1000 }, { left: 700, top: 0, right: 1000, bottom: 1000 }]);
+    vi.mocked(reserveCredit).mockResolvedValueOnce("a").mockResolvedValueOnce("b").mockResolvedValueOnce(null);
+    vi.mocked(createReceipt).mockResolvedValueOnce("r-a").mockResolvedValueOnce("r-b");
+    vi.mocked(extractReceipt).mockResolvedValue(read({}));
+    const res = await POST(jpeg());
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ ids: ["r-a", "r-b"], skipped: 1 });
+    expect(extractReceipt).toHaveBeenCalledTimes(2);
+  });
+
+  it("bakiye tek fişlik bile kalmadıysa okunan yok: 402", async () => {
+    metered();
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(getBalance).mockResolvedValue(1);
+    vi.mocked(reserveCredit).mockResolvedValue(null);
+    expect((await POST(jpeg())).status).toBe(402);
+    expect(extractReceipt).not.toHaveBeenCalled();
   });
 });

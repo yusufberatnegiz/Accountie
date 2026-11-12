@@ -170,4 +170,12 @@ describe("proxy cross-site API guard", () => {
     expect(ext.status).toBe(200);
     expect((await api("GET", { origin: "https://kotu.example" })).status).toBe(200);
   });
+
+  it("lets iyzico's payment page post the result token to the callback, and only there", async () => {
+    configBack();
+    const post = (path: string) => proxy(new NextRequest(`http://accountie.test${path}`, { method: "POST", headers: { host: "accountie.test", origin: "https://sandbox-cpp.iyzipay.com" } }));
+    expect((await post("/api/payments/callback")).status).toBe(200);
+    expect((await post("/api/payments")).status).toBe(403);
+    expect((await post("/api/payments/callback/x")).status).toBe(403);
+  });
 });

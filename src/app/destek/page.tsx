@@ -25,7 +25,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "Hesap ve veriler",
     body: [
-      "Hesabınızı panelde Hesap menüsünden \"Hesabı sil\" ile kendiniz silebilirsiniz; bütün verileriniz hemen silinir.",
+      "Hesabınızı panelde Hesap menüsünden \"Hesabı sil\" ile kendiniz silebilirsiniz; bütün verileriniz hemen silinir. Kanunen saklanması gereken ödeme kayıtları bunun dışındadır.",
       `Kişisel verilerinizle ilgili başvurular (KVKK md. 11) için kayıtlı e-postanızdan ${PROVIDER.email} adresine yazın. Ayrıntı KVKK Aydınlatma Metnindedir.`,
     ],
   },

@@ -778,3 +778,59 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 /* Fold button (FoldButton): the sidebar folds back to the 80px rail, only where it is wide (from 1100px). */
 .rail-fold { display: none; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; }
 @media (min-width: 1100px) { .rail-fold { display: grid; } }
+
+/* ---------- Kontör (CreditsView) ----------
+   After Anthropic's billing page: the balance first and large, the packages as quiet cards, one order summary that names the
+   amount on the button, records below. Green only for the saving pill and a successful payment. */
+.rail-desktop { display: contents; }
+@media (max-width: 720px) { .rail-desktop { display: none; } }
+.account-credits { width: 100%; }
+.canvas-kontor { max-width: 1180px; }
+.kontor-balance { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s3) var(--s6); padding: var(--s5) var(--s6); }
+.kontor-label { margin: 0; font-size: var(--fs-body); font-weight: var(--w-medium); color: var(--muted); }
+.kontor-figure { margin: var(--s1) 0 0; font-family: var(--font-head); font-weight: 300; font-size: 3rem; line-height: 1.05; letter-spacing: -0.02em; }
+.kontor-figure[data-negative] { color: var(--negative); }
+.kontor-unit { font-family: var(--font-text, inherit); font-size: var(--fs-section); font-weight: var(--w-medium); letter-spacing: 0; color: var(--muted); }
+.kontor-note { margin: 0; max-width: 52ch; color: var(--muted); font-size: var(--fs-body); }
+.kontor-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--s4); align-items: start; }
+.kontor-packs, .kontor-pay, .kontor-usage, .kontor-history { padding: var(--s5); display: grid; gap: var(--s4); }
+.kontor-packs h2, .kontor-pay h2, .kontor-usage h2, .kontor-history h2 { margin: 0; font-size: var(--fs-section); }
+.pack-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); }
+.pack { position: relative; display: grid; gap: var(--s1); padding: var(--s4); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); cursor: pointer; font-weight: 400;
+  transition: border-color var(--t-hover) ease, background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .pack:hover { border-color: var(--ink); } }
+.pack:active { transform: scale(0.99); }
+.pack[data-selected] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--raised); }
+.pack:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pack-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 24px; }
+.pack-name { font-weight: var(--w-medium); color: var(--muted); }
+.pack-credits { font-size: var(--fs-section); font-weight: var(--w-strong); }
+.pack-price { font-family: var(--font-head); font-weight: 300; font-size: 1.75rem; line-height: 1.15; letter-spacing: -0.01em; }
+.pack-unit { font-size: var(--fs-small); color: var(--muted); }
+.pay-summary { display: grid; gap: var(--s2); margin: 0; padding-bottom: var(--s4); border-bottom: 1px solid var(--rule); }
+.pay-summary div { display: flex; justify-content: space-between; gap: var(--s3); font-size: var(--fs-body); }
+.pay-summary dt { color: var(--muted); }
+.pay-summary dd { margin: 0; text-align: right; }
+.pay-summary .pay-total { padding-top: var(--s2); font-weight: var(--w-strong); }
+.pay-summary .pay-total dt { color: var(--ink); }
+.pay-summary .pay-total dd { font-size: var(--fs-section); }
+.pay-form { display: grid; gap: var(--s4); }
+.pay-billing { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); margin: 0; padding: 0; border: 0; min-width: 0; }
+.pay-billing legend { padding: 0; margin-bottom: var(--s3); font-weight: var(--w-medium); }
+.pay-submit { width: 100%; }
+.kontor-section-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
+.kontor-section-head .hint { margin: 0; }
+.kontor-records { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.kontor-table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
+.kontor-table th { padding: 0 0 var(--s2); text-align: left; font-size: var(--fs-small); font-weight: var(--w-medium); color: var(--muted); border-bottom: 1px solid var(--rule); }
+.kontor-table td { padding: var(--s2) 0; border-bottom: 1px solid var(--rule); }
+.kontor-table tr:last-child td { border-bottom: 0; }
+.kontor-table .num { text-align: right; padding-left: var(--s3); }
+@media (max-width: 1100px) { .kontor-grid, .kontor-records { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 720px) {
+  .kontor-balance { padding: var(--s4); }
+  .kontor-figure { font-size: 2.5rem; }
+  .pack-list { grid-template-columns: minmax(0, 1fr); }
+  .pay-billing { grid-template-columns: minmax(0, 1fr); }
+  .kontor-packs, .kontor-pay, .kontor-usage, .kontor-history { padding: var(--s4); }
+}

@@ -7,13 +7,14 @@ import { FirmShortcut } from "@/components/FirmShortcut";
 import { FoldButton } from "@/components/FoldButton";
 import "./panel/panel.css";
 
-type Current = "fisler" | "fis" | "kurallar" | "firmalar" | "hesap";
+type Current = "fisler" | "fis" | "kurallar" | "firmalar" | "kontor" | "hesap";
 
 // Drawn icons, 16px outline at 1.5px (docs/design/YON.md 5.2).
 const ICONS = {
   receipt: <path d="M4 1.75h8v12.5l-1.33-1-1.34 1-1.33-1-1.33 1-1.34-1-1.33 1zM6.25 5.25h3.5M6.25 8h2.5" />,
   table: <><rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1" /><path d="M1.75 6.25h12.5M6 6.25v7" /></>,
   building: <path d="M2.75 14.25V2.75h7v11.5M9.75 6.25h3.5v8M1.5 14.25h13M5 5.25h2M5 8h2M5 10.75h2" />,
+  coin: <><circle cx="8" cy="8" r="6.25" /><path d="M8 4.75v6.5M10 6.1c-.4-.6-1.1-.95-2-.95-1.15 0-1.9.6-1.9 1.4 0 1.9 4 .9 4 2.9 0 .8-.85 1.4-2.1 1.4-.95 0-1.75-.4-2.15-1.05" /></>,
 };
 const Icon = ({ name }: { name: keyof typeof ICONS }) => <svg className="rail-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">{ICONS[name]}</svg>;
 
@@ -39,6 +40,7 @@ export function AppShell({ current, base = "/panel", email, firmId, children }: 
         <CaptureButton pickers={["camera"]} variant="rail" base={base} />
         {item(`${base}/kurallar`, "Kurallar", "table", current === "kurallar")}
         {item(`${base}/firmalar`, "Firmalar", "building", current === "firmalar")}
+        <span className="rail-desktop">{item(`${base}/kontor`, "Kontör", "coin", current === "kontor")}</span>
         <div className="rail-end"><FoldButton /><AccountMenu email={email} /></div>
       </nav>
       {children}

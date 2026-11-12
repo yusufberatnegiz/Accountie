@@ -3,7 +3,7 @@ import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "dri
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import type { JournalLine, Warning } from "@/lib/journal";
 import { getDb } from "./index";
-import { accountRules, extensionTokens, firmAccounts, firmRules, firms, journalLines, rateLimitHits, receipts, vendorRules } from "./schema";
+import { accountRules, billingProfiles, creditBalances, creditLedger, extensionTokens, firmAccounts, firmRules, firms, journalLines, payments, rateLimitHits, receipts, vendorRules } from "./schema";
 
 export type ReceiptStatus = "draft" | "approved" | "exported";
 
@@ -278,8 +278,12 @@ export async function createExtensionToken(userId: string, tokenHash: string, ex
   });
 }
 
-/** Every table holding a user's rows, children before parents (foreign keys). A test checks no user_id table is missing. */
-export const USER_TABLES = [journalLines, receipts, vendorRules, firmRules, firmAccounts, accountRules, extensionTokens, firms] as const;
+/**
+ * Every table holding a user's rows, children before parents (foreign keys). A test checks no user_id table is missing.
+ * payments stays (KEPT_TABLES): a sale's record and the invoice details on it are kept by law after the account goes.
+ */
+export const USER_TABLES = [journalLines, receipts, vendorRules, firmRules, firmAccounts, accountRules, extensionTokens, creditLedger, creditBalances, billingProfiles, firms] as const;
+export const KEPT_TABLES = [payments] as const;
 
 /**
  * Deletes the account for good: every row of the user, then the Supabase Auth user (its sessions and identities go with it),
@@ -362,4 +366,104 @@ export async function listExportedForCheck(userId: string, firmId: string, month
     const own = lines.filter((l) => l.receiptId === r.id);
     return { id: r.id, vendorName: r.vendorName, documentNo: own[0]?.documentNo ?? "", lines: own.map(({ accountCode, debitKurus, creditKurus }) => ({ accountCode, debitKurus, creditKurus })) };
   });
+}
+
+// ---------- Kontör and payments (src/lib/credits.ts, src/lib/iyzico.ts) ----------
+
+export async function getBalance(userId: string): Promise<number> {
+  const [row] = await getDb().select({ balance: creditBalances.balance }).from(creditBalances).where(eq(creditBalances.userId, userId));
+  return row?.balance ?? 0;
+}
+
+/**
+ * Takes 1 credit before a document is read, in one statement, so uploads running at once never pass `floor` together.
+ * Returns the ledger row that settleCredit finishes, or null when the balance cannot go that low.
+ */
+export async function reserveCredit(userId: string, firmId: string, floor: number): Promise<string | null> {
+  return getDb().transaction(async (tx) => {
+    const [row] = await tx.update(creditBalances).set({ balance: sql`${creditBalances.balance} - 1` })
+      .where(and(eq(creditBalances.userId, userId), sql`${creditBalances.balance} - 1 >= ${floor}`)).returning({ balance: creditBalances.balance });
+    if (!row) return null;
+    const [entry] = await tx.insert(creditLedger).values({ userId, firmId, delta: -1, reason: "receipt" }).returning({ id: creditLedger.id });
+    return entry.id;
+  });
+}
+
+/**
+ * After the read, the real cost: 0 gives the reserved credit back (nothing was read or saved), 2 takes one more (an invoice;
+ * it may pass the floor by one, the document is already read). The ledger row then names the receipt it paid for.
+ */
+export async function settleCredit(userId: string, entryId: string, cost: number, receiptId: string | null): Promise<void> {
+  await getDb().transaction(async (tx) => {
+    if (cost !== 1) await tx.update(creditBalances).set({ balance: sql`${creditBalances.balance} + ${1 - cost}` }).where(eq(creditBalances.userId, userId));
+    const mine = and(eq(creditLedger.id, entryId), eq(creditLedger.userId, userId));
+    if (cost === 0) await tx.delete(creditLedger).where(mine);
+    else await tx.update(creditLedger).set({ delta: -cost, reason: cost === 2 ? "invoice" : "receipt", receiptId }).where(mine);
+  });
+}
+
+/** Credits used this month (Turkey time) per firm, most first; a firm deleted since shows no name. */
+export async function creditUseByFirm(userId: string) {
+  const since = sql`date_trunc('month', now() at time zone 'Europe/Istanbul') at time zone 'Europe/Istanbul'`;
+  const rows = await getDb().select({ firmId: creditLedger.firmId, name: firms.name, used: sql<number>`-sum(${creditLedger.delta})::int`, documents: sql<number>`count(*)::int` })
+    .from(creditLedger).leftJoin(firms, eq(firms.id, creditLedger.firmId))
+    .where(and(eq(creditLedger.userId, userId), lt(creditLedger.delta, 0), sql`${creditLedger.createdAt} >= ${since}`))
+    .groupBy(creditLedger.firmId, firms.name);
+  return rows.sort((a, b) => b.used - a.used);
+}
+
+export type Billing = { name: string; taxNumber: string; taxOffice: string | null; phone: string; address: string; city: string };
+const billingColumns = { name: billingProfiles.name, taxNumber: billingProfiles.taxNumber, taxOffice: billingProfiles.taxOffice, phone: billingProfiles.phone, address: billingProfiles.address, city: billingProfiles.city };
+
+export async function getBillingProfile(userId: string): Promise<Billing | null> {
+  const [row] = await getDb().select(billingColumns).from(billingProfiles).where(eq(billingProfiles.userId, userId));
+  return row ?? null;
+}
+
+export async function saveBillingProfile(userId: string, billing: Billing): Promise<void> {
+  await getDb().insert(billingProfiles).values({ userId, ...billing })
+    .onConflictDoUpdate({ target: billingProfiles.userId, set: { ...billing, updatedAt: new Date() } });
+}
+
+/** A checkout about to start; the invoice details are copied onto it, so the record stays right if the profile changes later. */
+export async function createPayment(userId: string, p: { packageId: string; credits: number; amountKurus: number }, billing: Billing): Promise<string> {
+  const [row] = await getDb().insert(payments).values({ userId, ...p, billing }).returning({ id: payments.id });
+  return row.id;
+}
+
+export async function setPaymentToken(userId: string, id: string, token: string): Promise<void> {
+  await getDb().update(payments).set({ token }).where(and(eq(payments.id, id), eq(payments.userId, userId)));
+}
+
+/**
+ * The checkout iyzico's callback names. The callback has no session (iyzico posts it cross-site, the cookie is SameSite=Lax),
+ * so the token is the key; the result itself is always fetched from iyzico, never taken from the callback.
+ */
+export async function paymentByToken(token: string): Promise<{ id: string; userId: string; amountKurus: number; credits: number; status: "pending" | "paid" | "failed" } | null> {
+  const [row] = await getDb().select({ id: payments.id, userId: payments.userId, amountKurus: payments.amountKurus, credits: payments.credits, status: payments.status })
+    .from(payments).where(eq(payments.token, token));
+  return row ?? null;
+}
+
+/** pending -> paid and the credits, in one transaction; false when it was already settled (a second callback). */
+export async function markPaymentPaid(id: string, providerPaymentId: string): Promise<boolean> {
+  return getDb().transaction(async (tx) => {
+    const [p] = await tx.update(payments).set({ status: "paid", providerPaymentId, paidAt: new Date() })
+      .where(and(eq(payments.id, id), eq(payments.status, "pending"))).returning({ userId: payments.userId, credits: payments.credits });
+    if (!p) return false;
+    await tx.insert(creditBalances).values({ userId: p.userId, balance: p.credits })
+      .onConflictDoUpdate({ target: creditBalances.userId, set: { balance: sql`${creditBalances.balance} + ${p.credits}` } });
+    await tx.insert(creditLedger).values({ userId: p.userId, paymentId: id, delta: p.credits, reason: "purchase" });
+    return true;
+  });
+}
+
+export async function markPaymentFailed(id: string): Promise<void> {
+  await getDb().update(payments).set({ status: "failed" }).where(and(eq(payments.id, id), eq(payments.status, "pending")));
+}
+
+/** The user's paid checkouts, newest first, for the purchase history. */
+export async function listPayments(userId: string, limit = 24) {
+  return getDb().select({ id: payments.id, packageId: payments.packageId, credits: payments.credits, amountKurus: payments.amountKurus, paidAt: payments.paidAt })
+    .from(payments).where(and(eq(payments.userId, userId), eq(payments.status, "paid"))).orderBy(desc(payments.paidAt)).limit(limit);
 }

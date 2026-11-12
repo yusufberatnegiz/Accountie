@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createReceipt, getRules, getVendorRule, hasDuplicateReceipt, listReceipts, type NewReceipt } from "@/db/queries";
+import { createReceipt, getBalance, getRules, getVendorRule, hasDuplicateReceipt, listReceipts, reserveCredit, settleCredit, type NewReceipt } from "@/db/queries";
+import { creditCost, creditsRequired, MIN_BALANCE } from "@/lib/credits";
 import { isValidTaxNumber } from "@/lib/checks";
 import { withVendorAccount } from "@/lib/vendor-rule";
 import { activeFirm } from "@/lib/firm";
@@ -51,6 +52,10 @@ export async function POST(request: Request) {
     }
   }
 
+  // Kontör: a new upload needs at least one credit; inside it the balance may go down to MIN_BALANCE (reserveCredit).
+  const metered = creditsRequired();
+  if (metered && (await getBalance(userId)) < 1) return NextResponse.json({ error: "Kontörünüz bitti. Fiş okumak için kontör yükleyin.", kontor: true }, { status: 402 });
+
   // Counted only for valid photos that are about to reach the model.
   if (!(await allow("receiptGlobal", "all"))) return fail("Fiş okuma bugün için geçici olarak durduruldu. Yarın tekrar deneyin.", 503);
 
@@ -59,7 +64,8 @@ export async function POST(request: Request) {
   const { rules } = await getRules(userId, firm.id);
   if (typeof wanted === "string" && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's data
   if (pdf) {
-    const one = await readAndSave(userId, firm.id, jpeg, rules, "application/pdf");
+    const one = await readMetered(metered, userId, firm.id, jpeg, rules, "application/pdf");
+    if (one === "no_credit") return NextResponse.json({ error: "Kontörünüz bitti. Fiş okumak için kontör yükleyin.", kontor: true }, { status: 402 });
     if (!one) return fail("Fiş kaydedilemedi. Tekrar deneyin.", 500);
     return NextResponse.json({ id: one.id, ids: [one.id], readable: one.readable }, { status: 201 });
   }
@@ -77,13 +83,34 @@ export async function POST(request: Request) {
     }
   }
   if (images.length === 0) images = [jpeg];
-  const saved = await Promise.all(images.map((image) => readAndSave(userId, firm.id, image, rules)));
+  const results = await Promise.all(images.map((image) => readMetered(metered, userId, firm.id, image, rules)));
+  // Receipts left unread because the balance reached its floor: said once, the rest of the photo is not lost silently.
+  const skipped = results.filter((r) => r === "no_credit").length;
+  const saved = results.filter((r) => r !== "no_credit");
   const ids = saved.flatMap((r) => (r ? [r.id] : []));
+  if (ids.length === 0 && skipped) return NextResponse.json({ error: "Kontörünüz bitti. Fiş okumak için kontör yükleyin.", kontor: true }, { status: 402 });
   if (ids.length === 0) return fail("Fiş kaydedilemedi. Tekrar deneyin.", 500);
-  return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable) }, { status: 201 });
+  return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable), skipped }, { status: 201 });
 }
 
-async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: Rules, mediaType: "image/jpeg" | "application/pdf" = "image/jpeg"): Promise<{ id: string; readable: boolean } | null> {
+type Saved = { id: string; readable: boolean; kind: string } | null;
+
+/**
+ * One document read against the balance: 1 credit is taken before the read (none left above the floor: "no_credit", the model
+ * is not called), then settled to its real cost (an invoice 2, an unread or unsaved document 0) and tied to the receipt.
+ */
+async function readMetered(metered: boolean, userId: string, firmId: string, image: Buffer, rules: Rules, mediaType?: "image/jpeg" | "application/pdf"): Promise<Saved | "no_credit"> {
+  const entry = metered ? await reserveCredit(userId, firmId, MIN_BALANCE) : null;
+  if (metered && !entry) return "no_credit";
+  const saved = await readAndSave(userId, firmId, image, rules, mediaType);
+  if (entry) {
+    await settleCredit(userId, entry, saved ? creditCost({ ok: saved.readable, kind: saved.kind }) : 0, saved?.id ?? null)
+      .catch((err) => console.error("credit settle failed", { error: err instanceof Error ? err.name : "unknown" }));
+  }
+  return saved;
+}
+
+async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: Rules, mediaType: "image/jpeg" | "application/pdf" = "image/jpeg"): Promise<Saved> {
   let result: ExtractResult;
   try {
     result = await extractReceipt(jpeg, undefined, mediaType);
@@ -127,11 +154,11 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
     console.error("receipt save failed", { error: err instanceof Error ? err.name : "unknown" });
     return null;
   }
-  return { id, readable: result.ok };
+  return { id, readable: result.ok, kind };
 }
 
 /** A Z report or a foreign service invoice: its own lines (src/lib/journal-kinds.ts), no seller learning, the TL rate kept with the read. */
-async function saveOther(userId: string, firmId: string, result: Extract<ExtractResult, { ok: true }>, rules: Rules): Promise<{ id: string; readable: boolean } | null> {
+async function saveOther(userId: string, firmId: string, result: Extract<ExtractResult, { ok: true }>, rules: Rules): Promise<Saved> {
   const x = result.extraction;
   const extra = result.problems.map(warn);
   const meta = { model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens };
@@ -152,7 +179,7 @@ async function saveOther(userId: string, firmId: string, result: Extract<Extract
   }
   receipt.warnings = [...built.warnings, ...extra.filter((w) => !built.warnings.some((b) => b.code === w.code))];
   try {
-    return { id: await createReceipt(userId, firmId, receipt, built.lines), readable: true };
+    return { id: await createReceipt(userId, firmId, receipt, built.lines), readable: true, kind: kindOf(x) };
   } catch (err) {
     console.error("receipt save failed", { error: err instanceof Error ? err.name : "unknown" });
     return null;

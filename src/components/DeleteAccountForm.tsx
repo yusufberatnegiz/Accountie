@@ -39,7 +39,7 @@ export function DeleteAccountView() {
       <div className="title-row">
         <div className="title-text">
           <h1>Hesabı sil</h1>
-          <p className="finding">Hesabınız ve Accountie&apos;deki bütün verileriniz hemen ve kalıcı olarak silinir. Geri alınamaz.</p>
+          <p className="finding">Hesabınız ve Accountie&apos;deki bütün verileriniz, kalan kontörünüz dahil, hemen ve kalıcı olarak silinir. Geri alınamaz. Kanunen saklanması gereken ödeme kayıtları bunun dışındadır.</p>
         </div>
       </div>
       <section className="delete-section" aria-labelledby="silinecekler">

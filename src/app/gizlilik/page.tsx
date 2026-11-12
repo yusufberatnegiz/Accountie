@@ -29,6 +29,14 @@ const SECTIONS: LegalSection[] = [
     ],
   },
   {
+    title: "Ödeme",
+    body: [
+      "Kontör ödemesi iyzico'nun güvenli ödeme sayfasında alınır. Kart numarası ve güvenlik kodu Accountie'ye gelmez, Accountie'de saklanmaz.",
+      "Ödeme için girdiğiniz fatura bilgileri (ad soyad ya da unvan, VKN ya da TCKN, vergi dairesi, cep telefonu, adres) bir sonraki alımda hazır gelsin diye saklanır ve iyzico'ya iletilir. Satın almanın kaydı ve o andaki fatura bilgileri, hesap silinse de mevzuatın öngördüğü süre boyunca saklanır.",
+      "Okunan her belgenin kaç kontör düştüğü ve hangi firmaya yüklendiği kaydedilir; Kontör sayfasındaki firma dökümü buradan gelir.",
+    ],
+  },
+  {
     title: "Chrome eklentisi",
     body: [
       "Eklenti yalnız sizin onaylı fişlerinizin yevmiye satırlarını Accountie'den alır ve Luca'da açık olan Fiş Detayı ekranına yazar. Luca'da kaydetmek, silmek ve değiştirmek her zaman sizdedir.",
@@ -48,14 +56,14 @@ const SECTIONS: LegalSection[] = [
     title: "Çerezler ve tarayıcı belleği",
     body: [
       "Giriş yaptığınızda oturumunuzu açık tutan zorunlu bir çerez kullanılır. Analitik ya da reklam çerezi yoktur.",
-      "Tema seçiminiz ve çerez bildirimini kapattığınız bilgisi bu tarayıcının belleğinde durur, sunucuya gönderilmez.",
+      "Tema seçiminiz, menüyü daraltıp daraltmadığınız ve çerez bildirimini kapattığınız bilgisi bu tarayıcının belleğinde durur, sunucuya gönderilmez.",
     ],
   },
   {
     title: "Haklarınız",
     body: [
       "Kişisel verilerinizin işlenip işlenmediğini öğrenme, düzeltilmesini ve silinmesini isteme hakkınız vardır (6698 sayılı KVKK, madde 11).",
-      "Hesabınızı ve bütün verilerinizi panelde Hesap menüsündeki \"Hesabı sil\" ile kendiniz silebilirsiniz; silme hemen yapılır.",
+      "Hesabınızı ve bütün verilerinizi panelde Hesap menüsündeki \"Hesabı sil\" ile kendiniz silebilirsiniz; silme hemen yapılır. Kanunen saklanması gereken ödeme kayıtları bunun dışındadır.",
       `Diğer talepler için: ${PROVIDER.email}. Başvuru yolları ve süreler Aydınlatma Metninde yazılıdır.`,
     ],
   },

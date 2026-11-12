@@ -92,6 +92,13 @@
       "when": 1794420776545,
       "tag": "20261111181256_drop_gib_credentials",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794517570066,
+      "tag": "20261112210610_kontor",
+      "breakpoints": true
     }
   ]
 }

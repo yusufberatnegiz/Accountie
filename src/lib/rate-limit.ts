@@ -20,6 +20,8 @@ export const LIMITS = {
   resetEmail: [[3, 60 * MIN]],
   // Muavin check: parsing an uploaded Excel costs CPU, nothing else; generous for a müşavir closing many firms.
   reconcile: [[30, MIN], [600, 24 * 60 * MIN]],
+  // Starting a checkout calls iyzico; a real buyer starts a few.
+  payment: [[10, 10 * MIN], [50, 24 * 60 * MIN]],
 } as const;
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex").slice(0, 32);

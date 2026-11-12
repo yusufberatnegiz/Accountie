@@ -24,7 +24,9 @@ export default async function proxy(incoming: NextRequest) {
     // sends a Bearer token and no cookie, so it is not a cross-site request in that sense.
     const origin = incoming.headers.get("origin");
     const extension = incoming.nextUrl.pathname.startsWith("/api/extension/") && incoming.headers.get("authorization")?.startsWith("Bearer ");
-    if (!["GET", "HEAD", "OPTIONS"].includes(incoming.method) && origin && !extension) {
+    // iyzico's payment page posts the result token here; the route trusts nothing in it and asks iyzico itself.
+    const paymentCallback = incoming.nextUrl.pathname === "/api/payments/callback";
+    if (!["GET", "HEAD", "OPTIONS"].includes(incoming.method) && origin && !extension && !paymentCallback) {
       let same = false;
       try { same = new URL(origin).host === incoming.headers.get("host"); } catch { /* malformed Origin */ }
       if (!same) return NextResponse.json({ error: "Bu istek başka bir siteden geldiği için reddedildi." }, { status: 403 });

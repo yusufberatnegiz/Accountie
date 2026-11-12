@@ -49,6 +49,9 @@ export function PreviewApi({ approved }: { approved: string[] }) {
         await wait(1500);
         return json({ id: FIRST_DRAFT, ids: [FIRST_DRAFT] });
       }
+      if (url === "/api/payments" && method === "POST") {
+        return new Response(JSON.stringify({ error: "Önizleme: gerçek ödeme yok. Canlıda bu düğme iyzico'nun ödeme sayfasını açar." }), { status: 503, headers: { "content-type": "application/json" } });
+      }
       if (url === "/api/receipts/bulk-approve") {
         const chosen: string[] = JSON.parse(String(init?.body ?? "{}")).ids ?? [];
         setStatus(chosen, "approved");

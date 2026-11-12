@@ -59,6 +59,7 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
     let lastId = "";
     let added = 0;
     let failed = false;
+    let skipped = 0;
     // Each photo becomes its own receipt; files are copied out of the input first because iOS replaces them on the next capture.
     for (const [i, file] of list.entries()) {
       setSlow(false);
@@ -80,6 +81,11 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
       });
       if (!res?.ok) {
         const body = res ? await res.json().catch(() => null) : null;
+        // Out of kontör: the purchase screen, with what was already added said there.
+        if (res?.status === 402 && body?.kontor) {
+          startTransition(() => router.push(`${base}/kontor?bitti=${added}`));
+          return;
+        }
         // A response without a message means the connection worked and the server failed; only no response is a connection problem.
         const msg = body?.error ?? (res ? "Sunucu fişi işleyemedi. Tekrar deneyin." : failure);
         setError(list.length > 1 ? `${added} fiş eklendi, kalan fotoğraflar gönderilmedi. ${msg}` : msg);
@@ -87,11 +93,20 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
         break;
       }
       // One photo may hold several receipts side by side; each gets the photo for its review screen.
-      const { ids } = (await res.json()) as { ids: string[] };
+      const { ids, skipped: left = 0 } = (await res.json()) as { ids: string[]; skipped?: number };
+      skipped += left;
       setStage(2);
       if (!pdf) for (const id of ids) setPhoto(id, blob);
       lastId = ids[0];
       added += ids.length;
+    }
+    // The balance reached its floor inside a photo of several receipts: the list shows what was read, the rest is named.
+    if (skipped) {
+      setBusy(false);
+      setStatus("");
+      setNotice(`${added} fiş eklendi. Kontör bittiği için ${skipped} fiş okunmadı. Kontör yükledikten sonra okunmayan fişleri ayrı çekin.`);
+      startTransition(() => { addTransitionType("fis-eklendi"); router.refresh(); });
+      return;
     }
     // One photo goes straight to its review; the reading card stays until that screen replaces it.
     // The type carries the photo into the review screen's thumbnail (a shared view transition, ReviewEditor).

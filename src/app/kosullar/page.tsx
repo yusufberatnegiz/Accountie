@@ -50,15 +50,18 @@ const SECTIONS: LegalSection[] = [
       "Kullanıcının yüklediği belgeler ve bunlardan hazırlanan kayıtlar Kullanıcıya aittir. Accountie bunları yalnız hizmeti sunmak için işler; satmaz, reklam için kullanmaz, yapay zekâ eğitimi için kullanmaz ve kullandırmaz.",
       "Belgelerdeki kişisel veriler bakımından Kullanıcı veri sorumlusu, Accountie veri işleyendir (6698 sayılı KVKK). Kullanıcı, belgelerini yüklediği müşterilerini kişisel verilerinin bu hizmette işlenmesi hakkında aydınlatmakla yükümlüdür.",
       "Accountie veri işleyen olarak: veriyi yalnız Kullanıcının talimatı ve bu sözleşme çerçevesinde işler; gerekli teknik ve idari tedbirleri alır; çalışanlarını ve hizmet sağlayıcılarını gizlilikle bağlar; bir veri ihlalini öğrendiğinde Kullanıcıya en geç 24 saat içinde bildirir; Kullanıcının müşterileri bakımından sır saklama yükümlülüğüne (3568 sayılı Kanun md. 43) uygun davranır.",
-      "Hizmetin sunulması için şu alt hizmet sağlayıcılar kullanılır: Anthropic (ABD, belge okuma), Supabase (Almanya'daki sunucular, veritabanı ve kimlik doğrulama), Vercel (ABD, uygulama barındırma), Cloudflare (ABD, bot denetimi). Bu listedeki değişiklikler gizlilik sayfasında yayımlanır.",
+      "Hizmetin sunulması için şu alt hizmet sağlayıcılar kullanılır: Anthropic (ABD, belge okuma), Supabase (Almanya'daki sunucular, veritabanı ve kimlik doğrulama), Vercel (ABD, uygulama barındırma), Cloudflare (ABD, bot denetimi), iyzico (Türkiye, ödeme). Bu listedeki değişiklikler gizlilik sayfasında yayımlanır.",
       "Belge fotoğrafları ve PDF'ler Accountie'de saklanmaz; okuma için Anthropic'e gönderilir, Anthropic en çok 30 gün tutabilir ve model eğitiminde kullanmaz. Saklanan alanlar Gizlilik sayfasında ve Aydınlatma Metninde yazılıdır.",
     ],
   },
   {
     title: "6. Ücret",
     body: [
-      "Hizmet şu an ücretsizdir. Ücretlendirme başlamadan en az 30 gün önce Kullanıcının e-posta adresine fiyat ve koşullar bildirilir.",
-      "Ücretli döneme geçmek istemeyen Kullanıcı, bildirimden sonra hesabını kapatabilir; ücretsiz dönemde hazırlanan kayıtlar için ücret istenmez.",
+      "Belge okuma kontörle ücretlendirilir. Kontör paketleri ve KDV dahil fiyatları panelin Kontör sayfasında yazar. Ödeme iyzico üzerinden kartla, tek çekim alınır; kart bilgileri Accountie'ye gelmez.",
+      "Okunan her yazar kasa fişi ve Z raporu 1, her fatura (yurt içi ya da yurt dışı) 2 kontör düşer. Bir fotoğraftaki her fiş ayrı sayılır. Okunamayan belgeden kontör düşmez.",
+      "Kontör Kullanıcının hesabına yüklenir ve bütün firmalarında ortak kullanılır. Kontörün süresi dolmaz. Satın alınan kontör iade edilmez ve paraya çevrilmez; hesap silinince kalan kontör de silinir.",
+      "Bakiye bir yükleme sırasında biterse o fotoğraftaki fişler okunmaya devam eder; bakiye en çok 4 kontör eksiye inebilir ve bu açık bir sonraki paketten düşülür. Bakiye sıfır ya da eksiyken yeni belge okunmaz; kayıtlı fişler görüntülenmeye ve Luca'ya aktarılmaya devam eder.",
+      "Fiyat değişikliği daha önce satın alınmış kontörleri etkilemez. Kontör zorunluluğu başlamadan en az 30 gün önce Kullanıcının e-posta adresine bildirilir; o zamana kadar belge okuma ücretsizdir.",
     ],
   },
   {

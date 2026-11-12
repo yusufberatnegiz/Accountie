@@ -7,7 +7,7 @@ const dir = join(process.cwd(), "drizzle");
 const ALLOWED_DROPS: Record<string, RegExp> = {
   "20261111181256_drop_gib_credentials.sql": /^DROP POLICY "gib_credentials_owner" ON "gib_credentials";--> statement-breakpoint\s*DROP TABLE "gib_credentials";\s*$/,
 };
-const NEW_TABLES = ["firms", "vendor_rules", "gib_credentials", "receipts", "journal_lines", "account_rules", "extension_tokens", "rate_limit_hits", "firm_accounts", "firm_rules"];
+const NEW_TABLES = ["firms", "vendor_rules", "gib_credentials", "receipts", "journal_lines", "account_rules", "extension_tokens", "rate_limit_hits", "firm_accounts", "firm_rules", "credit_balances", "credit_ledger", "billing_profiles", "payments"];
 
 describe("migration dosyaları", () => {
   const files = readdirSync(dir).filter((f) => f.endsWith(".sql"));
