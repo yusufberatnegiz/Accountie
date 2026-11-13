@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { SiteBar } from "@/components/site/SiteBar";
 import { PayLogos } from "@/components/site/PayLogos";
+import { ThermalDots } from "@/components/home/ThermalDots";
 import "@/app/gizlilik/gizlilik.css";
 
 export type LegalSection = { title: string; body: ReactNode[] };
@@ -28,6 +29,8 @@ export function LegalPage({ title, lead, sections, prefix }: { title: string; le
   return (
     <>
       <SiteBar />
+      {/* The homepage's heat-print trail under the reading pages too. */}
+      <ThermalDots />
       <main id="icerik" tabIndex={-1} className="legal">
         <h1 className="legal-title">{title}</h1>
         <p className="legal-lead">{lead}</p>
