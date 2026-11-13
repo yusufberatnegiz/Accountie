@@ -11,4 +11,11 @@ describe("giriş sonrası dönüş yolu", () => {
       expect(safeNextPath(p), String(p)).toBeNull();
     }
   });
+
+  it("Fiyatlar'dan gelen paket yalnız Kontör sayfasında ve yalnız paket kimliği biçiminde taşınır", () => {
+    expect(safeNextPath("/panel/kontor?paket=k5000")).toBe("/panel/kontor?paket=k5000");
+    for (const p of ["/panel?paket=k100", "/panel/fis?paket=k100", "/panel/kontor?paket=x", "/panel/kontor?paket=k100&x=1", "/panel/kontor?paket=k100//evil", "/panel/kontor?paket=k1234567"]) {
+      expect(safeNextPath(p), p).toBeNull();
+    }
+  });
 });

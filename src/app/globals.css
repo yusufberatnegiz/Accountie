@@ -61,7 +61,7 @@
   --negative-soft: #fbeceb;
   --warn-ink: #5c5800;
   --warn-bg: #f8efcf;
-  --warn-edge: #a98b2c; /* 3.2:1 on --raised: the edge is the note's only mark */
+  --warn-edge: #9a7d22; /* 3.6:1 on --raised and the cards: the edge is the note's only mark */
   --focus: var(--accent);
   --scrim: rgb(36 30 24 / 0.5);
   --shadow-float: 0 8px 24px rgb(36 30 24 / 0.12), 0 1px 3px rgb(36 30 24 / 0.08);  /* taste-skill-ignore: only for floating menus, dialogs, skip link */
@@ -459,5 +459,6 @@ html.tema-degisiyor :is(.faq-q, .r-status)::before, html.tema-degisiyor :is(.faq
 
 /* iyzico's logo band (PayLogos, public pages and the Kontör page): always coloured; on the dark look a light plate keeps VISA and troy readable. */
 .pay-logos { margin: 0; display: flex; align-items: center; }
-.pay-logos img { display: block; max-width: 100%; height: auto; box-sizing: content-box; }
-:root[data-look="dark"] .pay-logos img { background: #f5efe5; padding: 8px 14px; border-radius: 10px; }
+.pay-logos img { display: block; width: 300px; max-width: 100%; height: auto; box-sizing: border-box; }
+:root[data-look="dark"] .pay-logos img { background: var(--ink); padding: 8px 14px; border-radius: 10px; }
+@media (prefers-color-scheme: dark) { :root:not([data-look]) .pay-logos img { background: var(--ink); padding: 8px 14px; border-radius: 10px; } }

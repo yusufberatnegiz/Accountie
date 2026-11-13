@@ -4,7 +4,24 @@ import { SiteBar } from "@/components/site/SiteBar";
 import { PayLogos } from "@/components/site/PayLogos";
 import "@/app/gizlilik/gizlilik.css";
 
-export type LegalSection = { title: string; body: string[] };
+export type LegalSection = { title: string; body: ReactNode[] };
+
+/** The same links under every reading page and Fiyatlar, so iyzico's reviewer finds each required page from any of them. */
+export function LegalLinks() {
+  return (
+    <nav className="legal-links" aria-label="Diğer sayfalar">
+      <Link href="/fiyatlar" prefetch={false}>Fiyatlar</Link>
+      <Link href="/hakkimizda" prefetch={false}>Hakkımızda</Link>
+      <Link href="/kosullar" prefetch={false}>Kullanım Koşulları</Link>
+      <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Satış</Link>
+      <Link href="/iptal-iade" prefetch={false}>Teslimat ve İade</Link>
+      <Link href="/gizlilik" prefetch={false}>Gizlilik</Link>
+      <Link href="/kvkk" prefetch={false}>KVKK</Link>
+      <Link href="/destek" prefetch={false}>Bize ulaşın</Link>
+      <PayLogos className="legal-pay" />
+    </nav>
+  );
+}
 
 /** The reading layout shared by /gizlilik, /kosullar and /kvkk: a title, a lead, and named sections of plain paragraphs. */
 export function LegalPage({ title, lead, sections, prefix }: { title: string; lead: ReactNode; sections: LegalSection[]; prefix: string }) {
@@ -18,22 +35,12 @@ export function LegalPage({ title, lead, sections, prefix }: { title: string; le
           {sections.map((s, i) => (
             <section key={s.title} aria-labelledby={`${prefix}-${i}`}>
               <h2 id={`${prefix}-${i}`}>{s.title}</h2>
-              {s.body.map((p) => <p key={p.slice(0, 40)}>{p}</p>)}
+              {s.body.map((p, j) => <p key={j}>{p}</p>)}
             </section>
           ))}
         </div>
         <p className="legal-back"><Link href="/">Ana sayfaya dönün</Link></p>
-        <nav className="legal-links" aria-label="Diğer sayfalar">
-          <Link href="/fiyatlar" prefetch={false}>Fiyatlar</Link>
-          <Link href="/hakkimizda" prefetch={false}>Hakkımızda</Link>
-          <Link href="/kosullar" prefetch={false}>Kullanım Koşulları</Link>
-          <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Satış</Link>
-          <Link href="/iptal-iade" prefetch={false}>Teslimat ve İade</Link>
-          <Link href="/gizlilik" prefetch={false}>Gizlilik</Link>
-          <Link href="/kvkk" prefetch={false}>KVKK</Link>
-          <Link href="/destek" prefetch={false}>Bize ulaşın</Link>
-          <PayLogos className="legal-pay" />
-        </nav>
+        <LegalLinks />
       </main>
     </>
   );

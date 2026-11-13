@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { LegalPage, PROVIDER, type LegalSection } from "@/components/site/LegalPage";
 
 export const metadata: Metadata = {
@@ -21,15 +22,15 @@ const SECTIONS: LegalSection[] = [
     title: "Nasıl çalışıyoruz",
     body: [
       "Kaydın kontrolü sizdedir: hiçbir taslak sizin onayınız olmadan Luca'ya aktarılmaz ve Luca'da Kaydet'e siz basarsınız.",
-      "Luca şifrenizi istemeyiz. Belge fotoğrafları ve PDF'ler Accountie'de saklanmaz; ayrıntılar Gizlilik sayfasında yazılıdır.",
-      "Belge okuma kontörle ücretlendirilir; paketler ve fiyatlar Fiyatlar sayfasındadır.",
+      <>Luca şifrenizi istemeyiz. Belge fotoğrafları ve PDF&apos;ler Accountie&apos;de saklanmaz; ayrıntılar <Link href="/gizlilik" prefetch={false}>Gizlilik</Link> sayfasında yazılıdır.</>,
+      <>Belge okuma kontörle ücretlendirilir; paketler ve fiyatlar <Link href="/fiyatlar" prefetch={false}>Fiyatlar</Link> sayfasındadır.</>,
     ],
   },
   {
     title: "Yayımlayan",
     body: [
       `${PROVIDER.name}, ${PROVIDER.address}.`,
-      `İletişim: ${PROVIDER.email}. Soru, hata bildirimi ve öneriler için Bize ulaşın sayfasına bakın.`,
+      <>İletişim: <a href={`mailto:${PROVIDER.email}`}>{PROVIDER.email}</a>. Soru, hata bildirimi ve öneriler için <Link href="/destek" prefetch={false}>Bize ulaşın</Link> sayfasına bakın.</>,
     ],
   },
   {

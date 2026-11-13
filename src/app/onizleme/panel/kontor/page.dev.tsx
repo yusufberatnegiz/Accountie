@@ -5,6 +5,7 @@ import { PreviewTheme } from "../PreviewTheme";
 import { AppShell } from "@/components/AppShell";
 import { CreditsView } from "@/components/CreditsView";
 import { PREVIEW_EMAIL } from "@/lib/preview-fixtures";
+import { packageById } from "@/lib/credits";
 
 const USAGE = [
   { firmId: "1", name: "ÖRNEK BALIK LOKANTASI LTD.ŞTİ", used: 214, documents: 186 },
@@ -18,15 +19,15 @@ const HISTORY = [
 ];
 const BILLING = { name: "ÖRNEK MALİ MÜŞAVİRLİK", taxNumber: "1111111114", taxOffice: "Muratpaşa", phone: "0500 000 00 00", address: "Örnek Mahallesi, Örnek Caddesi No: 1", city: "Antalya" };
 
-export default async function PreviewCredits({ searchParams }: { searchParams: Promise<{ tema?: string; bakiye?: string; odeme?: string; bitti?: string; bos?: string; kapali?: string }> }) {
-  const { tema, bakiye, odeme, bitti, bos, kapali } = await searchParams;
+export default async function PreviewCredits({ searchParams }: { searchParams: Promise<{ tema?: string; bakiye?: string; odeme?: string; bitti?: string; bos?: string; kapali?: string; paket?: string }> }) {
+  const { tema, bakiye, odeme, bitti, bos, kapali, paket } = await searchParams;
   return (
     <>
       <PreviewTheme tema={tema} />
       <PreviewApi approved={[]} />
       <AppShell current="kontor" base="/onizleme/panel" email={PREVIEW_EMAIL}>
         <CreditsView balance={bakiye !== undefined ? Number(bakiye) : 641} open={!kapali} required billing={bos ? null : BILLING} usage={bos ? [] : USAGE} history={bos ? [] : HISTORY}
-          outcome={odeme} ranOut={bitti !== undefined ? Number(bitti) : undefined} />
+          outcome={odeme} ranOut={bitti !== undefined ? Number(bitti) : undefined} initialPackage={packageById(paket)?.id} />
       </AppShell>
     </>
   );

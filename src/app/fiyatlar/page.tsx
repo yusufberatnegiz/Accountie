@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteBar } from "@/components/site/SiteBar";
-import { PayLogos } from "@/components/site/PayLogos";
+import { LegalLinks } from "@/components/site/LegalPage";
 import { PACKAGES, perCreditKurus, savingPercent } from "@/lib/credits";
 import { formatTrAmount } from "@/lib/money";
 import "@/app/gizlilik/gizlilik.css";
@@ -40,10 +40,11 @@ export default function PricesPage() {
         </ul>
         <div className="price-notes">
           <p>Ödeme iyzico üzerinden kartla, tek çekim alınır; kart bilgileri Accountie&apos;ye gelmez. Kontör, ödeme onaylanınca hesabınıza hemen eklenir.</p>
+          <p>Kontör zorunluluğu başlayana kadar belge okuma ücretsizdir; başlamadan önce hesabınızdaki e-postaya haber verilir.</p>
           <p>Satıcısı ve toplamı okunamayan belgeden kontör düşmez. Satın alınan kontör iade edilmez. Ayrıntılar: <Link href="/kosullar#k-5" prefetch={false}>Kullanım Koşulları</Link>, <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Satış Sözleşmesi</Link>, <Link href="/iptal-iade" prefetch={false}>Teslimat ve İade Şartları</Link>.</p>
-          <PayLogos />
         </div>
         <p className="legal-back"><Link href="/">Ana sayfaya dönün</Link></p>
+        <LegalLinks />
       </main>
     </>
   );

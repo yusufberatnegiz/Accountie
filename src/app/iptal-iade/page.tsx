@@ -30,5 +30,5 @@ const SECTIONS: LegalSection[] = [
 ];
 
 export default function RefundPage() {
-  return <LegalPage title="Teslimat ve İade Şartları" prefix="i" sections={SECTIONS} lead={<>Kontör satın alımlarında iptal ve iade koşulları. Ayrıntılar Kullanım Koşullarının 6. maddesinde ve Mesafeli Hizmet Satış Sözleşmesindedir.</>} />;
+  return <LegalPage title="Teslimat ve İade Şartları" prefix="i" sections={SECTIONS} lead={<>Kontör satın alımlarında teslimat, iptal ve iade koşulları. Ayrıntılar Kullanım Koşullarının 6. maddesinde ve Mesafeli Hizmet Satış Sözleşmesindedir.</>} />;
 }

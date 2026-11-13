@@ -7,7 +7,7 @@ export function PayLogos({ className = "" }: { className?: string }) {
   return (
     <p className={`pay-logos ${className}`.trim()}>
       {/* eslint-disable-next-line @next/next/no-img-element -- a fixed 2x bitmap from iyzico's pack, nothing for next/image to do */}
-      <img src="/odeme/iyzico-band-renkli.png" width={429} height={32} alt="iyzico ile Öde, Mastercard, Visa, American Express, Troy" />
+      <img src="/odeme/iyzico-band-renkli.png" width={429} height={32} loading="lazy" decoding="async" alt="iyzico ile Öde, Mastercard, Visa, American Express, Troy" />
     </p>
   );
 }

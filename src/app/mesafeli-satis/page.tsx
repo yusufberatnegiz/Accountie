@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { TERMS_VERSION } from "@/app/giris/validation";
 import { LegalPage, PROVIDER, type LegalSection } from "@/components/site/LegalPage";
 import { PACKAGES } from "@/lib/credits";
@@ -53,7 +54,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "6. İade",
     body: [
-      "Satın alınan kontör iade edilmez ve paraya çevrilmez. Ayrıntı accountie.app/iptal-iade adresindeki Teslimat ve İade Şartları sayfasındadır.",
+      <>Satın alınan kontör iade edilmez ve paraya çevrilmez. Ayrıntı <Link href="/iptal-iade" prefetch={false}>Teslimat ve İade Şartları</Link> sayfasındadır.</>,
       "Aynı ödemenin iki kez çekilmesi ya da hatalı bir tutarın tahsil edilmesi hâlinde fazla çekilen tutar, Satıcıya bildirildikten sonra karta iade edilir.",
     ],
   },

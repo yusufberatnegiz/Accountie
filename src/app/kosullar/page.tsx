@@ -57,7 +57,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "6. Ücret",
     body: [
-      "Belge okuma kontörle ücretlendirilir. Kontör paketleri ve KDV dahil fiyatları panelin Kontör sayfasında yazar. Ödeme iyzico üzerinden kartla, tek çekim alınır; kart bilgileri Accountie'ye gelmez. Satın alma ayrıca Mesafeli Hizmet Satış Sözleşmesine tabidir.",
+      "Belge okuma kontörle ücretlendirilir. Kontör paketleri ve KDV dahil fiyatları Fiyatlar sayfasında ve panelin Kontör sayfasında yazar. Ödeme iyzico üzerinden kartla, tek çekim alınır; kart bilgileri Accountie'ye gelmez. Satın alma ayrıca Mesafeli Hizmet Satış Sözleşmesine tabidir.",
       "Okunan her yazar kasa fişi ve Z raporu 1, her fatura (yurt içi ya da yurt dışı) 2 kontör düşer. Bir fotoğraftaki her fiş ayrı sayılır. Satıcısı ve toplamı okunamayan (boş kayıt açılan) belgeden kontör düşmez.",
       "Kontör Kullanıcının hesabına yüklenir ve bütün firmalarında ortak kullanılır. Kontörün süresi dolmaz. Satın alınan kontör iade edilmez ve paraya çevrilmez; hesap silinince kalan kontör de silinir.",
       "Bakiye bir yükleme sırasında biterse o fotoğraftaki fişler okunmaya devam eder; bakiye en çok 4 kontör eksiye inebilir ve bu açık bir sonraki paketten düşülür; Accountie bu açık için ayrıca ödeme istemez. Bakiye bu sınırdayken okunan fatura 1 kontör düşer. Bakiye sıfır ya da eksiyken yeni belge okunmaz; kayıtlı fişler görüntülenmeye ve Luca'ya aktarılmaya devam eder.",

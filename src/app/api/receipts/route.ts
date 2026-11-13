@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
   // Kontör: a new upload needs at least one credit; inside it the balance may go down to MIN_BALANCE (reserveCredit).
   const metered = creditsRequired();
-  if (metered && (await getBalance(userId)) < 1) return NextResponse.json({ error: "Kontörünüz bitti. Fiş okumak için kontör yükleyin.", kontor: true }, { status: 402 });
+  if (metered && (await getBalance(userId)) < 1) return NextResponse.json({ error: "Kontörünüz bitti. Belge okumak için kontör yükleyin.", kontor: true }, { status: 402 });
 
   // Counted only for valid photos that are about to reach the model.
   if (!(await allow("receiptGlobal", "all"))) return fail("Fiş okuma bugün için geçici olarak durduruldu. Yarın tekrar deneyin.", 503);
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
   if (typeof wanted === "string" && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's data
   if (pdf) {
     const one = await readMetered(metered, userId, firm.id, jpeg, rules, "application/pdf");
-    if (one === "no_credit") return NextResponse.json({ error: "Kontörünüz bitti. Fiş okumak için kontör yükleyin.", kontor: true }, { status: 402 });
+    if (one === "no_credit") return NextResponse.json({ error: "Kontörünüz bitti. Belge okumak için kontör yükleyin.", kontor: true }, { status: 402 });
     if (!one) return fail("Fiş kaydedilemedi. Tekrar deneyin.", 500);
     return NextResponse.json({ id: one.id, ids: [one.id], readable: one.readable }, { status: 201 });
   }
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
   const skipped = results.filter((r) => r === "no_credit").length;
   const saved = results.filter((r) => r !== "no_credit");
   const ids = saved.flatMap((r) => (r ? [r.id] : []));
-  if (ids.length === 0 && skipped) return NextResponse.json({ error: "Kontörünüz bitti. Fiş okumak için kontör yükleyin.", kontor: true }, { status: 402 });
+  if (ids.length === 0 && skipped) return NextResponse.json({ error: "Kontörünüz bitti. Belge okumak için kontör yükleyin.", kontor: true }, { status: 402 });
   if (ids.length === 0) return fail("Fiş kaydedilemedi. Tekrar deneyin.", 500);
   return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable), skipped }, { status: 201 });
 }

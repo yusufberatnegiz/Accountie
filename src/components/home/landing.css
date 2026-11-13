@@ -277,4 +277,3 @@ html:has(main.land) body { background: none; } /* html keeps the ground; the dot
 }
 
 .l-foot .l-foot-pay { flex-basis: 100%; }
-.l-foot .l-foot-pay img { width: 300px; }
