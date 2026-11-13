@@ -9,6 +9,7 @@ import { RowPending } from "@/components/RowPending";
 import { MoveTransition } from "@/components/MoveTransition";
 import { MonthPicker } from "@/components/MonthPicker";
 import { DOC_KIND_LABEL, docKind } from "@/lib/doc-kind";
+import { EXTENSION_STORE_URL } from "@/lib/extension-id";
 import { monthLabel } from "@/lib/month";
 import { formatTrAmount } from "@/lib/money";
 import { listFinding, STATUS_LABELS } from "@/lib/status";
@@ -79,7 +80,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                   <li><strong>Hesap kodlarını kontrol edin.</strong> Varsayılan plan kopyalandı; <Link href={`${base}/kurallar`}>hesap kurallarında</Link> kendi kodlarınızı yazın.</li>
                   <li><strong>Fişi çekin ya da faturayı yükleyin.</strong> Satıcı, tarih, KDV ve toplam okunur, satırlar hazırlanır.</li>
                   <li><strong>Kontrol edip onaylayın.</strong> Borç ile alacak eşit olmadan onay verilmez.</li>
-                  <li><strong>Luca&apos;ya aktarın.</strong> Chrome eklentisi onaylı fişleri Luca&apos;nın Fiş Detayı ekranına yazar. İsterseniz Excel dosyası olarak da indirebilirsiniz.</li>
+                  <li><strong>Luca&apos;ya aktarın.</strong> <a href={EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">Chrome eklentisi</a> onaylı fişleri Luca&apos;nın Fiş Detayı ekranına yazar. İsterseniz Excel dosyası olarak da indirebilirsiniz.</li>
                 </ol>
               </>
             )}

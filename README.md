@@ -82,7 +82,7 @@ Güvenlik:
 - Anahtar her kullanımda 30 gün uzar; 30 gün kullanılmazsa, şifre sıfırlanınca ya da iptal edilince biter. Yalnızca sizin onaylı fişlerinizi okur ve bir fişi "aktarıldı" yapabilir. Yeni anahtar oluşturmak eskisini geçersiz kılar; **Anahtarı iptal et** hemen kapatır.
 - Eklenti anahtarı bu bilgisayarda tutar (`chrome.storage.local`, eşitlenmez), tarayıcı kapanınca silinmez; eklentideki **Anahtarı unut** siler. Ortak bilgisayarda günün sonunda paneldeki **Anahtarı iptal et** ile kapatın.
 - İzinler: `activeTab` (yalnızca simgesine tıkladığınız sekme), `scripting`, `storage` ve uygulama adresine erişim. Luca şifrenize veya çerezlerinize dokunmaz.
-- **Eklentiye bağla**: eklenti yalnız `https://accountie.app` (ve www) sayfalarından gelen ve anahtar biçimindeki mesajı kabul eder (`externally_connectable`, `extension/background.js`). Eklentinin kimliği `manifest.json`'daki `key` ile sabittir (`leffpncjckoidaabeaciahdhbnjihojg`, `src/lib/extension-id.ts`); her bilgisayarda aynıdır. Chrome Web Store'a çıkınca mağazanın verdiği kimlik `src/lib/extension-id.ts`'e yazılır.
+- **Eklentiye bağla**: eklenti yalnız `https://accountie.app` (ve www) sayfalarından gelen ve anahtar biçimindeki mesajı kabul eder (`externally_connectable`, `extension/background.js`). Site anahtarı önce Chrome Web Store sürümüne (`ibjlhifpjjkbokfamkckibabonbgdjgj`), ulaşamazsa repodan paketsiz yüklenen kopyaya (`manifest.json`'daki `key` ile sabit `leffpncjckoidaabeaciahdhbnjihojg`) verir; ikisi de `src/lib/extension-id.ts`'te.
 
 ### Luca seçicileri
 

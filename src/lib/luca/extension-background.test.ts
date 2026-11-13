@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import manifest from "../../../extension/manifest.json";
 import "../../../extension/background.js";
-import { EXTENSION_ID } from "../extension-id";
+import { DEV_EXTENSION_ID, EXTENSION_IDS, STORE_EXTENSION_ID } from "../extension-id";
 import { createHash } from "node:crypto";
 
 const { acceptToken } = (globalThis as unknown as { AccountieBackground: { acceptToken(m: unknown, s: unknown): string | null } }).AccountieBackground;
@@ -24,7 +24,10 @@ describe("eklentiye bağla (anahtarsız kurulum)", () => {
   it("sitenin bildiği eklenti kimliği, manifest'teki anahtardan çıkan kimlikle aynı", () => {
     const der = Buffer.from(manifest.key, "base64");
     const id = [...createHash("sha256").update(der).digest("hex").slice(0, 32)].map((h) => String.fromCharCode(97 + parseInt(h, 16))).join("");
-    expect(id).toBe(EXTENSION_ID);
+    expect(id).toBe(DEV_EXTENSION_ID);
+    // The store release is offered the key first; the repo copy after it.
+    expect(EXTENSION_IDS).toEqual([STORE_EXTENSION_ID, DEV_EXTENSION_ID]);
+    expect(STORE_EXTENSION_ID).toMatch(/^[a-p]{32}$/);
     expect(manifest.externally_connectable.matches).toEqual(["https://accountie.app/*", "https://www.accountie.app/*"]);
   });
 });

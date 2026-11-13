@@ -1,12 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { EXTENSION_ID } from "@/lib/extension-id";
+import { EXTENSION_IDS, EXTENSION_STORE_URL } from "@/lib/extension-id";
 
 type Runtime = { sendMessage(id: string, message: unknown, callback: (response?: { ok?: boolean }) => void): void; lastError?: unknown };
 
 /** Chrome lets this site reach the extension only when it is installed and lists the site (externally_connectable). */
 const extensionRuntime = () => (globalThis as { chrome?: { runtime?: Partial<Runtime> } }).chrome?.runtime as Runtime | undefined;
+
+/** Offers the key to one extension id; true when that extension took it. A missing extension answers with lastError. */
+function offer(runtime: Runtime, id: string, token: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      runtime.sendMessage(id, { type: "accountie-token", token }, (response) => resolve(!runtime.lastError && Boolean(response?.ok)));
+    } catch {
+      resolve(false);
+    }
+  });
+}
 
 export function ExtensionTokenPanel() {
   const [token, setToken] = useState("");
@@ -31,24 +42,13 @@ export function ExtensionTokenPanel() {
       return setMessage("İşlem yapılamadı. Tekrar deneyin.");
     }
     const runtime = extensionRuntime();
-    const fallback = () => {
-      setToken(made);
-      setMessage("Eklentiye ulaşılamadı (kurulu değil ya da eski sürüm). Anahtarı kopyalayıp eklentiye yapıştırın.");
-    };
-    if (!runtime?.sendMessage) {
-      setBusy(false);
-      return fallback();
-    }
-    try {
-      runtime.sendMessage(EXTENSION_ID, { type: "accountie-token", token: made }, (response) => {
-        setBusy(false);
-        if (runtime.lastError || !response?.ok) return fallback();
-        setMessage("Eklenti bağlandı. Eklentiyi açınca onaylı fişler gelir. Anahtar her kullanımda 30 gün uzar.");
-      });
-    } catch {
-      setBusy(false);
-      fallback();
-    }
+    // The store release first, then a copy loaded from the repo (EXTENSION_IDS): the first that answers takes the key.
+    let taken = false;
+    if (runtime?.sendMessage) for (const id of EXTENSION_IDS) if ((taken = await offer(runtime, id, made))) break;
+    setBusy(false);
+    if (taken) return setMessage("Eklenti bağlandı. Eklentiyi açınca onaylı fişler gelir. Anahtar her kullanımda 30 gün uzar.");
+    setToken(made);
+    setMessage("Eklentiye ulaşılamadı: kurulu değil ya da eski sürüm. Chrome Web Store'dan kurun ya da anahtarı kopyalayıp eklentiye yapıştırın.");
   }
 
   async function revoke() {
@@ -80,6 +80,7 @@ export function ExtensionTokenPanel() {
           <button className="btn" type="button" onClick={copy}>Kopyala</button>
         </div>
       ) : null}
+      <p className="muted"><a href={EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">Accountie Luca Doldurucu, Chrome Web Store</a></p>
       {/* Always mounted, so a screen reader hears the result when the text arrives. */}
       <p role="status" className="muted">{message}</p>
     </div>
