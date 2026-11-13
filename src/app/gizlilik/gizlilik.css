@@ -13,7 +13,7 @@
   .legal-title, .legal-lead, .legal-body, .legal-body section, .legal-body h2, .legal-body p, .legal-back { grid-column: 1; grid-row: auto; }
   .legal-body section { grid-template-columns: minmax(0, 1fr); }
 }
-.legal-links { grid-column: 5 / 12; display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); padding-top: var(--s6); border-top: 1px solid var(--rule); font-size: var(--step-small); }
+.legal-links { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); padding-top: var(--s6); border-top: 1px solid var(--rule); font-size: var(--step-small); }
 .legal-links a { color: var(--muted); display: inline-flex; align-items: center; min-height: var(--touch); text-decoration: none; }
 .legal-links a:hover { color: var(--ink); }
 .legal-links .legal-pay { flex-basis: 100%; margin-top: var(--s2); }

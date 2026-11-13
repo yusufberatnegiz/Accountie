@@ -26,25 +26,35 @@ export default function PricesPage() {
       <main id="icerik" tabIndex={-1} className="legal prices">
         <h1 className="legal-title">Fiyatlar</h1>
         <p className="legal-lead">Belge okuma kontörle ücretlendirilir. Yazar kasa fişi ve Z raporu 1, yurt içi ya da yurt dışı fatura 2 kontör düşer. Kontör bütün firmalarınızda ortaktır ve süresi dolmaz. Fiyatlara KDV dahildir.</p>
-        <ul className="price-list" aria-label="Kontör paketleri">
-          {PACKAGES.map((p) => {
-            const saving = savingPercent(p);
-            return (
-              <li key={p.id} className="price-card">
-                <p className="price-head"><span className="price-name">{p.name}</span>{saving ? <span className="pill pill-positive">Fiş başı %{saving} tasarruf</span> : null}</p>
-                <p className="price-credits"><span className="tnum">{p.credits.toLocaleString("tr-TR")}</span> kontör</p>
-                <p className="price-amount tnum">{tl(p.priceKurus)}</p>
-                <p className="price-unit"><span className="tnum">{formatTrAmount(perCreditKurus(p))}</span> TL / fiş, KDV dahil</p>
-                {/* The panel asks for a session: a visitor goes through Giriş yap and lands on this package. */}
-                <a className="btn btn-primary price-buy" href={`/panel/kontor?paket=${p.id}`} aria-label={`${p.name} paketini satın al, ${tl(p.priceKurus)}`}>Satın al</a>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="price-notes">
-          <p>Ödeme iyzico üzerinden kartla, tek çekim alınır; kart bilgileri Accountie&apos;ye gelmez. Kontör, ödeme onaylanınca hesabınıza hemen eklenir.</p>
-          <p>Kontör zorunluluğu başlayana kadar belge okuma ücretsizdir; başlamadan önce hesabınızdaki e-postaya haber verilir.</p>
-          <p>Satıcısı ve toplamı okunamayan belgeden kontör düşmez. Satın alınan kontör iade edilmez. Ayrıntılar: <Link href="/kosullar#k-5" prefetch={false}>Kullanım Koşulları</Link>, <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Satış Sözleşmesi</Link>, <Link href="/iptal-iade" prefetch={false}>Teslimat ve İade Şartları</Link>.</p>
+        {/* The reading pages' layout: each section's name in the label column, its content in the text column. */}
+        <div className="legal-body">
+          <section aria-labelledby="f-0">
+            <h2 id="f-0">Paketler</h2>
+            <ul className="price-list" aria-label="Kontör paketleri">
+              {PACKAGES.map((p) => {
+                const saving = savingPercent(p);
+                return (
+                  <li key={p.id} className="price-card">
+                    <div className="price-head"><span className="price-name">{p.name}</span>{saving ? <span className="pill pill-positive">Fiş başı %{saving} tasarruf</span> : null}</div>
+                    <div className="price-credits"><span className="tnum">{p.credits.toLocaleString("tr-TR")}</span> kontör</div>
+                    <div className="price-amount tnum">{tl(p.priceKurus)}</div>
+                    <div className="price-unit"><span className="tnum">{formatTrAmount(perCreditKurus(p))}</span> TL / fiş, KDV dahil</div>
+                    {/* The panel asks for a session: a visitor goes through Giriş yap and lands on this package. */}
+                    <a className="btn btn-primary price-buy" href={`/panel/kontor?paket=${p.id}`} aria-label={`${p.name} paketini satın al, ${tl(p.priceKurus)}`}>Satın al</a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+          <section aria-labelledby="f-1">
+            <h2 id="f-1">Ödeme</h2>
+            <p>Ödeme iyzico üzerinden kartla, tek çekim alınır; kart bilgileri Accountie&apos;ye gelmez. Kontör, ödeme onaylanınca hesabınıza hemen eklenir.</p>
+            <p>Kontör zorunluluğu başlayana kadar belge okuma ücretsizdir; başlamadan önce hesabınızdaki e-postaya haber verilir.</p>
+          </section>
+          <section aria-labelledby="f-2">
+            <h2 id="f-2">İade</h2>
+            <p>Satıcısı ve toplamı okunamayan belgeden kontör düşmez. Satın alınan kontör iade edilmez. Ayrıntılar: <Link href="/kosullar#k-5" prefetch={false}>Kullanım Koşulları</Link>, <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Satış Sözleşmesi</Link>, <Link href="/iptal-iade" prefetch={false}>Teslimat ve İade Şartları</Link>.</p>
+          </section>
         </div>
         <p className="legal-back"><Link href="/">Ana sayfaya dönün</Link></p>
         <LegalLinks />
