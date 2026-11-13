@@ -39,7 +39,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "4. İfa",
     body: [
-      "Kontör, ödeme iyzico tarafından onaylandığı anda Alıcının hesabına eklenir ve Kontör sayfasında görünür. Fiziksel teslimat yoktur.",
+      "Kontör, ödemenin iyzico onayı Accountie'ye ulaştığında Alıcının hesabına eklenir ve Kontör sayfasında görünür; onay ödeme sayfasından dönüşte, dönülmediyse Kontör sayfası açıldığında alınır. Fiziksel teslimat yoktur.",
       "Ödeme iyzico'nun güvenlik incelemesine düşerse kontör, onay gelince eklenir.",
       "Fatura, Alıcının ödeme sırasında verdiği bilgilerle düzenlenir ve hesabın e-posta adresine gönderilir.",
     ],

@@ -856,7 +856,7 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
   .kontor-usage { order: 3; }
   .kontor-history { order: 4; }
   .pack-chosen { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); margin: 0; padding-top: var(--s3); border-top: 1px solid var(--rule); font-weight: var(--w-medium); }
-  .pack-chosen a { display: inline-flex; align-items: center; min-height: var(--touch); color: var(--ink); text-underline-offset: 0.2em; }
+  .pack-chosen a { display: inline-flex; align-items: center; min-height: var(--touch); color: var(--ink); text-underline-offset: 0.2em; white-space: nowrap; }
 }
 @media (pointer: coarse) { .pay-details > summary { min-height: var(--touch); align-items: center; } }
 @media (max-width: 720px) {
