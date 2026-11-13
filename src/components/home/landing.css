@@ -275,3 +275,6 @@ html:has(main.land) body { background: none; } /* html keeps the ground; the dot
   .l-rule-field { border-radius: 20px; }
   .l-facts, .l-rule, .l-steps, .faq, .l-cta, .l-foot { margin-top: var(--s9); }
 }
+
+.l-foot .l-foot-pay { flex-basis: 100%; }
+.l-foot .l-foot-pay img { width: 300px; }

@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { CreditsView } from "@/components/CreditsView";
 import { creditUseByFirm, getBalance, getBillingProfile, listOpenPayments, listPayments, recentPaid } from "@/db/queries";
 import { getSessionUser } from "@/lib/auth/session";
-import { creditsRequired } from "@/lib/credits";
+import { creditsRequired, packageById } from "@/lib/credits";
 import { activeFirm } from "@/lib/firm";
 import { iyzicoConfig } from "@/lib/iyzico";
 import { settlePayment } from "@/lib/settle-payment";
@@ -15,10 +15,10 @@ export const dynamic = "force-dynamic";
 const SETTLE_WAIT_MS = 4_000;
 const PAID_RECENTLY_MS = 15 * 60_000;
 
-export default async function CreditsPage({ searchParams }: { searchParams: Promise<{ odeme?: string; bitti?: string }> }) {
+export default async function CreditsPage({ searchParams }: { searchParams: Promise<{ odeme?: string; bitti?: string; paket?: string }> }) {
   const user = await getSessionUser();
   if (!user) redirect("/giris");
-  const { odeme, bitti } = await searchParams;
+  const { odeme, bitti, paket } = await searchParams;
   const cfg = iyzicoConfig();
   // Checkouts still waiting (a review, an iyzico that did not answer) are asked again, together and for a few seconds at most:
   // a slow iyzico never holds the page; what is not settled now is asked on the next visit.
@@ -41,7 +41,7 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
   const outcome = paid && (odeme === "tamam" || odeme === "bekliyor" || odeme === "inceleme") ? "tamam" : odeme === "tamam" ? undefined : odeme;
   return (
     <AppShell current="kontor" email={user.email} firmId={firm.id}>
-      <CreditsView balance={balance} open={cfg !== null} required={creditsRequired()} billing={billing} usage={usage} history={history} outcome={outcome} added={paid?.credits} ranOut={ranOut} waiting={waiting} />
+      <CreditsView balance={balance} open={cfg !== null} required={creditsRequired()} billing={billing} usage={usage} history={history} outcome={outcome} added={paid?.credits} ranOut={ranOut} waiting={waiting} initialPackage={packageById(paket)?.id} />
     </AppShell>
   );
 }

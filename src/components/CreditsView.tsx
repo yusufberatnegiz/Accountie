@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { PACKAGES, perCreditKurus, savingPercent, vatInsideKurus } from "@/lib/credits";
 import { formatTrAmount } from "@/lib/money";
+import { PayLogos } from "@/components/site/PayLogos";
 
 type Billing = { name: string; taxNumber: string; taxOffice: string | null; phone: string; address: string; city: string };
 export type CreditUse = { firmId: string | null; name: string | null; used: number; documents: number };
@@ -30,10 +31,10 @@ const FIELD: Record<string, string> = { name: "ad", taxNumber: "vkn", taxOffice:
  * per-receipt price and the saving against the smallest), and one order column that names the amount on its button.
  * Paying happens on iyzico's own page. `open`: purchases can be taken; `required`: reading needs credits (KONTOR_ZORUNLU).
  */
-export function CreditsView({ balance, open, required, billing, usage, history, outcome, added, ranOut, waiting = 0, endpoint = "/api/payments" }: {
-  balance: number; open: boolean; required: boolean; billing: Billing | null; usage: CreditUse[]; history: Purchase[]; outcome?: string; added?: number; ranOut?: number; waiting?: number; endpoint?: string;
+export function CreditsView({ balance, open, required, billing, usage, history, outcome, added, ranOut, waiting = 0, initialPackage, endpoint = "/api/payments" }: {
+  balance: number; open: boolean; required: boolean; billing: Billing | null; usage: CreditUse[]; history: Purchase[]; outcome?: string; added?: number; ranOut?: number; waiting?: number; initialPackage?: string; endpoint?: string;
 }) {
-  const [picked, setPicked] = useState(PACKAGES[1].id);
+  const [picked, setPicked] = useState(initialPackage ?? PACKAGES[1].id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ text: string; field?: string } | null>(null);
   const message = useRef<HTMLParagraphElement>(null);
@@ -224,6 +225,7 @@ export function CreditsView({ balance, open, required, billing, usage, history, 
               Ödeyerek <Link href="/kosullar#k-5" prefetch={false}>Kullanım Koşullarını</Link> (6. madde: kontör ve iade) ve <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Hizmet Satış Sözleşmesini</Link> kabul edersiniz. Fatura bilgileriniz <Link href="/kvkk" prefetch={false}>KVKK Aydınlatma Metnine</Link> göre işlenir.
               Kart bilgilerinizi iyzico&apos;nun güvenli ödeme sayfasında girersiniz; Accountie kart bilgisi görmez ve saklamaz. Tek çekim yapılır.
             </p> : null}
+            {open ? <PayLogos /> : null}
           </form>
         </section>
       </div>

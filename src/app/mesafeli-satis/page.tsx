@@ -53,7 +53,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "6. İade",
     body: [
-      "Satın alınan kontör iade edilmez ve paraya çevrilmez. Ayrıntı accountie.app/iptal-iade adresindeki İptal ve İade sayfasındadır.",
+      "Satın alınan kontör iade edilmez ve paraya çevrilmez. Ayrıntı accountie.app/iptal-iade adresindeki Teslimat ve İade Şartları sayfasındadır.",
       "Aynı ödemenin iki kez çekilmesi ya da hatalı bir tutarın tahsil edilmesi hâlinde fazla çekilen tutar, Satıcıya bildirildikten sonra karta iade edilir.",
     ],
   },

@@ -456,3 +456,10 @@ html.tema-degisiyor :is(.faq-q, .r-status)::before, html.tema-degisiyor :is(.faq
   }
   .btn:active, .tabs a:active, .rail-item:active, .theme-cycle:active { transform: none; }
 }
+
+/* iyzico's logo band (PayLogos, public pages and the Kontör page): the coloured one on light, the white one on the dark look; never wider than its column. */
+.pay-logos { margin: 0; display: flex; align-items: center; }
+.pay-logos img { display: block; max-width: 100%; height: auto; }
+.pay-logos .on-dark { display: none; }
+:root[data-look="dark"] .pay-logos .on-light { display: none; }
+:root[data-look="dark"] .pay-logos .on-dark { display: block; }

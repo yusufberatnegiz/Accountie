@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/#path-title", label: "Nasıl çalışır" },
   { href: "/#kural", label: "Denge kuralı" },
   { href: "/#sss", label: "SSS" },
+  { href: "/fiyatlar", label: "Fiyatlar" },
 ];
 
 /**

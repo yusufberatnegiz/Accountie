@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PayLogos } from "@/components/site/PayLogos";
 import { CookieNote } from "@/components/site/CookieNote";
 import { SiteBar } from "@/components/site/SiteBar";
 import { Faq, type Qa } from "@/components/home/Faq";
@@ -180,10 +181,13 @@ export default function LandingPage() {
           <Link href="/gizlilik" prefetch={false}>Gizlilik</Link>
           <Link href="/kvkk" prefetch={false}>KVKK</Link>
           <Link href="/kosullar" prefetch={false}>Kullanım Koşulları</Link>
+          <Link href="/fiyatlar" prefetch={false}>Fiyatlar</Link>
+          <Link href="/hakkimizda" prefetch={false}>Hakkımızda</Link>
           <Link href="/mesafeli-satis" prefetch={false}>Mesafeli Satış</Link>
-          <Link href="/iptal-iade" prefetch={false}>İptal ve İade</Link>
+          <Link href="/iptal-iade" prefetch={false}>Teslimat ve İade</Link>
           <Link href="/destek" prefetch={false}>Bize ulaşın</Link>
         </nav>
+        <PayLogos className="l-foot-pay" />
       </footer>
       <CookieNote />
     </>

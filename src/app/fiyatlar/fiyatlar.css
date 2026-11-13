@@ -1,0 +1,19 @@
+/* /fiyatlar: the reading layout of the legal pages (gizlilik.css) with the four packages across the text column. */
+.price-list { grid-column: 5 / 12; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); margin: 0; padding: 0; list-style: none; }
+.price-card { display: grid; gap: var(--s2); align-content: start; padding: var(--s5); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); }
+.price-card p { margin: 0; }
+.price-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 24px; }
+.price-name { font-weight: var(--w-medium); color: var(--muted); }
+.price-credits { font-size: var(--step-lead); font-weight: var(--w-strong); }
+.price-amount { font-family: var(--font-head); font-weight: 300; font-size: 2.25rem; line-height: 1.1; letter-spacing: -0.02em; }
+.price-unit { font-size: var(--step-small); color: var(--muted); }
+.price-buy { justify-self: start; margin-top: var(--s3); }
+.price-notes { grid-column: 5 / 12; display: grid; gap: var(--s4); font-size: var(--step-body); line-height: 1.55; max-width: 64ch; }
+.price-notes p { margin: 0; }
+.price-notes a { color: var(--accent); }
+@media (max-width: 900px) {
+  .price-list, .price-notes { grid-column: 1; }
+}
+@media (max-width: 560px) {
+  .price-list { grid-template-columns: minmax(0, 1fr); }
+}
