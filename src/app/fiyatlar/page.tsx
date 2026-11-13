@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteBar } from "@/components/site/SiteBar";
 import { LegalLinks } from "@/components/site/LegalPage";
+import { ThermalDots } from "@/components/home/ThermalDots";
 import { PACKAGES, perCreditKurus, savingPercent } from "@/lib/credits";
 import { formatTrAmount } from "@/lib/money";
 import "@/app/gizlilik/gizlilik.css";
@@ -20,6 +21,8 @@ export default function PricesPage() {
   return (
     <>
       <SiteBar />
+      {/* The homepage's heat-print trail under the cards: the same ground, the same hand. */}
+      <ThermalDots />
       <main id="icerik" tabIndex={-1} className="legal prices">
         <h1 className="legal-title">Fiyatlar</h1>
         <p className="legal-lead">Belge okuma kontörle ücretlendirilir. Yazar kasa fişi ve Z raporu 1, yurt içi ya da yurt dışı fatura 2 kontör düşer. Kontör bütün firmalarınızda ortaktır ve süresi dolmaz. Fiyatlara KDV dahildir.</p>

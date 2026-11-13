@@ -160,10 +160,6 @@
 
 /* Thermal dots behind the pointer, on bare ground (Reveal.tsx draws them in the accent; mouse only). */
 html:has(main.land) body { background: none; } /* html keeps the ground; the dots sit between it and the sections */
-.l-dots { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; color: var(--accent); opacity: 0.75; } /* brown on cream reads stronger than amber on black */
-:root[data-look="dark"] .l-dots { opacity: 1; }
-@media (prefers-color-scheme: dark) { :root:not([data-look]) .l-dots { opacity: 1; } }
-@media not ((hover: hover) and (pointer: fine)) { .l-dots { display: none; } }
 
 /* ---------- closing call and footer ---------- */
 .l-cta { margin-top: var(--s10); }
