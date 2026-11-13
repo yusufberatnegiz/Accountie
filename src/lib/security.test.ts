@@ -102,6 +102,16 @@ describe("giriş ve kayıt formu", () => {
     expect(JSON.stringify(state)).not.toContain("gizli-sifre-123");
   });
 
+  it("Supabase'in hatasına göre ne yapılacağını söyler; yanlış şifre ile olmayan hesap aynı mesajı alır", async () => {
+    const { loginFailure } = await import("@/app/giris/validation");
+    expect(loginFailure({ code: "invalid_credentials", status: 400 })).toEqual({ error: "kimlik", field: "password" });
+    expect(loginFailure({ code: "email_not_confirmed", status: 400 })).toEqual({ error: "onaysiz", field: "email" });
+    expect(loginFailure({ code: "over_request_rate_limit", status: 429 })).toEqual({ error: "cok-deneme" });
+    expect(loginFailure({ status: 429 })).toEqual({ error: "cok-deneme" });
+    expect(loginFailure({ status: 503 })).toEqual({ error: "sunucu" });
+    expect(loginFailure({})).toEqual({ error: "kimlik", field: "password" });
+  });
+
   it("biçim hatası ilgili alanı adlandırır", async () => {
     expect(await actions.login(undefined, form({ email: "yok", password: "12345678" }))).toMatchObject({ error: "bicim-eposta", field: "email" });
     expect(await actions.signup(undefined, form({ name: "A", email: "a@ornek.com", password: "12345678" }))).toMatchObject({ error: "bicim-ad", field: "name" });

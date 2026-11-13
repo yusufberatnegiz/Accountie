@@ -41,3 +41,15 @@ export function checkAuthForm(isSignup: boolean, raw: { name?: unknown; email: u
 /** The link types the e-mail templates send to /giris/onay; anything else is refused before Supabase is asked. */
 const LINK_TYPES = ["recovery", "email", "signup", "magiclink"] as const;
 export const isLinkType = (t: unknown): t is (typeof LINK_TYPES)[number] => typeof t === "string" && (LINK_TYPES as readonly string[]).includes(t);
+
+/**
+ * What a refused sign-in tells the person, from Supabase's error code: an unconfirmed address and a busy limit each say what to
+ * do, a fault on Supabase's side says to retry; everything else (wrong e-mail or password) stays one message, so the form
+ * never tells whether an address has an account.
+ */
+export function loginFailure(error: { code?: string; status?: number }): Pick<NonNullable<AuthState>, "error" | "field"> {
+  if (error.code === "email_not_confirmed") return { error: "onaysiz", field: "email" };
+  if (error.status === 429 || error.code === "over_request_rate_limit") return { error: "cok-deneme" };
+  if ((error.status ?? 0) >= 500) return { error: "sunucu" };
+  return { error: "kimlik", field: "password" };
+}

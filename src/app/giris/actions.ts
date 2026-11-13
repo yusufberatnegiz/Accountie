@@ -9,7 +9,7 @@ import { deleteAccount, revokeExtensionTokens } from "@/db/queries";
 import { AFTER_LOGIN, safeNextPath } from "@/lib/auth/next-path";
 import { allow, clientIp } from "@/lib/rate-limit";
 import { verifyTurnstile } from "@/lib/turnstile";
-import { invalid, isLinkType, loginSchema, signupSchema, TERMS_VERSION, typedBack, type AuthField, type AuthState } from "./validation";
+import { invalid, isLinkType, loginFailure, loginSchema, signupSchema, TERMS_VERSION, typedBack, type AuthField, type AuthState } from "./validation";
 
 export type { AuthField, AuthState };
 
@@ -31,7 +31,7 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
   // Always on: the IP limit alone is bypassed by rotating addresses. Sized in LIMITS so one IP cannot fill it.
   if (!(await allow("loginEmail", input.data.email))) return { error: "cok-deneme", ...typed };
   const { error } = await (await getAuth()).signInWithPassword(input.data);
-  if (error) return { error: "kimlik", field: "password", ...typed };
+  if (error) return { ...loginFailure(error), ...typed };
   // A deep link (?sonra=) is honoured only when it is a plain same-site panel path (no open redirect).
   redirect(safeNextPath(formData.get("sonra")) ?? AFTER_LOGIN);
 }

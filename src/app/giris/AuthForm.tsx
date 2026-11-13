@@ -18,6 +18,7 @@ export const ERRORS: Record<string, string> = {
   "kayit-bicim": "Ad soyad, e-posta ve şifreyi kontrol edin.",
   kimlik: "E-posta veya şifre hatalı. Şifreyi göster düğmesiyle yazdığınızı kontrol edin ya da Şifremi unuttum bağlantısıyla yeni şifre alın.",
   "cok-deneme": "Çok fazla deneme yapıldı. 15 dakika sonra tekrar deneyin.",
+  onaysiz: "E-posta adresiniz henüz doğrulanmadı. Kayıttan sonra gelen e-postadaki bağlantıyı açın, sonra burada giriş yapın.",
   "kayit-cok": "Çok fazla hesap oluşturma denemesi. Bir saat sonra tekrar deneyin.",
   kayit: "Hesap oluşturulamadı. Bu e-postayla bir hesap olabilir; giriş yapmayı deneyin.",
   bot: "Güvenlik doğrulaması tamamlanamadı. Sayfayı yenileyip tekrar deneyin.",
