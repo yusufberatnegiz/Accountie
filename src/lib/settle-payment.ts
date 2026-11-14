@@ -1,5 +1,7 @@
 import "server-only";
-import { getPaymentStatus, markPaymentFailed, markPaymentPaid } from "@/db/queries";
+import { getPaymentStatus, markPaymentFailed, markPaymentPaid, paidPaymentForMail } from "@/db/queries";
+import { sendMail } from "./mail";
+import { paymentMail, type PaidForMail } from "./payment-mail";
 import { checkoutResult, type IyzicoConfig } from "./iyzico";
 
 /** What the buyer is told (CreditsView OUTCOME keys). */
@@ -21,7 +23,10 @@ export async function settlePayment(cfg: IyzicoConfig, p: { id: string; amountKu
     return null;
   });
   if (result?.state === "paid") {
-    if (await markPaymentPaid(p.id, result.providerPaymentId)) return "tamam";
+    if (await markPaymentPaid(p.id, result.providerPaymentId)) {
+      await confirmByMail(p.id);
+      return "tamam";
+    }
     // Settled by a parallel request a moment ago: tell what it became, never "added" when it was not.
     return (await getPaymentStatus(p.id)) === "paid" ? "tamam" : "hata";
   }
@@ -35,4 +40,19 @@ export async function settlePayment(cfg: IyzicoConfig, p: { id: string; amountKu
     return "hata";
   }
   return "bekliyor";
+}
+
+/**
+ * The order confirmation, sent once: only right after this request turned the checkout paid. A failed send is logged and
+ * never undoes the purchase (the Kontör page and the purchase history show it either way).
+ */
+async function confirmByMail(paymentId: string): Promise<void> {
+  try {
+    const row = await paidPaymentForMail(paymentId);
+    if (!row?.email || !row.paidAt) return;
+    const sent = await sendMail(paymentMail({ ...row, email: row.email, paidAt: row.paidAt, billing: (row.billing ?? {}) as PaidForMail["billing"] }));
+    if (!sent && process.env.RESEND_API_KEY) console.error("payment mail not sent", { paymentId });
+  } catch (err) {
+    console.error("payment mail failed", { error: err instanceof Error ? err.name : "unknown" });
+  }
 }

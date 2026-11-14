@@ -3,12 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/db/queries", () => ({
   hitRateLimit: vi.fn(async () => true), saveBillingProfile: vi.fn(), createPayment: vi.fn(async () => "pay-1"), setPaymentToken: vi.fn(),
   paymentByToken: vi.fn(), markPaymentPaid: vi.fn(async () => true), markPaymentFailed: vi.fn(async () => {}), getPaymentStatus: vi.fn(),
+  paidPaymentForMail: vi.fn(async () => ({ email: "alici@ornek.test", packageId: "k1000", credits: 1000, amountKurus: 300_000, paidAt: new Date(0), providerPaymentId: "998877", balance: 1000, billing: {} })),
 }));
 vi.mock("@/lib/auth/session", () => ({ getSessionUser: async () => ({ id: "user-1", email: "a@ornek.test", createdAt: new Date(0) }) }));
+vi.mock("@/lib/mail", async (orig) => ({ ...(await orig<typeof import("@/lib/mail")>()), sendMail: vi.fn(async () => true) }));
 vi.mock("@/lib/iyzico", async (orig) => ({ ...(await orig<typeof import("@/lib/iyzico")>()), initializeCheckout: vi.fn(), checkoutResult: vi.fn() }));
 
 const q = await import("@/db/queries");
 const iyzico = await import("@/lib/iyzico");
+const mail = await import("@/lib/mail");
 const { POST: start } = await import("./route");
 const { POST: callback } = await import("./callback/route");
 
@@ -79,6 +82,9 @@ describe("POST /api/payments/callback", () => {
     expect(await where(await callback(cb("tok-1")))).toBe("?odeme=tamam");
     expect(vi.mocked(iyzico.checkoutResult).mock.calls[0].slice(1)).toEqual(["tok-1", { paymentId: "pay-1", amountKurus: 300_000 }]);
     expect(q.markPaymentPaid).toHaveBeenCalledWith("pay-1", "998877");
+    // The order confirmation goes once, to the buyer, right after the credits are added.
+    expect(mail.sendMail).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(mail.sendMail).mock.calls[0][0]).toMatchObject({ to: "alici@ornek.test", subject: "Ödemeniz alındı: 1.000 kontör" });
   });
 
   it("zaten ödenmişse yeniden eklemez", async () => {
@@ -86,6 +92,7 @@ describe("POST /api/payments/callback", () => {
     expect(await where(await callback(cb("tok-1")))).toBe("?odeme=tamam");
     expect(iyzico.checkoutResult).not.toHaveBeenCalled();
     expect(q.markPaymentPaid).not.toHaveBeenCalled();
+    expect(mail.sendMail).not.toHaveBeenCalled();
   });
 
   it("kontör eklenmediyse 'eklendi' demez", async () => {

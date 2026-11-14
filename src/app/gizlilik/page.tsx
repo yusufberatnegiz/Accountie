@@ -50,6 +50,8 @@ const SECTIONS: LegalSection[] = [
     body: [
       "Giriş, kayıt ve şifre yenileme denemeleri sayılır. Sayım için IP adresi ve e-posta tek yönlü özetlenir; tabloda açık hâlleri bulunmaz. Bir günden eski sayımlar yeni denemelerle birlikte temizlenir.",
       "Formlarda Cloudflare Turnstile açıksa, bot denetimi için tarayıcınız Cloudflare ile bağlantı kurar.",
+      "Uygulamada bir hata olursa hatanın metni, sayfa adresi ve tarayıcı bilgisi Sentry'ye kaydedilir; IP adresi, çerezler ve yazdığınız bilgiler gönderilmez. Ekran kaydı alınmaz.",
+      "Hesap doğrulama, şifre yenileme ve ödeme onayı e-postaları Resend üzerinden gönderilir.",
     ],
   },
   {

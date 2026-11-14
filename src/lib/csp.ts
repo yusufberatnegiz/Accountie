@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { sentryOrigin } from "./sentry-options";
 import { THEME_INIT_SCRIPT } from "./theme";
 
 // Marks <html> before first paint so the homepage's entrance animations run only with script. A tab opened in the background
@@ -16,6 +17,8 @@ export const HEAD_SCRIPT = THEME_INIT_SCRIPT + ";" + FOLD_INIT + ";" + JS_FLAG;
 export const SW_REGISTER = `if("serviceWorker" in navigator)addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(){})})`;
 
 const dev = process.env.NODE_ENV === "development";
+// Browser errors go straight to Sentry's ingest host (src/lib/sentry-options.ts); nothing is added while Sentry is off.
+const SENTRY = sentryOrigin();
 
 // Turnstile (giris/kayit) is the only third party: its frame and siteverify calls are allowed only where it can load.
 const policy = (scriptSrc: string, turnstile: boolean) => [
@@ -26,7 +29,7 @@ const policy = (scriptSrc: string, turnstile: boolean) => [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:",
   "font-src 'self'",
-  `connect-src 'self'${turnstile ? " https://challenges.cloudflare.com" : ""}`,
+  `connect-src 'self'${turnstile ? " https://challenges.cloudflare.com" : ""}${SENTRY ? " " + SENTRY : ""}`,
   `frame-src ${turnstile ? "https://challenges.cloudflare.com" : "'none'"}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",

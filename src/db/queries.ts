@@ -505,3 +505,14 @@ export async function listPayments(userId: string, limit = 24) {
   return getDb().select({ id: payments.id, packageId: payments.packageId, credits: payments.credits, amountKurus: payments.amountKurus, paidAt: payments.paidAt })
     .from(payments).where(and(eq(payments.userId, userId), eq(payments.status, "paid"))).orderBy(desc(payments.paidAt)).limit(limit);
 }
+
+/** What the order confirmation e-mail says about a paid checkout: the buyer's sign-in address, the purchase and the new balance. */
+export async function paidPaymentForMail(id: string) {
+  const [row] = await getDb().select({
+    email: sql<string | null>`(select u.email from auth.users u where u.id::text = ${payments.userId})`,
+    packageId: payments.packageId, credits: payments.credits, amountKurus: payments.amountKurus, paidAt: payments.paidAt,
+    providerPaymentId: payments.providerPaymentId, billing: payments.billing,
+    balance: sql<number>`coalesce((select b.balance from credit_balances b where b.user_id = ${payments.userId}), 0)::int`,
+  }).from(payments).where(and(eq(payments.id, id), eq(payments.status, "paid")));
+  return row ?? null;
+}
