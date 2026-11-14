@@ -11,7 +11,7 @@ import { ThemeSwitch } from "@/components/ThemeSwitch";
  * A native <dialog>: Escape, focus trap and return of focus come from the platform.
  */
 /** `here`: a page reached only through this sheet on the phone (Kontör), so the bottom bar still shows where one is. */
-export function AccountMenu({ email, here }: { email?: string; here?: boolean }) {
+export function AccountMenu({ email, here, setup }: { email?: string; here?: boolean; setup?: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null);
   return (
     <>
@@ -32,6 +32,7 @@ export function AccountMenu({ email, here }: { email?: string; here?: boolean })
             <span>Tema</span>
             <ThemeSwitch labelled />
           </div>
+          {setup ? <Link className="btn btn-primary account-credits" href="/panel/kurulum">Kurulumu tamamlayın</Link> : null}
           <Link className="btn account-credits" href="/panel/kontor">Kontör</Link>
           <form action={logout}>
             <button className="btn account-logout" type="submit">Çıkış yap</button>

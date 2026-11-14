@@ -7,13 +7,15 @@ import { FirmShortcut } from "@/components/FirmShortcut";
 import { FoldButton } from "@/components/FoldButton";
 import "./panel/panel.css";
 
-type Current = "fisler" | "fis" | "kurallar" | "firmalar" | "kontor" | "hesap";
+type Current = "fisler" | "fis" | "kurallar" | "firmalar" | "kontor" | "kurulum" | "hesap";
 
 // Drawn icons, 16px outline at 1.5px (docs/design/YON.md 5.2).
 const ICONS = {
   receipt: <path d="M4 1.75h8v12.5l-1.33-1-1.34 1-1.33-1-1.33 1-1.34-1-1.33 1zM6.25 5.25h3.5M6.25 8h2.5" />,
   table: <><rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1" /><path d="M1.75 6.25h12.5M6 6.25v7" /></>,
   building: <path d="M2.75 14.25V2.75h7v11.5M9.75 6.25h3.5v8M1.5 14.25h13M5 5.25h2M5 8h2M5 10.75h2" />,
+  // A list with two items ticked: the setup's steps.
+  steps: <path d="M2.25 4.25l1.25 1.25 2.25-2.25M2.25 9.25l1.25 1.25 2.25-2.25M8.25 4.25h5.5M8.25 9.25h5.5M2.75 13.25h.01M8.25 13.25h5.5" />,
   // A stack of tokens: kontör, not money in any one currency.
   coin: <><ellipse cx="8" cy="4.5" rx="5.25" ry="2" /><path d="M2.75 4.5v3.5c0 1.1 2.35 2 5.25 2s5.25-.9 5.25-2V4.5M2.75 8v3.5c0 1.1 2.35 2 5.25 2s5.25-.9 5.25-2V8" /></>,
 };
@@ -24,7 +26,9 @@ const Icon = ({ name }: { name: keyof typeof ICONS }) => <svg className="rail-ic
  * (Fişler, Fiş çek, Kurallar, Firmalar, Hesap). Theme and Çıkış live in the Hesap sheet.
  * `base` lets the dev preview (/onizleme/panel) keep its links inside the preview.
  */
-export function AppShell({ current, base = "/panel", email, firmId, children }: { current: Current; base?: string; email?: string; firmId?: string | null; children: ReactNode }) {
+/** `setup`: the first-run setup is not done yet (no firm from Luca), so its item shows until it is. */
+export function AppShell({ current, base = "/panel", email, firmId, setup = false, children }: { current: Current; base?: string; email?: string; firmId?: string | null; setup?: boolean; children: ReactNode }) {
+  const showSetup = setup || current === "kurulum";
   const item = (href: string, label: string, icon: keyof typeof ICONS, active: boolean) => (
     <Link className="rail-item" href={href} aria-current={active ? "page" : undefined}>
       <Icon name={icon} /><span className="rail-label">{label}</span>
@@ -37,12 +41,13 @@ export function AppShell({ current, base = "/panel", email, firmId, children }: 
       <FirmShortcut base={base} />
       <nav className="rail" aria-label="Panel">
         <Link className="rail-mark" href={base} translate="no"><BrandMark /><span className="rail-brand" aria-hidden="true">Accountie</span><span className="visually-hidden">Accountie, fiş listesi</span></Link>
+        {showSetup ? <span className="rail-desktop">{item(`${base}/kurulum`, "Kurulum", "steps", current === "kurulum")}</span> : null}
         {item(base, "Fişler", "receipt", current === "fisler" || current === "fis")}
         <CaptureButton pickers={["camera"]} variant="rail" base={base} />
         {item(`${base}/kurallar`, "Kurallar", "table", current === "kurallar")}
         {item(`${base}/firmalar`, "Firmalar", "building", current === "firmalar")}
         <span className="rail-desktop">{item(`${base}/kontor`, "Kontör", "coin", current === "kontor")}</span>
-        <div className="rail-end"><FoldButton /><AccountMenu email={email} here={current === "kontor"} /></div>
+        <div className="rail-end"><FoldButton /><AccountMenu email={email} here={current === "kontor" || current === "kurulum"} setup={showSetup} /></div>
       </nav>
       {children}
     </div>

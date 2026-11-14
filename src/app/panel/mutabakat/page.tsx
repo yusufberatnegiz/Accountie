@@ -14,10 +14,10 @@ export default async function ReconcilePage({ searchParams }: { searchParams: Pr
   if (!user) redirect("/giris");
   const { ay } = await searchParams;
   const now = new Date();
-  const { firm } = await activeFirm(user.id);
+  const { firm, firms } = await activeFirm(user.id);
   const month = isMonth(ay) ? ay : currentMonth(now);
   return (
-    <AppShell current="fisler" email={user.email} firmId={firm.id}>
+    <AppShell current="fisler" email={user.email} firmId={firm.id} setup={!firms.some((f) => f.fromLuca)}>
       <ReconcileView firmName={firm.name} month={month} months={recentMonths(now)} />
     </AppShell>
   );

@@ -33,14 +33,14 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
       waiting = settled ? recent.filter((p) => settled[open.indexOf(p)] === "inceleme" || settled[open.indexOf(p)] === "bekliyor").length : recent.length;
     }
   }
-  const [{ firm }, balance, billing, usage, history, paid] = await Promise.all([
+  const [{ firm, firms }, balance, billing, usage, history, paid] = await Promise.all([
     activeFirm(user.id), getBalance(user.id), getBillingProfile(user.id), creditUseByFirm(user.id), listPayments(user.id), recentPaid(user.id, PAID_RECENTLY_MS),
   ]);
   const ranOut = bitti !== undefined && /^\d{1,4}$/.test(bitti) ? Number(bitti) : undefined;
   // "Added" only for a purchase really paid moments ago, whatever the address says; otherwise a waiting result keeps its own word.
   const outcome = paid && (odeme === "tamam" || odeme === "bekliyor" || odeme === "inceleme") ? "tamam" : odeme === "tamam" ? undefined : odeme;
   return (
-    <AppShell current="kontor" email={user.email} firmId={firm.id}>
+    <AppShell current="kontor" email={user.email} firmId={firm.id} setup={!firms.some((f) => f.fromLuca)}>
       <CreditsView balance={balance} open={cfg !== null} required={creditsRequired()} billing={billing} usage={usage} history={history} outcome={outcome} added={paid?.credits} ranOut={ranOut} waiting={waiting} initialPackage={packageById(paket)?.id} />
     </AppShell>
   );

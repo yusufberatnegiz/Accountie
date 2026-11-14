@@ -18,7 +18,7 @@ export default async function FirmsPage({ searchParams }: { searchParams: Promis
   const month = isMonth(ay) ? ay : currentMonth(now);
   const [{ firms, firm }, counts] = await Promise.all([activeFirm(user.id), monthCounts(user.id, month)]);
   return (
-    <AppShell current="firmalar" email={user.email} firmId={firm.id}>
+    <AppShell current="firmalar" email={user.email} firmId={firm.id} setup={!firms.some((f) => f.fromLuca)}>
       <FirmsView firms={firms} activeId={firm.id} month={month} months={recentMonths(now)} counts={Object.fromEntries(counts)} />
     </AppShell>
   );

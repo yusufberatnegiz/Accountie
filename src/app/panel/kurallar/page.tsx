@@ -13,10 +13,10 @@ export default async function RulesPage() {
   const user = await getSessionUser();
   if (!user) redirect("/giris");
   const userId = user.id;
-  const { firm } = await activeFirm(userId);
+  const { firm, firms } = await activeFirm(userId);
   const [{ rows }, vendorRules, plan] = await Promise.all([getRules(userId, firm.id), listVendorRules(userId, firm.id), listFirmAccounts(userId, firm.id)]);
   return (
-    <AppShell current="kurallar" email={user.email} firmId={firm.id}>
+    <AppShell current="kurallar" email={user.email} firmId={firm.id} setup={!firms.some((f) => f.fromLuca)}>
       <RulesView key={firm.id} rows={rows} vendorRules={vendorRules} firmName={firm.name} plan={plan} />
     </AppShell>
   );

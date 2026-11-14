@@ -866,3 +866,7 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
   .pay-billing { grid-template-columns: minmax(0, 1fr); }
   .kontor-packs, .kontor-pay, .kontor-usage, .kontor-history { padding: var(--s4); }
 }
+
+/* The list's reminder while the first-run setup is pending (SetupWizard). */
+.setup-banner { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3) var(--s5); padding: var(--s4) var(--s5); border-color: var(--accent); background: var(--accent-soft); }
+.setup-banner p { margin: 0; color: var(--ink); }

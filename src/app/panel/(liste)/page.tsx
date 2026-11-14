@@ -18,12 +18,12 @@ export default async function PanelPage({ searchParams }: { searchParams: Promis
   const month = isMonth(ay) ? ay : "";
   const tab = TABS.find((t) => t.slug === durum) ?? TABS[0];
   // One query for every tab: the tab counts and the Luca file meter need all statuses, the table shows the current tab.
-  const { firm } = await activeFirm(userId);
+  const { firm, firms } = await activeFirm(userId);
   const receipts = await listReceipts(userId, firm.id, { month: month || undefined });
 
   return (
-    <AppShell current="fisler" email={user.email} firmId={firm.id}>
-      <ReceiptListView receipts={receipts} tab={tab} firm={firm} month={month} months={recentMonths(new Date())} />
+    <AppShell current="fisler" email={user.email} firmId={firm.id} setup={!firms.some((f) => f.fromLuca)}>
+      <ReceiptListView receipts={receipts} tab={tab} firm={firm} month={month} months={recentMonths(new Date())} setup={!firms.some((f) => f.fromLuca)} />
     </AppShell>
   );
 }

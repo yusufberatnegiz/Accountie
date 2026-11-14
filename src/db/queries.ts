@@ -48,8 +48,9 @@ const summaryColumns = {
 const lineRows = (userId: string, receiptId: string, lines: readonly JournalLine[]) =>
   lines.map((l, i) => ({ ...l, userId, receiptId, lineNo: i + 1 }));
 
-export type Firm = { id: string; name: string; taxNumber: string | null };
-const firmColumns = { id: firms.id, name: firms.name, taxNumber: firms.taxNumber };
+// fromLuca: brought in by the extension from Luca (it has Luca's own id); the setup is done once one firm is.
+export type Firm = { id: string; name: string; taxNumber: string | null; fromLuca?: boolean };
+const firmColumns = { id: firms.id, name: firms.name, taxNumber: firms.taxNumber, fromLuca: sql<boolean>`(${firms.lucaSirketId} is not null)` };
 
 /**
  * The user's firms by name. A user with none gets a first one, and receipts saved before firms existed move into it, so no
@@ -515,4 +516,14 @@ export async function paidPaymentForMail(id: string) {
     balance: sql<number>`coalesce((select b.balance from credit_balances b where b.user_id = ${payments.userId}), 0)::int`,
   }).from(payments).where(and(eq(payments.id, id), eq(payments.status, "paid")));
   return row ?? null;
+}
+
+/** Where the first-run setup stands: an extension key exists (step 2) and how many firms came from Luca (step 3). */
+export async function setupStatus(userId: string): Promise<{ connected: boolean; lucaFirms: number }> {
+  const db = getDb();
+  const [[token], [luca]] = await Promise.all([
+    db.select({ n: count() }).from(extensionTokens).where(and(eq(extensionTokens.userId, userId), gt(extensionTokens.expiresAt, new Date()))),
+    db.select({ n: count() }).from(firms).where(and(eq(firms.userId, userId), sql`${firms.lucaSirketId} is not null`)),
+  ]);
+  return { connected: (token?.n ?? 0) > 0, lucaFirms: luca?.n ?? 0 };
 }

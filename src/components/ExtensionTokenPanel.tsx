@@ -1,23 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { EXTENSION_IDS, EXTENSION_STORE_URL } from "@/lib/extension-id";
-
-type Runtime = { sendMessage(id: string, message: unknown, callback: (response?: { ok?: boolean }) => void): void; lastError?: unknown };
-
-/** Chrome lets this site reach the extension only when it is installed and lists the site (externally_connectable). */
-const extensionRuntime = () => (globalThis as { chrome?: { runtime?: Partial<Runtime> } }).chrome?.runtime as Runtime | undefined;
-
-/** Offers the key to one extension id; true when that extension took it. A missing extension answers with lastError. */
-function offer(runtime: Runtime, id: string, token: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    try {
-      runtime.sendMessage(id, { type: "accountie-token", token }, (response) => resolve(!runtime.lastError && Boolean(response?.ok)));
-    } catch {
-      resolve(false);
-    }
-  });
-}
+import { offerToken } from "@/lib/extension-bridge";
+import { EXTENSION_STORE_URL } from "@/lib/extension-id";
 
 export function ExtensionTokenPanel() {
   const [token, setToken] = useState("");
@@ -41,10 +26,8 @@ export function ExtensionTokenPanel() {
       setBusy(false);
       return setMessage("İşlem yapılamadı. Tekrar deneyin.");
     }
-    const runtime = extensionRuntime();
-    // The store release first, then a copy loaded from the repo (EXTENSION_IDS): the first that answers takes the key.
-    let taken = false;
-    if (runtime?.sendMessage) for (const id of EXTENSION_IDS) if ((taken = await offer(runtime, id, made))) break;
+    // The store release first, then a copy loaded from the repo (src/lib/extension-bridge.ts): the first that answers takes the key.
+    const taken = await offerToken(made);
     setBusy(false);
     if (taken) return setMessage("Eklenti bağlandı. Eklentiyi açınca onaylı fişler gelir. Anahtar her kullanımda 30 gün uzar.");
     setToken(made);

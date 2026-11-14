@@ -26,7 +26,7 @@ type Row = Awaited<ReturnType<typeof listReceipts>>[number];
 const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : null);
 
 /** Receipt list screen; the page and the dev preview both render it. Rows hold every status, the table shows `tab`. */
-export function ReceiptListView({ receipts: all, tab, firm, month = "", months, base = "/panel" }: { receipts: Row[]; tab: (typeof TABS)[number]; firm?: { name: string }; month?: string; months?: string[]; base?: string }) {
+export function ReceiptListView({ receipts: all, tab, firm, month = "", months, base = "/panel", setup = false }: { receipts: Row[]; tab: (typeof TABS)[number]; firm?: { name: string }; month?: string; months?: string[]; base?: string; setup?: boolean }) {
   // The tabs keep the chosen month, and the month picker keeps the tab.
   const withMonth = (q: string) => { const p = new URLSearchParams(q); if (month) p.set("ay", month); const s = p.toString(); return s ? `${base}?${s}` : base; };
   const count = (s?: ReceiptStatus) => (s ? all.filter((r) => r.status === s).length : all.length);
@@ -55,6 +55,13 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
           {all.length || month ? <CaptureButton base={base} /> : null}
         </div>
       </div>
+
+      {setup ? (
+        <div className="panel setup-banner">
+          <p><b>Kurulumu tamamlayın.</b> Eklentiyi kurup Luca&apos;dan firmalarınızı çekin; üç adım, birkaç dakika.</p>
+          <Link className="btn btn-primary" href={`${base}/kurulum`}>Kuruluma başla</Link>
+        </div>
+      ) : null}
 
       {all.length ? (
         <dl className="tiles" aria-label={month ? `${monthLabel(month)} özeti` : "Özet"}>
