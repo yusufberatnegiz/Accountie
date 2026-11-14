@@ -197,7 +197,7 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
           {/* Luca and Chrome extensions live on the computer; the key is made there. */}
           <p className="muted small phone-only">Eklenti bilgisayardaki Chrome içindir. Anahtarı bilgisayarda bu sayfadan oluşturun.</p>
         </div>
-        <div className="setting-panel desktop-only"><ExtensionTokenPanel /></div>
+        <div id="eklenti" className="setting-panel desktop-only"><ExtensionTokenPanel /></div>
       </section>
 
       <section id="kural-gorunum" className="setting-row" aria-labelledby="grp-gorunum">

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { extensionInstalled, offerToken } from "./extension-bridge";
+import { extensionInstalled, importRunning, offerToken } from "./extension-bridge";
 import { DEV_EXTENSION_ID, STORE_EXTENSION_ID } from "./extension-id";
 
-type Reply = { ok?: boolean } | undefined;
+type Reply = { ok?: boolean; importing?: boolean } | undefined;
 /** A fake chrome.runtime: `answers` maps an extension id to its reply; an id missing from it behaves as not installed. */
 function fakeChrome(answers: Partial<Record<string, (message: { type: string }) => Reply>>) {
   const runtime: { lastError?: unknown; sendMessage: ReturnType<typeof vi.fn> } = { sendMessage: vi.fn() };
@@ -42,5 +42,12 @@ describe("eklenti köprüsü", () => {
     expect(rt.sendMessage).toHaveBeenCalledTimes(1);
     fakeChrome({ [STORE_EXTENSION_ID]: () => ({ ok: false }) });
     expect(await offerToken("acx_anahtar")).toBe(false);
+  });
+
+  it("okuma durumunu eklentiden alır; soruyu bilmeyen eski sürüm null döner", async () => {
+    fakeChrome({ [STORE_EXTENSION_ID]: (m) => (m.type === "accountie-import-status" ? { ok: true, importing: false } : { ok: false }) });
+    expect(await importRunning()).toBe(false);
+    fakeChrome({ [STORE_EXTENSION_ID]: () => ({ ok: false }) });
+    expect(await importRunning()).toBeNull();
   });
 });

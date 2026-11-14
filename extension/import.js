@@ -60,6 +60,9 @@ async function run() {
   if (!firms.length) return status(`${YEAR} dönemi açık firma bulunamadı.`, true);
 
   await chrome.scripting.executeScript({ target: luca.target, files: ["luca-import.js"] });
+  // The Kurulum page asks the background whether a run is going (background.js importStatus); a stale beat means it ended.
+  const beat = () => chrome.storage.local.set({ importingAt: Date.now() }).catch(() => {});
+  await beat();
   let done = 0;
   let failed = 0;
   let errorsInARow = 0;
@@ -68,6 +71,7 @@ async function run() {
     for (const [i, f] of firms.entries()) {
       if (stopped) break;
       status(`${i + 1}/${firms.length}: ${f.shortName} okunuyor.`);
+      await beat();
       try {
         const [{ result }] = await chrome.scripting.executeScript({
           target: luca.target, args: [f],
@@ -93,6 +97,7 @@ async function run() {
       await pause(250);
     }
   } finally {
+    await chrome.storage.local.remove("importingAt").catch(() => {});
     // Luca'nın kendi seçicisinin yaptığı gibi: çerçeveyi ilk firmaya götür ki oturum ve ekran aynı firmayı göstersin.
     const back = await chrome.scripting.executeScript({ target: luca.target, args: [original], func: (o) => { location.href = globalThis.AccountieLuca.switchUrl(o); return true; } }).catch(() => null);
     const tail = back ? `Luca ${original.shortName} firmasına döndürüldü.` : `Luca ilk firmaya döndürülemedi: Luca'da ${original.shortName} firmasını yeniden seçin.`;

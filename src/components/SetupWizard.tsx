@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BrandMark } from "@/components/BrandMark";
-import { extensionInstalled, offerToken } from "@/lib/extension-bridge";
+import { extensionInstalled, importRunning, offerToken } from "@/lib/extension-bridge";
 import { EXTENSION_STORE_URL } from "@/lib/extension-id";
 import "./panel/setup.css";
 
@@ -17,6 +17,8 @@ const STEPS = [
 ] as const;
 
 const POLL_MS = 4000;
+// About a minute and a half of nothing: say what usually stops it.
+const HINT_AFTER = 22;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Chrome extensions install only in desktop Chrome (and other desktop Chromium browsers); a phone or another browser is told.
@@ -51,6 +53,13 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
     heading.current?.focus();
   }, [step]);
   useEffect(() => () => clearTimeout(advance.current), []);
+  useEffect(() => {
+    if (initialStep !== 1 || demo) return;
+    let alive = true;
+    extensionInstalled().then((found) => { if (alive && found) setStep((s) => (s === 1 ? 2 : s)); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
 
   // Any move by hand cancels a pending automatic one (Geri during the short "done" pause).
   const go = (next: Step) => { clearTimeout(advance.current); setNote(null); setStep(next); };
@@ -78,7 +87,9 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
     if (demo) { await wait(800); ok = true; }
     else {
       const res = await fetch("/api/extension-tokens", { method: "POST" }).catch(() => null);
-      const token = res?.ok ? ((await res.json()) as { token?: string }).token : undefined;
+      if (res?.status === 401) { setBusy(false); setNote({ tone: "error", text: "Oturumunuz kapandı. Tekrar giriş yapıp bu sayfaya dönün." }); return; }
+      if (!res?.ok) { setBusy(false); setNote({ tone: "error", text: "Anahtar oluşturulamadı. Biraz sonra tekrar deneyin." }); return; }
+      const token = ((await res.json()) as { token?: string }).token;
       ok = token ? await offerToken(token) : false;
       // A key no extension took is withdrawn, so the account never looks connected when it is not.
       if (token && !ok) await fetch("/api/extension-tokens", { method: "DELETE" }).catch(() => null);
@@ -91,19 +102,28 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
   // Step 3 checks on its own while it is open and the tab is visible; a closed session stops it with a message.
   useEffect(() => {
     if (step !== 3) return;
-    let alive = true, tries = 0, timer: ReturnType<typeof setTimeout> | undefined;
+    let alive = true, tries = 0, last = 0, stable = 0, timer: ReturnType<typeof setTimeout> | undefined;
     const tick = async () => {
       if (document.visibilityState === "hidden") { timer = setTimeout(tick, POLL_MS); return; }
       tries++;
       let n = 0;
-      if (demo) n = tries >= 3 ? 12 : 0;
+      if (demo) n = tries >= 3 ? 12 : tries === 2 ? 5 : 0;
       else {
         const res = await fetch("/api/kurulum", { cache: "no-store" }).catch(() => null);
         if (res?.status === 401) { if (alive) setNote({ tone: "error", text: "Oturumunuz kapandı. Tekrar giriş yapıp bu sayfaya dönün." }); return; }
         n = res?.ok ? ((await res.json()) as { lucaFirms?: number }).lucaFirms ?? 0 : 0;
       }
       if (!alive) return;
-      if (n > 0) { setFirms(n); done(`${n} firma Luca'dan alındı.`, 4); return; }
+      stable = n > 0 && n === last ? stable + 1 : 0;
+      last = n;
+      if (n > 0) {
+        // The extension says when its import ends; a version that cannot (before 0.6.1) needs the count to hold for 20 s.
+        const running = demo ? tries < 4 : await importRunning();
+        if (!alive) return;
+        if (running === false || (running === null && stable >= 5)) { setFirms(n); done(`${n} firma Luca'dan alındı.`, 4); return; }
+        setNote({ tone: "wait", text: `${n} firma geldi, okuma sürüyor` });
+      }
+      else if (tries === HINT_AFTER) setNote({ tone: "wait", text: "Hâlâ bekleniyor. Luca sekmesinin açık olduğundan ve eklenti sekmesinde Başlat'a bastığınızdan emin olun; orada bir hata görünüyorsa oradaki talimatı izleyin" });
       timer = setTimeout(tick, POLL_MS);
     };
     timer = setTimeout(tick, demo ? 1500 : POLL_MS);
@@ -164,7 +184,7 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
               <ol className="setup-howto">
                 <li>Chrome Web Store sayfasını açın.</li>
                 <li><b>Chrome&apos;a ekle</b>&apos;ye basıp onaylayın.</li>
-                <li>Bu sayfayı yenileyip <b>Kontrol et</b>&apos;e basın.</li>
+                <li>Bu sayfayı yenileyin; eklenti bulununca 2. adım kendiliğinden açılır. Açılmazsa <b>Kontrol et</b>&apos;e basın.</li>
               </ol>
               {live ? null : (
                 <div className="setup-actions">
@@ -176,12 +196,13 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
             </>
           ) : step === 2 ? (
             <>
-              <p>Tek tıkla bağlanır: eklenti, onaylı fişlerinizi Accountie&apos;den alabilmek için bir anahtar alır. Anahtar yalnız bu bilgisayarın tarayıcısında durur. Luca şifrenizi istemez.</p>
+              <p>Tek tıkla bağlanır: eklenti, onaylı fişlerinizi Accountie&apos;den alabilmek için bir anahtar alır. Anahtar yalnız bu bilgisayarın tarayıcısında durur; başka bir bilgisayarda bağlarsanız buradaki bağlantı kapanır. Luca şifrenizi istemez.</p>
               <div className="setup-actions">
                 {live ? null : <button type="button" className="btn btn-primary" onClick={connect} aria-disabled={busy || undefined}>{busy ? <>Bağlanıyor<Dots /></> : "Eklentiye bağla"}</button>}
                 <button type="button" className="btn btn-quiet" onClick={() => go(1)}>Geri</button>
               </div>
               {noteLine}
+              {note?.tone === "error" ? <p className="setup-fallback">Otomatik olmuyorsa anahtarı elle de verebilirsiniz: <Link href={`${base}/kurallar#eklenti`}>Kurallar sayfasındaki Eklenti anahtarı</Link>.</p> : null}
             </>
           ) : step === 3 ? (
             <>
@@ -189,7 +210,7 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
               <ol className="setup-howto">
                 <li>Luca&apos;ya her zamanki gibi girin.</li>
                 <li>Chrome&apos;un sağ üstündeki yapboz simgesinden (Uzantılar) <b>Accountie Luca Doldurucu</b>&apos;yu açın.</li>
-                <li><b>Luca&apos;dan firmaları çek</b>&apos;e basın. Firmalar gelince bu sayfa kendiliğinden ilerler.</li>
+                <li><b>Luca&apos;dan firmaları çek</b>&apos;e, açılan sekmede <b>Başlat</b>&apos;a basın. Okuma bitene kadar Luca&apos;da çalışmayın; bitince bu sayfa kendiliğinden ilerler.</li>
               </ol>
               {noteLine}
               <div className="setup-actions">

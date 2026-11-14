@@ -4,11 +4,23 @@ import "../../../extension/background.js";
 import { DEV_EXTENSION_ID, EXTENSION_IDS, STORE_EXTENSION_ID } from "../extension-id";
 import { createHash } from "node:crypto";
 
-const { acceptToken } = (globalThis as unknown as { AccountieBackground: { acceptToken(m: unknown, s: unknown): string | null } }).AccountieBackground;
+const { acceptToken, importStatus } = (globalThis as unknown as { AccountieBackground: {
+  acceptToken(m: unknown, s: unknown): string | null;
+  importStatus(m: unknown, s: unknown, at: unknown, now: number): { ok: boolean; importing: boolean } | null;
+} }).AccountieBackground;
 const TOKEN = `acx_${"a".repeat(43)}`;
 const SITE = { origin: "https://accountie.app" };
 
 describe("eklentiye bağla (anahtarsız kurulum)", () => {
+  it("firma okumasının sürüp sürmediğini yalnız siteye söyler; eski nabız bitmiş sayılır", () => {
+    const Q = { type: "accountie-import-status" };
+    expect(importStatus(Q, SITE, 1000, 5000)).toEqual({ ok: true, importing: true });
+    expect(importStatus(Q, SITE, 1000, 1000 + 61_000)).toEqual({ ok: true, importing: false });
+    expect(importStatus(Q, SITE, undefined, 5000)).toEqual({ ok: true, importing: false });
+    expect(importStatus(Q, { origin: "https://kotu.example" }, 1000, 5000)).toBeNull();
+    expect(importStatus({ type: "baska" }, SITE, 1000, 5000)).toBeNull();
+  });
+
   it("yalnız Accountie sitesinden gelen, anahtar biçimindeki mesajı kabul eder", () => {
     expect(acceptToken({ type: "accountie-token", token: TOKEN }, SITE)).toBe(TOKEN);
     expect(acceptToken({ type: "accountie-token", token: TOKEN }, { origin: "https://kotu.example" })).toBeNull();
