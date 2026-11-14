@@ -47,7 +47,7 @@ export function AppShell({ current, base = "/panel", email, firmId, setup = fals
         {item(`${base}/kurallar`, "Kurallar", "table", current === "kurallar")}
         {item(`${base}/firmalar`, "Firmalar", "building", current === "firmalar")}
         <span className="rail-desktop">{item(`${base}/kontor`, "Kontör", "coin", current === "kontor")}</span>
-        <div className="rail-end"><FoldButton /><AccountMenu email={email} here={current === "kontor" || current === "kurulum"} setup={showSetup} /></div>
+        <div className="rail-end"><FoldButton /><AccountMenu email={email} here={current === "kontor" || current === "kurulum"} setup={showSetup && current !== "kurulum"} /></div>
       </nav>
       {children}
     </div>

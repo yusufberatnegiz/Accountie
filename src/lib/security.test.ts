@@ -218,7 +218,8 @@ describe("bot koruması", () => {
 });
 
 describe("yapılandırma", () => {
-  it("güvenlik başlıkları her yanıtta", async () => {
+  // Imports the whole next.config (with Sentry): slow when the full suite runs at once.
+  it("güvenlik başlıkları her yanıtta", { timeout: 20_000 }, async () => {
     const config = (await import("../../next.config")).default;
     const [cspRule, rule] = await config.headers!();
     const h = Object.fromEntries(rule.headers.map((x) => [x.key, x.value]));

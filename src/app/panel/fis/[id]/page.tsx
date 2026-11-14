@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getReceipt, getRules, getVendorRule, nextDraft } from "@/db/queries";
+import { getReceipt, getRules, getVendorRule, nextDraft, listFirms } from "@/db/queries";
 import { AppShell } from "@/components/AppShell";
 import { ReceiptView } from "@/components/ReceiptView";
 import { idSchema } from "@/lib/api-schemas";
@@ -26,7 +26,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const learned = vendor && receipt.status === "draft" && receipt.lines.some((l) => l.accountCode === vendor.accountCode && l.debitKurus > 0) ? vendor : null;
 
   return (
-    <AppShell current="fis" email={user.email} firmId={receipt.firmId}>
+    <AppShell current="fis" email={user.email} firmId={receipt.firmId} setup={!(await listFirms(user.id)).some((f) => f.fromLuca)}>
       <ReceiptView receipt={receipt} rules={rules} next={next} learned={learned} />
     </AppShell>
   );

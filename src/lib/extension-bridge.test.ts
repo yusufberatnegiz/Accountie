@@ -4,7 +4,7 @@ import { DEV_EXTENSION_ID, STORE_EXTENSION_ID } from "./extension-id";
 
 type Reply = { ok?: boolean } | undefined;
 /** A fake chrome.runtime: `answers` maps an extension id to its reply; an id missing from it behaves as not installed. */
-function fakeChrome(answers: Record<string, (message: { type: string }) => Reply>) {
+function fakeChrome(answers: Partial<Record<string, (message: { type: string }) => Reply>>) {
   const runtime: { lastError?: unknown; sendMessage: ReturnType<typeof vi.fn> } = { sendMessage: vi.fn() };
   runtime.sendMessage.mockImplementation((id: string, message: { type: string }, cb: (r?: Reply) => void) => {
     const answer = answers[id];

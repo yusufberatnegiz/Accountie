@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { BrandMark } from "@/components/BrandMark";
 import { extensionInstalled, offerToken } from "@/lib/extension-bridge";
 import { EXTENSION_STORE_URL } from "@/lib/extension-id";
 import "./panel/setup.css";
@@ -18,31 +19,46 @@ const STEPS = [
 const POLL_MS = 4000;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Chrome extensions install only in desktop Chrome (and other desktop Chromium browsers); a phone or another browser is told.
+const noop = () => () => {};
+const desktopChromium = () => /Chrome\//.test(navigator.userAgent) && !/Android|Mobile|iPhone|iPad/.test(navigator.userAgent);
+
 const Check = ({ className = "" }: { className?: string }) => (
   <svg className={`setup-check ${className}`.trim()} viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
 );
+const Dots = () => <span className="wait-dots" aria-hidden="true"><i /><i /><i /></span>;
 
 /**
  * First-run setup: install the extension, connect it to the account, bring the firms in from Luca. Each step is checked
  * before the next opens (the extension answers a ping; it takes the key; the server sees firms from Luca), and step 3
- * checks by itself every few seconds. `demo` (the dev preview) answers every check without an extension or a server.
+ * checks by itself every few seconds while the tab is visible. `demo` (the dev preview) answers every check by itself.
  */
 export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", demo = false }: { initialStep: Step; initialFirms?: number; base?: string; demo?: boolean }) {
   const [step, setStep] = useState<Step>(initialStep);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<Note>(null);
   const [firms, setFirms] = useState(initialFirms);
+  const [paused, setPaused] = useState(false);
+  const canInstall = useSyncExternalStore(noop, desktopChromium, () => true);
   const heading = useRef<HTMLHeadingElement>(null);
-  const first = useRef(true);
+  const shownStep = useRef(initialStep);
+  const advance = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // A new step is announced and focused, so a keyboard or screen-reader user lands on it (not on load).
+  // A new step is announced and focused (a keyboard or screen-reader user lands on it); the first render is left alone.
   useEffect(() => {
-    if (first.current) { first.current = false; return; }
+    if (shownStep.current === step) return;
+    shownStep.current = step;
     heading.current?.focus();
   }, [step]);
+  useEffect(() => () => clearTimeout(advance.current), []);
 
-  const go = (next: Step) => { setNote(null); setStep(next); };
-  const done = (text: string, next: Step) => { setNote({ tone: "ok", text }); setTimeout(() => go(next), 1100); };
+  // Any move by hand cancels a pending automatic one (Geri during the short "done" pause).
+  const go = (next: Step) => { clearTimeout(advance.current); setNote(null); setStep(next); };
+  const done = (text: string, next: Step) => {
+    setNote({ tone: "ok", text });
+    clearTimeout(advance.current);
+    advance.current = setTimeout(() => { setNote(null); setStep(next); }, 1100);
+  };
 
   async function checkInstalled() {
     if (busy) return;
@@ -51,7 +67,7 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
     const found = demo ? (await wait(700), true) : await extensionInstalled();
     setBusy(false);
     if (found) return done("Eklenti kurulu.", 2);
-    setNote({ tone: "error", text: "Eklenti bulunamadı. Chrome Web Store'da Chrome'a ekle'ye bastıktan sonra bu sayfayı yenileyip tekrar kontrol edin." });
+    setNote({ tone: "error", text: "Eklenti bulunamadı. Chrome'a ekledikten sonra bu sayfayı yenileyip tekrar Kontrol et'e basın." });
   }
 
   async function connect() {
@@ -64,35 +80,49 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
       const res = await fetch("/api/extension-tokens", { method: "POST" }).catch(() => null);
       const token = res?.ok ? ((await res.json()) as { token?: string }).token : undefined;
       ok = token ? await offerToken(token) : false;
+      // A key no extension took is withdrawn, so the account never looks connected when it is not.
+      if (token && !ok) await fetch("/api/extension-tokens", { method: "DELETE" }).catch(() => null);
     }
     setBusy(false);
     if (ok) return done("Eklenti hesabınıza bağlandı.", 3);
-    setNote({ tone: "error", text: "Eklentiye ulaşılamadı. Eklentinin kurulu olduğunu kontrol edin (1. adım), sonra tekrar bağlayın." });
+    setNote({ tone: "error", text: "Eklentiye ulaşılamadı. Eklentinin kurulu olduğunu kontrol edin (1. adım), bu sayfayı yenileyip tekrar bağlayın." });
   }
 
-  // Step 3 checks on its own while it is open: the firms arrive when the user presses the button in the extension.
+  // Step 3 checks on its own while it is open and the tab is visible; a closed session stops it with a message.
   useEffect(() => {
     if (step !== 3) return;
-    let alive = true, tries = 0;
+    let alive = true, tries = 0, timer: ReturnType<typeof setTimeout> | undefined;
     const tick = async () => {
+      if (document.visibilityState === "hidden") { timer = setTimeout(tick, POLL_MS); return; }
       tries++;
-      const n = demo ? (tries >= 3 ? 12 : 0) : await fetch("/api/kurulum", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null), () => null).then((s) => s?.lucaFirms ?? 0);
-      if (!alive) return;
-      if (n > 0) {
-        setFirms(n);
-        setNote({ tone: "ok", text: `${n} firma Luca'dan alındı.` });
-        timer = setTimeout(() => { setNote(null); setStep(4); }, 1100);
-        return;
+      let n = 0;
+      if (demo) n = tries >= 3 ? 12 : 0;
+      else {
+        const res = await fetch("/api/kurulum", { cache: "no-store" }).catch(() => null);
+        if (res?.status === 401) { if (alive) setNote({ tone: "error", text: "Oturumunuz kapandı. Tekrar giriş yapıp bu sayfaya dönün." }); return; }
+        n = res?.ok ? ((await res.json()) as { lucaFirms?: number }).lucaFirms ?? 0 : 0;
       }
+      if (!alive) return;
+      if (n > 0) { setFirms(n); done(`${n} firma Luca'dan alındı.`, 4); return; }
       timer = setTimeout(tick, POLL_MS);
     };
-    let timer = setTimeout(tick, demo ? 1500 : POLL_MS);
+    timer = setTimeout(tick, demo ? 1500 : POLL_MS);
     return () => { alive = false; clearTimeout(timer); };
   }, [step, demo]);
 
-  const progress = step === 4 ? 1 : (step - 1) / 3;
+  // The rail runs between the first and the last dot: it reaches the current step's dot.
+  const progress = step >= 3 ? 1 : (step - 1) / 2;
   // Step 3 waits for the extension; until a result arrives, the wait itself is what the page says.
   const shown: Note = note ?? (step === 3 ? { tone: "wait", text: "Firmalar bekleniyor" } : null);
+  const noteLine = (
+    <p className={shown ? `setup-note setup-note-${shown.tone}` : "setup-note"} aria-hidden="true">
+      {shown?.tone === "ok" ? <Check /> : null}{shown?.text}{shown?.tone === "wait" ? <Dots /> : null}
+    </p>
+  );
+  const onPhone = !canInstall && step < 4 ? (
+    <p className="setup-device">Bu adımlar bilgisayarda, Chrome tarayıcısında yapılır. Bilgisayarınızda accountie.app&apos;e girip Kurulum&apos;u açın.</p>
+  ) : null;
+  const live = !demo && !canInstall && step < 4;
 
   return (
     <main id="icerik" tabIndex={-1} className="canvas canvas-setup">
@@ -103,25 +133,30 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
         </div>
       </div>
 
-      <ol className="setup-steps" aria-label="Kurulum adımları">
+      <div className="setup-progress">
         <span className="setup-rail" aria-hidden="true"><span style={{ transform: `scaleX(${progress})` }} /></span>
-        {STEPS.map((s) => {
-          const state = step > s.n ? "done" : step === s.n ? "now" : "next";
-          return (
-            <li key={s.n} className="setup-step" data-state={state} aria-current={state === "now" ? "step" : undefined}>
-              <span className="setup-dot">{state === "done" ? <Check /> : s.n}</span>
-              <span className="setup-step-label">{s.short}<span className="visually-hidden">{state === "done" ? ", tamamlandı" : state === "now" ? ", şu anki adım" : ""}</span></span>
-            </li>
-          );
-        })}
-      </ol>
+        <ol className="setup-steps" aria-label="Kurulum adımları">
+          {STEPS.map((s) => {
+            const state = step > s.n ? "done" : step === s.n ? "now" : "next";
+            return (
+              <li key={s.n} className="setup-step" data-state={state} aria-current={state === "now" ? "step" : undefined}>
+                <span className="setup-dot">{state === "done" ? <Check /> : s.n}</span>
+                <span className="setup-step-label">{s.short}<span className="visually-hidden">{state === "done" ? ", tamamlandı" : state === "now" ? ", şu anki adım" : ""}</span></span>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      {/* Outside the card that remounts per step, so each result is announced (the visible line is its picture). */}
+      <p role="status" className="visually-hidden">{shown?.text ?? ""}</p>
 
       <section key={step} className="panel setup-card" aria-labelledby="setup-title">
         <div className="setup-copy">
-          {step < 4 ? <p className="setup-count">Adım {step} / 3</p> : null}
           <h2 id="setup-title" ref={heading} tabIndex={-1}>
             {step === 1 ? "Eklentiyi Chrome'a ekleyin" : step === 2 ? "Eklentiyi hesabınıza bağlayın" : step === 3 ? "Luca'dan firmalarınızı çekin" : "Kurulum tamam"}
           </h2>
+          {onPhone}
 
           {step === 1 ? (
             <>
@@ -129,30 +164,34 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
               <ol className="setup-howto">
                 <li>Chrome Web Store sayfasını açın.</li>
                 <li><b>Chrome&apos;a ekle</b>&apos;ye basıp onaylayın.</li>
-                <li>Bu sayfaya dönüp <b>Kontrol et</b>&apos;e basın.</li>
+                <li>Bu sayfayı yenileyip <b>Kontrol et</b>&apos;e basın.</li>
               </ol>
-              <div className="setup-actions">
-                <a className="btn" href={EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">Chrome Web Store&apos;da aç</a>
-                <button type="button" className="btn btn-primary" onClick={checkInstalled} aria-busy={busy || undefined}>Kontrol et</button>
-              </div>
+              {live ? null : (
+                <div className="setup-actions">
+                  <a className="btn" href={EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">Chrome Web Store&apos;da aç<span className="visually-hidden">, yeni sekmede açılır</span></a>
+                  <button type="button" className="btn btn-primary" onClick={checkInstalled} aria-disabled={busy || undefined}>{busy ? <>Kontrol ediliyor<Dots /></> : "Kontrol et"}</button>
+                </div>
+              )}
+              {noteLine}
             </>
           ) : step === 2 ? (
             <>
               <p>Tek tıkla bağlanır: eklenti, onaylı fişlerinizi Accountie&apos;den alabilmek için bir anahtar alır. Anahtar yalnız bu bilgisayarın tarayıcısında durur. Luca şifrenizi istemez.</p>
               <div className="setup-actions">
-                <button type="button" className="btn btn-primary" onClick={connect} aria-busy={busy || undefined}>Eklentiye bağla</button>
+                {live ? null : <button type="button" className="btn btn-primary" onClick={connect} aria-disabled={busy || undefined}>{busy ? <>Bağlanıyor<Dots /></> : "Eklentiye bağla"}</button>}
                 <button type="button" className="btn btn-quiet" onClick={() => go(1)}>Geri</button>
               </div>
+              {noteLine}
             </>
           ) : step === 3 ? (
             <>
               <p>Eklenti, Luca&apos;da açık olan firmalarınızın unvanını, vergi numarasını ve hesap planını Accountie&apos;ye alır. Hesap kodlarınız böylece her firmada kendi planından gelir.</p>
               <ol className="setup-howto">
                 <li>Luca&apos;ya her zamanki gibi girin.</li>
-                <li>Chrome&apos;un sağ üstündeki eklenti simgesinden <b>Accountie Luca Doldurucu</b>&apos;yu açın.</li>
-                <li><b>Luca&apos;dan firmaları çek</b>&apos;e basın.</li>
+                <li>Chrome&apos;un sağ üstündeki yapboz simgesinden (Uzantılar) <b>Accountie Luca Doldurucu</b>&apos;yu açın.</li>
+                <li><b>Luca&apos;dan firmaları çek</b>&apos;e basın. Firmalar gelince bu sayfa kendiliğinden ilerler.</li>
               </ol>
-              <p className="setup-hint">Firmalar gelince bu sayfa kendiliğinden ilerler.</p>
+              {noteLine}
               <div className="setup-actions">
                 <button type="button" className="btn btn-quiet" onClick={() => go(2)}>Geri</button>
               </div>
@@ -166,30 +205,31 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
               </div>
             </>
           )}
-
-          {/* Always mounted, so a screen reader hears each result. */}
-          <p role="status" className={shown ? `setup-note setup-note-${shown.tone}` : "setup-note"}>
-            {shown?.tone === "ok" ? <Check /> : null}
-            {shown?.text}
-            {shown?.tone === "wait" ? <span className="wait-dots" aria-hidden="true"><i /><i /><i /></span> : null}
-          </p>
         </div>
 
-        <Scene step={step} />
+        <div className="setup-scene-wrap">
+          <Scene step={step} paused={paused} />
+          {step < 4 ? (
+            <button type="button" className="btn btn-quiet btn-sm setup-pause" aria-pressed={paused} onClick={() => setPaused((p) => !p)}>
+              {paused ? "Oynat" : "Duraklat"}<span className="visually-hidden"> (canlandırma)</span>
+            </button>
+          ) : null}
+        </div>
       </section>
     </main>
   );
 }
 
-/** One looping picture per step (setup.css); still on reduced motion, and only decoration for assistive technology. */
-function Scene({ step }: { step: Step }) {
+/** One looping picture per step (setup.css), pausable; still on reduced motion, and only decoration for assistive technology. */
+function Scene({ step, paused }: { step: Step; paused: boolean }) {
+  const p = paused ? "true" : undefined;
   if (step === 1) {
     return (
-      <div className="setup-scene scene-store" aria-hidden="true">
+      <div className="setup-scene scene-store" data-paused={p} aria-hidden="true">
         <div className="sc-win">
           <div className="sc-bar"><i /><i /><i /><span className="sc-url">chromewebstore.google.com</span><span className="sc-puzzle" /></div>
           <div className="sc-body">
-            <div className="sc-app"><span className="sc-icon" /><span className="sc-lines"><b>Accountie Luca Doldurucu</b><small>accountie.app</small></span></div>
+            <div className="sc-app"><span className="sc-icon"><BrandMark /></span><span className="sc-lines"><b>Accountie Luca Doldurucu</b><small>accountie.app</small></span></div>
             <span className="sc-add">Chrome&apos;a ekle</span>
           </div>
         </div>
@@ -199,10 +239,9 @@ function Scene({ step }: { step: Step }) {
   }
   if (step === 2) {
     return (
-      <div className="setup-scene scene-link" aria-hidden="true">
+      <div className="setup-scene scene-link" data-paused={p} aria-hidden="true">
         <span className="sc-node sc-node-a">Accountie</span>
-        <span className="sc-path" />
-        <span className="sc-key"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="4" /><path d="M12 12h9M18 12v3M21 12v2" /></svg></span>
+        <span className="sc-path"><span className="sc-key"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="4" /><path d="M12 12h9M18 12v3M21 12v2" /></svg></span></span>
         <span className="sc-node sc-node-b">Eklenti<Check className="sc-ok" /></span>
       </div>
     );
@@ -210,7 +249,7 @@ function Scene({ step }: { step: Step }) {
   if (step === 3) {
     const rows = ["ÖRNEK BALIK LOKANTASI", "ÖRNEK KIRTASİYE", "ÖRNEK İNŞAAT LTD.", "ÖRNEK PETROL"];
     return (
-      <div className="setup-scene scene-firms" aria-hidden="true">
+      <div className="setup-scene scene-firms" data-paused={p} aria-hidden="true">
         <div className="sc-list sc-from"><b>Luca</b>{rows.map((r) => <span key={r}>{r}</span>)}</div>
         <div className="sc-list sc-to"><b>Accountie</b>{rows.map((r, i) => <span key={r} style={{ animationDelay: `${0.5 + i * 0.45}s` }}>{r}</span>)}</div>
       </div>

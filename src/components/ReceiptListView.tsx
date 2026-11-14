@@ -4,6 +4,7 @@ import { BulkApproveButton } from "@/components/BulkApproveButton";
 import { CaptureButton } from "@/components/CaptureButton";
 import { ExportButton } from "@/components/ExportButton";
 import { InstallHint } from "@/components/InstallHint";
+import { SetupBanner } from "@/components/SetupBanner";
 import { ListTabs } from "@/components/ListTabs";
 import { RowPending } from "@/components/RowPending";
 import { MoveTransition } from "@/components/MoveTransition";
@@ -56,12 +57,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
         </div>
       </div>
 
-      {setup ? (
-        <div className="panel setup-banner">
-          <p><b>Kurulumu tamamlayın.</b> Eklentiyi kurup Luca&apos;dan firmalarınızı çekin; üç adım, birkaç dakika.</p>
-          <Link className="btn btn-primary" href={`${base}/kurulum`}>Kuruluma başla</Link>
-        </div>
-      ) : null}
+      {setup ? <SetupBanner href={`${base}/kurulum`} /> : null}
 
       {all.length ? (
         <dl className="tiles" aria-label={month ? `${monthLabel(month)} özeti` : "Özet"}>

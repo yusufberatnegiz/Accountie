@@ -1,17 +1,20 @@
 /* ---------- Kurulum (SetupWizard) ----------
    A stepper over one card: the step's words on the left, a looping picture of what to do on the right. Motion carries the
-   instruction (where to click, what moves where); everything is still and complete with reduced motion. */
+   instruction (where to click, what moves where), only through transform and opacity; it can be paused, and everything is
+   still and complete with reduced motion. */
 .canvas-setup { max-width: 1180px; }
 
-/* Stepper: three dots on a rail that fills as steps are done. */
-.setup-steps { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
-.setup-rail { position: absolute; left: calc(100% / 6); right: calc(100% / 6); top: 19px; height: 2px; background: var(--rule); }
+/* Stepper: three dots on a rail that fills up to the current dot. */
+.setup-progress { position: relative; }
+.setup-rail { position: absolute; left: calc(100% / 6); right: calc(100% / 6); top: 19px; height: 2px; background: var(--border); }
 .setup-rail > span { display: block; height: 100%; background: var(--positive); transform-origin: left center; transition: transform 600ms var(--ease-out); }
+.setup-steps { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
 .setup-step { position: relative; display: grid; justify-items: center; gap: var(--s2); text-align: center; }
 .setup-dot { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: var(--w-strong); background: var(--surface); border: 2px solid var(--border); color: var(--muted);
   transition: background-color 300ms ease, border-color 300ms ease, color 300ms ease, transform 300ms var(--ease-out); }
 .setup-step[data-state="now"] .setup-dot { border-color: var(--ink); color: var(--ink); transform: scale(1.08); box-shadow: 0 0 0 6px var(--accent-soft); }
-.setup-step[data-state="done"] .setup-dot { background: var(--positive); border-color: var(--positive); color: #fff; }
+/* The tick in the ground colour: cream on the light theme's deep green, near-black on the dark theme's light green. */
+.setup-step[data-state="done"] .setup-dot { background: var(--positive); border-color: var(--positive); color: var(--ground); }
 .setup-step-label { font-size: var(--fs-body); color: var(--muted); }
 .setup-step[data-state="now"] .setup-step-label { color: var(--ink); font-weight: var(--w-medium); }
 
@@ -25,14 +28,12 @@
 .setup-copy { display: grid; gap: var(--s3); align-content: start; }
 .setup-copy p { margin: 0; color: var(--muted); font-size: var(--fs-body); line-height: 1.55; max-width: 52ch; }
 .setup-copy p b { color: var(--ink); }
-.setup-count { font-size: var(--fs-small) !important; font-weight: var(--w-medium); color: var(--accent) !important; letter-spacing: 0.02em; }
 .setup-copy h2 { margin: 0; font-family: var(--font-head); font-weight: 300; font-size: 2rem; line-height: 1.1; letter-spacing: -0.02em; }
 .setup-copy h2:focus { outline: none; }
 .setup-howto { margin: 0; padding-left: var(--s5); display: grid; gap: var(--s2); font-size: var(--fs-body); }
-.setup-howto li::marker { color: var(--accent); font-weight: var(--w-strong); }
-.setup-hint { font-size: var(--fs-small) !important; }
+.setup-howto li::marker { font-weight: var(--w-strong); }
 .setup-actions { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
-.setup-actions .btn[aria-busy="true"] { pointer-events: none; opacity: 0.85; }
+.setup-device { padding: var(--s3) var(--s4); border-radius: var(--radius-control); background: var(--raised); border: 1px solid var(--warn-edge); color: var(--ink) !important; }
 .setup-note { display: flex; align-items: center; gap: var(--s2); min-height: 28px; font-size: var(--fs-body); font-weight: var(--w-medium); }
 .setup-note:empty { visibility: hidden; }
 .setup-note-ok { color: var(--positive) !important; }
@@ -40,87 +41,92 @@
 .setup-note-wait { color: var(--muted); }
 .setup-note .setup-check { width: 20px; height: 20px; }
 
-/* Pictures: one stage per step, drawn in the panel's own tokens. */
-.setup-scene { position: relative; height: 300px; border-radius: var(--radius-card); background: var(--stage); overflow: hidden; display: grid; place-items: center; }
+/* Pictures: one stage per step, drawn in the panel's own tokens; a quiet pause button in the corner. */
+.setup-scene-wrap { position: relative; }
+.setup-pause { position: absolute; right: var(--s2); bottom: var(--s2); }
+.setup-scene { position: relative; height: 300px; border-radius: var(--radius-card); background: var(--stage); overflow: hidden; display: grid; place-items: center; container-type: size; }
+.setup-scene[data-paused] *, .setup-scene[data-paused] *::after { animation-play-state: paused !important; }
 
 /* 1. Store: the cursor goes to "Chrome'a ekle", presses, the puzzle lights in the toolbar. */
 .sc-win { width: 82%; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 20px 40px rgba(36, 30, 24, 0.10); overflow: hidden; }
 .sc-bar { display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: var(--raised); border-bottom: 1px solid var(--rule); }
-.sc-bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--border); }
-.sc-url { margin-left: 8px; flex: 1; font-size: 12px; color: var(--muted); background: var(--surface); border-radius: 999px; padding: 3px 10px; }
-.sc-puzzle { width: 18px; height: 18px; border-radius: 5px; background: var(--border); animation: sc-puzzle 4s ease-in-out infinite; }
-@keyframes sc-puzzle { 0%, 55% { background: var(--border); transform: scale(1); } 62% { background: var(--accent); transform: scale(1.3); } 70%, 100% { background: var(--accent); transform: scale(1); } }
+.sc-bar i { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--border); }
+.sc-url { margin-left: 8px; flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; color: var(--muted); background: var(--surface); border-radius: 999px; padding: 3px 10px; }
+.sc-puzzle { flex: none; width: 18px; height: 18px; border-radius: 5px; background: var(--accent); opacity: 0.25; animation: sc-puzzle 4s ease-in-out infinite; }
+@keyframes sc-puzzle { 0%, 55% { opacity: 0.25; transform: scale(1); } 62% { opacity: 1; transform: scale(1.3); } 70%, 100% { opacity: 1; transform: scale(1); } }
 .sc-body { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 18px; }
 .sc-app { flex: 1 1 auto; display: flex; align-items: center; gap: 12px; min-width: 0; overflow: hidden; }
-.sc-icon { flex: none; width: 42px; height: 42px; border-radius: 10px; background: var(--ink); }
+.sc-icon { flex: none; width: 42px; height: 42px; border-radius: 10px; background: var(--raised); border: 1px solid var(--rule); display: grid; place-items: center; }
+.sc-icon .mark { width: 30px; height: 30px; }
 .sc-lines { display: grid; gap: 2px; min-width: 0; }
 .sc-lines b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-lines small { font-size: 12px; color: var(--muted); }
+/* Chrome Web Store's own blue on its own button: the thing the user will look for on the real page. */
 .sc-add { flex: none; font-size: 13px; font-weight: 600; color: #fff; background: #1a73e8; border-radius: 999px; padding: 8px 14px; animation: sc-press 4s ease-in-out infinite; }
 @keyframes sc-press { 0%, 44% { transform: scale(1); } 48% { transform: scale(0.92); } 54%, 100% { transform: scale(1); } }
-.sc-cursor { position: absolute; left: 14%; top: 84%; width: 20px; height: 24px; background: var(--ink); clip-path: polygon(0 0, 0 78%, 26% 60%, 44% 100%, 58% 94%, 40% 56%, 76% 56%); animation: sc-cursor 4s ease-in-out infinite; }
-@keyframes sc-cursor { 0% { left: 14%; top: 84%; opacity: 0; } 8% { opacity: 1; } 40%, 52% { left: 80%; top: 58%; } 80% { opacity: 1; } 92%, 100% { left: 14%; top: 84%; opacity: 0; } }
+.sc-cursor { position: absolute; left: 0; top: 0; width: 20px; height: 24px; background: var(--ink); clip-path: polygon(0 0, 0 78%, 26% 60%, 44% 100%, 58% 94%, 40% 56%, 76% 56%); animation: sc-cursor 4s ease-in-out infinite; }
+@keyframes sc-cursor { 0% { transform: translate(14cqw, 84cqh); opacity: 0; } 8% { opacity: 1; } 40%, 52% { transform: translate(76cqw, 60cqh); } 80% { opacity: 1; } 92%, 100% { transform: translate(14cqw, 84cqh); opacity: 0; } }
 
 /* 2. Link: a key travels along the dashed path from Accountie to the extension, which turns green. */
-.scene-link { grid-template-columns: auto 1fr auto; gap: 0; padding: 0 28px; }
-.sc-node { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 8px; padding: 14px 18px; border-radius: 999px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); white-space: nowrap; }
+.scene-link { grid-template-columns: auto minmax(40px, 1fr) auto; justify-items: stretch; padding: 0 28px; }
+.sc-node { position: relative; z-index: 1; justify-self: center; display: inline-flex; align-items: center; gap: 8px; padding: 14px 18px; border-radius: 999px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); white-space: nowrap; }
 .sc-node-a { background: var(--ink); color: var(--ground); border-color: var(--ink); }
-.sc-node-b { animation: sc-node 3.6s ease-in-out infinite; }
-@keyframes sc-node { 0%, 62% { border-color: var(--border); box-shadow: none; } 70%, 92% { border-color: var(--positive); box-shadow: 0 0 0 5px var(--positive-soft); } 100% { border-color: var(--border); box-shadow: none; } }
+.sc-node-b::after { content: ""; position: absolute; inset: -6px; border-radius: 999px; box-shadow: 0 0 0 2px var(--positive); opacity: 0; animation: sc-ring 3.6s ease-in-out infinite; }
+@keyframes sc-ring { 0%, 62% { opacity: 0; } 70%, 92% { opacity: 1; } 100% { opacity: 0; } }
 .sc-ok { width: 18px; height: 18px; color: var(--positive); opacity: 0; animation: sc-ok 3.6s ease-in-out infinite; }
 .sc-ok path { animation: none; }
 @keyframes sc-ok { 0%, 64% { opacity: 0; transform: scale(0.5); } 72%, 92% { opacity: 1; transform: scale(1); } 100% { opacity: 0; } }
-.sc-path { height: 0; border-top: 2px dashed var(--border); margin: 0 -2px; }
-.sc-key { position: absolute; left: 30%; top: 50%; width: 38px; height: 38px; margin-top: -19px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; box-shadow: 0 8px 18px rgba(143, 87, 24, 0.3);
+.sc-path { position: relative; height: 38px; margin: 0 -2px; container-type: inline-size; background: linear-gradient(to right, var(--control-edge) 50%, transparent 0) center / 10px 2px repeat-x; }
+.sc-key { position: absolute; left: 0; top: 0; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--ground);
   animation: sc-key 3.6s cubic-bezier(.6, 0, .3, 1) infinite; }
 .sc-key svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-@keyframes sc-key { 0%, 8% { left: 30%; transform: scale(0.6); opacity: 0; } 14% { left: 30%; opacity: 1; transform: scale(1); } 62% { left: 64%; transform: scale(1); opacity: 1; } 70%, 100% { left: 64%; transform: scale(0.4); opacity: 0; } }
+@keyframes sc-key { 0%, 8% { transform: translateX(0) scale(0.6); opacity: 0; } 14% { opacity: 1; transform: translateX(0) scale(1); } 62% { transform: translateX(calc(100cqw - 38px)) scale(1); opacity: 1; } 70%, 100% { transform: translateX(calc(100cqw - 38px)) scale(0.4); opacity: 0; } }
 
 /* 3. Firms: Luca's rows copy across into Accountie one after another, on a loop. */
 .scene-firms { grid-template-columns: 1fr 1fr; gap: 18px; padding: 0 22px; align-items: center; }
 .sc-list { display: grid; gap: 7px; padding: 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); min-width: 0; }
 .sc-list b { font-size: 13px; margin-bottom: 2px; }
-.sc-list span { font-size: 11.5px; padding: 7px 9px; border-radius: 8px; background: var(--raised); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sc-to span { animation: sc-row 4.4s var(--ease-out) infinite both; }
-@keyframes sc-row { 0% { opacity: 0; transform: translateX(-34px); } 12%, 82% { opacity: 1; transform: none; background: var(--positive-soft); } 100% { opacity: 0; } }
-.sc-from span { animation: sc-src 4.4s ease-in-out infinite; }
-.sc-from span:nth-of-type(2) { animation-delay: 0.45s; } .sc-from span:nth-of-type(3) { animation-delay: 0.9s; } .sc-from span:nth-of-type(4) { animation-delay: 1.35s; }
-.sc-from span:nth-of-type(1) { animation-delay: 0s; }
-@keyframes sc-src { 0%, 6% { box-shadow: none; } 10% { box-shadow: inset 0 0 0 2px var(--accent); } 18%, 100% { box-shadow: none; } }
-.sc-to span:nth-of-type(1) { animation-delay: 0.5s; }
+.sc-list span { position: relative; font-size: 11.5px; padding: 7px 9px; border-radius: 8px; background: var(--stage); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-to span { background: var(--positive-soft); animation: sc-row 4.4s var(--ease-out) infinite both; }
+@keyframes sc-row { 0% { opacity: 0; transform: translateX(-34px); } 12%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.sc-from span::after { content: ""; position: absolute; inset: 0; border-radius: 8px; box-shadow: inset 0 0 0 2px var(--accent); opacity: 0; animation: sc-src 4.4s ease-in-out infinite; }
+.sc-from span:nth-of-type(2)::after { animation-delay: 0.45s; }
+.sc-from span:nth-of-type(3)::after { animation-delay: 0.9s; }
+.sc-from span:nth-of-type(4)::after { animation-delay: 1.35s; }
+@keyframes sc-src { 0%, 6% { opacity: 0; } 10% { opacity: 1; } 18%, 100% { opacity: 0; } }
 
-/* 4. Done: a big check drawn in, a soft ring around it. */
-.sc-big { width: 120px; height: 120px; border-radius: 50%; display: grid; place-items: center; background: var(--positive); color: #fff; animation: sc-pop 600ms var(--ease-out) both; }
+/* 4. Done: a big check drawn in, a soft ring around it three times. */
+.sc-big { width: 120px; height: 120px; border-radius: 50%; display: grid; place-items: center; background: var(--positive); color: var(--ground); animation: sc-pop 600ms var(--ease-out) both; }
 .sc-big .setup-check { width: 60px; height: 60px; stroke-width: 3.2; }
 .sc-big .setup-check path { animation-delay: 250ms; animation-duration: 500ms; }
 @keyframes sc-pop { from { transform: scale(0.4); opacity: 0; } 70% { transform: scale(1.06); } }
-.sc-burst { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 2px solid var(--positive); animation: sc-burst 2.4s var(--ease-out) 500ms infinite; }
+.sc-burst { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 2px solid var(--positive); opacity: 0; animation: sc-burst 2.4s var(--ease-out) 500ms 3; }
 @keyframes sc-burst { from { transform: scale(1); opacity: 0.6; } to { transform: scale(2.4); opacity: 0; } }
 
 @media (max-width: 900px) {
   .setup-card { grid-template-columns: minmax(0, 1fr); padding: var(--s5); }
-  .setup-scene { height: 240px; order: -1; }
+  .setup-scene-wrap { order: -1; }
+  .setup-scene { height: 240px; }
 }
 @media (max-width: 560px) {
   .setup-step-label { font-size: var(--fs-small); }
   .setup-copy h2 { font-size: 1.6rem; }
-  .setup-scene { height: 200px; }
   .sc-win { width: 92%; }
   .sc-body { padding: 16px 12px; gap: 8px; }
-  .sc-icon { width: 32px; height: 32px; }
+  .sc-icon { width: 34px; height: 34px; }
+  .sc-icon .mark { width: 24px; height: 24px; }
   .sc-add { font-size: 12px; padding: 6px 10px; }
   .scene-link { padding: 0 14px; }
   .sc-node { padding: 10px 12px; font-size: 14px; }
   .scene-firms { gap: 10px; padding: 0 12px; }
+  /* Three rows fit the phone's stage; the fourth would be cut. */
+  .sc-list span:nth-of-type(4) { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .setup-card, .sc-big, .setup-check path { animation: none; }
-  .sc-puzzle, .sc-add, .sc-cursor, .sc-node-b, .sc-ok, .sc-key, .sc-to span, .sc-from span, .sc-burst { animation: none; }
-  .sc-cursor, .sc-key, .sc-burst { display: none; }
-  .sc-puzzle { background: var(--accent); }
-  .sc-ok { opacity: 1; }
-  .sc-node-b { border-color: var(--positive); }
-  .sc-to span { opacity: 1; background: var(--positive-soft); }
+  .setup-card, .sc-big, .setup-check path, .sc-puzzle, .sc-add, .sc-cursor, .sc-node-b::after, .sc-ok, .sc-key, .sc-to span, .sc-from span::after, .sc-burst { animation: none; }
+  .sc-cursor, .sc-key, .sc-burst, .setup-pause { display: none; }
+  .sc-puzzle, .sc-ok, .sc-node-b::after { opacity: 1; }
+  .sc-to span { opacity: 1; }
   .setup-rail > span { transition: none; }
 }
