@@ -107,6 +107,9 @@
   .setup-card { grid-template-columns: minmax(0, 1fr); padding: var(--s5); }
   .setup-scene-wrap { order: -1; }
   .setup-scene { height: 240px; }
+  .scene-firms { padding-bottom: 36px; }
+  /* Three rows fit the short stage above the pause button; the fourth would be cut. */
+  .sc-list span:nth-of-type(4) { display: none; }
 }
 @media (max-width: 560px) {
   .setup-step-label { font-size: var(--fs-small); }
@@ -119,8 +122,6 @@
   .scene-link { padding: 0 14px; }
   .sc-node { padding: 10px 12px; font-size: 14px; }
   .scene-firms { gap: 10px; padding: 0 12px 36px; }
-  /* Three rows fit the phone's stage; the fourth would be cut. */
-  .sc-list span:nth-of-type(4) { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -221,7 +221,7 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
             <>
               <p><b>{firms > 0 ? `${firms.toLocaleString("tr-TR")} firma` : "Firmalarınız"}</b> Luca&apos;dan Accountie&apos;ye geldi. Artık fişin fotoğrafını çekebilir, satırları kontrol edip eklentiyle Luca&apos;ya yazabilirsiniz.</p>
               <div className="setup-actions">
-                <Link className="btn btn-primary" href={base}>İlk fişi çekin</Link>
+                <Link className="btn btn-primary" href={base}>Fişlere geçin</Link>
                 <Link className="btn" href={`${base}/kurallar`}>Hesap kodlarını kontrol edin</Link>
               </div>
             </>
