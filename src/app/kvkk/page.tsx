@@ -52,7 +52,7 @@ const SECTIONS: LegalSection[] = [
       "Vercel (ABD): uygulamanın barındırılması.",
       "Cloudflare (ABD): formlarda bot denetimi, açıksa.",
       "Resend (ABD): hesap doğrulama, şifre yenileme ve ödeme onayı e-postalarının gönderimi (e-posta adresi ve e-postanın içeriği).",
-      "Sentry (ABD): uygulama hatalarının kaydı (hatanın metni, sayfa adresi, tarayıcı ve cihaz bilgisi). IP adresi, çerezler ve form içerikleri gönderilmez.",
+      "Sentry: uygulama hatalarının kaydı. Sunucular Almanya'da; şirket ABD'dedir. Kaydedilenler hatanın metni, sayfa adresi, tarayıcı ve cihaz bilgisidir. IP adresi, çerezler ve form içerikleri gönderilmez.",
       "Kontör ödemesi için ad, e-posta, cep telefonu, kimlik ya da vergi numarası, fatura adresi ve IP adresi iyzico Ödeme Hizmetleri A.Ş.'ye (Türkiye) aktarılır. Kart bilgilerini yalnız iyzico işler. iyzico, lisanslı bir ödeme kuruluşu olarak bu verileri kendi yasal yükümlülükleri için ayrıca veri sorumlusu sıfatıyla işler. Bu aktarımın hukuki sebebi sözleşmenin ifası ve hukuki yükümlülüktür (md. 8, 5/2-c ve 5/2-ç).",
       "Yurt dışına aktarım, KVKK md. 9 uyarınca Kurulun ilan ettiği standart sözleşmeye dayanır. Bunun dışında veriler, yalnız kanunen yetkili kurum ve kuruluşlara, talep hâlinde aktarılır.",
     ],
