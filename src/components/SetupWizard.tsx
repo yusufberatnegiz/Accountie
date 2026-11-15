@@ -182,7 +182,7 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
             <>
               <p>Accountie Luca Doldurucu, onayladığınız fişlerin satırlarını Luca&apos;nın Fiş Detayı ekranına yazar ve ekrandan geri okuyup karşılaştırır.</p>
               <ol className="setup-howto">
-                <li>Chrome Web Store sayfasını açın.</li>
+                <li><a href={EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">Chrome Web Store sayfasını<span className="visually-hidden">, yeni sekmede açılır,</span></a> açın.</li>
                 <li><b>Chrome&apos;a ekle</b>&apos;ye basıp onaylayın.</li>
                 <li>Bu sayfayı yenileyin; eklenti bulununca 2. adım kendiliğinden açılır. Açılmazsa <b>Kontrol et</b>&apos;e basın.</li>
               </ol>
