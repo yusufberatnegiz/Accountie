@@ -34,8 +34,8 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
   const receipts = tab.status ? all.filter((r) => r.status === tab.status) : all;
   const ready = all.filter((r) => r.status === "approved");
   const drafts = count("draft");
-  // Only drafts without a single warning; the rest still need a look on their own screen.
-  const clean = tab.status === "draft" || !tab.status ? receipts.filter((r) => r.status === "draft" && r.warnings.length === 0) : [];
+  // Only drafts the bulk approval will approve (no warning, lines that pass its check); the rest still need a look on their own screen.
+  const clean = tab.status === "draft" || !tab.status ? receipts.filter((r) => r.status === "draft" && r.ready) : [];
   const shownDrafts = receipts.filter((r) => r.status === "draft");
   // Under Tümü only approved and exported receipts count, so a draft never reads as a booked figure.
   const counted = tab.status ? receipts : receipts.filter((r) => r.status !== "draft");

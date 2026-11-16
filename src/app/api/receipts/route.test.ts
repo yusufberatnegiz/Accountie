@@ -223,6 +223,16 @@ describe("POST /api/receipts kontör", () => {
     expect(reserveCredit).not.toHaveBeenCalled();
   });
 
+  it("kontör açıkken okuma sınırı yok: dolu sınırlar da okumayı durdurmaz", async () => {
+    metered();
+    vi.mocked(hitRateLimit).mockResolvedValue(false);
+    vi.mocked(getBalance).mockResolvedValue(10);
+    vi.mocked(reserveCredit).mockResolvedValue({ id: "e-1" } as never);
+    vi.mocked(createReceipt).mockResolvedValue("r-1");
+    expect((await POST(jpeg())).status).toBe(201);
+    expect(hitRateLimit).not.toHaveBeenCalled();
+  });
+
   it("bakiye 1'in altındayken modeli çağırmadan kontör sayfasına yönlendirir", async () => {
     metered();
     vi.mocked(hitRateLimit).mockResolvedValue(true);

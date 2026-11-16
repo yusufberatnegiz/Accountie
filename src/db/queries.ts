@@ -1,9 +1,9 @@
 // The only module that talks to the database (Supabase Postgres through its pooler). Every function takes the session user's id and filters by it.
 import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import { CATEGORIES, DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
-import { fitRulesToPlan, planMismatches, planMismatchWarning } from "@/lib/plan-suggest";
+import { fitRulesToPlan, leavesOf, planMismatches, planMismatchWarning } from "@/lib/plan-suggest";
 import { isKkegLine } from "@/lib/vehicle";
-import { RETIRED_WARNINGS, warn, type JournalLine, type Warning } from "@/lib/journal";
+import { approvalProblem, RETIRED_WARNINGS, warn, type JournalLine, type Warning } from "@/lib/journal";
 import { getDb } from "./index";
 import { accountRules, billingProfiles, creditBalances, creditLedger, extensionTokens, firmAccounts, firmRules, firms, journalLines, payments, rateLimitHits, receipts, vendorRules } from "./schema";
 
@@ -242,12 +242,28 @@ export async function listReceipts(userId: string, firmId: string, { status, mon
   const rows = await getDb().select(listColumns).from(receipts)
     .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), status ? eq(receipts.status, status) : undefined, month ? eq(RECEIPT_MONTH, month) : undefined))
     .orderBy(desc(receipts.createdAt)).limit(200);
-  return rows.map(({ binek, vehicle, planLines, ...r }) => {
+  const shown = rows.map(({ binek, vehicle, planLines, ...r }) => {
     const warnings = current(r.warnings, r, binek || vehicle === "ticari" || vehicle === "binek");
     // A draft with a code that means another account in the firm's Luca plan says so in the list too, as on its screen.
     const off = planLines ? planMismatches(planLines, planLines.map((l) => ({ code: l.accountCode, name: l.luca }))) : [];
     return { ...r, warnings: off.length ? [planMismatchWarning(off), ...warnings] : warnings };
   });
+  // "Uyarısız N fişi onayla" counts what the bulk approval approves (src/app/api/receipts/bulk-approve/route.ts): no warning, and
+  // lines that pass the approval check against the firm's plan (balanced, dated, numbered, codes Luca books to).
+  const quiet = shown.filter((r) => r.status === "draft" && r.warnings.length === 0).map((r) => r.id);
+  const ready = new Set<string>();
+  if (quiet.length) {
+    const db = getDb();
+    const [lines, plan] = await Promise.all([
+      db.select({ ...lineColumns, receiptId: journalLines.receiptId }).from(journalLines)
+        .where(and(eq(journalLines.userId, userId), inArray(journalLines.receiptId, quiet))).orderBy(asc(journalLines.lineNo)),
+      listFirmAccounts(userId, firmId),
+    ]);
+    const codes = plan.length ? new Set(plan.map((a) => a.code)) : undefined;
+    const postable = plan.length ? new Set(leavesOf(plan).map((a) => a.code)) : undefined;
+    for (const id of quiet) if (!approvalProblem(lines.filter((l) => l.receiptId === id), codes, postable)) ready.add(id);
+  }
+  return shown.map((r) => ({ ...r, ready: ready.has(r.id) }));
 }
 
 /**

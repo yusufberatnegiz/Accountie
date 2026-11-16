@@ -28,8 +28,12 @@ export async function POST(request: Request) {
   // Every read of this upload ends by then (maxDuration 60 s, with room to save and settle the credit).
   const until = Date.now() + 52_000;
 
+  // With kontör on, every read is paid for, so the credit balance is the only limit. Without it (free reads) the per-account,
+  // per-network and daily ceilings stay, so an open signup cannot run up the model bill.
+  const metered = creditsRequired();
+  const limits = !metered;
   // Before any parsing: every attempt counts, so a flood of bad uploads is throttled too.
-  if (!(await allow("receipt", userId)) || !(await allow("receiptIp", clientIp(request.headers)))) {
+  if (limits && (!(await allow("receipt", userId)) || !(await allow("receiptIp", clientIp(request.headers))))) {
     return fail("Çok fazla fiş yüklendi. Biraz bekleyip tekrar deneyin.", 429);
   }
   // Rejected before the body is buffered; multipart overhead is allowed for.
@@ -56,11 +60,10 @@ export async function POST(request: Request) {
   }
 
   // Kontör: a new upload needs at least one credit; inside it the balance may go down to MIN_BALANCE (reserveCredit).
-  const metered = creditsRequired();
   if (metered && (await getBalance(userId)) < 1) return NextResponse.json({ error: "Kontörünüz bitti. Belge okumak için kontör yükleyin.", kontor: true }, { status: 402 });
 
   // Counted only for valid photos that are about to reach the model.
-  if (!(await allow("receiptGlobal", "all"))) return fail("Fiş okuma bugün için geçici olarak durduruldu. Yarın tekrar deneyin.", 503);
+  if (limits && !(await allow("receiptGlobal", "all"))) return fail("Fiş okuma bugün için geçici olarak durduruldu. Yarın tekrar deneyin.", 503);
 
   const wanted = form?.get("firma");
   const { firm } = await activeFirm(userId, typeof wanted === "string" ? wanted : null);
@@ -87,7 +90,7 @@ export async function POST(request: Request) {
     images = [];
     for (const [i, box] of boxes.entries()) {
       // The photo was counted once above; every further receipt is one more read against the same limits.
-      if (images.length && (!(await allow("receipt", userId)) || !(await allow("receiptIp", clientIp(request.headers))) || !(await allow("receiptGlobal", "all")))) { limited += boxes.length - i; break; }
+      if (limits && images.length && (!(await allow("receipt", userId)) || !(await allow("receiptIp", clientIp(request.headers))) || !(await allow("receiptGlobal", "all")))) { limited += boxes.length - i; break; }
       // A crop that fails (an odd box) is skipped; if none worked the photo is read whole.
       const crop = await cropReceipt(bytes, box).catch(() => null);
       if (crop) images.push(crop);

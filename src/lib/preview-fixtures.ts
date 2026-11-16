@@ -1,7 +1,7 @@
 // Sample data for the dev-only screen preview (/onizleme) and nothing else. Invented ÖRNEK vendor and tax number.
 import type { Firm, ReceiptDetail, VendorRule } from "@/db/queries";
 import { DEFAULT_RULES, rulesToRows } from "./default-rules";
-import { buildJournalLines, warn, type ReceiptData } from "./journal";
+import { approvalProblem, buildJournalLines, warn, type ReceiptData } from "./journal";
 import { buildForeignLines, buildSalesLines, type ForeignData, type SalesData } from "./journal-kinds";
 // A müşavir's mükellefs: invented ÖRNEK names, enough of them to show the search. The first holds the preview receipts.
 const FIRM_NAMES = ["BALIK LOKANTASI LTD.ŞTİ","İNŞAAT A.Ş.","KUAFÖR","MOBİLYA SAN.TİC.LTD.ŞTİ","ECZANE","OTO SERVİS","KIRTASİYE","DİŞ KLİNİĞİ","LOJİSTİK A.Ş.","FIRIN","YAZILIM LTD.ŞTİ","TEKSTİL","KAFE","NAKLİYAT","OPTİK","ÇİÇEKÇİLİK","MATBAA","ELEKTRİK MALZEMELERİ","HIRDAVAT","SPOR SALONU","VETERİNER KLİNİĞİ","TURİZM SEYAHAT","GIDA PAZARLAMA","OTO KİRALAMA","MİMARLIK OFİSİ","REKLAM AJANSI","KUYUMCU","BUTİK OTEL","PASTANE","BİLGİSAYAR TEKNİK","TEMİZLİK HİZMETLERİ","KASAP","EMLAK","DANIŞMANLIK LTD.ŞTİ","KREŞ","ZİRAAT ÜRÜNLERİ"];
@@ -93,6 +93,7 @@ export const PREVIEW_LIST = PREVIEW_RECEIPTS.map(({ lines, taxNumber, paymentMet
   invoice: (extraction as { documentKind?: string } | null)?.documentKind === "domestic_invoice",
   expenseCode: lines.find((l) => l.debitKurus > 0 && !l.accountCode.startsWith("191"))?.accountCode ?? null,
   vatKurus: lines.reduce((n, l) => n + (l.accountCode.startsWith("191") ? l.debitKurus : 0), 0),
+  ready: r.status === "draft" && r.warnings.length === 0 && !approvalProblem(lines),
 }));
 
 
