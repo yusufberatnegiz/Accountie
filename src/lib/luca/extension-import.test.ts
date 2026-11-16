@@ -3,7 +3,7 @@ import "../../../extension/luca-import.js";
 
 type Period = { lucaId: string; shortName: string; donemId: string; start: string; end: string };
 type Luca = {
-  firmsOfYear(list: string[][], year: string): Period[];
+  firmsToImport(list: string[][], year: string): Period[];
   selected(list: string[][], sirketId: string, donemId: string): Period | null;
   switchUrl(f: Period): string;
   parseIdentity(text: string): { name: string; start: string; end: string; taxNumber: string | null } | null;
@@ -18,9 +18,16 @@ const LIST = [
 ];
 
 describe("Luca firma listesi", () => {
-  it("yalnız o yıl dönemi olan firmaları, o dönemle verir", () => {
-    expect(luca.firmsOfYear(LIST, "2026")).toEqual([{ lucaId: "11", shortName: "ÖRNEK A", donemId: "502", start: "01/01/2026", end: "31/12/2026" }]);
-    expect(luca.firmsOfYear(LIST, "2027")).toEqual([]);
+  it("her firmayı verir: o yılın dönemiyle, o yıl dönemi açılmamışsa en son dönemiyle", () => {
+    expect(luca.firmsToImport(LIST, "2025")).toEqual([
+      { lucaId: "11", shortName: "ÖRNEK A", donemId: "501", start: "01/01/2025", end: "31/12/2025" },
+      { lucaId: "12", shortName: "ÖRNEK B", donemId: "601", start: "01/01/2024", end: "31/12/2024" },
+    ]);
+    expect(luca.firmsToImport(LIST, "2027").map((f) => f.donemId)).toEqual(["502"]);
+    expect(luca.firmsToImport([["13", "DÖNEMSİZ", "", "", ""]], "2026")).toEqual([]);
+    // Last period ended in 2024: closed by 2026, not brought in; still current for 2025.
+    expect(luca.firmsToImport(LIST, "2026").map((f) => f.lucaId)).toEqual(["11"]);
+    expect(luca.firmsToImport([["14", "GEÇEN YIL", "", "", "", "701", "01/01/2025", "31/12/2025", "0"]], "2026").map((f) => f.donemId)).toEqual(["701"]);
   });
 
   it("şu an seçili firma ve dönemi bulur; bulamazsa null", () => {

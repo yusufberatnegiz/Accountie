@@ -13,9 +13,21 @@
     return out;
   }
 
-  /** Başlangıcı `year` yılında olan dönemi bulunan firmalar; firma başına o dönem. */
-  function firmsOfYear(sirketDonem, year) {
-    return sirketDonem.flatMap((row) => periods(row).filter((p) => p.start.endsWith(`/${year}`)).slice(-1));
+  const dayOf = (ddmmyyyy) => ddmmyyyy.split("/").reverse().join("");
+
+  /**
+   * Her firma, firma başına bir dönemle: başlangıcı `year` yılında olan dönem, yoksa en son dönemi. Hesap planı firmanındır;
+   * bu yılın dönemi henüz açılmamış firma da böylece atlanmaz. Son dönemi geçen yıldan önce bitmiş (kapanmış) firma alınmaz.
+   */
+  function firmsToImport(sirketDonem, year) {
+    return sirketDonem.flatMap((row) => {
+      const all = periods(row);
+      const thisYear = all.filter((p) => p.start.endsWith(`/${year}`)).slice(-1);
+      if (thisYear.length) return thisYear;
+      const latest = all.reduce((best, p) => (!best || dayOf(p.end) > dayOf(best.end) ? p : best), null);
+      // A firm whose last period ended before last year is closed: not brought in.
+      return latest && dayOf(latest.end) >= `${Number(year) - 1}0101` ? [latest] : [];
+    });
   }
 
   /** Luca'da şu an seçili firma ve dönem; bulunamazsa null (o zaman hiçbir şeye başlanmaz). */
@@ -57,16 +69,24 @@
     return new DOMParser().parseFromString(text, "text/html");
   }
 
-  /** Oturumu firmaya çevirir, kimliğini ve hesap planını okur. Dönem tutmazsa durur: yanlış firmanın planı alınmaz. */
+  /**
+   * Oturumu firmaya çevirir, kimliğini ve hesap planını okur. Luca geçişi bazen geç yansıtır: dönem tutmazsa bir kez daha geçer;
+   * yine tutmazsa durur, yanlış firmanın planı alınmaz.
+   */
   async function readFirm(f) {
-    await page(switchUrl(f));
-    const identity = parseIdentity((await page(`musteriBilgileri.do?time=${Date.now()}`)).body?.textContent ?? "");
-    if (!identity) throw new Error("Firma bilgisi okunamadı.");
-    if (identity.start !== f.start || identity.end !== f.end) throw new Error("Luca bu firmaya geçmedi.");
+    let identity = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt) await new Promise((r) => setTimeout(r, 1500));
+      await page(switchUrl(f));
+      identity = parseIdentity((await page(`musteriBilgileri.do?time=${Date.now()}`)).body?.textContent ?? "");
+      if (identity && identity.start === f.start && identity.end === f.end) break;
+    }
+    if (!identity) throw new Error("Luca firma bilgisini vermedi; Luca oturumu kapanmış olabilir. İki kez denendi.");
+    if (identity.start !== f.start || identity.end !== f.end) throw new Error(`Luca bu firmaya (${f.start} - ${f.end} dönemi) geçmedi. İki kez denendi; Luca'da firmayı bir kez elle açıp yeniden çekin.`);
     const accounts = parsePlan(await page(`listAltHesapTempAction.do?time=${Date.now()}`));
-    if (accounts.length === 0) throw new Error("Hesap planı okunamadı.");
+    if (accounts.length === 0) throw new Error("Luca'da bu firmanın hesap planı boş. Luca'da plan tanımlanınca yeniden çekin.");
     return { lucaId: f.lucaId, name: identity.name, taxNumber: identity.taxNumber, accounts };
   }
 
-  root.AccountieLuca = { firmsOfYear, selected, switchUrl, parseIdentity, parsePlan, readFirm };
+  root.AccountieLuca = { firmsToImport, selected, switchUrl, parseIdentity, parsePlan, readFirm };
 })(globalThis);

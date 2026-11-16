@@ -56,8 +56,8 @@ async function run() {
   if (!luca) return status("Açık Luca sekmesi bulunamadı. Luca'ya girip ana ekranı açın, sonra Başlat'a basın.", true);
   const original = AccountieLuca.selected(luca.list, luca.sirket, luca.donem);
   if (!original) return status("Luca'da şu an açık olan firma okunamadı. Hiçbir şey değiştirilmedi.", true);
-  const firms = AccountieLuca.firmsOfYear(luca.list, YEAR);
-  if (!firms.length) return status(`${YEAR} dönemi açık firma bulunamadı.`, true);
+  const firms = AccountieLuca.firmsToImport(luca.list, YEAR);
+  if (!firms.length) return status("Luca'da dönemi olan firma bulunamadı.", true);
 
   await chrome.scripting.executeScript({ target: luca.target, files: ["luca-import.js"] });
   // The Kurulum page asks the background whether a run is going (background.js importStatus); a stale beat means it ended.
