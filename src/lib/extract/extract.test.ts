@@ -2,7 +2,7 @@ import sharp from "sharp";
 import Anthropic from "@anthropic-ai/sdk";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { extractReceipt, type ExtractClient } from "./extract";
-import { checkExtraction, ReceiptExtractionSchema, toReceiptData, type ReceiptExtraction } from "./schema";
+import { checkExtraction, ReceiptExtractionSchema, toReceiptData, withholdingGap, type ReceiptExtraction } from "./schema";
 
 const goodOutput: ReceiptExtraction = {
   vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ",
@@ -125,6 +125,13 @@ describe("indirimli fiş", () => {
     const off = { ...a101, payments: [{ method: "cash" as const, amount: "200,00" }, { method: "card" as const, amount: "200,00" }] };
     expect(toReceiptData(off).payments).toBeUndefined();
     expect(checkExtraction(off)).toContain("payment_unsure");
+  });
+  it("tevkifat yalnız yurt içi faturada ve fark KDV kadarsa toplam farkını açıklar", () => {
+    const inv = { ...a101, lineItems: [], discounts: [], totalVat: null, withholding: true, total: "1.100,00", vatLines: [{ rate: 20, gross: null, vat: "200,00", net: "1.000,00" }] };
+    expect(withholdingGap(inv)).toBe(10000);
+    // Bigger than its KDV, or on a till receipt: not withholding, the totals do not agree.
+    expect(checkExtraction({ ...inv, total: "100,00" })).toContain("total_mismatch");
+    expect(checkExtraction({ ...inv, documentKind: "receipt" })).toContain("total_mismatch");
   });
   it("tevkifatlı faturada toplamın düşük olması 'tutmuyor' sayılmaz (Sonnet'e gidilmez)", () => {
     const x = { ...a101, lineItems: [], discounts: [], totalVat: null, withholding: true, total: "1.100,00", vatLines: [{ rate: 20, gross: null, vat: "200,00", net: "1.000,00" }] };

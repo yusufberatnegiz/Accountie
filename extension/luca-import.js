@@ -98,8 +98,8 @@
       if (attempt) await new Promise((r) => setTimeout(r, 1500));
       const sw = await page(switchUrl(f));
       // Luca'nın geçiş yanıtındaki uyarı ya da hata metni: geçmezse nedeni budur.
-      reply = /alert\(["']([^"']{1,150})/.exec(sw.documentElement?.innerHTML ?? "")?.[1]
-        || (sw.getElementById("SirketCombo") ? "" : (sw.body?.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 150));
+      reply = sw.getElementById("SirketCombo") ? ""
+        : /alert\(["']([^"']{1,150})/.exec(sw.documentElement?.innerHTML ?? "")?.[1] || (sw.body?.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 150);
       const info = await page(`musteriBilgileri.do?time=${Date.now()}`);
       identity = parseIdentity(info.body?.textContent ?? "");
       ids = sessionIds(info.documentElement?.innerHTML ?? "");
@@ -125,10 +125,12 @@
   }
 
   /** İlk firmaya döner, doğrular ve firma seçici çerçevesini o firmayla yeniler. Dönüş doğrulanamazsa false. */
-  async function switchBack(o, verifyIds = false) {
+  /** `home`: the first firm's VKN and title as read before the run; the way back must show them, not only its period dates. */
+  async function switchBack(o, verifyIds = false, home = null) {
     const sw = await switchTo(o, verifyIds).catch(() => ({ ok: false }));
     location.href = switchUrl(o);
-    return sw.ok;
+    const same = !home || (sw.identity?.taxNumber === home.taxNumber && sw.identity?.name === home.name);
+    return !!sw.ok && same;
   }
 
   root.AccountieLuca = { firmsToImport, selected, switchUrl, parseIdentity, parsePlan, sessionIds, probe, readFirm, switchBack };

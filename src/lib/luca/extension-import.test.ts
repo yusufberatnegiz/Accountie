@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import "../../../extension/luca-import.js";
 
 type Period = { lucaId: string; shortName: string; donemId: string; start: string; end: string };
@@ -9,6 +9,7 @@ type Luca = {
   parseIdentity(text: string): { name: string; start: string; end: string; taxNumber: string | null } | null;
   parsePlan(doc: unknown): { code: string; name: string }[];
   sessionIds(html: string): { sirket: string | null; donem: string | null };
+  readFirm(f: Period, verifyIds?: boolean): Promise<{ lucaId: string; name: string; taxNumber: string | null; accounts: { code: string; name: string }[]; verified: boolean }>;
 };
 const { AccountieLuca: luca } = globalThis as unknown as { AccountieLuca: Luca };
 
@@ -75,5 +76,51 @@ describe("Luca hesap planı", () => {
     expect(luca.parsePlan(doc([
       tr("Hesap Kodu", "Hesap Adı"), tr(" 770.08 ", " Yeme-İçme Ve Ağırlama "), tr("320.M07", "ÖRNEK SATICI"), tr("770.08", "Yinelenen"), tr("100"), tr("Toplam", "18"),
     ]))).toEqual([{ code: "770.08", name: "Yeme-İçme Ve Ağırlama" }, { code: "320.M07", name: "ÖRNEK SATICI" }]);
+  });
+});
+
+// Luca's pages as the reader fetches them: the firm picker, the firm's details (with __SESSION) and its chart of accounts.
+function fakeLuca(open: { sirket: string; donem: string; name: string; start: string; end: string }) {
+  const pages = (path: string) => {
+    if (path.startsWith("TopFrameAction.do")) return `<html><body><select id="SirketCombo"></select><script>alert('x')</script></body></html>`;
+    if (path.startsWith("musteriBilgileri.do")) return `<html><body>Şu an ${open.name} ${open.start}-${open.end} döneminde çalışıyorsunuz! Vergi No: 1234567890<script>var __SESSION = {"SIRKET_ID":"${open.sirket}","DONEM_ID":"${open.donem}"};</script></body></html>`;
+    return `<table><tr><td>770.01</td><td>Akaryakıt</td></tr></table>`;
+  };
+  vi.stubGlobal("fetch", async (path: string) => new Response(pages(path), { headers: { "content-type": "text/html; charset=utf-8" } }));
+  vi.stubGlobal("DOMParser", class {
+    parseFromString(text: string) {
+      const rows = [...text.matchAll(/<tr><td>([^<]*)<\/td><td>([^<]*)<\/td><\/tr>/g)].map((m) => ({ children: [{ textContent: m[1] }, { textContent: m[2] }] }));
+      return {
+        body: { textContent: text.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<[^>]+>/g, " ") },
+        documentElement: { innerHTML: text },
+        getElementById: (id: string) => (text.includes(`id="${id}"`) ? {} : null),
+        querySelectorAll: () => rows,
+      };
+    }
+  });
+}
+
+describe("Luca firma geçişi (sahte Luca)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const f: Period = { lucaId: "11", shortName: "ÖRNEK A", donemId: "502", start: "01/01/2026", end: "31/12/2026" };
+
+  it("dönem ve numara tutunca planı okur ve firmayı doğrulanmış sayar", async () => {
+    fakeLuca({ sirket: "11", donem: "502", name: "ÖRNEK A LTD", start: "01/01/2026", end: "31/12/2026" });
+    const got = await luca.readFirm(f, true);
+    expect(got).toMatchObject({ lucaId: "11", name: "ÖRNEK A LTD", verified: true, accounts: [{ code: "770.01", name: "Akaryakıt" }] });
+  });
+
+  it("aynı dönemli başka firmada kalırsa (numara tutmaz) geçmedi der; iki numarayı da yazar, seçici sayfasının alert'ini yanıt saymaz", async () => {
+    fakeLuca({ sirket: "12", donem: "502", name: "ÖRNEK B LTD", start: "01/01/2026", end: "31/12/2026" });
+    const err = await luca.readFirm(f, true).catch((e: Error) => e.message);
+    expect(err).toContain("Luca bu firmaya geçmedi");
+    expect(err).toContain("no 11");
+    expect(err).toContain("no 12");
+    expect(err).not.toContain("Luca'nın yanıtı");
+  }, 10_000);
+
+  it("numara kontrolü kapalıyken yalnız dönem tarihine bakar", async () => {
+    fakeLuca({ sirket: "12", donem: "999", name: "ÖRNEK A LTD", start: "01/01/2026", end: "31/12/2026" });
+    expect((await luca.readFirm(f, false)).verified).toBe(false);
   });
 });

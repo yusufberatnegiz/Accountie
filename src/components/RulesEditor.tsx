@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ExtensionTokenPanel } from "@/components/ExtensionTokenPanel";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { useLeaveGuard } from "@/components/useLeaveGuard";
@@ -33,6 +33,8 @@ const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
 /** Settings in two columns: each group is a row with its own Save; a Save sends only its group's edits. */
 export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; plan?: Account[] }) {
   const names = new Map(plan.map((a) => [a.code, a.name]));
+  // Once per plan, not on every key: a plan may hold thousands of accounts.
+  const postable = useMemo(() => leavesOf(plan), [plan]);
   const [rows, setRows] = useState(initial);
   const [saved, setSaved] = useState(initial);
   const [note, setNote] = useState<{ kind: RuleKind; text: string; error: boolean } | null>(null);
@@ -79,7 +81,7 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
             <p className="muted small">Planda uyan hesabı olmayan kuralın kodu boş kalır; o türde bir fiş gelince hesap kodunu fişte seçersiniz.</p>
           </div>
           {/* Only accounts that can be posted to: a group account (one with sub-accounts) is not booked in Luca. */}
-          <datalist id="plan-kodlari">{leavesOf(plan).map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}</datalist>
+          <datalist id="plan-kodlari">{postable.map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}</datalist>
         </section>
       ) : null}
       {GROUPS.map((g) => {

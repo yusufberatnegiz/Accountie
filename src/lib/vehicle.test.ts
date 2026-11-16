@@ -53,12 +53,15 @@ describe("KKEG satırı tanıma", () => {
 });
 
 describe("jüri turu 3: KKEG adı", () => {
-  it("'Binek Araç Giderleri' sıradan gider hesabıdır; büyük harfli 'GİDER KISITLAMASI' KKEG'dir", () => {
+  it("'Binek Araç Giderleri' ve 'Gider Kısıtlamasına Tabi' sıradan gider hesabıdır; KKEG ad ya da kodla tanınır", () => {
     const kkeg = { code: "689.01", name: "KKEG" };
     const plain = [l("770.10", 10000), l("191.03.20", 2000), l("331.01", 0, 12000)].map((x, i) => (i === 0 ? { ...x, accountName: "Binek Araç Giderleri" } : x));
     expect(isPassengerCar(plain, kkeg)).toBe(false);
     // Ticari never removes an expense line for its name.
     expect(fromPassengerCar(plain, kkeg)).toEqual(plain);
-    expect(isPassengerCar([{ ...l("770.99", 300), accountName: "BİNEK ARAÇ GİDER KISITLAMASI" }], { code: "", name: "" })).toBe(true);
+    expect(isPassengerCar([{ ...l("770.01.10", 300), accountName: "Binek Oto Gider Kısıtlamasına Tabi Giderler" }], kkeg)).toBe(false);
+    // The firm's KKEG account under 770, by its code; one named KKEG in capitals ("İ"), by its name.
+    expect(isPassengerCar([{ ...l("770.99", 300), accountName: "BİNEK ARAÇ GİDER KISITLAMASI" }], { code: "770.99", name: "x" })).toBe(true);
+    expect(isPassengerCar([{ ...l("770.00", 300), accountName: "KANUNEN KABUL EDİLMEYEN GİDERLER" }], { code: "", name: "" })).toBe(true);
   });
 });

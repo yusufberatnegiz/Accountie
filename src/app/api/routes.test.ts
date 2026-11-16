@@ -35,7 +35,7 @@ const { lines } = buildJournalLines({
   vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
   vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
 }, DEFAULT_RULES);
-const draft = { id: ID, status: "draft", lines } as unknown as Awaited<ReturnType<typeof q.getReceipt>>;
+const draft = { id: ID, status: "draft", lines, warnings: [] } as unknown as Awaited<ReturnType<typeof q.getReceipt>>;
 
 const JPEG_MAGIC = [0xff, 0xd8, 0xff, 0xe0];
 function upload(type = "image/jpeg", size = 100, head: number[] = JPEG_MAGIC) {
@@ -198,6 +198,14 @@ describe("tek fiş", () => {
     const res = await approveRoute.POST(new Request("http://test"), params());
     expect(res.status).toBe(422);
     expect((await res.json()).error).toContain("Evrak tarihi eksik");
+    expect(q.transitionReceipt).not.toHaveBeenCalled();
+  });
+
+  it("araç seçilmemiş ya da mali değeri olmayan taslak sunucuda da onaylanmaz (422)", async () => {
+    for (const code of ["vehicle_choice", "no_fiscal_value"]) {
+      vi.mocked(q.getReceipt).mockResolvedValueOnce({ ...draft!, warnings: [{ code, message: "" }] });
+      expect((await approveRoute.POST(new Request("http://test", { method: "POST" }), params())).status).toBe(422);
+    }
     expect(q.transitionReceipt).not.toHaveBeenCalled();
   });
 

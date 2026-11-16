@@ -64,7 +64,9 @@ async function run() {
   await chrome.scripting.executeScript({ target: luca.target, files: ["luca-import.js"] });
   // 8: Luca's session numbers are trusted only if, on the firm open now, they are the ones the firm list gives it.
   const pre = await chrome.scripting.executeScript({ target: luca.target, func: () => globalThis.AccountieLuca.probe().catch(() => null) }).then(([r]) => r?.result, () => null);
-  const verifyIds = !!pre?.ids?.sirket && pre.ids.sirket === String(original.lucaId);
+  const verifyIds = !!pre?.ids?.sirket && pre.ids.sirket === String(original.lucaId) && (!pre.ids.donem || pre.ids.donem === String(original.donemId));
+  // The first firm as Luca names it: the way back is checked against it, and a run that never leaves it is caught (last).
+  const home = pre?.identity ? { taxNumber: pre.identity.taxNumber, name: pre.identity.name } : null;
   // The Kurulum page asks the background whether a run is going (background.js importStatus); a stale beat means it ended.
   const beat = () => chrome.storage.local.set({ importingAt: Date.now() }).catch(() => {});
   await beat();
@@ -74,7 +76,9 @@ async function run() {
   let done = 0;
   let failed = 0;
   let errorsInARow = 0;
-  let last = "";
+  // Starts as the first firm: if Luca stays there while the run asks for another, that is "the same firm twice".
+  let last = home ? `${home.taxNumber}|${home.name}` : "";
+  let lastLucaId = String(original.lucaId);
   try {
     for (const [i, f] of firms.entries()) {
       if (stopped) break;
@@ -85,11 +89,13 @@ async function run() {
           target: luca.target,
           args: [f, verifyIds], func: (firm, verify) => globalThis.AccountieLuca.readFirm(firm, verify).then((ok) => ({ ok }), (e) => ({ error: e.message })),
         });
-        if (!result?.ok) throw new Error(result?.error ?? "Luca sekmesine ulaşılamadı.");
+        // No answer at all: the firm picker frame was reloaded (someone changed firm in Luca) and the reader went with it.
+        if (!result?.ok) throw new Error(result?.error ?? "Luca'nın firma seçici çerçevesi yenilendi; çekme sürerken Luca'da firma değiştirmeyin.");
         // Art arda aynı firma geliyorsa Luca firmayı değiştirmiyordur: yanlış plan kaydetmek yerine dur.
         const id = `${result.ok.taxNumber}|${result.ok.name}`;
-        if (id === last && !result.ok.verified) throw Object.assign(new Error("Luca aynı firmayı iki kez verdi; firma değişmiyor."), { fatal: true });
+        if (id === last && String(f.lucaId) !== lastLucaId && !result.ok.verified) throw Object.assign(new Error("Luca aynı firmayı iki kez verdi; firma değişmiyor."), { fatal: true });
         last = id;
+        lastLucaId = String(f.lucaId);
         const { verified, ...firm } = result.ok;
         const saved = await send(token, firm);
         done++;
@@ -102,7 +108,7 @@ async function run() {
         const firmOnly = /bu firmaya geçmedi|hesap planı boş/.test(e.message);
         if (!firmOnly) errorsInARow++;
         if (e.fatal || errorsInARow >= MAX_ERRORS_IN_A_ROW) {
-          status(e.fatal ? e.message : `Art arda ${MAX_ERRORS_IN_A_ROW} hata; Luca oturumu kapanmış olabilir. Durduruldu. Son hata: ${e.message}`, true);
+          status(e.fatal ? e.message : `Son firmalarda ${MAX_ERRORS_IN_A_ROW} hata; Luca oturumu kapanmış olabilir. Durduruldu. Son hata: ${e.message}`, true);
           break;
         }
       }
@@ -110,7 +116,7 @@ async function run() {
     }
   } finally {
     // Luca'nın kendi seçicisinin yaptığı gibi: çerçeveyi ilk firmaya götür ki oturum ve ekran aynı firmayı göstersin.
-    const back = await chrome.scripting.executeScript({ target: luca.target, args: [original, verifyIds], func: (o, v) => globalThis.AccountieLuca.switchBack(o, v) }).then(([r]) => r?.result === true, () => false);
+    const back = await chrome.scripting.executeScript({ target: luca.target, args: [original, verifyIds, home], func: (o, v, h) => globalThis.AccountieLuca.switchBack(o, v, h) }).then(([r]) => r?.result === true, () => false);
     // The write lock lifts only once Luca is shown to be back on the first firm; otherwise the popup asks first (lucaAway).
     clearInterval(ticker);
     await chrome.storage.local.remove(back ? ["importingAt", "lucaAway"] : ["importingAt"]).catch(() => {});

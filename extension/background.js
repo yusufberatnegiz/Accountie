@@ -13,7 +13,7 @@
     return message.token;
   }
   /** Longer than one firm ever takes: a beat older than this is a run that ended without clearing it (tab closed). */
-  const IMPORT_STALE_MS = 60_000;
+  const IMPORT_STALE_MS = 180_000;
   /** The answer to the site's "is the firm import running" question, or null when the message is not that question from the site. */
   function importStatus(message, sender, importingAt, now) {
     if (!sender || !APP_ORIGINS.includes(sender.origin) || !message || message.type !== "accountie-import-status") return null;

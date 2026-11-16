@@ -13,7 +13,8 @@ export const STRONG_READ_ABOVE = 4;
  * One document's reads (both models) end within this, so the upload (60 s on Vercel, with the locate call before it) finishes and the
  * reserved credit is settled; a second model is not started with less than READ_MIN_MS left.
  */
-const READ_BUDGET_MS = 45_000;
+const READ_BUDGET_MS = 40_000;
+const LOCATE_MS = 15_000;
 const READ_MIN_MS = 10_000;
 
 const SYSTEM = `Türk muhasebe belgelerinden alan çıkarıyorsun. Önce belgenin türünü documentKind alanına yaz:
@@ -72,7 +73,7 @@ export async function extractReceipt(file: Buffer, client: ExtractClient = (defa
           role: "user",
           content: [source, { type: "text", text: "Bu belgenin alanlarını çıkar." }],
         }],
-      }, { timeout: Math.max(left, READ_MIN_MS), maxRetries: 1 });
+      }, { signal: AbortSignal.timeout(Math.max(left, READ_MIN_MS)), maxRetries: 0 });
       inputTokens += response.usage.input_tokens;
       outputTokens += response.usage.output_tokens;
       if (response.stop_reason === "refusal" || !response.parsed_output) continue;
@@ -121,7 +122,7 @@ export async function locateReceipts(jpeg: Buffer, client: ExtractClient = (defa
           { type: "text", text: "Bu fotoğraftaki fişlerin sınırlarını ver." },
         ],
       }],
-    });
+    }, { signal: AbortSignal.timeout(LOCATE_MS), maxRetries: 0 });
     const scale = (v: number, size: number) => Math.round((Math.min(v, size) / size) * 1000);
     const boxes = (response.parsed_output?.receipts ?? [])
       .map((b) => ({ left: scale(b.left, width), top: scale(b.top, height), right: scale(b.right, width), bottom: scale(b.bottom, height) }))

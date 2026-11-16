@@ -110,7 +110,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                         <RowPending />
                       </Link>
                       {r.invoice || DOC_KIND_LABEL[docKind(r.category)] ? <span className="r-kind">{r.invoice ? "Fatura" : DOC_KIND_LABEL[docKind(r.category)]}</span> : null}
-                      {notes ? <span className="r-notes">{notes} uyarı</span> : null}
+                      {notes ? <span className="r-notes" title={r.warnings.map((w) => w.message).join("\n")}>{notes} uyarı<span className="visually-hidden">: {r.warnings[0].message}</span></span> : null}
                     </td>
                     <td className="r-no num" translate="no" title={r.receiptNo ?? undefined}>{r.receiptNo ?? <span className="dash">-</span>}</td>
                     <td className="r-date num">{trDate(r.receiptDate) ?? <span className="dash">Tarih yok</span>}</td>

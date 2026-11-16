@@ -199,7 +199,7 @@ const listColumns = {
   warnings: receipts.warnings,
   // A passenger car's draft already split to KKEG (src/lib/vehicle.ts): its vehicle is chosen.
   // Same test as src/lib/vehicle.ts isKkegLine.
-  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and (jl.account_code like '689%' or jl.account_name ~* 'kanunen kabul|kkeg|g[iİı]der k[ıiIİ]s[ıiIİ]tlama'))`,
+  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and (jl.account_code like '689%' or jl.account_name ~* 'kanunen kabul|kkeg'))`,
   // "ticari" once the user has said so on the review screen (setVehicleChoice).
   vehicle: sql<string | null>`${receipts.extraction}->>'vehicle'`,
   invoice: sql<boolean>`coalesce(${receipts.extraction}->>'documentKind' = 'domestic_invoice', false)`,

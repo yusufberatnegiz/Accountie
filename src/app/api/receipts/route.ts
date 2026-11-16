@@ -6,7 +6,8 @@ import { withVendorAccount } from "@/lib/vendor-rule";
 import { activeFirm } from "@/lib/firm";
 import { getSessionUser, getUserId } from "@/lib/auth/session";
 import { extractReceipt, locateReceipts, MAX_RECEIPTS_PER_PHOTO, STRONG_READ_ABOVE, type ExtractResult } from "@/lib/extract/extract";
-import { kindOf, toForeignData, toReceiptData, toSalesData } from "@/lib/extract/schema";
+import { kindOf, toForeignData, toReceiptData, toSalesData, withholdingGap } from "@/lib/extract/schema";
+import { formatTrAmount } from "@/lib/money";
 import { buildForeignLines, buildSalesLines, foreignTotalTl } from "@/lib/journal-kinds";
 import { tcmbRate } from "@/lib/tcmb";
 import { NO_STORE, fail, unauthorized } from "@/lib/http";
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
   let images = [jpeg];
   // Receipts of the photo not read (more than a photo is read for, or the per-minute limit reached): told, never dropped silently.
   let limited = found.length - boxes.length;
+  let uncut = 0;
   if (boxes.length > 1) {
     images = [];
     for (const [i, box] of boxes.entries()) {
@@ -83,10 +85,11 @@ export async function POST(request: Request) {
       // A crop that fails (an odd box) is skipped; if none worked the photo is read whole.
       const crop = await cropReceipt(bytes, box).catch(() => null);
       if (crop) images.push(crop);
-      else limited++;
+      else uncut++;
     }
   }
-  if (images.length === 0) images = [jpeg];
+  // None could be cut out: the photo is read whole, so nothing is reported as left out.
+  if (images.length === 0) { images = [jpeg]; uncut = 0; limited = found.length - boxes.length; }
   // Judged by the receipts found, not the ones read: a crowded photo's cut-outs are narrow either way.
   const strong = found.length > STRONG_READ_ABOVE;
   const results = await Promise.all(images.map((image) => readMetered(metered, userId, firm.id, image, rules, undefined, strong)));
@@ -96,7 +99,7 @@ export async function POST(request: Request) {
   const ids = saved.flatMap((r) => (r ? [r.id] : []));
   if (ids.length === 0 && skipped) return NextResponse.json({ error: "Kontörünüz bitti. Belge okumak için kontör yükleyin.", kontor: true }, { status: 402 });
   if (ids.length === 0) return fail("Fiş kaydedilemedi. Tekrar deneyin.", 500);
-  return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable), skipped, limited }, { status: 201 });
+  return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable), skipped, limited, uncut }, { status: 201 });
 }
 
 // billable: something was read (a seller or a total); an empty record costs no credit (Koşullar md. 6).
@@ -145,7 +148,10 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
   if (result.ok && result.extraction.withholding) extra.unshift("withholding");
   // A rule the firm's Luca plan had no account for (fitRulesToPlan) leaves the code empty: said, not guessed.
   if (lines.some((l) => !l.accountCode)) extra.push("plan_no_account");
-  const allWarnings: Warning[] = [...warnings, ...extra.filter((c) => !warnings.some((w) => w.code === c)).map(warn)];
+  const gap = result.ok ? withholdingGap(result.extraction) : null;
+  const allWarnings: Warning[] = [...warnings, ...extra.filter((c) => !warnings.some((w) => w.code === c)).map(warn)]
+    .filter((w) => !(gap !== null && w.code === "total_mismatch"))
+    .map((w) => (w.code === "withholding" && gap !== null ? { ...w, message: `Faturada KDV tevkifatı var. 191'deki KDV tamdır; tevkif edilen ${formatTrAmount(gap)} TL için 360 alacak satırı ekleyin.` } : w));
   // Warn only, never block: the user decides. A failed lookup must not lose the upload.
   if (taxNumber && data.receiptNo && data.date && (await hasDuplicateReceipt(userId, taxNumber, data.receiptNo, data.date).catch(() => false))) {
     allWarnings.unshift(warn("duplicate"));

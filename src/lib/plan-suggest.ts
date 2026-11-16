@@ -2,7 +2,7 @@ import type { Account, RuleRow } from "./default-rules";
 
 // Words that name each receipt category in a Luca chart of accounts, most telling first.
 const EXPENSE_WORDS: Record<string, readonly string[]> = {
-  fuel: ["akaryakıt", "yakıt"],
+  fuel: ["akaryakıt", "yakıt", "taşıt gider"],
   stationery: ["kırtasiye"],
   cargo: ["kargo", "nakliye"],
   // "Taşıt" alone would also find the motor vehicle tax (MTV); a car's running costs are named with yakıt or gider.
@@ -26,13 +26,15 @@ const SKIP: Record<string, RegExp> = {
   office_supplies: /vergi|harç|finansman|faiz|kur fark|olağan|amortisman/,
   // A notary's fee (harç) sits with stationery in many plans ("Kırtasiye Noter Harç").
   stationery: /küçük demirbaş|demirbaş alım|vergi|finansman|faiz|kur fark|olağan|amortisman/,
-  maintenance: new RegExp(`${NOT_AN_EXPENSE.source}|taşıt|araç`),
+  maintenance: new RegExp(`${NOT_AN_EXPENSE.source}|taşıt|araç(?! gereç)`),
   vehicle_maintenance: new RegExp(`${NOT_AN_EXPENSE.source}|bina`),
   meal: new RegExp(`${NOT_AN_EXPENSE.source}|personel`),
   food_grocery: new RegExp(`${NOT_AN_EXPENSE.source}|personel`),
 };
 /** A foreign-currency or gold till: never the receipt's Kasa. Whole words: "Altındağ Kasa" is a lira till. */
-const FOREIGN_TILL = /(^|[^\p{L}])(usd|eur|euro|avro|dolar|döviz|gbp|sterlin|altın)([^\p{L}]|$)/u;
+const FOREIGN_TILL = /(^|[^\p{L}])(usd|eur|avro|dolar|döviz|gbp|sterlin|yabancı para)|(^|[^\p{L}])altın([^\p{L}]|$)/u;
+/** A vehicle's account: "Taşıt", "Araç" (not "araç gereç", equipment), "Oto". */
+const VEHICLE_WORD = /taşıt|araç(?! gereç)|(^|[^\p{L}])oto/u;
 /** KDV accounts that are not a receipt's own deductible KDV: withholding (tevkifat, TEVK.), reverse charge, import, refund. */
 const OTHER_VAT = /sorumlu|ithal|iade|tevk(?!ifatsız)/;
 /** A rule the plan has a family of accounts for but none that can be told apart by name (each partner's own 331): left to the user. */
@@ -67,7 +69,13 @@ export function suggestRules(rows: readonly RuleRow[], plan: readonly Account[])
   const pick = (r: RuleRow): Account | undefined => {
     if (r.kind === "expense" && r.key === "kkeg") return byWords(["689"], ["binek araç gider", "kanunen kabul", "kkeg"]);
     // Operating expenses (770) first, then marketing (760); never cost (740) or finance (780) accounts. "Diğer" only under 770.
-    if (r.kind === "expense") return byWords(r.key === "other" ? ["770"] : ["770", "760"], EXPENSE_WORDS[r.key] ?? [], SKIP[r.key] ?? NOT_AN_EXPENSE);
+    if (r.kind === "expense") {
+      const prefixes = r.key === "other" ? ["770"] : ["770", "760"];
+      const hit = byWords(prefixes, EXPENSE_WORDS[r.key] ?? [], SKIP[r.key] ?? NOT_AN_EXPENSE);
+      // Repairs: an account shared by both kinds of repair is better than none.
+      if (hit || (r.key !== "maintenance" && r.key !== "vehicle_maintenance")) return hit;
+      return byWords(prefixes, EXPENSE_WORDS[r.key], NOT_AN_EXPENSE);
+    }
     // "% 20 Li İndirilecek Kdv": the rate as a number of its own. Real plans also hold the same rate as withholding (sorumlu
     // sıfatıyla, tevkifatlı), import and refund KDV; a receipt's KDV is none of those ("tevkifatsız" is the plain one).
     if (r.kind === "vat") {
@@ -147,6 +155,8 @@ export function fitRulesToPlan(rows: readonly RuleRow[], plan: readonly Account[
     // The same name may still be the wrong kind: a withholding KDV account, a dollar till.
     const kindOk = !(r.kind === "vat" && OTHER_VAT.test(lower)) && !(r.key === "cash" && FOREIGN_TILL.test(lower))
       && !(r.kind === "expense" && r.key !== "kkeg" && (SKIP[r.key] ?? NOT_AN_EXPENSE).test(lower))
+      // A vehicle's repair keeps the default only on an account that names a vehicle; "Bakım Onarım" alone is the workplace's.
+      && !(r.key === "vehicle_maintenance" && !VEHICLE_WORD.test(lower))
       && !(r.kind === "payment" && (r.key === "card" || r.key === "other") && partnerSubs > 1);
     if (postable.has(r.accountCode) && rateOk && kindOk && sameMeaning(r.accountName, lucaName)) return named;
     const suggested = suggestions[i];

@@ -57,7 +57,7 @@ export const ReceiptExtractionSchema = z.object({
   category: z.enum(CATEGORY_KEYS).describe(CATEGORY_GUIDE),
   withholding: z.boolean().describe("Faturada KDV tevkifatı varsa (Tevkif edilen KDV, KDV tevkifat oranı, 5/10 gibi) true"),
   noFiscalValue: z.boolean().describe("Belgede 'MALİ DEĞERİ YOKTUR' yazıyorsa true (sipariş belgesi, e-adisyon, yemek kartı ödeme belgesi, bilgi slibi)"),
-  unreadableFields: z.array(z.string().max(100)).max(30).describe("Okunamayan veya fişte olmayan alanların adları"),
+  unreadableFields: z.array(z.string().max(100)).max(30).describe("Okunamayan veya fişte olmayan alanların şemadaki adları (total, date, receiptNo, vatLines[0].vat, payments gibi)"),
 });
 
 export type ReceiptExtraction = z.infer<typeof ReceiptExtractionSchema>;
@@ -191,6 +191,19 @@ function paymentsOf(x: ReceiptExtraction): { method: "cash" | "card" | "other"; 
   return [...merged].map(([method, kurus]) => ({ method, kurus }));
 }
 
+/**
+ * The KDV withheld on a domestic invoice (tevkifat): the KDV-inclusive amounts less the total to pay, when that gap is a share of
+ * the invoice's own KDV. Null when there is no withholding or the gap is something else.
+ */
+export function withholdingGap(x: ReceiptExtraction): number | null {
+  if (kindOf(x) !== "domestic_invoice" || !x.withholding) return null;
+  const data = toReceiptData(x);
+  if (data.totalKurus === null) return null;
+  const gap = data.vatLines.reduce((s, v) => s + v.grossKurus, 0) - data.totalKurus;
+  const vat = data.vatLines.reduce((s, v) => s + (v.vatKurus ?? vatFromGross(v.grossKurus, v.rate)), 0);
+  return gap > 0 && gap <= vat ? gap : null;
+}
+
 const DAY_MS = 86_400_000;
 
 /** Not in the future (one day of slack for time zones) and not older than a year: catches a misread year digit. */
@@ -206,17 +219,17 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
   const problems: string[] = [];
   const sum = data.vatLines.reduce((s, v) => s + v.grossKurus, 0);
   // A breakdown line that could not be read, unless the item lines made up a breakdown that adds up anyway.
-  if (data.totalKurus === null || (x.vatLines.some((v) => amountOrNull(v.gross ?? null) === null && amountOrNull(v.net ?? null) === null) && sum !== data.totalKurus && !x.withholding)) problems.push("amount_unreadable");
+  if (data.totalKurus === null || (x.vatLines.some((v) => amountOrNull(v.gross ?? null) === null && amountOrNull(v.net ?? null) === null) && sum !== data.totalKurus)) problems.push("amount_unreadable");
   // A foreign invoice usually shows no KDV at all; its total stands alone.
-  else if (kind !== "foreign_invoice" && sum !== data.totalKurus && !(x.withholding && sum > data.totalKurus)) problems.push("total_mismatch");
+  else if (kind !== "foreign_invoice" && sum !== data.totalKurus && withholdingGap(x) === null) problems.push("total_mismatch");
   if (kind === "foreign_invoice" && !/^[A-Z]{3}$/.test(x.currency ?? "")) problems.push("currency_unsure");
   if (kind === "z_report" && data.totalKurus !== null) {
     const cash = amountOrNull(x.cashTotal), card = amountOrNull(x.cardTotal);
     if (cash === null && card === null) problems.push("z_payment_split");
     else if (cash !== null && card !== null && cash + card !== data.totalKurus) problems.push("z_payment_split");
   }
-  const lineTolerance = x.vatLines.length ? 1 : vatTolerance(x, 1);
-  if (data.vatLines.some((v) => v.vatKurus !== null && Math.abs(v.vatKurus - vatFromGross(v.grossKurus, v.rate)) > lineTolerance)) problems.push("vat_mismatch");
+  const lineTolerance = (expected: number) => !x.vatLines.length ? vatTolerance(x, 1) : kind === "receipt" ? 1 : Math.max(1, Math.ceil(expected / 1000));
+  if (data.vatLines.some((v) => { const e = vatFromGross(v.grossKurus, v.rate); return v.vatKurus !== null && Math.abs(v.vatKurus - e) > lineTolerance(e); })) problems.push("vat_mismatch");
   // TOPKDV against the KDV of the lines: a discount taken off the wrong rate shows here.
   const totalVat = amountOrNull(x.totalVat ?? null);
   const vatSum = data.vatLines.reduce((s, v) => s + (v.vatKurus ?? vatFromGross(v.grossKurus, v.rate)), 0);
@@ -228,7 +241,6 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
   if (data.date === null) problems.push("date_invalid");
   else if (!isPlausibleDate(data.date, today)) problems.push("date_unusual");
   // The model may flag a field as unsure yet still fill it; treat that as a problem so it is retried and highlighted.
-  // Matched by prefix, so "vatLines[0].vat" or "paymentMethod " count too.
   // The field itself or a part of it ("vatLines[0].vat"), never a longer name ("totalVat" is not "total"); a line's matrah alone is not its KDV.
   const unsure = (field: string) => x.unreadableFields.some((f) => {
     const n = f.trim().toLowerCase(), k = field.toLowerCase();

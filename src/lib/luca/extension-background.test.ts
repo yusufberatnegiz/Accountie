@@ -15,7 +15,7 @@ describe("eklentiye bağla (anahtarsız kurulum)", () => {
   it("firma okumasının sürüp sürmediğini yalnız siteye söyler; eski nabız bitmiş sayılır", () => {
     const Q = { type: "accountie-import-status" };
     expect(importStatus(Q, SITE, 1000, 5000)).toEqual({ ok: true, importing: true });
-    expect(importStatus(Q, SITE, 1000, 1000 + 61_000)).toEqual({ ok: true, importing: false });
+    expect(importStatus(Q, SITE, 1000, 1000 + 181_000)).toEqual({ ok: true, importing: false });
     expect(importStatus(Q, SITE, undefined, 5000)).toEqual({ ok: true, importing: false });
     expect(importStatus(Q, { origin: "https://kotu.example" }, 1000, 5000)).toBeNull();
     expect(importStatus({ type: "baska" }, SITE, 1000, 5000)).toBeNull();

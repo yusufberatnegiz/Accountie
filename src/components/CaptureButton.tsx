@@ -61,6 +61,7 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
     let failed = false;
     let skipped = 0;
     let limited = 0;
+    let uncut = 0;
     // Each photo becomes its own receipt; files are copied out of the input first because iOS replaces them on the next capture.
     for (const [i, file] of list.entries()) {
       setSlow(false);
@@ -94,19 +95,20 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
         break;
       }
       // One photo may hold several receipts side by side; each gets the photo for its review screen.
-      const { ids, skipped: left = 0, limited: over = 0 } = (await res.json()) as { ids: string[]; skipped?: number; limited?: number };
+      const { ids, skipped: left = 0, limited: over = 0, uncut: notCut = 0 } = (await res.json()) as { ids: string[]; skipped?: number; limited?: number; uncut?: number };
       skipped += left;
       limited += over;
+      uncut += notCut;
       setStage(2);
       if (!pdf) for (const id of ids) setPhoto(id, blob);
       lastId = ids[0];
       added += ids.length;
     }
     // The balance reached its floor inside a photo of several receipts: the list shows what was read, the rest is named.
-    if (skipped || limited) {
+    if (skipped || limited || uncut) {
       setBusy(false);
       setStatus("");
-      setNotice(`${added} belge eklendi.${skipped ? ` Kontör bittiği için ${skipped} fiş okunmadı.` : ""}${limited ? ` Bir karede en çok 10 fiş ve dakikada 10 okuma yapılır; ${limited} fiş okunmadı.` : ""} Okunmayan fişleri ${skipped ? "kontör yükledikten sonra " : ""}ayrı çekin.`);
+      setNotice(`${added} belge eklendi.${skipped ? ` Kontör bittiği için ${skipped} fiş okunmadı.` : ""}${limited ? ` Bir karede en çok 10 fiş ve dakikada 10 okuma yapılır; ${limited} fiş okunmadı.` : ""}${uncut ? ` ${uncut} fiş fotoğraftan ayrılamadı.` : ""} Okunmayan fişleri ${skipped ? "kontör yükledikten sonra " : ""}ayrı çekin.`);
       startTransition(() => { addTransitionType("fis-eklendi"); router.refresh(); });
       return;
     }

@@ -109,14 +109,15 @@ const autoReady = () => !!(AccountieSelectors.save && AccountieSelectors.saved &
 async function lucaTab() {
   // While the firm import runs, Luca's session moves from firm to firm: a receipt written now could land in another firm.
   const { importingAt } = await chrome.storage.local.get("importingAt");
-  if (typeof importingAt === "number" && Date.now() - importingAt < 60_000) {
+  if (typeof importingAt === "number" && Date.now() - importingAt < 180_000) {
     status("Luca'dan firmalar çekiliyor; Luca oturumu firma firma değişiyor. Çekme bitince fiş yazın.", true);
     return null;
   }
   // A firm import that could not show Luca back on the first firm (or whose tab was closed): asked once, then the next try writes.
   const { lucaAway } = await chrome.storage.local.get("lucaAway");
   if (lucaAway) {
-    await chrome.storage.local.remove("lucaAway");
+    // Cleared by asking only once the run has ended (no beat left); while it may still run, it keeps holding.
+    if (typeof importingAt !== "number") await chrome.storage.local.remove("lucaAway");
     status(`Firma çekmeden sonra Luca'nın ${lucaAway} firmasına döndüğü doğrulanamadı. Luca'da açık firmayı kontrol edin; doğruysa yeniden basın.`, true);
     return null;
   }

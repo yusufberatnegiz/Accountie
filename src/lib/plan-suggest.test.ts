@@ -249,3 +249,26 @@ describe("jüri turu 3: plan eşleme", () => {
     expect([one(bare, "foreign", "expense"), one(bare, "foreign", "vatIn"), one(bare, "foreign", "vatOut")]).toEqual(["770", "191", "360"]);
   });
 });
+
+describe("jüri turu 4: plan eşleme", () => {
+  const one = (plan: { code: string; name: string }[], kind: string, key: string) => fitRulesToPlan(rows, plan).find((r) => r.kind === kind && r.key === key)?.accountCode;
+
+  it("dövizli, dolarlı ve yabancı para kasası TL kasası sayılmaz", () => {
+    for (const name of ["Dövizli Kasa", "Dolarlı Kasa", "YABANCI PARA KASASI"]) {
+      expect(one([{ code: "100", name: "KASA" }, { code: "100.01", name }, { code: "100.02", name: "TL Kasa" }], "payment", "cash")).toBe("100.02");
+    }
+  });
+
+  it("yalnız 'Taşıt Giderleri' olan planda akaryakıt oraya gider", () => {
+    expect(one([{ code: "770", name: "G" }, { code: "770.01", name: "KIRTASİYE" }, { code: "770.03", name: "TAŞIT GİDERLERİ" }], "expense", "fuel")).toBe("770.03");
+  });
+
+  it("araç bakımı genel bakım hesabında kalmaz; birleşik bakım hesabı iki türe de yeter; araç gereç taşıt değildir", () => {
+    const two = [{ code: "770", name: "G" }, { code: "770.07", name: "Bakım Onarım Giderleri" }, { code: "770.15", name: "Taşıt Bakım Onarım Giderleri" }];
+    expect([one(two, "expense", "maintenance"), one(two, "expense", "vehicle_maintenance")]).toEqual(["770.07", "770.15"]);
+    const both = [{ code: "770", name: "G" }, { code: "770.04", name: "Bina ve Taşıt Bakım Onarım Giderleri" }];
+    expect([one(both, "expense", "maintenance"), one(both, "expense", "vehicle_maintenance")]).toEqual(["770.04", "770.04"]);
+    const tools = [{ code: "770", name: "G" }, { code: "770.05", name: "Makine Araç Gereç Bakım Onarım" }];
+    expect([one(tools, "expense", "maintenance"), one(tools, "expense", "vehicle_maintenance")]).toEqual(["770.05", ""]);
+  });
+});

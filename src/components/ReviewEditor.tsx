@@ -61,6 +61,7 @@ export function problemTarget(problem: string, lines: JournalLine[] = [], totalK
   if (problem.startsWith("Evrak no")) return { id: "evrak-no", action: "Evrak numarasını girin" };
   if (problem.startsWith("Satır yok")) return { id: "satir-ekle", action: "Satır ekleyin" };
   if (problem.startsWith("Araç")) return { id: "arac-ticari", action: "Araç türünü seçin" };
+  if (problem.startsWith("Mali değeri")) return { id: "fis-sil", action: "Taslağı silin" };
   if (problem.startsWith("Borç ile alacak") && totalKurus !== null) {
     const debitOff = lines.reduce((s, l) => s + l.debitKurus, 0) !== totalKurus;
     const creditOff = lines.reduce((s, l) => s + l.creditKurus, 0) !== totalKurus;
@@ -231,8 +232,14 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const vehicle = kind === "receipt" && (binek || vehicleCost || receipt.category === "maintenance");
   // Not approved until the vehicle is chosen (Ticari is kept on the receipt once pressed, setVehicleChoice); a binek split is a choice made.
   const ticariSaved = (receipt.extraction as { vehicle?: string } | null)?.vehicle === "ticari";
-  const vehicleOpen = editable && vehicleCost && !binek && !ticariSaved && !seen.has("vehicle");
-  const problem = invalid ? "Tutar biçimi hatalı." : vehicleOpen ? "Araç binek mi ticari mi, seçin." : approvalProblem(parsed);
+  const vehicleChosen = ticariSaved || seen.has("vehicle");
+  const vehicleOpen = editable && vehicleCost && !binek && !vehicleChosen;
+  const noFiscalValue = receipt.warnings.some((w) => w.code === "no_fiscal_value");
+  // 9: with the firm's plan at hand, a group account is caught here as on the server.
+  const postableCodes = postable.length ? new Set(postable.map((a) => a.code)) : undefined;
+  const planCodes = plan.length ? new Set(plan.map((a) => a.code)) : undefined;
+  const problem = invalid ? "Tutar biçimi hatalı." : noFiscalValue ? "Mali değeri olmayan belge onaylanmaz; bu taslağı silin."
+    : vehicleOpen ? "Araç binek mi ticari mi, seçin." : approvalProblem(parsed, planCodes, postableCodes);
   const creditCode = lines.find(isPayment)?.accountCode ?? "";
   // Paid more than one way (cash and card): each way has its own credit line, and one choice for all would merge them.
   const mixedPayment = new Set(lines.filter(isPayment).map((l) => l.accountCode)).size > 1;
@@ -245,6 +252,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   // A field warning goes away once the user has edited that field, like its flag.
   // The plan warning goes once no line carries a code it named.
   const stillMismatched = mismatched.filter((c) => lines.some((l) => l.accountCode === c && l.accountName !== plan.find((a) => a.code === c)?.name));
+  const planNames = new Map(plan.map((a) => [a.code, a.name]));
   const warnings = receipt.warnings.filter((w) => !(editable && (seen.has(WARNING_FIELD[w.code] ?? "") || (w.code === "plan_name" && !stillMismatched.length))));
   const flag = (on: boolean) => (on ? { "data-check": "", ...(warnings.length ? { "aria-describedby": "uyarilar" } : {}) } : {});
   const checkNote = (on: boolean) => (on ? <span className="check-note">Kontrol edin</span> : null);
@@ -270,7 +278,6 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   };
   const knownAccounts: Account[] = [...Object.values(rules.expense), ...Object.values(rules.vat), ...Object.values(rules.payment), ...PAYMENT_ALTERNATIVES,
     rules.foreign.expense, rules.foreign.vatIn, rules.foreign.vatOut, rules.sales.cash, rules.sales.card, ...Object.values(rules.sales.revenue), ...Object.values(rules.sales.vat)];
-  const planNames = new Map(plan.map((a) => [a.code, a.name]));
   const setCode = (key: number, code: string) => {
     // The firm's Luca name first: it is the account Luca will book.
     const name = planNames.get(code.trim()) ?? knownAccounts.find((a) => a.code === code.trim())?.name;
@@ -293,10 +300,10 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     touch("vehicle");
     // Kept on the receipt at once: a Ticari choice changes no line, so saving the lines would not record it.
     if (editable) {
-      fetch(`/api/receipts/${receipt.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ vehicle: on ? "binek" : "ticari" }) })
-        .then((res) => { if (!res.ok) throw new Error(); })
-        .catch(() => {
-          setError("Araç seçimi kaydedilemedi. Bağlantıyı kontrol edip yeniden seçin.");
+      call(`/api/receipts/${receipt.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ vehicle: on ? "binek" : "ticari" }) })
+        .then((ok) => {
+          if (ok) return setError("");
+          // Asked again: the choice is not kept until the server has it.
           setSeen((s) => { const n = new Set(s); n.delete("vehicle"); return n; });
         });
     }
@@ -329,7 +336,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
       return Promise.resolve(false);
     }
     const sent = signature(lines);
-    return call(`/api/receipts/${receipt.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ lines: parsed }) })
+    return call(`/api/receipts/${receipt.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ lines: parsed, ...(vehicle && vehicleChosen ? { vehicle: binek ? "binek" : "ticari" } : {}) }) })
       .then((ok) => {
         if (ok) setSavedSignature(sent);
         return ok;
@@ -458,9 +465,9 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
             ) : null}
             {editable && vehicle ? (
               <div className="inline-field vehicle-field">
-                <span id="arac-turu">Araç binek mi, ticari mi? {checkNote(vehicleOpen)}</span>
+                <span id="arac-turu">{vehicleCost ? "Araç binek mi, ticari mi?" : "Araç bakımı mı? (isteğe bağlı)"} {checkNote(vehicleOpen)}</span>
                 <span className="seg" role="group" aria-labelledby="arac-turu" aria-describedby={binek ? "binek-not" : undefined} {...flag(vehicleOpen)}>
-                  <button id="arac-ticari" className="side-opt" type="button" aria-pressed={!binek && !vehicleOpen} disabled={invalid || working} onClick={() => setBinek(false)}>Ticari</button>
+                  <button id="arac-ticari" className="side-opt" type="button" aria-pressed={!binek && vehicleChosen} disabled={invalid || working} onClick={() => setBinek(false)}>Ticari</button>
                   <button className="side-opt" type="button" aria-pressed={binek} disabled={invalid || working || !kkeg}
                     aria-describedby={kkeg ? undefined : "binek-yok"} onClick={() => setBinek(true)}>Binek</button>
                 </span>
@@ -487,7 +494,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
             </thead>
             <tbody ref={tbody}>
               {lines.map((l, i) => {
-                const codeFlag = flagged(`code-${l.key}`, !l.accountCode || mismatched.includes(l.accountCode));
+                const codeFlag = flagged(`code-${l.key}`, !l.accountCode || (stillMismatched.includes(l.accountCode) && l.accountName !== planNames.get(l.accountCode)));
                 const debitFlag = flagged(`debit-${l.key}`, amountsUnsure && !!l.debit);
                 const creditFlag = flagged(`credit-${l.key}`, amountsUnsure && !!l.credit);
                 const unsure = (on: boolean) => (on ? ", kontrol edin" : "");
@@ -665,7 +672,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
               <h2 id="sil-baslik">{kind === "z_report" ? "Z raporunu sil" : isInvoice ? "Faturayı sil" : "Fişi sil"}</h2>
               <p className="muted small">Taslak ve satırları kalıcı olarak silinir.</p>
             </div>
-            <button className="btn btn-danger" type="button" disabled={working}
+            <button id="fis-sil" className="btn btn-danger" type="button" disabled={working}
               onClick={() => confirm(deleteQuestion) && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) router.push(base); })}>
               {kind === "z_report" ? "Z raporunu sil" : isInvoice ? "Faturayı sil" : "Fişi sil"}
             </button>

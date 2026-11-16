@@ -177,3 +177,10 @@ describe("jüri turu 3: yevmiye", () => {
     expect(warningCodes(buildJournalLines({ ...sample, paymentMethod: "other" }, DEFAULT_RULES))).toContain("payment_other");
   });
 });
+
+describe("jüri turu 4: onay", () => {
+  it("planda olan ama alt hesabı bulunan (grup) kodla onay verilmez", () => {
+    const lines = [{ accountCode: "770", debitKurus: 100, creditKurus: 0, documentNo: "1", documentDate: "2026-09-05" }, { accountCode: "100.01", debitKurus: 0, creditKurus: 100, documentNo: "1", documentDate: "2026-09-05" }];
+    expect(approvalProblem(lines, new Set(["770", "770.01", "100.01"]), new Set(["770.01", "100.01"]))).toBe("1. satırdaki 770 hesabının alt hesapları var; alt hesaplardan birini seçin.");
+  });
+});
