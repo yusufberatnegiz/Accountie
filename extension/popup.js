@@ -107,6 +107,12 @@ const dropFilled = async (id) => chrome.storage.local.set({ filledIds: (await fi
 const autoReady = () => !!(AccountieSelectors.save && AccountieSelectors.saved && AccountieSelectors.newEntry);
 
 async function lucaTab() {
+  // While the firm import runs, Luca's session moves from firm to firm: a receipt written now could land in another firm.
+  const { importingAt } = await chrome.storage.local.get("importingAt");
+  if (typeof importingAt === "number" && Date.now() - importingAt < 60_000) {
+    status("Luca'dan firmalar çekiliyor; Luca oturumu firma firma değişiyor. Çekme bitince fiş yazın.", true);
+    return null;
+  }
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url || !LUCA_HOST.test(new URL(tab.url).hostname)) {
     status("Önce Luca'da Fiş Detayı ekranını açın, sonra eklentiyi o sekmede açın.", true);

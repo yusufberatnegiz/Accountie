@@ -79,10 +79,10 @@ describe("buildJournalLines", () => {
     expect(warningCodes(result)).toContain("total_mismatch");
   });
 
-  it("fişteki KDV orandan 1 kuruştan fazla saparsa uyarı verir ama fişteki değeri kullanır", () => {
+  it("fişteki KDV orandan saparsa fişteki değeri yazar; uyumsuzluğu okuma denetimi söyler", () => {
     const result = buildJournalLines({ ...sample, vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 80000 }] }, DEFAULT_RULES);
     expect(codes(result)[1]).toEqual(["191.03.10", 80000, 0]);
-    expect(warningCodes(result)).toContain("vat_mismatch");
+    expect(warningCodes(result)).not.toContain("vat_mismatch");
     expect(result.balanced).toBe(true);
   });
 
@@ -158,5 +158,16 @@ describe("karma ödeme", () => {
   it("toplamı tutmayan ödeme kırılımında tek alacak satırı kalır", () => {
     const r = buildJournalLines({ ...sample, payments: [{ method: "cash", kurus: 100 }, { method: "card", kurus: 200 }] }, DEFAULT_RULES);
     expect(r.lines.filter((l) => l.creditKurus > 0)).toHaveLength(1);
+  });
+});
+
+describe("jüri turu 2: yevmiye", () => {
+  it("puan, hediye çeki ya da yemek kartıyla ödenen kısım uyarı verir", () => {
+    const r = buildJournalLines({ ...sample, payments: [{ method: "card", kurus: 800000 }, { method: "other", kurus: 72500 }] }, DEFAULT_RULES);
+    expect(warningCodes(r)).toContain("payment_other");
+  });
+  it("%0 satırda KDV okunmadı uyarısı vermez", () => {
+    const r = buildJournalLines({ ...sample, vatLines: [{ rate: 10, grossKurus: 800000, vatKurus: 72727 }, { rate: 0, grossKurus: 72500, vatKurus: null }] }, DEFAULT_RULES);
+    expect(warningCodes(r)).not.toContain("vat_computed");
   });
 });

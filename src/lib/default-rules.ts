@@ -13,7 +13,8 @@ export const CATEGORIES: readonly { key: string; label: string; account: Account
   { key: "parking", label: "Otopark ve yol", account: { code: "770.04", name: "Otopark ve Yol Giderleri" }, vehicle: true },
   { key: "transport", label: "Ulaşım", account: { code: "770.05", name: "Seyahat ve Ulaşım Giderleri" } },
   { key: "cleaning", label: "Temizlik", account: { code: "770.06", name: "Temizlik Giderleri" } },
-  { key: "maintenance", label: "Bakım ve onarım", account: { code: "770.07", name: "Bakım ve Onarım Giderleri" }, vehicle: true },
+  { key: "maintenance", label: "İşyeri bakım ve onarım", account: { code: "770.07", name: "Bakım ve Onarım Giderleri" } },
+  { key: "vehicle_maintenance", label: "Araç bakım ve onarım", account: { code: "770.07", name: "Bakım ve Onarım Giderleri" }, vehicle: true },
   { key: "meal", label: "Yemek ve ağırlama", account: { code: "770.08", name: "Yeme-İçme ve Ağırlama Giderleri" } },
   { key: "telecom", label: "Telefon ve internet", account: { code: "770.09", name: "Haberleşme Giderleri" } },
   { key: "lodging", label: "Konaklama", account: { code: "770.10", name: "Konaklama Giderleri" }, warning: "lodging_tax" },
@@ -23,7 +24,7 @@ export const CATEGORIES: readonly { key: string; label: string; account: Account
 ];
 
 export const CATEGORY_KEYS = [
-  "fuel", "stationery", "cargo", "parking", "transport", "cleaning", "maintenance",
+  "fuel", "stationery", "cargo", "parking", "transport", "cleaning", "maintenance", "vehicle_maintenance",
   "meal", "telecom", "lodging", "office_supplies", "food_grocery", "other",
 ] as const;
 export type CategoryKey = (typeof CATEGORY_KEYS)[number];

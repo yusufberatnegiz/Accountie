@@ -18,11 +18,11 @@ const SYSTEM = `Türk muhasebe belgelerinden alan çıkarıyorsun. Önce belgeni
 Sadece belgede yazanı yaz. Okuyamadığın veya belgede olmayan alanı null bırak ve adını unreadableFields listesine ekle. Tahmin etme, hesaplama yapma.
 Tutarları metin olarak ve Türk biçiminde ver: binlik ayırıcı nokta, kuruş virgül (örnek "8.725,00"); para birimi işaretini yazma. Belge "1,234.56" gibi yazıyorsa "1.234,56" olarak ver.
 Tarihi GG.AA.YYYY biçiminde ver ("Oct 31, 2026" ise "31.10.2026").
-KDV kırılımında her oran için bir satır yaz: o orandaki KDV dahil tutar ve KDV tutarı. Z raporunda bu, günün oran bazlı satışlarıdır; total günün genel toplamı, receiptNo null, zNo Z numarası. Fişte oran bazlı toplamlar yazmıyorsa (yalnız TOPKDV ve TOPLAM varsa) vatLines'ı boş bırak, her ürün satırını oranı ve tutarıyla lineItems listesine yaz; toplamları sen hesaplama. Kırılım yazıyorsa lineItems boş kalsın.
+KDV kırılımında her oran için bir satır yaz: o orandaki KDV dahil tutar ve KDV tutarı. Z raporunda bu, günün oran bazlı satışlarıdır; total günün genel toplamı, receiptNo null, zNo Z numarası. Fişte oran başına KDV dahil tutar yazmıyorsa (yalnız TOPKDV ya da oran başına yalnız KDV tutarı varsa) vatLines'ı boş bırak, her ürün satırını oranı ve tutarıyla lineItems listesine yaz, KDV'siz kalemleri de oranı 0 ile; toplamları sen hesaplama. Oran başına KDV dahil tutar yazıyorsa lineItems boş kalsın.
 İndirim satırlarını (Ürün İndirimleri, İNDİRİM, İSKONTO, kampanya; tutarın sonunda -D) discounts listesine yaz: tutar eksi işaretsiz, rate indirimin uygulandığı ürünün KDV oranı (ürünün adından ürün satırındaki oranı bul); sepetin tamamına yapılan indirimde rate null. TOPKDV veya TOPLAM KDV'yi totalVat'a yaz; Z raporunda günün KDV'sini, kümülatif toplamı değil.
 Faturada oran başına KDV dahil tutar yoksa gross null, net o orandaki matrah, vat o orandaki hesaplanan KDV olsun. Satır iptali veya düzeltme satırını eksi tutarla ("-30,00") lineItems'a yaz.
 KDV'siz ya da matrah dışı kalemleri (katkı payı, havaalanı vergisi, hizmet bedeli; konaklama vergisi KDV değildir) oranı 0 olan bir vatLines satırına yaz, KDV dahil tutarların toplamı total'i tutsun.
-Belgede "MALİ DEĞERİ YOKTUR" yazıyorsa noFiscalValue true.
+Belgede "MALİ DEĞERİ YOKTUR" yazıyorsa noFiscalValue true. Faturada KDV tevkifatı varsa withholding true.
 Fiş birden çok ödeme şekliyle ödenmişse (nakit + kredi kartı, puan, hediye çeki, yemek kartı) her birini tutarıyla payments listesine yaz; paymentMethod en büyük tutarın şekli olsun.
 Yurt dışı faturada: vendorName faturayı kesen şirketin tam adı, receiptNo fatura veya makbuz numarası, total ödenecek toplam, currency para birimi; KDV yazmıyorsa vatLines boş, taxNumber null.
 Yurt içi faturada: vendorName ve taxNumber faturayı kesen satıcınındır, alıcının ("SAYIN" altındaki) değil; receiptNo fatura numarası (ör. "ABC2026000000123"), ETTN değil; total ödenecek tutar.
@@ -54,7 +54,7 @@ export async function extractReceipt(file: Buffer, client: ExtractClient = (defa
       const response = await client.messages.parse({
         model,
         // Room for adaptive thinking and a long market receipt's item lines; a cut-off answer cannot be parsed.
-        max_tokens: 4096,
+        max_tokens: 8192,
         // Haiku 5.5 accepts disabled thinking at low effort; Sonnet 5.5 rejects "disabled", so it runs adaptive.
         ...(model === PRIMARY_MODEL ? { thinking: { type: "disabled" as const } } : {}),
         output_config: { effort: "low", format: zodOutputFormat(ReceiptExtractionSchema) },
@@ -70,7 +70,7 @@ export async function extractReceipt(file: Buffer, client: ExtractClient = (defa
       const problems = checkExtraction(response.parsed_output);
       // Keep the earlier read when the retry is worse.
       if (!best || problems.length < best.problems.length) best = { extraction: response.parsed_output, problems, model };
-      if (problems.length === 0) break;
+      if (problems.length === 0 || response.parsed_output.noFiscalValue) break;
     } catch (err) {
       // AnthropicError also covers output that fails ReceiptExtractionSchema, so the stronger model still gets its try.
       if (!(err instanceof Anthropic.AnthropicError)) throw err;
@@ -116,8 +116,7 @@ export async function locateReceipts(jpeg: Buffer, client: ExtractClient = (defa
     const scale = (v: number, size: number) => Math.round((Math.min(v, size) / size) * 1000);
     const boxes = (response.parsed_output?.receipts ?? [])
       .map((b) => ({ left: scale(b.left, width), top: scale(b.top, height), right: scale(b.right, width), bottom: scale(b.bottom, height) }))
-      .filter((b) => b.right - b.left >= 20 && b.bottom - b.top >= 20)
-      .slice(0, MAX_RECEIPTS_PER_PHOTO);
+      .filter((b) => b.right - b.left >= 20 && b.bottom - b.top >= 20);
     return boxes.length > 1 ? boxes : [];
   } catch (err) {
     if (!(err instanceof Anthropic.AnthropicError)) throw err;

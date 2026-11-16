@@ -13,7 +13,7 @@ vi.mock("@/db/queries", () => ({
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), clientIp: () => "203.0.113.9" }));
-vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(async () => []), STRONG_READ_ABOVE: 4 }));
+vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(async () => []), STRONG_READ_ABOVE: 4, MAX_RECEIPTS_PER_PHOTO: 10 }));
 vi.mock("@/lib/image", async (original) => ({ ...(await original<typeof import("@/lib/image")>()), normalizeImage: vi.fn(async () => Buffer.from("jpeg")) }));
 
 const session = await import("@/lib/auth/session");
@@ -51,7 +51,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(session.getUserId).mockResolvedValue(USER);
   vi.mocked(allow).mockResolvedValue(true);
-  vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [] });
+  vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [], plan: [] });
   vi.mocked(q.createReceipt).mockResolvedValue(ID);
   vi.mocked(q.getReceipt).mockResolvedValue(draft);
 });
@@ -63,7 +63,7 @@ describe("oturum", () => {
       receiptsRoute.POST(upload()), receiptsRoute.GET(new Request("http://test/api/receipts")),
       receiptRoute.GET(new Request("http://test"), params()), receiptRoute.PATCH(json({ lines }), params()),
       receiptRoute.DELETE(new Request("http://test"), params()), approveRoute.POST(new Request("http://test"), params()),
-      exportsRoute.POST(json({}, "POST")), rulesRoute.GET(), rulesRoute.PUT(json({ rows: [] }, "PUT")),
+      exportsRoute.POST(json({}, "POST")), rulesRoute.GET(), rulesRoute.PUT(json({ rows: [], plan: [] }, "PUT")),
       exportedRoute.POST(new Request("http://test"), params()), reopenRoute.POST(new Request("http://test"), params()),
       exportedRoute.DELETE(new Request("http://test"), params()),
     ]);
@@ -81,7 +81,7 @@ describe("POST /api/receipts", () => {
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
         receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18", net: null }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false, payments: [],
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [],
       },
     });
     expect((await receiptsRoute.POST(upload())).status).toBe(201);
@@ -96,7 +96,7 @@ describe("POST /api/receipts", () => {
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
         receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18", net: null }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false, payments: [],
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [],
       },
     });
     const res = await receiptsRoute.POST(upload());
@@ -200,7 +200,7 @@ describe("tek fiş", () => {
 
   it("onay, satıcının düzeltilmiş gider hesabını o firmada öğrenir; varsayılana dönen onay öğrenileni unutur", async () => {
     vi.mocked(q.transitionReceipt).mockResolvedValue(true);
-    vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [] });
+    vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [], plan: [] });
     const seller = { taxNumber: "1111111114", firmId: "firm-1", vendorName: "ÖRNEK BALIK LOKANTASI", category: "meal" };
     const corrected = lines.map((l, i) => (i === 0 ? { ...l, accountCode: "770.05", accountName: "Ulaşım Giderleri" } : l));
     vi.mocked(q.getReceipt).mockResolvedValueOnce({ ...draft!, ...seller, lines: corrected });

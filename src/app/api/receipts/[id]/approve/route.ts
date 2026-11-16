@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getReceipt, getRules, learnVendorRule, listFirmAccounts, transitionReceipt } from "@/db/queries";
+import { getReceipt, getRules, learnVendorRule, transitionReceipt } from "@/db/queries";
 import { idSchema } from "@/lib/api-schemas";
 import { getUserId } from "@/lib/auth/session";
 import { fail, notFound, unauthorized } from "@/lib/http";
@@ -15,15 +15,16 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const receipt = id.success ? await getReceipt(userId, id.data) : null;
   if (!receipt) return notFound();
   if (receipt.status !== "draft") return fail("Fiş zaten onaylı.", 409);
-  // Once the firm's Luca plan is imported, a code Luca does not have is caught here instead of at transfer.
-  const plan = receipt.firmId ? new Set((await listFirmAccounts(userId, receipt.firmId)).map((a) => a.code)) : undefined;
-  const problem = approvalProblem(receipt.lines, plan);
+  // Once the firm's Luca plan is imported, a code Luca does not have is caught here instead of at transfer. The rules come with
+  // the plan (one read), and teach the seller below.
+  const fitted = receipt.firmId ? await getRules(userId, receipt.firmId).catch(() => null) : null;
+  const problem = approvalProblem(receipt.lines, fitted?.plan.length ? new Set(fitted.plan.map((a) => a.code)) : undefined);
   if (problem) return fail(`Fiş onaylanamadı. ${problem}`, 422);
   if (!(await transitionReceipt(userId, receipt.id, "draft", "approved"))) return fail("Fiş durumu değişti. Sayfayı yenileyin.", 409);
   // The approval teaches this firm's seller its expense account (only a correction is kept). A failure here never undoes the approval.
   // A Z report carries the firm's own VKN and a foreign invoice none: only receipts teach a seller.
   if (receipt.taxNumber && receipt.firmId && receipt.category !== "z_report" && receipt.category !== "foreign") {
-    const { rules } = await getRules(userId, receipt.firmId).catch(() => ({ rules: null }));
+    const rules = fitted?.rules;
     const account = rules ? learnedAccount(receipt.lines, rules.expense[receipt.category ?? "other"] ?? rules.expense.other) : undefined;
     if (account !== undefined) await learnVendorRule(userId, receipt.firmId, receipt.taxNumber, receipt.vendorName, account).catch((e) => console.error("vendor rule not saved", e instanceof Error ? e.name : "unknown"));
   }

@@ -22,7 +22,7 @@ const goodOutput: ReceiptExtraction = {
   currency: "TRY",
   cashTotal: null,
   cardTotal: null,
-  invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false, payments: [],
+  invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [],
 };
 
 // checkExtraction flags dates far from "today"; pin it so the sample receipt stays current.
@@ -88,7 +88,7 @@ describe("indirimli fiş", () => {
     expect(toReceiptData(x).vatLines).toEqual([{ rate: 20, grossKurus: 34500, vatKurus: 5750 }, { rate: 1, grossKurus: 12900, vatKurus: 128 }]);
   });
   it("sepet indirimini oranlara tutarları oranında dağıtır", () => {
-    const x = { ...a101, total: "474,00", totalVat: null, noFiscalValue: false, payments: [], discounts: [{ rate: null, amount: "234,00" }] };
+    const x = { ...a101, total: "474,00", totalVat: null, withholding: false, noFiscalValue: false, payments: [], discounts: [{ rate: null, amount: "234,00" }] };
     const lines = toReceiptData(x).vatLines;
     expect(lines.reduce((s, v) => s + v.grossKurus, 0)).toBe(47400);
     expect(lines.map((v) => v.grossKurus)).toEqual([38764, 8636]);
@@ -148,6 +148,10 @@ describe("checkExtraction", () => {
     expect(checkExtraction({ ...goodOutput, unreadableFields: ["total", "date"] })).toEqual(["amount_unreadable", "date_invalid"]);
     expect(checkExtraction({ ...goodOutput, unreadableFields: ["paymentMethod", "receiptNo"] })).toEqual(["payment_unsure", "receipt_no_unsure"]);
     expect(checkExtraction({ ...goodOutput, unreadableFields: ["vatLines[0].vat", "Total"] })).toEqual(["amount_unreadable", "vat_mismatch"]);
+  });
+  it("'totalVat' ya da bir satırın matrahı belirsizse toplam ve KDV belirsiz sayılmaz", () => {
+    expect(checkExtraction({ ...goodOutput, unreadableFields: ["totalVat"] })).toEqual([]);
+    expect(checkExtraction({ ...goodOutput, unreadableFields: ["vatLines[0].net"] })).toEqual([]);
   });
   it("bugünden ileri veya bir yıldan eski tarihi işaretler", () => {
     const today = new Date("2026-11-03T12:00:00Z");
@@ -279,10 +283,10 @@ describe("locateReceipts", () => {
     const sliver = mockClient(boxes({ left: 0, top: 0, right: 1800, bottom: 1000 }, { left: 1900, top: 0, right: 1920, bottom: 1000 }));
     expect(await locateReceipts(await photo(), sliver.client)).toEqual([]);
   });
-  it("sınırdan fazla kutu gelince ilk on fişi okur, fotoğrafı tek fiş saymaz", async () => {
+  it("bütün kutuları döner (fazlası route'ta sayılır), fotoğrafı tek fiş saymaz", async () => {
     const { locateReceipts } = await import("./extract");
     const many = mockClient(boxes(...Array.from({ length: 12 }, (_, i) => ({ left: i * 160, top: 0, right: i * 160 + 150, bottom: 1000 }))));
-    expect(await locateReceipts(await photo(), many.client)).toHaveLength(10);
+    expect(await locateReceipts(await photo(), many.client)).toHaveLength(12);
   });
   it("reads the photo whole when the call fails", async () => {
     const { locateReceipts } = await import("./extract");

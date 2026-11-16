@@ -8,11 +8,19 @@ export const PASSENGER_CAR_KKEG_PERCENT = 30;
 
 type Line = { accountCode: string; accountName: string; debitKurus: number; creditKurus: number };
 
-export const isPassengerCar = (lines: readonly Line[], kkeg: Account) => lines.some((l) => l.accountCode === kkeg.code && l.debitKurus > 0);
+/**
+ * A KKEG line: the firm's KKEG account, or any 689 account or one named as KKEG. The same test runs on the server (src/db/queries.ts)
+ * and on the screen, so a receipt split once is never split again, whatever the firm's KKEG rule says.
+ */
+export const isKkegLine = (l: { accountCode: string; accountName: string }, kkeg?: Account) =>
+  (!!kkeg?.code && l.accountCode === kkeg.code) || l.accountCode.startsWith("689") || KKEG_NAME.test(l.accountName);
+export const KKEG_NAME = /kanunen kabul|kkeg|binek araç gider/i;
+
+export const isPassengerCar = (lines: readonly Line[], kkeg: Account) => lines.some((l) => l.debitKurus > 0 && isKkegLine(l, kkeg));
 
 /** Moves 30% of every debit line into one KKEG line, put just before the credit. `make` builds that line from a debit line. */
 export function toPassengerCar<L extends Line>(lines: readonly L[], kkeg: Account, make: (from: L) => L): L[] {
-  if (isPassengerCar(lines, kkeg)) return [...lines];
+  if (!kkeg.code || isPassengerCar(lines, kkeg)) return [...lines];
   let moved = 0;
   const out = lines.map((l) => {
     if (l.debitKurus <= 0) return l;
@@ -33,7 +41,7 @@ export function toPassengerCar<L extends Line>(lines: readonly L[], kkeg: Accoun
  * were. Otherwise each line is grown back by 100/70 and any kuruş left over goes to the largest.
  */
 export function fromPassengerCar<L extends Line>(lines: readonly L[], kkeg: Account, original?: readonly Line[]): L[] {
-  const kept = lines.filter((l) => !(l.accountCode === kkeg.code && l.debitKurus > 0));
+  const kept = lines.filter((l) => !(l.debitKurus > 0 && isKkegLine(l, kkeg)));
   if (kept.length === lines.length) return [...lines];
   if (original && !isPassengerCar(original, kkeg)) {
     const turned = toPassengerCar(original.map((l) => ({ ...l })), kkeg, (from) => ({ ...from }));

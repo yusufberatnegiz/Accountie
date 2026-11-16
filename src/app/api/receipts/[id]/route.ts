@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { deleteDraft, getReceipt, replaceLines } from "@/db/queries";
+import { deleteDraft, getReceipt, replaceLines, setVehicleChoice } from "@/db/queries";
 import { idSchema, PatchReceiptSchema } from "@/lib/api-schemas";
 import { getUserId } from "@/lib/auth/session";
 import { NO_STORE, fail, notFound, readJson, unauthorized } from "@/lib/http";
@@ -26,8 +26,10 @@ export async function PATCH(request: Request, { params }: Ctx) {
   if (receipt.status !== "draft") return fail("Sadece taslak fiş düzenlenebilir. Önce taslağa alın.", 409);
   const body = PatchReceiptSchema.safeParse(await readJson(request));
   if (!body.success) return fail("Satırlarda geçersiz değer var.", 400);
-  if (!(await replaceLines(userId, receipt.id, body.data.lines))) return fail("Sadece taslak fiş düzenlenebilir. Önce taslağa alın.", 409);
-  return NextResponse.json({ balanced: isBalanced(body.data.lines) });
+  const { lines, vehicle } = body.data;
+  if (lines && !(await replaceLines(userId, receipt.id, lines))) return fail("Sadece taslak fiş düzenlenebilir. Önce taslağa alın.", 409);
+  if (vehicle && !(await setVehicleChoice(userId, receipt.id, vehicle))) return fail("Sadece taslak fiş düzenlenebilir. Önce taslağa alın.", 409);
+  return NextResponse.json({ balanced: lines ? isBalanced(lines) : null });
 }
 
 export async function DELETE(_request: Request, { params }: Ctx) {

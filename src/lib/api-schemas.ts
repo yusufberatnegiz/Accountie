@@ -28,7 +28,11 @@ export const BillingSchema = z.object({
 
 export const CheckoutSchema = z.object({ packageId: z.string().max(20), billing: BillingSchema });
 
-export const PatchReceiptSchema = z.object({ lines: z.array(LineInputSchema).min(1).max(100) });
+// Lines, the vehicle choice made on the review screen, or both.
+export const PatchReceiptSchema = z.object({
+  lines: z.array(LineInputSchema).min(1).max(100).optional(),
+  vehicle: z.enum(["ticari", "binek"]).optional(),
+}).refine((b) => b.lines || b.vehicle);
 
 export const ExportSchema = z.object({ receiptIds: z.array(z.uuid()).max(500).optional(), firmId: z.uuid().optional(), month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional() });
 

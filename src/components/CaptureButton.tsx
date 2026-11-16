@@ -106,9 +106,7 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
     if (skipped || limited) {
       setBusy(false);
       setStatus("");
-      setNotice(skipped
-        ? `${added} belge eklendi. Kontör bittiği için ${skipped} fiş okunmadı. Kontör yükledikten sonra okunmayan fişleri ayrı çekin.`
-        : `${added} belge eklendi. Dakikalık okuma sınırına gelindiği için ${limited} fiş okunmadı. Bir dakika sonra okunmayan fişleri ayrı çekin.`);
+      setNotice(`${added} belge eklendi.${skipped ? ` Kontör bittiği için ${skipped} fiş okunmadı.` : ""}${limited ? ` Bir karede en çok 10 fiş ve dakikada 10 okuma yapılır; ${limited} fiş okunmadı.` : ""} Okunmayan fişleri ${skipped ? "kontör yükledikten sonra " : ""}ayrı çekin.`);
       startTransition(() => { addTransitionType("fis-eklendi"); router.refresh(); });
       return;
     }

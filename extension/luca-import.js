@@ -69,25 +69,54 @@
     return new DOMParser().parseFromString(text, "text/html");
   }
 
-  /**
-   * Oturumu firmaya çevirir, kimliğini ve hesap planını okur. Luca geçişi bazen geç yansıtır: dönem tutmazsa bir kez daha geçer;
-   * yine tutmazsa durur, yanlış firmanın planı alınmaz.
-   */
-  async function readFirm(f) {
-    let identity = null;
+  /** Luca sayfalarındaki __SESSION nesnesinin firma ve dönem numarası; bulunamazsa null (o zaman yalnız dönem tarihine bakılır). */
+  function sessionIds(html) {
+    // Yalnız __SESSION nesnesinin içinden: sayfadaki başka bir SIRKET_ID (bir form alanı) yanlış alarm vermesin.
+    const block = /__SESSION\s*=\s*\{([^}]{0,2000})\}/.exec(html)?.[1] ?? "";
+    const sirket = /SIRKET_ID["']?\s*:\s*["']?(\d+)/.exec(block)?.[1] ?? null;
+    const donem = /DONEM_ID["']?\s*:\s*["']?(\d+)/.exec(block)?.[1] ?? null;
+    return { sirket, donem };
+  }
+
+  /** Oturumu firmaya çevirir ve gerçekten o firmaya ve döneme geçtiğini doğrular. Luca geçişi bazen geç yansıtır: bir kez daha dener. */
+  async function switchTo(f) {
+    let identity = null, ids = null, reply = "";
     for (let attempt = 0; attempt < 2; attempt++) {
       if (attempt) await new Promise((r) => setTimeout(r, 1500));
-      await page(switchUrl(f));
-      identity = parseIdentity((await page(`musteriBilgileri.do?time=${Date.now()}`)).body?.textContent ?? "");
-      if (identity && identity.start === f.start && identity.end === f.end) break;
+      const sw = await page(switchUrl(f));
+      // Luca'nın geçiş yanıtındaki uyarı ya da hata metni: geçmezse nedeni budur.
+      reply = (sw.body?.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 150)
+        || /alert\(["']([^"']{1,150})/.exec(sw.documentElement?.innerHTML ?? "")?.[1] || "";
+      const info = await page(`musteriBilgileri.do?time=${Date.now()}`);
+      identity = parseIdentity(info.body?.textContent ?? "");
+      ids = sessionIds(info.documentElement?.innerHTML ?? "");
+      // Aynı dönem tarihli başka bir firmada kalınmışsa yalnız tarih tutar; Luca firma numarasını veriyorsa o da tutmalı.
+      const sameFirm = !ids.sirket || ids.sirket === String(f.lucaId);
+      if (identity && identity.start === f.start && identity.end === f.end && sameFirm) return { ok: true, identity };
     }
+    return { ok: false, identity, ids, reply };
+  }
+
+  /**
+   * Oturumu firmaya çevirir, kimliğini ve hesap planını okur. Geçiş doğrulanmazsa durur, yanlış firmanın planı alınmaz.
+   */
+  async function readFirm(f) {
+    const sw = await switchTo(f);
+    const identity = sw.identity;
     if (!identity) throw new Error("Luca firma bilgisini vermedi; Luca oturumu kapanmış olabilir. İki kez denendi.");
     // Both sides in the message: whether Luca stayed on another firm or opened this firm with other dates tells the cause.
-    if (identity.start !== f.start || identity.end !== f.end) throw new Error(`Luca bu firmaya geçmedi. İstenen: ${f.shortName} ${f.start} - ${f.end}. Luca'nın açık gösterdiği: ${identity.name} ${identity.start} - ${identity.end}.`);
+    if (!sw.ok) throw new Error(`Luca bu firmaya geçmedi. İstenen: ${f.shortName} (no ${f.lucaId}) ${f.start} - ${f.end}. Luca'nın açık gösterdiği: ${identity.name}${sw.ids?.sirket ? ` (no ${sw.ids.sirket})` : ""} ${identity.start} - ${identity.end}.${sw.reply ? ` Luca'nın yanıtı: ${sw.reply}` : ""}`);
     const accounts = parsePlan(await page(`listAltHesapTempAction.do?time=${Date.now()}`));
     if (accounts.length === 0) throw new Error("Luca'da bu firmanın hesap planı boş. Luca'da plan tanımlanınca yeniden çekin.");
     return { lucaId: f.lucaId, name: identity.name, taxNumber: identity.taxNumber, accounts };
   }
 
-  root.AccountieLuca = { firmsToImport, selected, switchUrl, parseIdentity, parsePlan, readFirm };
+  /** İlk firmaya döner, doğrular ve firma seçici çerçevesini o firmayla yeniler. Dönüş doğrulanamazsa false. */
+  async function switchBack(o) {
+    const sw = await switchTo(o).catch(() => ({ ok: false }));
+    location.href = switchUrl(o);
+    return sw.ok;
+  }
+
+  root.AccountieLuca = { firmsToImport, selected, switchUrl, parseIdentity, parsePlan, sessionIds, readFirm, switchBack };
 })(globalThis);

@@ -1,7 +1,8 @@
 // The only module that talks to the database (Supabase Postgres through its pooler). Every function takes the session user's id and filters by it.
 import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import { CATEGORIES, DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
-import { fitRulesToPlan } from "@/lib/plan-suggest";
+import { fitRulesToPlan, planMismatches, planMismatchWarning } from "@/lib/plan-suggest";
+import { isKkegLine } from "@/lib/vehicle";
 import { RETIRED_WARNINGS, warn, type JournalLine, type Warning } from "@/lib/journal";
 import { getDb } from "./index";
 import { accountRules, billingProfiles, creditBalances, creditLedger, extensionTokens, firmAccounts, firmRules, firms, journalLines, payments, rateLimitHits, receipts, vendorRules } from "./schema";
@@ -95,7 +96,7 @@ export async function listFirmAccounts(userId: string, firmId: string): Promise<
 }
 
 /** The user's rules, with the firm's own rows laid over them when a firm is given. */
-export async function getRules(userId: string, firmId?: string | null): Promise<{ rules: Rules; rows: RuleRow[] }> {
+export async function getRules(userId: string, firmId?: string | null): Promise<{ rules: Rules; rows: RuleRow[]; plan: { code: string; name: string }[] }> {
   const db = getDb();
   let rows: RuleRow[] = await db.select({ kind: accountRules.kind, key: accountRules.key, label: accountRules.label, accountCode: accountRules.accountCode, accountName: accountRules.accountName })
     .from(accountRules).where(eq(accountRules.userId, userId));
@@ -115,11 +116,10 @@ export async function getRules(userId: string, firmId?: string | null): Promise<
   rows = [...rows, ...missing];
   // A firm with its Luca plan imported books to that plan, with nothing to save: every rule the firm has not set itself is fitted
   // to the plan (src/lib/plan-suggest.ts fitRulesToPlan), so a default code never lands on an account that means something else.
-  if (firmId) {
-    const plan = await listFirmAccounts(userId, firmId);
-    rows = fitRulesToPlan(rows, plan, (r) => own.some((o) => same(o, r)));
-  }
-  return { rules: rulesFromRows(rows), rows };
+  // Read once here and handed back, so callers that also check codes against the plan do not read it again.
+  const plan = firmId ? await listFirmAccounts(userId, firmId) : [];
+  if (plan.length) rows = fitRulesToPlan(rows, plan, (r) => own.some((o) => same(o, r)));
+  return { rules: rulesFromRows(rows), rows, plan };
 }
 
 /** Saves the rows as the firm's own rules when a firm is given, else as the user's. */
@@ -198,9 +198,13 @@ const listColumns = {
   category: receipts.category,
   warnings: receipts.warnings,
   // A passenger car's draft already split to KKEG (src/lib/vehicle.ts): its vehicle is chosen.
-  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code like '689%')`,
+  // Same test as src/lib/vehicle.ts isKkegLine.
+  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and (jl.account_code like '689%' or jl.account_name ~* 'kanunen kabul|kkeg|binek araç gider'))`,
+  // "ticari" once the user has said so on the review screen (setVehicleChoice).
+  vehicle: sql<string | null>`${receipts.extraction}->>'vehicle'`,
   invoice: sql<boolean>`coalesce(${receipts.extraction}->>'documentKind' = 'domestic_invoice', false)`,
   expenseCode: sql<string | null>`(select jl.account_code from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
+  expenseName: sql<string | null>`(select jl.account_name from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
   // The 191 VAT debits, so the list never sums gross amounts as KDV.
   vatKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::bigint from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code like '191%')`.mapWith(Number),
 };
@@ -210,20 +214,37 @@ const RECEIPT_MONTH = sql<string>`to_char(coalesce(${receipts.receiptDate}, (${r
 
 /** The firm's receipts, newest first; `month` ("2026-09") keeps one month's. */
 export async function listReceipts(userId: string, firmId: string, { status, month }: { status?: ReceiptStatus; month?: string } = {}) {
-  return getDb().select(listColumns).from(receipts)
-    .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), status ? eq(receipts.status, status) : undefined, month ? eq(RECEIPT_MONTH, month) : undefined))
-    .orderBy(desc(receipts.createdAt)).limit(200)
-    .then((rows) => rows.map(({ binek, ...r }) => ({ ...r, warnings: current(r.warnings, r, binek) })));
+  const [rows, plan] = await Promise.all([
+    getDb().select(listColumns).from(receipts)
+      .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), status ? eq(receipts.status, status) : undefined, month ? eq(RECEIPT_MONTH, month) : undefined))
+      .orderBy(desc(receipts.createdAt)).limit(200),
+    listFirmAccounts(userId, firmId),
+  ]);
+  return rows.map(({ binek, vehicle, expenseName, ...r }) => {
+    const warnings = current(r.warnings, r, binek || vehicle === "ticari");
+    // A draft whose expense code means another account in the firm's Luca plan says so in the list too, as on its screen.
+    const off = r.status === "draft" && r.expenseCode ? planMismatches([{ accountCode: r.expenseCode, accountName: expenseName ?? "" }], plan) : [];
+    return { ...r, warnings: off.length ? [planMismatchWarning(off), ...warnings] : warnings };
+  });
 }
 
 /**
  * The warnings a receipt shows now: retired ones dropped, and on a vehicle-cost draft whose vehicle is not chosen yet (no KKEG line)
  * the request to choose it, which also keeps it out of the bulk approval.
  */
-function current(warnings: Warning[], r: { status: string; category: string | null }, binek: boolean): Warning[] {
+export function current(warnings: Warning[], r: { status: string; category: string | null }, chosen: boolean): Warning[] {
   const kept = warnings.filter((w) => !RETIRED_WARNINGS.includes(w.code));
   const vehicle = CATEGORIES.some((c) => c.key === r.category && c.vehicle);
-  return r.status === "draft" && vehicle && !binek ? [warn("vehicle_choice"), ...kept] : kept;
+  return r.status === "draft" && vehicle && !chosen ? [warn("vehicle_choice"), ...kept] : kept;
+}
+
+/** Remembers on a draft that its vehicle was chosen on the review screen ("ticari" leaves the lines as they are, so only this says it). */
+export async function setVehicleChoice(userId: string, id: string, choice: "ticari" | "binek"): Promise<boolean> {
+  const rows = await getDb().update(receipts)
+    .set({ extraction: sql`coalesce(${receipts.extraction}, '{}'::jsonb) || jsonb_build_object('vehicle', ${choice}::text)` })
+    .where(and(eq(receipts.id, id), eq(receipts.userId, userId), eq(receipts.status, "draft")))
+    .returning({ id: receipts.id });
+  return rows.length > 0;
 }
 
 export async function getReceipt(userId: string, id: string) {
@@ -233,8 +254,8 @@ export async function getReceipt(userId: string, id: string) {
   if (!receipt) return null;
   const lines: JournalLine[] = await db.select(lineColumns).from(journalLines)
     .where(and(eq(journalLines.receiptId, id), eq(journalLines.userId, userId))).orderBy(asc(journalLines.lineNo));
-  const binek = lines.some((l) => l.debitKurus > 0 && l.accountCode.startsWith("689"));
-  return { ...receipt, warnings: current(receipt.warnings, receipt, binek), lines };
+  const chosen = lines.some((l) => l.debitKurus > 0 && isKkegLine(l)) || (receipt.extraction as { vehicle?: string } | null)?.vehicle === "ticari";
+  return { ...receipt, warnings: current(receipt.warnings, receipt, chosen), lines };
 }
 
 export type ReceiptDetail = NonNullable<Awaited<ReturnType<typeof getReceipt>>>;

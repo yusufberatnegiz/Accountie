@@ -89,8 +89,11 @@ async function run() {
       } catch (e) {
         failed++;
         log(f.shortName, e.message);
-        if (e.fatal || ++errorsInARow >= MAX_ERRORS_IN_A_ROW) {
-          status(e.fatal ? e.message : "Art arda hata alındı; Luca oturumu kapanmış olabilir. Durduruldu.", true);
+        // Only errors that say the session is gone count toward stopping; a firm Luca will not open is skipped and the run goes on.
+        const session = /firma bilgisini vermedi|yanıt vermedi|ulaşılamadı/.test(e.message);
+        errorsInARow = session ? errorsInARow + 1 : 0;
+        if (e.fatal || errorsInARow >= MAX_ERRORS_IN_A_ROW) {
+          status(e.fatal ? e.message : `Art arda ${MAX_ERRORS_IN_A_ROW} firmada Luca yanıt vermedi; Luca oturumu kapanmış olabilir. Durduruldu. Son hata: ${e.message}`, true);
           break;
         }
       }
@@ -99,8 +102,8 @@ async function run() {
   } finally {
     await chrome.storage.local.remove("importingAt").catch(() => {});
     // Luca'nın kendi seçicisinin yaptığı gibi: çerçeveyi ilk firmaya götür ki oturum ve ekran aynı firmayı göstersin.
-    const back = await chrome.scripting.executeScript({ target: luca.target, args: [original], func: (o) => { location.href = globalThis.AccountieLuca.switchUrl(o); return true; } }).catch(() => null);
-    const tail = back ? `Luca ${original.shortName} firmasına döndürüldü.` : `Luca ilk firmaya döndürülemedi: Luca'da ${original.shortName} firmasını yeniden seçin.`;
+    const back = await chrome.scripting.executeScript({ target: luca.target, args: [original], func: (o) => globalThis.AccountieLuca.switchBack(o) }).then(([r]) => r?.result === true, () => false);
+    const tail = back ? `Luca ${original.shortName} firmasına döndürüldü.` : `Luca'nın ilk firmaya döndüğü doğrulanamadı: Luca'da ${original.shortName} firmasını yeniden seçin.`;
     const head = `${done} firma kaydedildi${failed ? `, ${failed} firma atlandı` : ""}.`;
     if ($("status").className !== "error") status(`${head} ${tail}`, !back);
     else status(`${$("status").textContent} ${head} ${tail}`, true);

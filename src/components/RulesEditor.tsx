@@ -6,7 +6,6 @@ import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { useLeaveGuard } from "@/components/useLeaveGuard";
 import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, rulesToRows, type Account, type RuleKind, type RuleRow } from "@/lib/default-rules";
 import { formatTrAmount } from "@/lib/money";
-import { suggestRules } from "@/lib/plan-suggest";
 
 // The example receipt 0412 (6.480,00 TL, KDV %10 589,09, paid by card) shows what the rule in focus produces.
 const SAMPLE = { total: 648000, vat: 58909 };
@@ -34,7 +33,6 @@ const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
 export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; plan?: Account[] }) {
   const names = new Map(plan.map((a) => [a.code, a.name]));
   const [rows, setRows] = useState(initial);
-  const [suggested, setSuggested] = useState<{ matched: number; left: number } | null>(null);
   const [saved, setSaved] = useState(initial);
   const [note, setNote] = useState<{ kind: RuleKind; text: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState<RuleKind | null>(null);
@@ -48,29 +46,24 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
 
   async function save(kind: RuleKind) {
     setNote(null);
-    const bad = rows.find((r) => r.kind === kind && invalid(r, names));
+    // Only the rules changed here are saved: a saved rule stays this firm's own choice and is no longer fitted to the plan.
+    const changed = rows.filter((r) => r.kind === kind && JSON.stringify(r) !== JSON.stringify(saved.find((s) => same(s, r))));
+    if (!changed.length) return setNote({ kind, text: "Değişiklik yok.", error: false });
+    const bad = changed.find((r) => invalid(r, names));
     if (bad) {
       setNote({ kind, text: !bad.accountCode ? `${bad.label}: firmanın Luca planında uyan hesap bulunamadı. Plandan bir kod seçin.` : invalid(bad) ? "Hesap kodu 770.08 biçiminde olmalı." : `${bad.accountCode} firmanın Luca planında yok. Plandaki bir kodu seçin.`, error: true });
       // Let React paint aria-invalid first, then jump to the field the user must fix.
       requestAnimationFrame(() => document.querySelector<HTMLInputElement>(`#kural-${kind} [aria-invalid="true"]`)?.focus());
       return;
     }
-    const next = saved.map((s) => (s.kind === kind ? rows.find((r) => same(r, s)) ?? s : s));
+    const next = saved.map((s) => changed.find((r) => same(r, s)) ?? s);
     setBusy(kind);
-    const res = await fetch("/api/account-rules", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ rows: next.filter((r) => r.kind === kind) }) }).catch(() => null);
+    const res = await fetch("/api/account-rules", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ rows: changed }) }).catch(() => null);
     setBusy(null);
     if (res?.ok) {
       setSaved(next);
       setNote({ kind, text: "Kaydedildi. Yeni fişlere uygulanır.", error: false });
     } else setNote({ kind, text: (res && (await res.json().catch(() => null))?.error) ?? "Kaydedilemedi. Tekrar deneyin.", error: true });
-  }
-
-  function suggest() {
-    const next = suggestRules(rows, plan);
-    const accounts = next.filter((r) => r.kind !== "setting");
-    const matched = accounts.filter((r) => names.has(r.accountCode)).length;
-    setSuggested({ matched, left: accounts.length - matched });
-    setRows(next);
   }
 
   return (
@@ -79,11 +72,10 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
         <section id="kural-plan" className="setting-row" aria-labelledby="grp-plan">
           <div className="setting-label">
             <h2 id="grp-plan">Luca hesap planı</h2>
-            <p className="muted small">Bu firmanın Luca&apos;dan çekilen planında {plan.length} hesap var. Kod alanları plandan tamamlanır; planda olmayan kod kaydedilmez ve fiş onaylanmaz.</p>
+            <p className="muted small">Bu firmanın Luca&apos;dan çekilen planında {plan.length} hesap var. Aşağıdaki kurallar bu plandan seçildi; kaydetmeniz gerekmez. Bir kuralı değiştirip kaydederseniz o kural bu firmada sizin seçiminiz olarak kalır.</p>
           </div>
           <div className="setting-panel">
-            <button className="btn" type="button" onClick={suggest}>Plandan öner</button>
-            <p className="muted small" aria-live="polite">{suggested === null ? "Kuralları plandaki ada göre eşleştirir; hiçbir şey kaydedilmez." : `${suggested.matched} kural plandaki bir hesapla eşleşti${suggested.left ? `, ${suggested.left} kural için hesabı kod kutusundaki listeden seçin (kırmızı olanlar)` : ""}. Kontrol edip her bölümü kaydedin.`}</p>
+            <p className="muted small">Planda uyan hesabı olmayan kuralın kodu boş kalır; o türde bir fiş gelince hesap kodunu fişte seçersiniz.</p>
           </div>
           <datalist id="plan-kodlari">{plan.map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}</datalist>
         </section>
@@ -170,9 +162,9 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
                   {groupRows.map((r) => (
                     <tr key={r.key} onMouseEnter={() => setActive(r)} onFocus={() => setActive(r)}>
                       <td className="rule-label">{r.label}</td>
-                      <td className="rule-code"><input name={`kod-${r.kind}-${r.key}`} autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={invalid(r, names)} list={setting || !plan.length ? undefined : "plan-kodlari"} value={r.accountCode} onChange={(e) => { const code = e.target.value.trim(); const name = setting ? undefined : names.get(code); update(r, name === undefined ? { accountCode: code } : { accountCode: code, accountName: name }); }} /></td>
+                      <td className="rule-code"><input name={`kod-${r.kind}-${r.key}`} autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={!!r.accountCode && invalid(r, names)} list={setting || !plan.length ? undefined : "plan-kodlari"} value={r.accountCode} onChange={(e) => { const code = e.target.value.trim(); const name = setting ? undefined : names.get(code); update(r, name === undefined ? { accountCode: code } : { accountCode: code, accountName: name }); }} /></td>
                       {/* The name is for people only (Luca matches the code), so it reads as text until pointed at or focused. */}
-                      {setting ? null : <td className="rule-name"><input name={`ad-${r.kind}-${r.key}`} autoComplete="off" className="field field-quiet" aria-label={`${r.label} hesap adı`} title={r.accountName} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
+                      {setting ? null : <td className="rule-name"><input name={`ad-${r.kind}-${r.key}`} autoComplete="off" className="field field-quiet" aria-label={`${r.label} hesap adı`} title={r.accountName} placeholder={r.accountCode ? undefined : "Planda uyan hesap yok"} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
                     </tr>
                   ))}
                 </tbody>

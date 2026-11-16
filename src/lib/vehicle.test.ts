@@ -40,3 +40,14 @@ describe("binek araç", () => {
     expect(sum(fromPassengerCar(once, KKEG))).toBe(175050);
   });
 });
+
+describe("KKEG satırı tanıma", () => {
+  it("firmanın KKEG kodu 689 dışında olsa da satır tanınır; KKEG hesabı yoksa bölünmez", () => {
+    const other = { code: "770.00", name: "Kanunen Kabul Edilmeyen Giderler" };
+    const once = toPassengerCar(fuel, other, make);
+    expect(isPassengerCar(once, other)).toBe(true);
+    // Read back with no rule at hand (the list, the server): the name still tells it.
+    expect(isPassengerCar(once, { code: "", name: "" })).toBe(true);
+    expect(toPassengerCar(fuel, { code: "", name: "" }, make)).toEqual(fuel);
+  });
+});

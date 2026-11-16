@@ -84,7 +84,8 @@ function goTo(el: HTMLElement | null) {
 /** The other draft to open once this one is done, and how many drafts wait besides this one. */
 export type NextDraft = { id: string; left: number } | null;
 
-export function ReviewEditor({ receipt, rules, next = null, learned = null, base = "/panel" }: { receipt: ReceiptDetail; rules: Rules; next?: NextDraft; learned?: VendorRule | null; base?: string }) {
+/** `plan`: the firm's Luca chart of accounts (codes offered while typing, names taken from it). `mismatched`: codes on this draft that mean another account in it. */
+export function ReviewEditor({ receipt, rules, next = null, learned = null, base = "/panel", plan = [], mismatched = [] }: { receipt: ReceiptDetail; rules: Rules; next?: NextDraft; learned?: VendorRule | null; base?: string; plan?: { code: string; name: string }[]; mismatched?: string[] }) {
   const router = useRouter();
   const editable = receipt.status === "draft";
   const [lines, setLines] = useState(() => receipt.lines.map(toEdit));
@@ -219,11 +220,13 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     return () => clearTimeout(t);
   }, [typing, lines]);
   // A vehicle cost asks whether the vehicle is a passenger car: binek moves 30% of the expense and its KDV to KKEG (src/lib/vehicle.ts).
-  const kkeg = rules.expense[KKEG_KEY];
-  const binek = !!kkeg && isPassengerCar(parsed, kkeg);
-  const vehicle = kind === "receipt" && !!kkeg && (binek || !!CATEGORIES.find((c) => c.key === receipt.category)?.vehicle);
-  // Not approved until the vehicle is chosen on this screen (Ticari counts once pressed); a binek split is a choice made.
-  const vehicleOpen = editable && vehicle && !binek && !seen.has("vehicle");
+  // A firm whose plan has no KKEG account cannot split: Binek is offered only with one.
+  const kkeg = rules.expense[KKEG_KEY]?.code ? rules.expense[KKEG_KEY] : undefined;
+  const binek = isPassengerCar(parsed, kkeg ?? { code: "", name: "" });
+  const vehicle = kind === "receipt" && (binek || !!CATEGORIES.find((c) => c.key === receipt.category)?.vehicle);
+  // Not approved until the vehicle is chosen (Ticari is kept on the receipt once pressed, setVehicleChoice); a binek split is a choice made.
+  const ticariSaved = (receipt.extraction as { vehicle?: string } | null)?.vehicle === "ticari";
+  const vehicleOpen = editable && vehicle && !binek && !ticariSaved && !seen.has("vehicle");
   const problem = invalid ? "Tutar biçimi hatalı." : vehicleOpen ? "Araç binek mi ticari mi, seçin." : approvalProblem(parsed);
   const creditCode = lines.find(isPayment)?.accountCode ?? "";
   // Paid more than one way (cash and card): each way has its own credit line, and one choice for all would merge them.
@@ -235,7 +238,9 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   // A flag stays until the user touches that field.
   const flagged = (name: string, unsure: boolean) => editable && unsure && !seen.has(name);
   // A field warning goes away once the user has edited that field, like its flag.
-  const warnings = receipt.warnings.filter((w) => !(editable && seen.has(WARNING_FIELD[w.code] ?? "")));
+  // The plan warning goes once no line carries a code it named.
+  const stillMismatched = mismatched.filter((c) => lines.some((l) => l.accountCode === c));
+  const warnings = receipt.warnings.filter((w) => !(editable && (seen.has(WARNING_FIELD[w.code] ?? "") || (w.code === "plan_name" && !stillMismatched.length))));
   const flag = (on: boolean) => (on ? { "data-check": "", ...(warnings.length ? { "aria-describedby": "uyarilar" } : {}) } : {});
   const checkNote = (on: boolean) => (on ? <span className="check-note">Kontrol edin</span> : null);
   const headFlags = {
@@ -260,8 +265,10 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   };
   const knownAccounts: Account[] = [...Object.values(rules.expense), ...Object.values(rules.vat), ...Object.values(rules.payment), ...PAYMENT_ALTERNATIVES,
     rules.foreign.expense, rules.foreign.vatIn, rules.foreign.vatOut, rules.sales.cash, rules.sales.card, ...Object.values(rules.sales.revenue), ...Object.values(rules.sales.vat)];
+  const planNames = new Map(plan.map((a) => [a.code, a.name]));
   const setCode = (key: number, code: string) => {
-    const name = knownAccounts.find((a) => a.code === code.trim())?.name;
+    // The firm's Luca name first: it is the account Luca will book.
+    const name = planNames.get(code.trim()) ?? knownAccounts.find((a) => a.code === code.trim())?.name;
     update(key, name ? { accountCode: code, accountName: name } : { accountCode: code });
   };
   // Phone: a line shows only the side it carries; an empty line keeps the side picked for it, and a switch moves the amount across.
@@ -277,11 +284,15 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   };
   const addLine = () => setLines((ls) => [...ls, { ...ls[0], key: nextKey.current++, accountCode: "", accountName: "", debit: "", credit: "" }]);
   const setBinek = (on: boolean) => {
+    if (invalid || (on && !kkeg)) return;
     touch("vehicle");
-    if (invalid || !kkeg || on === binek) return;
+    // Kept on the receipt at once: a Ticari choice changes no line, so saving the lines would not record it.
+    if (editable) fetch(`/api/receipts/${receipt.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ vehicle: on ? "binek" : "ticari" }) }).catch(() => {});
+    if (on === binek) return;
     const amounts = lines.map((l) => ({ ...l, debitKurus: kurus(l.debit), creditKurus: kurus(l.credit) }));
-    const next = on ? toPassengerCar(amounts, kkeg, (from) => ({ ...from, key: nextKey.current++ })) : fromPassengerCar(amounts, kkeg, receipt.lines);
+    const next = on ? toPassengerCar(amounts, kkeg!, (from) => ({ ...from, key: nextKey.current++ })) : fromPassengerCar(amounts, kkeg ?? { code: "", name: "" }, receipt.lines);
     setLines(next.map(({ debitKurus, creditKurus, ...l }) => ({ ...l, debit: debitKurus ? formatTrAmount(debitKurus) : "", credit: creditKurus ? formatTrAmount(creditKurus) : "" })));
+    setInfo(on ? `Binek: gider ve KDV'nin %${PASSENGER_CAR_KKEG_PERCENT}'u KKEG satırına alındı.` : "Ticari: KKEG satırı kaldırıldı, tutarlar geri alındı.");
   };
 
   async function call(url: string, init?: RequestInit): Promise<boolean> {
@@ -435,10 +446,11 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
             ) : null}
             {editable && vehicle ? (
               <div className="inline-field vehicle-field">
-                <span id="arac-turu">Araç</span>
-                <span className="seg" role="group" aria-labelledby="arac-turu" aria-describedby={binek ? "binek-not" : undefined}>
+                <span id="arac-turu">Araç binek mi, ticari mi? {checkNote(vehicleOpen)}</span>
+                <span className="seg" role="group" aria-labelledby="arac-turu" aria-describedby={binek ? "binek-not" : undefined} {...flag(vehicleOpen)}>
                   <button id="arac-ticari" className="side-opt" type="button" aria-pressed={!binek && !vehicleOpen} disabled={invalid || working} onClick={() => setBinek(false)}>Ticari</button>
-                  <button className="side-opt" type="button" aria-pressed={binek} disabled={invalid || working} onClick={() => setBinek(true)}>Binek</button>
+                  <button className="side-opt" type="button" aria-pressed={binek} disabled={invalid || working || !kkeg}
+                    title={kkeg ? undefined : "Firmanın Luca planında KKEG hesabı yok; Kurallar'da Binek araç KKEG hesabını girin."} onClick={() => setBinek(true)}>Binek</button>
                 </span>
               </div>
             ) : null}
@@ -462,7 +474,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
             </thead>
             <tbody ref={tbody}>
               {lines.map((l, i) => {
-                const codeFlag = flagged(`code-${l.key}`, !l.accountCode);
+                const codeFlag = flagged(`code-${l.key}`, !l.accountCode || mismatched.includes(l.accountCode));
                 const debitFlag = flagged(`debit-${l.key}`, amountsUnsure && !!l.debit);
                 const creditFlag = flagged(`credit-${l.key}`, amountsUnsure && !!l.credit);
                 const unsure = (on: boolean) => (on ? ", kontrol edin" : "");
@@ -472,7 +484,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
                 <tr key={l.key} data-key={l.key} data-side={side} data-new={firstKeys.has(l.key) ? undefined : ""} {...traced(src)} onMouseEnter={(e) => traceOn(src, e.currentTarget)} onMouseLeave={traceOff} onFocus={(e) => traceOn(src, e.currentTarget)} onBlur={traceOff}>
                   {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
                   <td data-label="Hesap kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
-                    autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder="770.08…" aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
+                    autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder="770.08…" list={plan.length ? "plan-kodlari" : undefined} aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
                     {...flag(codeFlag)} onChange={(e) => { touch(`code-${l.key}`); setCode(l.key, e.target.value); }} />{checkNote(codeFlag)}</td>
                   {/* A textarea so a long name wraps on the phone instead of being cut; it stays one line of text (no line breaks). */}
                   <td data-label="Hesap adı"><textarea rows={1} autoComplete="off" className="field name-field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable}
@@ -491,6 +503,8 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
               })}
             </tbody>
           </table>
+          {/* The firm's Luca accounts, offered as a code is typed. */}
+          {editable && plan.length ? <datalist id="plan-kodlari">{plan.map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}</datalist> : null}
           {editable ? <div className="journal-add"><button id="satir-ekle" className="btn btn-sm" type="button" disabled={working} onClick={addLine}>Satır ekle</button></div> : null}
           <dl className="balance-strip" data-balanced={!gap && !invalid ? "" : undefined}>
             <div><dt>Borç toplamı</dt><dd className="num"><Odometer value={formatTrAmount(debit)} instant={typing} /></dd></div>

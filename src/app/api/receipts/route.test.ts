@@ -4,7 +4,7 @@ vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), createReceipt: vi.fn(), 
 const session = vi.hoisted(() => ({ createdAt: new Date(0) }));
 vi.mock("@/lib/auth/session", () => ({ getUserId: async () => "user-1", getSessionUser: async () => ({ id: "user-1", createdAt: session.createdAt }) }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
-vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(), STRONG_READ_ABOVE: 4 }));
+vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(), STRONG_READ_ABOVE: 4, MAX_RECEIPTS_PER_PHOTO: 10 }));
 vi.mock("@/lib/tcmb", () => ({ tcmbRate: vi.fn(async () => ({ rate: 50, bulletinDate: "2026-10-30" })) }));
 vi.mock("@/lib/image", async (orig) => ({ ...(await orig<typeof import("@/lib/image")>()), normalizeImage: async (b: Buffer) => b, cropReceipt: vi.fn(async () => Buffer.from("crop")) }));
 
@@ -19,7 +19,7 @@ const read = (over: Record<string, unknown>) => ({
   extraction: {
     vendorName: "x", taxOffice: null, taxNumber: null, date: "31.10.2026", time: null, receiptNo: null, zNo: null, ekuNo: null, vatLines: [],
     total: "100,00", paymentMethod: "card" as const, category: "other" as const, unreadableFields: [], documentKind: "receipt" as const,
-    currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false, payments: [], ...over,
+    currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [], ...over,
   },
 });
 const pdf = () => {
@@ -36,7 +36,7 @@ const jpeg = () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [] });
+  vi.mocked(getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [], plan: [] });
   vi.mocked(extractReceipt).mockResolvedValue({ ok: false, inputTokens: 0, outputTokens: 0 });
   vi.mocked(locateReceipts).mockResolvedValue([]);
 });
@@ -78,7 +78,7 @@ describe("POST /api/receipts", () => {
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null, receiptNo: "0047",
         zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18", net: null }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false, payments: [],
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [],
       },
     });
     const res = await POST(jpeg());
@@ -112,6 +112,15 @@ describe("POST /api/receipts", () => {
     await POST(jpeg());
     expect(extractReceipt).toHaveBeenCalledTimes(5);
     expect(vi.mocked(extractReceipt).mock.calls.every((c) => c[3] === true)).toBe(true);
+  });
+
+  it("bir karede okunacak sayıdan fazla fiş varsa fazlasını okumaz ve sayar", async () => {
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(createReceipt).mockResolvedValue("r-1");
+    vi.mocked(locateReceipts).mockResolvedValue(Array.from({ length: 12 }, (_, i) => ({ left: i * 80, top: 0, right: i * 80 + 70, bottom: 1000 })));
+    const body = await (await POST(jpeg())).json();
+    expect(extractReceipt).toHaveBeenCalledTimes(10);
+    expect(body.limited).toBe(2);
   });
 
   it("sınır dolunca karedeki kalan fişleri okumaz", async () => {

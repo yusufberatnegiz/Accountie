@@ -13,7 +13,7 @@ export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
 const CATEGORY_GUIDE = `Harcamanın türü, fişteki ürünlere ve satıcıya göre:
 fuel: akaryakıt, benzin, motorin, LPG, şarj. stationery: kırtasiye, kağıt, kalem, toner, kitap. cargo: kargo, posta, PTT.
 parking: otopark, köprü, otoyol, HGS, OGS. transport: taksi, otobüs, uçak, tren bileti. cleaning: deterjan, çamaşır suyu, temizlik malzemesi.
-maintenance: araç veya işyeri bakım, tamir, servis, yedek parça. meal: lokanta, restoran, kafe, yemek, ağırlama.
+maintenance: işyeri, bina, klima, bilgisayar bakım ve tamiri. vehicle_maintenance: araç bakım, tamir, servis, lastik, yedek parça, oto yıkama. meal: lokanta, restoran, kafe, yemek, ağırlama.
 telecom: telefon, internet, GSM faturası. lodging: otel, konaklama.
 office_supplies: dayanıklı büro eşyası (sandalye, dosya dolabı, mouse, klavye, uzatma kablosu gibi küçük demirbaş).
 food_grocery: market ve mutfak: çay, kahve, şeker, su, kuruyemiş, bisküvi, meyve, süt, ekmek gibi yiyecek ve içecek.
@@ -38,11 +38,11 @@ export const ReceiptExtractionSchema = z.object({
   lineItems: z.array(z.object({
     rate: z.number().int().min(0).max(100).describe("Ürünün KDV oranı (%01 ise 1, %20 ise 20)"),
     amount: z.string().max(40).describe("Ürün satırının tutarı, yazıldığı gibi"),
-  })).max(80).describe("Yalnız fişte oran bazlı KDV dahil toplamlar yazmıyorsa: her ürün satırı, oranı ve tutarıyla. Kırılım yazıyorsa boş"),
+  })).max(200).describe("Yalnız fişte oran bazlı KDV dahil toplamlar yazmıyorsa: her ürün satırı, oranı ve tutarıyla. Kırılım yazıyorsa boş"),
   discounts: z.array(z.object({
     rate: z.number().int().min(0).max(100).nullable().describe("İndirimin uygulandığı ürünün KDV oranı; sepetin tamamına yapılan indirimde null"),
     amount: z.string().max(40).describe("İndirim tutarı, eksi işareti ve -D olmadan"),
-  })).max(30).describe("İndirim satırları (Ürün İndirimleri, İNDİRİM, İSKONTO, kampanya; tutarın sonunda -D)"),
+  })).max(100).describe("İndirim satırları (Ürün İndirimleri, İNDİRİM, İSKONTO, kampanya; tutarın sonunda -D)"),
   totalVat: z.string().max(40).nullable().describe("TOPKDV veya TOPLAM KDV, yazıldığı gibi"),
   total: z.string().max(40).nullable().describe("TOPLAM, yazıldığı gibi. Z raporunda günün genel toplamı. Yurt dışı faturada ödenecek toplam"),
   currency: z.string().max(3).nullable().describe("Para birimi, ISO kodu (TRY, USD, EUR...). Fiş ve Z raporunda TRY"),
@@ -55,6 +55,7 @@ export const ReceiptExtractionSchema = z.object({
     amount: z.string().max(40).describe("Bu ödeme şekliyle ödenen tutar, yazıldığı gibi"),
   })).max(6).describe("Fişte birden çok ödeme şekli varsa (nakit + kart, puan, hediye çeki, yemek kartı) her biri tutarıyla; tek ödeme şeklinde boş"),
   category: z.enum(CATEGORY_KEYS).describe(CATEGORY_GUIDE),
+  withholding: z.boolean().describe("Faturada KDV tevkifatı varsa (Tevkif edilen KDV, KDV tevkifat oranı, 5/10 gibi) true"),
   noFiscalValue: z.boolean().describe("Belgede 'MALİ DEĞERİ YOKTUR' yazıyorsa true (sipariş belgesi, e-adisyon, yemek kartı ödeme belgesi, bilgi slibi)"),
   unreadableFields: z.array(z.string().max(100)).max(30).describe("Okunamayan veya fişte olmayan alanların adları"),
 });
@@ -101,6 +102,7 @@ const vatTolerance = (x: ReceiptExtraction, rates: number) => Math.max(rates, Ma
 
 /** An item amount that may be a cancelled line: "-30,00", "30,00-" or "30,00-D" is minus 30,00. */
 function signedAmount(text: string): number | null {
+  text = text.replace(/\u2212/g, "-"); // "−30,00", the typographic minus
   const minus = /^\s*-|-\s*D?\s*$/i.test(text);
   const k = amountOrNull(text.replace(/^\s*-/, "").replace(/-\s*D?\s*$/i, ""));
   return k === null ? null : minus ? -k : k;
@@ -226,14 +228,19 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
   else if (!isPlausibleDate(data.date, today)) problems.push("date_unusual");
   // The model may flag a field as unsure yet still fill it; treat that as a problem so it is retried and highlighted.
   // Matched by prefix, so "vatLines[0].vat" or "paymentMethod " count too.
-  const unsure = (field: string) => x.unreadableFields.some((f) => f.trim().toLowerCase().startsWith(field.toLowerCase()));
+  // The field itself or a part of it ("vatLines[0].vat"), never a longer name ("totalVat" is not "total"); a line's matrah alone is not its KDV.
+  const unsure = (field: string) => x.unreadableFields.some((f) => {
+    const n = f.trim().toLowerCase(), k = field.toLowerCase();
+    return (n === k || n.startsWith(`${k}[`) || n.startsWith(`${k}.`)) && !n.endsWith(".net");
+  });
   const add = (code: string) => !problems.includes(code) && problems.push(code);
   if (unsure("total")) add("amount_unreadable");
   if (unsure("vatLines") && x.vatLines.length > 0) add("vat_mismatch");
   if (unsure("date")) add("date_invalid");
   if (unsure("paymentMethod")) add("payment_unsure");
   // Several ways of paying that do not add up to the total: the credit side cannot be split, so it is checked by hand.
-  if ((x.payments?.length ?? 0) > 1 && !data.payments) add("payment_unsure");
+  const paid = (x.payments ?? []).map((p) => amountOrNull(p.amount));
+  if (paid.length > 1 && (paid.some((k) => k === null) || paid.reduce<number>((s, k) => s + (k ?? 0), 0) !== data.totalKurus)) add("payment_unsure");
   if (unsure("receiptNo")) add("receipt_no_unsure");
   return problems;
 }

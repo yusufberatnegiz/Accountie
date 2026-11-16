@@ -5,7 +5,7 @@ import { isValidTaxNumber } from "@/lib/checks";
 import { withVendorAccount } from "@/lib/vendor-rule";
 import { activeFirm } from "@/lib/firm";
 import { getSessionUser, getUserId } from "@/lib/auth/session";
-import { extractReceipt, locateReceipts, STRONG_READ_ABOVE, type ExtractResult } from "@/lib/extract/extract";
+import { extractReceipt, locateReceipts, MAX_RECEIPTS_PER_PHOTO, STRONG_READ_ABOVE, type ExtractResult } from "@/lib/extract/extract";
 import { kindOf, toForeignData, toReceiptData, toSalesData } from "@/lib/extract/schema";
 import { buildForeignLines, buildSalesLines, foreignTotalTl } from "@/lib/journal-kinds";
 import { tcmbRate } from "@/lib/tcmb";
@@ -70,15 +70,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ id: one.id, ids: [one.id], readable: one.readable }, { status: 201 });
   }
   // Several receipts laid side by side in one photo: each is cut from the full-size upload and read on its own.
-  const boxes = await locateReceipts(jpeg).catch(() => []);
+  const found = await locateReceipts(jpeg).catch(() => []);
+  const boxes = found.slice(0, MAX_RECEIPTS_PER_PHOTO);
   let images = [jpeg];
-  // Receipts of the photo not read because the per-minute limit was reached: told to the user, never dropped silently.
-  let limited = 0;
+  // Receipts of the photo not read (more than a photo is read for, or the per-minute limit reached): told, never dropped silently.
+  let limited = found.length - boxes.length;
   if (boxes.length > 1) {
     images = [];
     for (const [i, box] of boxes.entries()) {
       // The photo was counted once above; every further receipt is one more read against the same limits.
-      if (images.length && (!(await allow("receipt", userId)) || !(await allow("receiptGlobal", "all")))) { limited = boxes.length - i; break; }
+      if (images.length && (!(await allow("receipt", userId)) || !(await allow("receiptGlobal", "all")))) { limited += boxes.length - i; break; }
       // A crop that fails (an odd box) is skipped; if none worked the photo is read whole.
       const crop = await cropReceipt(bytes, box).catch(() => null);
       if (crop) images.push(crop);
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
   }
   if (images.length === 0) images = [jpeg];
   // Judged by the receipts found, not the ones read: a crowded photo's cut-outs are narrow either way.
-  const strong = boxes.length > STRONG_READ_ABOVE;
+  const strong = found.length > STRONG_READ_ABOVE;
   const results = await Promise.all(images.map((image) => readMetered(metered, userId, firm.id, image, rules, undefined, strong)));
   // Receipts left unread because the balance reached its floor: said once, the rest of the photo is not lost silently.
   const skipped = results.filter((r) => r === "no_credit").length;
@@ -140,6 +141,7 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
   const extra = result.ok ? result.problems : ["extraction_failed"];
   // Not a tax document (an order slip, a meal card slip): said first, never retried with the stronger model.
   if (result.ok && result.extraction.noFiscalValue) extra.unshift("no_fiscal_value");
+  if (result.ok && result.extraction.withholding) extra.unshift("withholding");
   // A rule the firm's Luca plan had no account for (fitRulesToPlan) leaves the code empty: said, not guessed.
   if (lines.some((l) => !l.accountCode)) extra.push("plan_no_account");
   const allWarnings: Warning[] = [...warnings, ...extra.filter((c) => !warnings.some((w) => w.code === c)).map(warn)];
@@ -169,7 +171,7 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
     console.error("receipt save failed", { error: err instanceof Error ? err.name : "unknown" });
     return null;
   }
-  return { id, readable: result.ok, billable: result.ok && (data.vendorName !== null || data.totalKurus !== null), kind };
+  return { id, readable: result.ok, billable: result.ok && !result.extraction.noFiscalValue && (data.vendorName !== null || data.totalKurus !== null), kind };
 }
 
 /** A Z report or a foreign service invoice: its own lines (src/lib/journal-kinds.ts), no seller learning, the TL rate kept with the read. */

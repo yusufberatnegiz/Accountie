@@ -181,3 +181,39 @@ describe("planMismatches", () => {
     expect(planMismatches(lines, [])).toEqual([]);
   });
 });
+
+describe("jüri turu 2: plan eşleme", () => {
+  const one = (plan: { code: string; name: string }[], kind: string, key: string) => fitRulesToPlan(rows, plan).find((r) => r.kind === kind && r.key === key);
+
+  it("'Diğer' fişi vergi-harç ya da finansman hesabına gitmez; genel kelimeler aynı anlam sayılmaz", () => {
+    const plan = [{ code: "770", name: "GENEL YÖNETİM" }, { code: "770.018", name: "DİĞER VERGİ RESİM VE HARÇLAR" }, { code: "770.020", name: "DİĞER GİDERLER" }, { code: "780.01", name: "Diğer Finansman Giderleri" }];
+    expect(one(plan, "expense", "other")?.accountCode).toBe("770.020");
+    const c = [{ code: "770", name: "GENEL" }, { code: "770.99", name: "Diğer Vergi Resim Harçlar" }];
+    expect(one(c, "expense", "other")?.accountCode).toBe("");
+  });
+
+  it("ortak başına 331 alt hesabı varsa kart kodu boş kalır; şirket kartına kaymaz", () => {
+    const plan = [{ code: "300", name: "BANKA KREDİLERİ" }, { code: "300.001", name: "KREDİ KARTI BORÇLARI" }, { code: "331", name: "ORTAKLARA BORÇLAR" }, { code: "331.001", name: "AHMET YILMAZ" }, { code: "331.002", name: "MEHMET YILMAZ" }];
+    expect(one(plan, "payment", "card")?.accountCode).toBe("");
+    expect(one(plan, "payment", "other")?.accountCode).toBe("");
+  });
+
+  it("KDV kuralı tevkifatlı ya da sorumlu hesabında kalmaz; nakit dövizli kasaya gitmez", () => {
+    const plan = [{ code: "100", name: "KASA" }, { code: "100.01", name: "USD KASA" }, { code: "100.02", name: "TL KASA" },
+      { code: "191", name: "KDV" }, { code: "191.03", name: "x" }, { code: "191.03.10", name: "%10 İndirilecek KDV - Tevkifatlı Alımlar" }, { code: "191.03.11", name: "%10 İndirilecek KDV" }];
+    expect(one(plan, "vat", "10")?.accountCode).toBe("191.03.11");
+    expect(one(plan, "payment", "cash")?.accountCode).toBe("100.02");
+  });
+
+  it("araç bakımı taşıt hesabına, işyeri bakımı bina/demirbaş bakımına gider", () => {
+    const plan = [{ code: "770", name: "G" }, { code: "770.04", name: "Demirbaş Tamir Bakım Giderleri" }, { code: "770.10", name: "Taşıt Yakıt Ve Tamir Bakım Giderleri" }];
+    expect(one(plan, "expense", "maintenance")?.accountCode).toBe("770.04");
+    expect(one(plan, "expense", "vehicle_maintenance")?.accountCode).toBe("770.10");
+  });
+
+  it("firmaya kaydedilmiş kural adıyla korunur; Luca'da başka anlamdaysa uyuşmazlık görünür", () => {
+    const own = fitRulesToPlan(rows, REAL, (r) => r.kind === "expense" && r.key === "food_grocery").find((r) => r.key === "food_grocery")!;
+    expect(own).toMatchObject({ accountCode: "770.12", accountName: "Mutfak Giderleri" });
+    expect(planMismatches([own], REAL)).toEqual([{ code: "770.12", ours: "Mutfak Giderleri", luca: "Küçük Demirbaş Alımları" }]);
+  });
+});

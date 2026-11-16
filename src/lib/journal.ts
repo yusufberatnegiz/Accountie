@@ -55,8 +55,10 @@ export const WARNING_MESSAGES: Record<string, string> = {
   foreign_withholding: "Yurt dışından alınan hizmette gelir veya kurumlar vergisi stopajı gerekebilir; muhtasarı kontrol edin.",
   z_payment_split: "Nakit ve kartlı tahsilat Z raporundan tam okunamadı ya da toplamı tutmuyor. Tahsilat satırlarını kontrol edin.",
   domestic_currency: "Belge TL dışında bir para biriminde. Tutarlar TL değildir; TL karşılıklarını belgeden girin.",
-  no_fiscal_value: "Belgede \"MALİ DEĞERİ YOKTUR\" yazıyor: gider ve KDV belgesi değildir. Asıl fişi ya da faturayı yükleyin.",
+  no_fiscal_value: "Belgede “MALİ DEĞERİ YOKTUR” yazıyor: gider ve KDV belgesi değildir. Bu taslağı silin, asıl fişi ya da faturayı yükleyin.",
   vehicle_choice: "Araç binek mi ticari mi? Yevmiye satırlarının üstündeki Araç seçiminden seçin; seçilmeden onaylanmaz.",
+  payment_other: "Bir kısmı puan, hediye çeki, yemek kartı ya da açık hesapla ödenmiş. O alacak satırının hesabını kontrol edin.",
+  withholding: "Faturada KDV tevkifatı var. Tevkif edilen KDV satırları (191 ve 360) eklenmedi; satırları faturaya göre düzeltin.",
   plan_no_account: "Firmanın Luca planında bu satıra uyan hesap bulunamadı. Hesap kodunu plandan seçin.",
   z_unknown_rate: "Kural tablosunda olmayan KDV oranı var. Satış ve KDV hesabını seçin.",
 };
@@ -88,8 +90,9 @@ export function buildJournalLines(receipt: ReceiptData, rules: Rules): { lines: 
   for (const v of receipt.vatLines) {
     const expected = vatFromGross(v.grossKurus, v.rate);
     const vat = v.vatKurus ?? expected;
-    if (v.vatKurus === null) vatComputed = true;
-    else if (Math.abs(v.vatKurus - expected) > 1) warnings.push(warn("vat_mismatch"));
+    // A %0 line has no KDV to read. A KDV that differs from its rate is told by the read's own check (checkExtraction), which
+    // knows how many items it was rounded over; here the document's figure is simply booked.
+    if (v.vatKurus === null && v.rate > 0) vatComputed = true;
     grossSum += v.grossKurus;
 
     const expenseLine = line(expense, v.grossKurus - vat, 0);
@@ -122,6 +125,8 @@ export function buildJournalLines(receipt: ReceiptData, rules: Rules): { lines: 
   const split = receipt.payments && receipt.payments.reduce((s, p) => s + p.kurus, 0) === total ? receipt.payments : null;
   if (split) for (const p of split) lines.push(line(rules.payment[p.method], 0, p.kurus));
   else lines.push(line(credit, 0, total));
+  // Points, a gift card, a meal card or an open account paid part of it: not the partner's money, the user says what it is.
+  if (split?.some((p) => p.method === "other")) warnings.push(warn("payment_other"));
 
   const categoryWarning = CATEGORIES.find((c) => c.key === receipt.category)?.warning;
   if (categoryWarning) warnings.push(warn(categoryWarning));

@@ -8,6 +8,7 @@ type Luca = {
   switchUrl(f: Period): string;
   parseIdentity(text: string): { name: string; start: string; end: string; taxNumber: string | null } | null;
   parsePlan(doc: unknown): { code: string; name: string }[];
+  sessionIds(html: string): { sirket: string | null; donem: string | null };
 };
 const { AccountieLuca: luca } = globalThis as unknown as { AccountieLuca: Luca };
 
@@ -38,6 +39,16 @@ describe("Luca firma listesi", () => {
   it("firma değiştirme adresi Luca'nın kendi seçicisinin gittiği adrestir", () => {
     const url = luca.switchUrl({ lucaId: "11", shortName: "ÖRNEK A", donemId: "502", start: "01/01/2026", end: "31/12/2026" });
     expect(url).toMatch(/^TopFrameAction\.do\?SIRKET_ID=11&DONEM_ID=502&DONEM_TXT=01\/01\/2026%20-%2031\/12\/2026&time=\d+$/);
+  });
+});
+
+describe("Luca oturum numaraları", () => {
+  it("firma ve dönem numarasını yalnız __SESSION nesnesinden okur", () => {
+    expect(luca.sessionIds(`<input name="SIRKET_ID" value="9"><script>var __SESSION = {"SIRKET_ID":"11","DONEM_ID":"502","USER":"x"};</script>`))
+      .toEqual({ sirket: "11", donem: "502" });
+    expect(luca.sessionIds(`<script>var __SESSION = { SIRKET_ID: 12, DONEM_ID: 601 };</script>`)).toEqual({ sirket: "12", donem: "601" });
+    // No __SESSION: no number, so only the period dates are checked.
+    expect(luca.sessionIds(`<input name="SIRKET_ID" value="9">`)).toEqual({ sirket: null, donem: null });
   });
 });
 
