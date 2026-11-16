@@ -82,7 +82,8 @@
       if (identity && identity.start === f.start && identity.end === f.end) break;
     }
     if (!identity) throw new Error("Luca firma bilgisini vermedi; Luca oturumu kapanmış olabilir. İki kez denendi.");
-    if (identity.start !== f.start || identity.end !== f.end) throw new Error(`Luca bu firmaya (${f.start} - ${f.end} dönemi) geçmedi. İki kez denendi; Luca'da firmayı bir kez elle açıp yeniden çekin.`);
+    // Both sides in the message: whether Luca stayed on another firm or opened this firm with other dates tells the cause.
+    if (identity.start !== f.start || identity.end !== f.end) throw new Error(`Luca bu firmaya geçmedi. İstenen: ${f.shortName} ${f.start} - ${f.end}. Luca'nın açık gösterdiği: ${identity.name} ${identity.start} - ${identity.end}.`);
     const accounts = parsePlan(await page(`listAltHesapTempAction.do?time=${Date.now()}`));
     if (accounts.length === 0) throw new Error("Luca'da bu firmanın hesap planı boş. Luca'da plan tanımlanınca yeniden çekin.");
     return { lucaId: f.lucaId, name: identity.name, taxNumber: identity.taxNumber, accounts };
