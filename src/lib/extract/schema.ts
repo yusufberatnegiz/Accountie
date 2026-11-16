@@ -3,7 +3,7 @@ import { isValidTaxNumber, parseReceiptDate } from "../checks";
 import { CATEGORY_KEYS } from "../default-rules";
 import type { ReceiptData, VatLine } from "../journal";
 import type { ForeignData, SalesData } from "../journal-kinds";
-import { parseTrAmount, vatFromGross } from "../money";
+import { parseTrAmount, perItemVatTolerance, vatFromGross } from "../money";
 
 // Amounts stay text exactly as printed ("8.725,00"); parseTrAmount converts them in tested code.
 export const DOCUMENT_KINDS = ["receipt", "z_report", "foreign_invoice", "domestic_invoice"] as const;
@@ -24,40 +24,40 @@ export const ReceiptExtractionSchema = z.object({
   vendorName: z.string().max(200).nullable().describe("Fişin en üstündeki satıcı unvanı, yazıldığı gibi"),
   taxOffice: z.string().max(200).nullable().describe("Vergi dairesi adı"),
   taxNumber: z.string().max(20).nullable().describe("Satıcının VKN veya TCKN'si, sadece rakamlar. Faturada alıcının (SAYIN) numarası değil"),
-  date: z.string().max(40).nullable().describe("Fiş tarihi, yazıldığı gibi (GG.AA.YYYY)"),
+  date: z.string().max(40).nullable().describe("Belge tarihi, GG.AA.YYYY biçiminde"),
   time: z.string().max(40).nullable(),
   receiptNo: z.string().max(40).nullable().describe("FİŞ NO, baştaki sıfırlarla"),
   zNo: z.string().max(40).nullable(),
   ekuNo: z.string().max(40).nullable(),
   vatLines: z.array(z.object({
     rate: z.number().int().min(0).max(100).describe("KDV oranı, yüzde (1, 10, 20, 0, eski fişte 8 veya 18)"),
-    gross: z.string().max(40).nullable().describe("Bu orandaki KDV dahil tutar, yazıldığı gibi"),
-    vat: z.string().max(40).nullable().describe("Bu orandaki KDV tutarı, yazıldığı gibi"),
+    gross: z.string().max(40).nullable().describe("Bu orandaki KDV dahil tutar, Türk biçiminde (8.725,00)"),
+    vat: z.string().max(40).nullable().describe("Bu orandaki KDV tutarı, Türk biçiminde"),
     net: z.string().max(40).nullable().describe("Bu orandaki KDV hariç tutar (matrah), yalnız belge oran başına KDV dahil tutar yazmıyorsa (e-fatura); yoksa null"),
-  })).max(10).describe("Oran başına bir satır"),
+  })).max(20).describe("Oran başına bir satır"),
   lineItems: z.array(z.object({
     rate: z.number().int().min(0).max(100).describe("Ürünün KDV oranı (%01 ise 1, %20 ise 20)"),
-    amount: z.string().max(40).describe("Ürün satırının tutarı, yazıldığı gibi"),
-  })).max(200).describe("Yalnız fişte oran bazlı KDV dahil toplamlar yazmıyorsa: her ürün satırı, oranı ve tutarıyla. Kırılım yazıyorsa boş"),
+    amount: z.string().max(40).describe("Ürün satırının tutarı, Türk biçiminde"),
+  })).max(400).describe("Yalnız fişte oran bazlı KDV dahil toplamlar yazmıyorsa: her ürün satırı, oranı ve tutarıyla. Kırılım yazıyorsa boş"),
   discounts: z.array(z.object({
     rate: z.number().int().min(0).max(100).nullable().describe("İndirimin uygulandığı ürünün KDV oranı; sepetin tamamına yapılan indirimde null"),
     amount: z.string().max(40).describe("İndirim tutarı, eksi işareti ve -D olmadan"),
-  })).max(100).describe("İndirim satırları (Ürün İndirimleri, İNDİRİM, İSKONTO, kampanya; tutarın sonunda -D)"),
-  totalVat: z.string().max(40).nullable().describe("TOPKDV veya TOPLAM KDV, yazıldığı gibi"),
-  total: z.string().max(40).nullable().describe("TOPLAM, yazıldığı gibi. Z raporunda günün genel toplamı. Yurt dışı faturada ödenecek toplam"),
+  })).max(200).describe("İndirim satırları (Ürün İndirimleri, İNDİRİM, İSKONTO, kampanya; tutarın sonunda -D)"),
+  totalVat: z.string().max(40).nullable().describe("TOPKDV veya TOPLAM KDV, Türk biçiminde"),
+  total: z.string().max(40).nullable().describe("TOPLAM, Türk biçiminde (8.725,00). Z raporunda günün genel toplamı. Yurt dışı faturada ödenecek toplam"),
   currency: z.string().max(3).nullable().describe("Para birimi, ISO kodu (TRY, USD, EUR...). Fiş ve Z raporunda TRY"),
   cashTotal: z.string().max(40).nullable().describe("Yalnız Z raporu: nakit tahsilat toplamı"),
   cardTotal: z.string().max(40).nullable().describe("Yalnız Z raporu: kredi kartı ile tahsilat toplamı"),
   invoicedTotal: z.string().max(40).nullable().describe("Yalnız Z raporu: faturalı satış toplamı, yazıyorsa"),
-  paymentMethod: z.enum(["cash", "card", "other"]).describe("NAKİT ise cash, banka veya kredi kartı ise card"),
+  paymentMethod: z.enum(["cash", "card", "other"]).describe("NAKİT ise cash, banka veya kredi kartı ise card; tamamı puan, hediye çeki, yemek kartı ya da açık hesapla ödenmişse other"),
   payments: z.array(z.object({
     method: z.enum(["cash", "card", "other"]).describe("NAKİT cash; kredi veya banka kartı card; puan, hediye çeki, yemek kartı, açık hesap other"),
-    amount: z.string().max(40).describe("Bu ödeme şekliyle ödenen tutar, yazıldığı gibi"),
-  })).max(6).describe("Fişte birden çok ödeme şekli varsa (nakit + kart, puan, hediye çeki, yemek kartı) her biri tutarıyla; tek ödeme şeklinde boş"),
+    amount: z.string().max(40).describe("Bu ödeme şekliyle ödenen tutar, Türk biçiminde"),
+  })).max(12).describe("Fişte birden çok ödeme şekli varsa (nakit + kart, puan, hediye çeki, yemek kartı) her biri tutarıyla; tek ödeme şeklinde boş"),
   category: z.enum(CATEGORY_KEYS).describe(CATEGORY_GUIDE),
   withholding: z.boolean().describe("Faturada KDV tevkifatı varsa (Tevkif edilen KDV, KDV tevkifat oranı, 5/10 gibi) true"),
   noFiscalValue: z.boolean().describe("Belgede 'MALİ DEĞERİ YOKTUR' yazıyorsa true (sipariş belgesi, e-adisyon, yemek kartı ödeme belgesi, bilgi slibi)"),
-  unreadableFields: z.array(z.string().max(100)).max(30).describe("Okunamayan veya fişte olmayan alanların şemadaki adları (total, date, receiptNo, vatLines[0].vat, payments gibi)"),
+  unreadableFields: z.array(z.string().max(100)).max(60).describe("Okunamayan veya fişte olmayan alanların şemadaki adları (total, date, receiptNo, vatLines[0].vat, payments gibi)"),
 });
 
 export type ReceiptExtraction = z.infer<typeof ReceiptExtractionSchema>;
@@ -123,7 +123,8 @@ function byRate(rows: readonly { rate: number | null; amount: string }[], discou
 /** Takes the discounts off per-rate gross amounts; a whole-basket discount (rate null) is shared out in proportion (largest remainder). */
 function lessDiscounts(gross: Map<number, number>, discounts: Map<number | null, number>): VatLine[] {
   const lines = [...gross].map(([rate, g]) => ({ rate, grossKurus: g - (discounts.get(rate) ?? 0), vatKurus: null as number | null }));
-  const basket = discounts.get(null) ?? 0;
+  const unmatched = [...discounts].reduce((s, [rate, k]) => s + (rate !== null && !gross.has(rate) ? k : 0), 0);
+  const basket = (discounts.get(null) ?? 0) + unmatched;
   const base = sumGross(lines);
   if (basket && base > 0) {
     const shares = lines.map((l) => Math.floor((basket * l.grossKurus) / base));
@@ -141,19 +142,25 @@ function lessDiscounts(gross: Map<number, number>, discounts: Map<number | null,
  * the sums are made here.
  */
 function vatLinesOf(x: ReceiptExtraction): VatLine[] {
-  const printed = x.vatLines.flatMap((v) => {
-    // An e-fatura prints per rate the matrah and the KDV, not their sum: the sum is made here.
+  const read = x.vatLines.flatMap((v) => {
+    // An e-fatura prints per rate the matrah and the KDV, not their sum: the sum is made here (the KDV worked out if not read).
     const net = amountOrNull(v.net ?? null), vat = amountOrNull(v.vat);
-    const grossKurus = amountOrNull(v.gross) ?? (net !== null && vat !== null ? net + vat : null);
+    const grossKurus = amountOrNull(v.gross) ?? (net !== null ? net + (vat ?? Math.round((net * v.rate) / 100)) : null);
     return grossKurus === null ? [] : [{ rate: v.rate, grossKurus, vatKurus: vat }];
   });
+  // A rate printed with 0,00 (a Z report's unused groups) is no line to book.
+  const printed = read.filter((v) => v.grossKurus !== 0);
   const total = amountOrNull(x.total);
-  if (total === null || (printed.length && printed.length === x.vatLines.length && sumGross(printed) === total)) return printed;
+  if (total === null || (printed.length && read.length === x.vatLines.length && sumGross(printed) === total)) return printed;
   const discounts = byRate(x.discounts ?? [], true) ?? new Map<number | null, number>();
   const items = byRate(x.lineItems ?? []);
   const candidates: VatLine[][] = [];
   if (items?.size) candidates.push(lessDiscounts(items as Map<number, number>, discounts));
-  if (printed.length && discounts.size) candidates.push(lessDiscounts(new Map(printed.map((v) => [v.rate, v.grossKurus])), discounts));
+  // The same rate printed on two lines is one amount; a discount also read as a minus item line is taken off once.
+  const printedByRate = new Map<number, number>();
+  for (const v of printed) printedByRate.set(v.rate, (printedByRate.get(v.rate) ?? 0) + v.grossKurus);
+  if (printed.length && discounts.size) candidates.push(lessDiscounts(printedByRate, discounts));
+  if (items?.size && discounts.size) candidates.push(lessDiscounts(items as Map<number, number>, new Map()));
   const fits = candidates.find((c) => c.length && c.every((v) => v.grossKurus > 0) && sumGross(c) === total);
   // Nothing adds up: the printed breakdown, or an item split with no rate below zero, left for the checks to flag.
   if (!fits) return printed.length ? printed : candidates.find((c) => c.every((v) => v.grossKurus > 0)) ?? [];
@@ -201,7 +208,8 @@ export function withholdingGap(x: ReceiptExtraction): number | null {
   if (data.totalKurus === null) return null;
   const gap = data.vatLines.reduce((s, v) => s + v.grossKurus, 0) - data.totalKurus;
   const vat = data.vatLines.reduce((s, v) => s + (v.vatKurus ?? vatFromGross(v.grossKurus, v.rate)), 0);
-  return gap > 0 && gap <= vat ? gap : null;
+  const share = [2, 3, 4, 5, 7, 9, 10].some((k) => Math.abs(gap - (vat * k) / 10) <= Math.max(5, vat / 200));
+  return gap > 0 && share ? gap : null;
 }
 
 const DAY_MS = 86_400_000;
@@ -221,15 +229,20 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
   // A breakdown line that could not be read, unless the item lines made up a breakdown that adds up anyway.
   if (data.totalKurus === null || (x.vatLines.some((v) => amountOrNull(v.gross ?? null) === null && amountOrNull(v.net ?? null) === null) && sum !== data.totalKurus)) problems.push("amount_unreadable");
   // A foreign invoice usually shows no KDV at all; its total stands alone.
-  else if (kind !== "foreign_invoice" && sum !== data.totalKurus && withholdingGap(x) === null) problems.push("total_mismatch");
+  else if (kind !== "foreign_invoice" && Math.abs(sum - data.totalKurus) > data.vatLines.length && withholdingGap(x) === null) problems.push("total_mismatch");
   if (kind === "foreign_invoice" && !/^[A-Z]{3}$/.test(x.currency ?? "")) problems.push("currency_unsure");
   if (kind === "z_report" && data.totalKurus !== null) {
     const cash = amountOrNull(x.cashTotal), card = amountOrNull(x.cardTotal);
     if (cash === null && card === null) problems.push("z_payment_split");
     else if (cash !== null && card !== null && cash + card !== data.totalKurus) problems.push("z_payment_split");
+    // Card alone may be read (cash is the rest), but never more than the day's total.
+    else if ((card ?? 0) > data.totalKurus || (cash ?? 0) > data.totalKurus) problems.push("z_payment_split");
   }
-  const lineTolerance = (expected: number) => !x.vatLines.length ? vatTolerance(x, 1) : kind === "receipt" ? 1 : Math.max(1, Math.ceil(expected / 1000));
-  if (data.vatLines.some((v) => { const e = vatFromGross(v.grossKurus, v.rate); return v.vatKurus !== null && Math.abs(v.vatKurus - e) > lineTolerance(e); })) problems.push("vat_mismatch");
+  // Kuruş for a till receipt's printed breakdown; an invoice or Z report rounds per item (perItemVatTolerance); a split made from item
+  // lines carries TOPKDV's difference on one rate (vatLinesOf), so it is allowed what TOPKDV is.
+  const lineTolerance = (expected: number) => !x.vatLines.length ? vatTolerance(x, data.vatLines.length) : kind === "receipt" ? 1 : perItemVatTolerance(expected);
+  // A foreign invoice's KDV is not booked from its lines (src/lib/journal-kinds.ts), so it is not checked.
+  if (kind !== "foreign_invoice" && data.vatLines.some((v) => { const e = vatFromGross(v.grossKurus, v.rate); return v.vatKurus !== null && Math.abs(v.vatKurus - e) > lineTolerance(e); })) problems.push("vat_mismatch");
   // TOPKDV against the KDV of the lines: a discount taken off the wrong rate shows here.
   const totalVat = amountOrNull(x.totalVat ?? null);
   const vatSum = data.vatLines.reduce((s, v) => s + (v.vatKurus ?? vatFromGross(v.grossKurus, v.rate)), 0);
@@ -237,7 +250,7 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
   if ((kind === "receipt" || kind === "domestic_invoice") && totalVat !== null && data.vatLines.length && Math.abs(vatSum - totalVat) > vatTolerance(x, data.vatLines.length) && !problems.includes("vat_mismatch")) problems.push("vat_mismatch");
   // A Turkish seller's invoice in euros or dollars would otherwise be booked as if the figures were lira.
   if ((kind === "receipt" || kind === "domestic_invoice") && x.currency && /^[A-Z]{3}$/.test(x.currency) && x.currency !== "TRY") problems.push("domestic_currency");
-  if (x.taxNumber !== null && !isValidTaxNumber(x.taxNumber)) problems.push("tax_number_invalid");
+  if (kind !== "foreign_invoice" && x.taxNumber !== null && !isValidTaxNumber(x.taxNumber)) problems.push("tax_number_invalid");
   if (data.date === null) problems.push("date_invalid");
   else if (!isPlausibleDate(data.date, today)) problems.push("date_unusual");
   // The model may flag a field as unsure yet still fill it; treat that as a problem so it is retried and highlighted.
@@ -247,13 +260,22 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
     return (n === k || n.startsWith(`${k}[`) || n.startsWith(`${k}.`)) && !n.endsWith(".net");
   });
   const add = (code: string) => !problems.includes(code) && problems.push(code);
+  // A part of a breakdown line the document does not print (an e-fatura's gross, a 0% line's KDV) is left null and named, not misread.
+  const vatUnsure = x.unreadableFields.some((f) => {
+    const m = /^vatlines(?:\[(\d+)\])?(?:\.(\w+))?$/.exec(f.trim().toLowerCase());
+    if (!m || m[2] === "net") return false;
+    const line = m[1] === undefined ? undefined : (x.vatLines[Number(m[1])] as Record<string, unknown> | undefined);
+    return !(m[2] && line) || line[m[2]] != null;
+  });
   if (unsure("total")) add("amount_unreadable");
-  if (unsure("vatLines") && x.vatLines.length > 0) add("vat_mismatch");
+  if (vatUnsure && x.vatLines.length > 0 && kind !== "foreign_invoice") add("vat_mismatch");
   if (unsure("date")) add("date_invalid");
-  if (unsure("paymentMethod") || (unsure("payments") && (x.payments?.length ?? 0) > 1)) add("payment_unsure");
+  // A Z report has no receipt number and no payment method of its own (its cash and card totals are checked above).
+  const z = kind === "z_report";
+  if (!z && (unsure("paymentMethod") || (unsure("payments") && (x.payments?.length ?? 0) > 1))) add("payment_unsure");
   // Several ways of paying that do not add up to the total: the credit side cannot be split, so it is checked by hand.
   const paid = (x.payments ?? []).map((p) => amountOrNull(p.amount));
   if (paid.length > 1 && (paid.some((k) => k === null) || paid.reduce<number>((s, k) => s + (k ?? 0), 0) !== data.totalKurus)) add("payment_unsure");
-  if (unsure("receiptNo")) add("receipt_no_unsure");
+  if (!z && unsure("receiptNo")) add("receipt_no_unsure");
   return problems;
 }

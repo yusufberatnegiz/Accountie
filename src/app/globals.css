@@ -357,6 +357,9 @@ tbody tr:last-child td { border-bottom: 0; }
 /* ---------- Messages ---------- */
 .alert { padding: var(--s3) var(--s4); border-radius: var(--radius-control); background: var(--raised); color: var(--ink); }
 .alert-error { background: var(--negative-soft); color: var(--negative); }
+.alert-close { display: flex; align-items: flex-start; gap: var(--s3); }
+.alert-close .btn-close { margin-left: auto; flex: none; min-width: 28px; min-height: 28px; padding: 0; border: 0; background: none; color: inherit; font-size: 1.25rem; line-height: 1; cursor: pointer; }
+@media (pointer: coarse) { .alert-close .btn-close { min-width: var(--touch); min-height: var(--touch); } }
 /* An alert takes focus only so a screen reader reads it; it is not a control, so it draws no focus ring. */
 .alert[tabindex="-1"]:focus { outline: none; }
 /* Same note language as the homepage (YON 23.27): neutral raised ground, ink text, a full warn edge (no coloured side stripe). */

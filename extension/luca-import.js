@@ -92,7 +92,7 @@
    * Oturumu firmaya çevirir ve gerçekten o firmaya ve döneme geçtiğini doğrular. Luca geçişi bazen geç yansıtır: bir kez daha dener.
    * `verifyIds`: Luca'nın oturum numaraları firma listesindekilerle aynı (ön sınamada görüldü); öyleyse onlar da tutmalı.
    */
-  async function switchTo(f, verifyIds = false) {
+  async function switchTo(f, verifyIds = false, avoid = "") {
     let identity = null, ids = null, reply = "";
     for (let attempt = 0; attempt < 2; attempt++) {
       if (attempt) await new Promise((r) => setTimeout(r, 1500));
@@ -105,7 +105,9 @@
       ids = sessionIds(info.documentElement?.innerHTML ?? "");
       // Aynı dönem tarihli başka bir firmada kalınmışsa yalnız tarih tutar; Luca firma numarasını veriyorsa o da tutmalı.
       const sameFirm = !verifyIds || ((!ids.sirket || ids.sirket === String(f.lucaId)) && (!ids.donem || ids.donem === String(f.donemId)));
-      if (identity && identity.start === f.start && identity.end === f.end && sameFirm) return { ok: true, identity, verified: verifyIds && !!ids.sirket };
+      // `avoid`: the firm read just before. Same dates and still that firm means Luca has not shown the switch yet: tried again.
+      const stale = !!avoid && !!identity && `${identity.taxNumber}|${identity.name}` === avoid;
+      if (identity && identity.start === f.start && identity.end === f.end && sameFirm && !stale) return { ok: true, identity, verified: verifyIds && !!ids.sirket };
     }
     return { ok: false, identity, ids, reply };
   }
@@ -113,14 +115,16 @@
   /**
    * Oturumu firmaya çevirir, kimliğini ve hesap planını okur. Geçiş doğrulanmazsa durur, yanlış firmanın planı alınmaz.
    */
-  async function readFirm(f, verifyIds = false) {
-    const sw = await switchTo(f, verifyIds);
+  async function readFirm(f, verifyIds = false, avoid = "") {
+    const sw = await switchTo(f, verifyIds, avoid);
     const identity = sw.identity;
     if (!identity) throw new Error("Luca firma bilgisini vermedi; Luca oturumu kapanmış olabilir. İki kez denendi.");
     // Both sides in the message: whether Luca stayed on another firm or opened this firm with other dates tells the cause.
     if (!sw.ok) throw new Error(`Luca bu firmaya geçmedi. İstenen: ${f.shortName} (no ${f.lucaId}) ${f.start} - ${f.end}. Luca'nın açık gösterdiği: ${identity.name}${sw.ids?.sirket ? ` (no ${sw.ids.sirket})` : ""} ${identity.start} - ${identity.end}.${sw.reply ? ` Luca'nın yanıtı: ${sw.reply}` : ""}`);
-    const accounts = parsePlan(await page(`listAltHesapTempAction.do?time=${Date.now()}`));
-    if (accounts.length === 0) throw new Error("Luca'da bu firmanın hesap planı boş. Luca'da plan tanımlanınca yeniden çekin.");
+    // From here Luca is on this firm: an error says so (identity), so the next firm is compared with this one, not the one before.
+    const onFirm = (e) => Object.assign(e, { identity: { taxNumber: identity.taxNumber, name: identity.name } });
+    const accounts = parsePlan(await page(`listAltHesapTempAction.do?time=${Date.now()}`).catch((e) => { throw onFirm(e); }));
+    if (accounts.length === 0) throw onFirm(new Error("Luca'da bu firmanın hesap planı boş. Luca'da plan tanımlanınca yeniden çekin."));
     return { lucaId: f.lucaId, name: identity.name, taxNumber: identity.taxNumber, accounts, verified: sw.verified };
   }
 

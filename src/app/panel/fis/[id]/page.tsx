@@ -31,7 +31,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
   return (
     <AppShell current="fis" email={user.email} firmId={receipt.firmId} setup={!(await listFirms(user.id)).some((f) => f.fromLuca)}>
-      <ReceiptView receipt={receipt} rules={rules} next={next} learned={learned} plan={plan} postable={leavesOf(plan).map(({ code, name }) => ({ code, name }))} mismatched={mismatches.map((m) => m.code)} />
+      {/* The plan (thousands of accounts) goes only to a draft, the one screen that picks codes from it. */}
+      <ReceiptView receipt={receipt} rules={rules} next={next} learned={learned} plan={receipt.status === "draft" ? plan : []} postable={receipt.status === "draft" ? leavesOf(plan).map(({ code, name }) => ({ code, name })) : []} mismatched={mismatches.map((m) => m.code)} />
     </AppShell>
   );
 }

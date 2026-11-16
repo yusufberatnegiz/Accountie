@@ -138,7 +138,6 @@
 .list-foot-actions .bulk-delete { margin-left: auto; }
 .list-foot-actions .bulk-status { flex-basis: 100%; margin: 0; }
 .list-foot-actions .bulk-status:not(:empty) { margin-top: var(--s2); }
-@media (pointer: coarse) { .seg .side-opt { min-height: var(--touch); } }
 .empty-row { display: grid; gap: var(--s3); justify-items: start; padding: var(--s6) var(--s5); }
 .empty-row h3 { font-size: var(--fs-section); }
 .empty-row p { font-size: var(--fs-section); max-width: 60ch; color: var(--muted); }
@@ -230,6 +229,8 @@
 .inline-field .field { width: 260px; min-height: var(--control-sm); color: var(--ink); }
 .seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius-control); background: var(--active); }
 .seg .side-opt { min-height: calc(var(--control-sm) - 4px); padding: 0 var(--s3); }
+/* After the rule above, which it must win over on a touch screen of any width. */
+@media (pointer: coarse) { .seg .side-opt { min-height: var(--touch); } }
 .seg[data-check] { box-shadow: 0 0 0 1px var(--warn-ink); }
 .vehicle-field { min-width: 16rem; }
 .side-opt:disabled { opacity: 0.5; cursor: default; }

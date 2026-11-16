@@ -7,7 +7,9 @@ import { Roll } from "./home/Odometer";
 
 // Large enough that each of several receipts in one photo is still readable once the server cuts it out.
 const MAX_EDGE = 3200;
-const TIMEOUT_MS = 60_000;
+const TIMEOUT_MS = 90_000;
+// The upload message outlives the refresh that swaps the empty list's button for the list's own (src/components/ReceiptListView.tsx).
+const NOTICE_KEY = "accountie:yukleme-bildirimi";
 const SLOW_MS = 10_000;
 // The real stages of one photo: shrunk on this device, read on the server, lines back.
 const STAGES = ["Fotoğraf hazırlanıyor", "", "Satırlar hazır"];
@@ -40,7 +42,16 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
   const [slow, setSlow] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNoticeState] = useState("");
+  const setNotice = (text: string) => {
+    setNoticeState(text);
+    try { if (text) sessionStorage.setItem(NOTICE_KEY, text); else sessionStorage.removeItem(NOTICE_KEY); } catch {}
+  };
+  // Only the list's own button (head) picks it up, so the rail and the phone bar never show it a second time.
+  useEffect(() => {
+    if (variant !== "head") return;
+    try { const kept = sessionStorage.getItem(NOTICE_KEY); if (kept) setNoticeState(kept); } catch {}
+  }, [variant]);
   // The photo being read, shown small in the reading card; its object URL is released when the next one replaces it.
   const [thumb, setThumb] = useState("");
   useEffect(() => () => { if (thumb) URL.revokeObjectURL(thumb); }, [thumb]);
@@ -62,6 +73,8 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
     let skipped = 0;
     let limited = 0;
     let uncut = 0;
+    let unsaved = 0;
+    let unlocated = false;
     // Each photo becomes its own receipt; files are copied out of the input first because iOS replaces them on the next capture.
     for (const [i, file] of list.entries()) {
       setSlow(false);
@@ -78,7 +91,7 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
       if (firm) form.set("firma", firm);
       let failure = "Bağlantı kurulamadı. Tekrar deneyin.";
       const res = await fetch("/api/receipts", { method: "POST", body: form, signal: AbortSignal.timeout(TIMEOUT_MS) }).catch((e: unknown) => {
-        if (e instanceof DOMException && e.name === "TimeoutError") failure = "Fiş bir dakikada okunamadı. Bağlantınızı kontrol edip tekrar deneyin.";
+        if (e instanceof DOMException && e.name === "TimeoutError") failure = "Fiş 90 saniyede okunamadı. Fiş listesine bakın: okunduysa orada; yoksa tekrar deneyin.";
         return null;
       });
       if (!res?.ok) {
@@ -95,20 +108,22 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
         break;
       }
       // One photo may hold several receipts side by side; each gets the photo for its review screen.
-      const { ids, skipped: left = 0, limited: over = 0, uncut: notCut = 0 } = (await res.json()) as { ids: string[]; skipped?: number; limited?: number; uncut?: number };
+      const { ids, skipped: left = 0, limited: over = 0, uncut: notCut = 0, failed: lost = 0, unlocated: unknown = false } = (await res.json()) as { ids: string[]; skipped?: number; limited?: number; uncut?: number; failed?: number; unlocated?: boolean };
       skipped += left;
       limited += over;
       uncut += notCut;
+      unsaved += lost;
+      unlocated ||= unknown;
       setStage(2);
       if (!pdf) for (const id of ids) setPhoto(id, blob);
       lastId = ids[0];
       added += ids.length;
     }
     // The balance reached its floor inside a photo of several receipts: the list shows what was read, the rest is named.
-    if (skipped || limited || uncut) {
+    if (skipped || limited || uncut || unsaved || unlocated) {
       setBusy(false);
       setStatus("");
-      setNotice(`${added} belge eklendi.${skipped ? ` Kontör bittiği için ${skipped} fiş okunmadı.` : ""}${limited ? ` Bir karede en çok 10 fiş ve dakikada 10 okuma yapılır; ${limited} fiş okunmadı.` : ""}${uncut ? ` ${uncut} fiş fotoğraftan ayrılamadı.` : ""} Okunmayan fişleri ${skipped ? "kontör yükledikten sonra " : ""}ayrı çekin.`);
+      setNotice(`${added} belge eklendi.${skipped ? ` Kontör bittiği için ${skipped} fiş okunmadı.` : ""}${limited ? ` ${limited} fiş okunmadı: bir karede en çok 10 fiş okunur ya da okuma sınırı doldu.` : ""}${uncut ? ` ${uncut} fiş fotoğraftan ayrılamadı.` : ""}${unsaved ? ` ${unsaved} fiş okundu ama kaydedilemedi.` : ""}${unlocated ? " Fotoğraftaki fişlerin yeri bulunamadı; birden çok fiş varsa yalnız biri okunmuş olabilir." : ""} Okunmayan fişleri ${skipped ? "kontör yükledikten sonra " : ""}ayrı çekin.`);
       startTransition(() => { addTransitionType("fis-eklendi"); router.refresh(); });
       return;
     }
@@ -181,7 +196,12 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
               <p className="small">Sayfadan ayrılmayın.{slow ? " Hâlâ okunuyor, fiş uzunsa biraz sürebilir." : ""}</p>
             </div>
           </>
-        ) : notice ? <p className="alert">{notice}</p> : null}
+        ) : notice ? (
+          <p className="alert alert-close">
+            {notice}
+            <button type="button" className="btn-close" aria-label="Bildirimi kapat" onClick={() => setNotice("")}>×</button>
+          </p>
+        ) : null}
       </div>
       {variant === "rail" ? (
         <label className="rail-item rail-capture" aria-disabled={busy}>

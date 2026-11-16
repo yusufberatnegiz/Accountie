@@ -58,7 +58,7 @@ export const WARNING_MESSAGES: Record<string, string> = {
   no_fiscal_value: "Belgede “MALİ DEĞERİ YOKTUR” yazıyor: gider ve KDV belgesi değildir. Bu taslağı silin, asıl fişi ya da faturayı yükleyin.",
   vehicle_choice: "Araç binek mi ticari mi? Yevmiye satırlarının üstündeki Araç seçiminden seçin; seçilmeden onaylanmaz.",
   payment_other: "Ödemenin tamamı ya da bir kısmı puan, hediye çeki, yemek kartı ya da açık hesapla. O alacak satırının hesabını kontrol edin.",
-  withholding: "Faturada KDV tevkifatı var. Tevkif edilen KDV satırları (191 ve 360) eklenmedi; satırları faturaya göre düzeltin.",
+  withholding: "Faturada KDV tevkifatı var; tevkif edilen tutar okunamadı. Tevkif edilen KDV için 360 alacak satırını faturaya göre ekleyin, 191 ve toplamı kontrol edin.",
   plan_no_account: "Firmanın Luca planında bu satıra uyan hesap bulunamadı. Hesap kodunu plandan seçin.",
   z_unknown_rate: "Kural tablosunda olmayan KDV oranı var. Satış ve KDV hesabını seçin.",
 };

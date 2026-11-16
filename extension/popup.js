@@ -27,8 +27,10 @@ const selected = () => receipts.filter((r) => $(`pick-${r.id}`)?.checked);
 // Written into the open Luca entry and not yet marked: such a receipt cannot be picked again (it would go into Luca twice).
 let filledNow = [];
 const pickable = () => receipts.filter((r) => !filledNow.includes(r.id));
+// A firm by its Accountie id: two firms imported from Luca may share a name.
+const firmOf = (r) => r?.firmId || r?.firm;
 // "Tümünü seç" works on one firm: the waiting entry's, else the first chosen or listed one.
-const firmOpen = () => { const firm = (receipts.find((r) => filledNow.includes(r.id)) ?? selected()[0] ?? pickable()[0])?.firm; return pickable().filter((r) => r.firm === firm); };
+const firmOpen = () => { const firm = firmOf(receipts.find((r) => filledNow.includes(r.id)) ?? selected()[0] ?? pickable()[0]); return pickable().filter((r) => firmOf(r) === firm); };
 const allPicked = (open) => open.length > 0 && selected().length === open.length && open.every((r) => $(`pick-${r.id}`)?.checked);
 
 function el(tag, props = {}, ...children) {
@@ -59,10 +61,10 @@ function renderCards(filled) {
 function updateSelection() {
   const picked = selected();
   const waiting = receipts.find((r) => filledNow.includes(r.id));
-  const firms = new Set([...(waiting ? [waiting.firm] : []), ...picked.map((r) => r.firm)]);
+  const firms = new Set([...(waiting ? [firmOf(waiting)] : []), ...picked.map(firmOf)]);
   // The open entry's firm (or else the first picked receipt's) sets the firm; picked cards of any other firm are marked.
-  const firm = waiting ? waiting.firm : picked[0]?.firm;
-  for (const r of receipts) $(`pick-${r.id}`)?.closest(".card").classList.toggle("other-firm", firms.size > 1 && picked.includes(r) && r.firm !== firm);
+  const firm = waiting ? firmOf(waiting) : firmOf(picked[0]);
+  for (const r of receipts) $(`pick-${r.id}`)?.closest(".card").classList.toggle("other-firm", firms.size > 1 && picked.includes(r) && firmOf(r) !== firm);
   $("fill").disabled = picked.length === 0 || firms.size > 1;
   $("fill").textContent = picked.length > 1 ? `${picked.length} fişi Fiş Detayına yaz` : "Fiş Detayına yaz";
   const open = pickable();
@@ -74,15 +76,39 @@ function updateSelection() {
     : `${picked.length} fiş seçildi, toplam ${picked.reduce((n, r) => n + r.rows.length, 0)} satır. Fişler Fiş Detayına alt alta yazılır.`;
 }
 
+/**
+ * Luca's firm number (SIRKET_ID) the open Luca tab shows in its firm picker frame; null when it cannot be read (no picker found, or
+ * frames that disagree), and then nothing is checked against it.
+ */
+async function openLucaFirm(tabId) {
+  const found = await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, func: () => document.getElementById("SirketCombo")?.value || null })
+    .then((rs) => [...new Set(rs.map((r) => r.result).filter(Boolean))], () => []);
+  return found.length === 1 ? String(found[0]) : null;
+}
+
+async function activeLucaTab() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tab?.url && LUCA_HOST.test(new URL(tab.url).hostname) ? tab : null;
+}
+
 async function load() {
   status("Fişler getiriliyor.");
-  const data = await api("/api/extension/receipts");
+  // With Luca open on a firm, that firm's receipts are listed (not the oldest 50 of all firms); written ones always come back.
+  const luca = await activeLucaTab();
+  const sirket = luca ? await openLucaFirm(luca.id) : null;
+  const waiting = await filledIds();
+  const query = new URLSearchParams({ ...(sirket ? { sirket } : {}), ...(waiting.length ? { keep: waiting.join(",") } : {}) }).toString();
+  const data = await api(`/api/extension/receipts${query ? `?${query}` : ""}`);
   receipts = data.receipts;
+  // A written receipt no longer approved (exported on the site, sent back to draft) has no mark left to make: dropped, so it never
+  // holds the firm import (import.js) or the auto run.
+  const still = waiting.filter((id) => receipts.some((r) => r.id === id));
+  if (still.length !== waiting.length) await chrome.storage.local.set({ filledIds: still });
   $("token-form").hidden = true;
   $("list-view").hidden = false;
   $("auto").hidden = $("auto-note").hidden = !autoReady();
   // The popup closes when the user clicks Luca's Kaydet; reopen with "Luca'da kaydettim" visible for every receipt filled since.
-  const filled = (await filledIds()).filter((id) => receipts.some((r) => r.id === id));
+  const filled = still;
   renderCards(filled);
   if (!receipts.length) $("cards").replaceChildren(el("li", { className: "empty muted", textContent: "Aktarılacak onaylı fiş yok. Accountie'de fişleri onaylayınca burada görünür." }));
   $("fill").hidden = !receipts.length;
@@ -116,17 +142,26 @@ async function lucaTab() {
   // A firm import that could not show Luca back on the first firm (or whose tab was closed): asked once, then the next try writes.
   const { lucaAway } = await chrome.storage.local.get("lucaAway");
   if (lucaAway) {
-    // Cleared by asking only once the run has ended (no beat left); while it may still run, it keeps holding.
-    if (typeof importingAt !== "number") await chrome.storage.local.remove("lucaAway");
+    // No fresh beat (checked above): the run has ended, or its tab was closed. Asked once, then the next try writes.
+    await chrome.storage.local.remove(["lucaAway", "importingAt"]);
     status(`Firma çekmeden sonra Luca'nın ${lucaAway} firmasına döndüğü doğrulanamadı. Luca'da açık firmayı kontrol edin; doğruysa yeniden basın.`, true);
     return null;
   }
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.url || !LUCA_HOST.test(new URL(tab.url).hostname)) {
+  const tab = await activeLucaTab();
+  if (!tab) {
     status("Önce Luca'da Fiş Detayı ekranını açın, sonra eklentiyi o sekmede açın.", true);
     return null;
   }
   return tab;
+}
+
+/** False (and says why) when Luca shows another firm than the receipts': they would be booked to that firm. */
+async function sameFirm(tab, list) {
+  const open = await openLucaFirm(tab.id);
+  const other = open && list.find((r) => r.firmLucaId && r.firmLucaId !== open);
+  if (!other) return true;
+  status(`Luca'da açık firma bu fişlerin firması değil. Luca'da ${other.firm} firmasını seçin, eklentiyi yeniden açıp yazın.`, true);
+  return false;
 }
 
 // Runs func in every frame of the tab (Luca's grid may sit in a frame), with our scripts loaded there first.
@@ -162,6 +197,7 @@ async function fill() {
   if (!tab) return;
   // A receipt already written (and not yet marked) would go into Luca twice; its card is disabled, this is the last guard.
   if (picked.some((r) => filledNow.includes(r.id))) return status("Seçilenlerden biri zaten yazıldı. Luca'da kaydettiyseniz Luca'da kaydettim'e basın.", true);
+  if (!(await sameFirm(tab, picked))) return;
   let written = 0;
   let last = null;
   for (const [i, receipt] of picked.entries()) {
@@ -186,7 +222,8 @@ async function fill() {
 async function autoAll() {
   const tab = await lucaTab();
   if (!tab || !receipts.length) return;
-  const queue = pickable().filter((r, _, all) => r.firm === all[0].firm);
+  const queue = pickable().filter((r, _, all) => firmOf(r) === firmOf(all[0]));
+  if (!(await sameFirm(tab, queue))) return;
   let saved = 0;
   const stop = async (receipt, text) => {
     if (receipt) await addFilled(receipt.id);

@@ -26,15 +26,23 @@ const GROUPS: { kind: RuleKind; title: string; text: string; first: string; capt
   { kind: "sales", title: "Z raporu (satışlar)", text: "Yazar kasa Z raporu günün satışı olarak yazılır: nakit ve kartlı tahsilat borç, oran başına satış (600) ve hesaplanan KDV (391) alacak.", first: "revenue:20", caption: (r) => (r.key.startsWith("revenue:0") ? "KDV'siz satış içeren Z raporu" : `%${rateOf(r.key)} satış içeren Z raporu`) },
 ];
 
-// With the firm's Luca plan imported, a code Luca does not have is as wrong as a malformed one.
-const invalid = (r: RuleRow, plan?: ReadonlyMap<string, string>) => (r.kind === "setting" ? !r.accountCode.trim() || r.accountCode.length > 10 : !ACCOUNT_CODE_PATTERN.test(r.accountCode) || (!!plan?.size && !plan.has(r.accountCode)));
+// With the firm's Luca plan imported, a code Luca does not book to (not in the plan, or one with sub-accounts) is as wrong as a malformed one.
+const invalid = (r: RuleRow, postable?: ReadonlySet<string>) => (r.kind === "setting" ? !r.accountCode.trim() || r.accountCode.length > 10 : !ACCOUNT_CODE_PATTERN.test(r.accountCode) || (!!postable?.size && !postable.has(r.accountCode)));
+/** Why a rule cannot be saved, in the words of what to do. */
+function whyInvalid(r: RuleRow, names: ReadonlyMap<string, string>): string {
+  if (r.kind === "setting") return !r.accountCode.trim() ? `${r.label} boş olamaz.` : `${r.label} en çok 10 karakter olabilir.`;
+  if (!r.accountCode) return `${r.label}: firmanın Luca planında uyan hesap bulunamadı. Plandan bir kod seçin.`;
+  if (!ACCOUNT_CODE_PATTERN.test(r.accountCode)) return "Hesap kodu 770.08 biçiminde olmalı.";
+  return names.has(r.accountCode) ? `${r.accountCode} hesabının alt hesapları var; alt hesaplardan birini seçin.` : `${r.accountCode} firmanın Luca planında yok. Plandaki bir kodu seçin.`;
+}
 const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
 
 /** Settings in two columns: each group is a row with its own Save; a Save sends only its group's edits. */
-export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; plan?: Account[] }) {
+export function RulesEditor({ rows: initial, plan = [], firmId }: { rows: RuleRow[]; plan?: Account[]; firmId?: string }) {
   const names = new Map(plan.map((a) => [a.code, a.name]));
   // Once per plan, not on every key: a plan may hold thousands of accounts.
   const postable = useMemo(() => leavesOf(plan), [plan]);
+  const postableCodes = useMemo(() => new Set(postable.map((a) => a.code)), [postable]);
   const [rows, setRows] = useState(initial);
   const [saved, setSaved] = useState(initial);
   const [note, setNote] = useState<{ kind: RuleKind; text: string; error: boolean } | null>(null);
@@ -52,21 +60,38 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
     // Only the rules changed here are saved: a saved rule stays this firm's own choice and is no longer fitted to the plan.
     const changed = rows.filter((r) => r.kind === kind && JSON.stringify(r) !== JSON.stringify(saved.find((s) => same(s, r))));
     if (!changed.length) return setNote({ kind, text: "Değişiklik yok.", error: false });
-    const bad = changed.find((r) => invalid(r, names));
+    const bad = changed.find((r) => invalid(r, postableCodes));
     if (bad) {
-      setNote({ kind, text: !bad.accountCode ? `${bad.label}: firmanın Luca planında uyan hesap bulunamadı. Plandan bir kod seçin.` : invalid(bad) ? "Hesap kodu 770.08 biçiminde olmalı." : `${bad.accountCode} firmanın Luca planında yok. Plandaki bir kodu seçin.`, error: true });
-      // Let React paint aria-invalid first, then jump to the field the user must fix.
-      requestAnimationFrame(() => document.querySelector<HTMLInputElement>(`#kural-${kind} [aria-invalid="true"]`)?.focus());
+      setNote({ kind, text: whyInvalid(bad, names), error: true });
+      // Let React paint aria-invalid first, then jump to the field the user must fix (an emptied one too).
+      requestAnimationFrame(() => document.querySelector<HTMLInputElement>(`[name="kod-${bad.kind}-${bad.key}"]`)?.focus());
       return;
     }
     const next = saved.map((s) => changed.find((r) => same(r, s)) ?? s);
     setBusy(kind);
-    const res = await fetch("/api/account-rules", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ rows: changed }) }).catch(() => null);
+    const res = await fetch("/api/account-rules", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ firmId, rows: changed }) }).catch(() => null);
     setBusy(null);
     if (res?.ok) {
       setSaved(next);
       setNote({ kind, text: "Kaydedildi. Yeni fişlere uygulanır.", error: false });
     } else setNote({ kind, text: (res && (await res.json().catch(() => null))?.error) ?? "Kaydedilemedi. Tekrar deneyin.", error: true });
+  }
+
+  // A firm with its Luca plan: its own rules are forgotten on the server and every rule is fitted to the plan again, never the fixed
+  // default codes saved as the firm's choice. Without a plan the defaults are loaded to look over and save.
+  const [resetNote, setResetNote] = useState<{ text: string; error: boolean } | null>(null);
+  async function reset() {
+    if (!(plan.length && firmId)) {
+      if (confirm("Bütün hesap kuralları varsayılan değerlere dönsün mü? Kaydetmeden önce kontrol edebilirsiniz.")) setRows(rulesToRows(DEFAULT_RULES));
+      return;
+    }
+    if (!confirm("Bu firmada kaydettiğiniz kurallar silinsin ve kurallar firmanın Luca planından yeniden seçilsin mi?")) return;
+    setBusy("setting");
+    const res = await fetch("/api/account-rules", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ firmId }) }).catch(() => null);
+    setBusy(null);
+    const body = res?.ok ? ((await res.json().catch(() => null)) as { rows?: RuleRow[] } | null) : null;
+    if (body?.rows) { setRows(body.rows); setSaved(body.rows); setResetNote({ text: "Kurallar firmanın Luca planından yeniden seçildi.", error: false }); }
+    else setResetNote({ text: "Kurallar sıfırlanamadı. Tekrar deneyin.", error: true });
   }
 
   return (
@@ -166,7 +191,7 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
                   {groupRows.map((r) => (
                     <tr key={r.key} onMouseEnter={() => setActive(r)} onFocus={() => setActive(r)}>
                       <td className="rule-label">{r.label}</td>
-                      <td className="rule-code"><input name={`kod-${r.kind}-${r.key}`} autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : plan.length ? "Plandan seçin…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={!!r.accountCode && invalid(r, names)} list={setting || !plan.length ? undefined : "plan-kodlari"} value={r.accountCode} onChange={(e) => { const code = e.target.value.trim(); const name = setting ? undefined : names.get(code); update(r, name === undefined ? { accountCode: code } : { accountCode: code, accountName: name }); }} /></td>
+                      <td className="rule-code"><input name={`kod-${r.kind}-${r.key}`} autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : plan.length ? "Plandan seçin…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={invalid(r, postableCodes)} list={setting || !plan.length ? undefined : "plan-kodlari"} value={r.accountCode} onChange={(e) => { const code = e.target.value.trim(); const name = setting ? undefined : names.get(code); update(r, name === undefined ? { accountCode: code } : { accountCode: code, accountName: name }); }} /></td>
                       {/* The name is for people only (Luca matches the code), so it reads as text until pointed at or focused. */}
                       {setting ? null : <td className="rule-name"><input name={`ad-${r.kind}-${r.key}`} autoComplete="off" className="field field-quiet" aria-label={`${r.label} hesap adı`} title={r.accountName} placeholder={r.accountCode ? undefined : "Planda uyan hesap yok"} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
                     </tr>
@@ -177,7 +202,7 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
                 <p className={note?.kind === g.kind ? (note.error ? "field-error" : "saved") : "muted small"} aria-live="polite">
                   {note?.kind === g.kind ? note.text : dirty(g.kind) ? "Kaydedilmemiş değişiklik var." : ""}
                 </p>
-                <button className={dirty(g.kind) ? "btn btn-primary" : "btn"} type="button" onClick={() => save(g.kind)} disabled={busy !== null}>{busy === g.kind ? "Kaydediliyor…" : `${g.title} kaydet`}</button>
+                <button className={dirty(g.kind) ? "btn btn-primary" : "btn"} type="button" onClick={() => save(g.kind)} disabled={busy !== null}>{busy === g.kind ? "Kaydediliyor…" : "Kaydet"}</button>
               </div>
             </div>
           </section>
@@ -207,11 +232,13 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
       <section className="setting-row danger-zone" aria-labelledby="grp-sifirla">
         <div className="setting-label">
           <h2 id="grp-sifirla">Varsayılan kurallara dön</h2>
-          <p className="muted small">Bütün hesap kodları ilk kurulumdaki değerlere döner. Her bölümü kaydedene kadar hiçbir şey değişmez.</p>
+          <p className="muted small">{plan.length && firmId
+            ? "Bu firmada kaydettiğiniz kurallar silinir; bütün kurallar yeniden firmanın Luca planından seçilir."
+            : "Bütün hesap kodları ilk kurulumdaki değerlere döner. Her bölümü kaydedene kadar hiçbir şey değişmez."}</p>
+          {resetNote ? <p className={resetNote.error ? "field-error" : "saved"} aria-live="polite">{resetNote.text}</p> : null}
         </div>
         <div className="setting-panel">
-          <button className="btn btn-danger" type="button"
-            onClick={() => confirm("Bütün hesap kuralları varsayılan değerlere dönsün mü? Kaydetmeden önce kontrol edebilirsiniz.") && setRows(rulesToRows(DEFAULT_RULES))}>
+          <button className="btn btn-danger" type="button" disabled={busy !== null} onClick={reset}>
             Varsayılanlara dön
           </button>
         </div>

@@ -11,6 +11,9 @@ describe("fişin şu anki uyarıları", () => {
     expect(current([], { status: "approved", category: "fuel" }, false)).toEqual([]);
     expect(current([], { status: "draft", category: "maintenance" }, false)).toEqual([]);
   });
+  it("mali değeri olmayan araç belgesinde araç sorulmaz, yalnız silinmesi söylenir", () => {
+    expect(current([w("no_fiscal_value")], { status: "draft", category: "fuel" }, false).map((x) => x.code)).toEqual(["no_fiscal_value"]);
+  });
   it("kaldırılan binek ve ağırlama uyarıları eski kayıtlarda da görünmez", () => {
     expect(current([w("vehicle"), w("meal"), w("date_invalid")], { status: "draft", category: "meal" }, false).map((x) => x.code)).toEqual(["date_invalid"]);
   });

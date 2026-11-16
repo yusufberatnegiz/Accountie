@@ -146,6 +146,25 @@ describe("checkExtraction", () => {
   it("doğru fişte sorun yok", () => {
     expect(checkExtraction(goodOutput)).toEqual([]);
   });
+  it("tur 5: Z raporunda fiş no ve ödeme şekli sorulmaz, 0,00 kırılım satırı ve belgede olmayan alt alan sorun değildir", () => {
+    const z = { ...goodOutput, documentKind: "z_report" as const, receiptNo: null, cashTotal: "8.725,00", cardTotal: null, unreadableFields: ["receiptNo", "paymentMethod"] };
+    expect(checkExtraction(z)).toEqual([]);
+    const zero = { ...goodOutput, vatLines: [...goodOutput.vatLines, { rate: 20, gross: "0,00", vat: "0,00", net: null }] };
+    expect(toReceiptData(zero).vatLines).toEqual([{ rate: 10, grossKurus: 872500, vatKurus: 79318 }]);
+    const eFatura = { ...goodOutput, documentKind: "domestic_invoice" as const, vatLines: [{ rate: 10, gross: null, vat: "793,18", net: "7.931,82" }], unreadableFields: ["vatLines[0].gross"] };
+    expect(checkExtraction(eFatura)).toEqual([]);
+  });
+  it("tur 5: KDV'si okunmamış matrah satırı düşmez, oranı tutmayan indirim sepetten düşülür", () => {
+    const noVat = { ...goodOutput, vatLines: [{ rate: 0, gross: null, vat: null, net: "100,00" }, { rate: 10, gross: "8.625,00", vat: "784,09", net: null }] };
+    expect(toReceiptData(noVat).vatLines.map((v) => v.grossKurus)).toEqual([10000, 862500]);
+    const items = { ...goodOutput, vatLines: [], total: "90,00", lineItems: [{ rate: 20, amount: "100,00" }], discounts: [{ rate: 10, amount: "10,00" }] };
+    expect(toReceiptData(items).vatLines.map((v) => v.grossKurus)).toEqual([9000]);
+  });
+  it("tur 5: tevkifat farkı KDV'nin onda ikisi ile tamamı arasında bir pay değilse tevkifat sayılmaz", () => {
+    const inv = (total: string) => ({ ...goodOutput, documentKind: "domestic_invoice" as const, withholding: true, vatLines: [{ rate: 20, gross: "1.200,00", vat: "200,00", net: null }], total });
+    expect(withholdingGap(inv("1.100,00"))).toBe(10000); // 5/10
+    expect(withholdingGap(inv("1.190,00"))).toBeNull(); // 10 TL: no withholding share
+  });
   it("toplam tutmazsa, VKN veya tarih hatalıysa sorun bildirir", () => {
     expect(checkExtraction({ ...goodOutput, total: "8.752,00" })).toContain("total_mismatch");
     expect(checkExtraction({ ...goodOutput, taxNumber: "0790014527" })).toContain("tax_number_invalid");
@@ -193,11 +212,16 @@ describe("ReceiptExtractionSchema sınırları", () => {
     expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: [{ rate: -100, gross: "1,00", vat: null }] }).success).toBe(false);
     expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: [{ rate: 150, gross: "1,00", vat: null, net: null }] }).success).toBe(false);
     expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, receiptNo: "1".repeat(41) }).success).toBe(false);
-    expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: Array(11).fill(goodOutput.vatLines[0]) }).success).toBe(false);
+    expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: Array(21).fill(goodOutput.vatLines[0]) }).success).toBe(false);
   });
 });
 
 describe("extractReceipt", () => {
+  it("tur 5: ikinci okuma MALİ DEĞERİ YOKTUR gördüyse o okuma tutulur", async () => {
+    const { client } = mockClient(response({ ...goodOutput, total: "8.752,00" }), response({ ...goodOutput, total: "1,00", noFiscalValue: true }));
+    const result = await extractReceipt(image, client);
+    expect(result.ok && result.extraction.noFiscalValue).toBe(true);
+  });
   it("doğru fişte tek Haiku çağrısı yapar", async () => {
     const { client, parse } = mockClient(response(goodOutput));
     const result = await extractReceipt(image, client);
@@ -303,7 +327,7 @@ describe("locateReceipts", () => {
     const { locateReceipts } = await import("./extract");
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     const failed = mockClient(new Anthropic.APIConnectionError({ message: "down" }));
-    expect(await locateReceipts(await photo(), failed.client)).toEqual([]);
+    expect(await locateReceipts(await photo(), failed.client)).toBeNull();
     expect(await locateReceipts(Buffer.from("x"), failed.client)).toEqual([]);
     log.mockRestore();
   });

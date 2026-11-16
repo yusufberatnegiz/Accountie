@@ -25,10 +25,10 @@ const SYSTEM = `Türk muhasebe belgelerinden alan çıkarıyorsun. Önce belgeni
 Sadece belgede yazanı yaz. Okuyamadığın veya belgede olmayan alanı null bırak ve adını unreadableFields listesine ekle. Tahmin etme, hesaplama yapma.
 Tutarları metin olarak ve Türk biçiminde ver: binlik ayırıcı nokta, kuruş virgül (örnek "8.725,00"); para birimi işaretini yazma. Belge "1,234.56" gibi yazıyorsa "1.234,56" olarak ver.
 Tarihi GG.AA.YYYY biçiminde ver ("Oct 31, 2026" ise "31.10.2026").
-KDV kırılımında her oran için bir satır yaz: o orandaki KDV dahil tutar ve KDV tutarı. Z raporunda bu, günün oran bazlı satışlarıdır; total günün genel toplamı, receiptNo null, zNo Z numarası. Fişte oran başına KDV dahil tutar yazmıyorsa (yalnız TOPKDV ya da oran başına yalnız KDV tutarı varsa) vatLines'ı boş bırak, her ürün satırını oranı ve tutarıyla lineItems listesine yaz, KDV'siz kalemleri de oranı 0 ile; toplamları sen hesaplama. Oran başına KDV dahil tutar yazıyorsa lineItems boş kalsın.
+KDV kırılımında her oran için bir satır yaz: o orandaki KDV dahil tutar ve KDV tutarı. Z raporunda bu, günün oran bazlı satışlarıdır; total günün genel toplamı, zNo Z numarası, receiptNo null (Z raporunda fiş numarası yoktur, unreadableFields'e yazma). Fişte oran başına KDV dahil tutar yazmıyorsa (yalnız TOPKDV ya da oran başına yalnız KDV tutarı varsa) vatLines'ı boş bırak, her ürün satırını oranı ve tutarıyla lineItems listesine yaz, KDV'siz kalemleri de oranı 0 ile; toplamları sen hesaplama. Oran başına KDV dahil tutar yazıyorsa lineItems boş kalsın.
 İndirim satırlarını (Ürün İndirimleri, İNDİRİM, İSKONTO, kampanya; tutarın sonunda -D) discounts listesine yaz: tutar eksi işaretsiz, rate indirimin uygulandığı ürünün KDV oranı (ürünün adından ürün satırındaki oranı bul); sepetin tamamına yapılan indirimde rate null. TOPKDV veya TOPLAM KDV'yi totalVat'a yaz; Z raporunda günün KDV'sini, kümülatif toplamı değil.
 Faturada oran başına KDV dahil tutar yoksa gross null, net o orandaki matrah, vat o orandaki hesaplanan KDV olsun. Satır iptali veya düzeltme satırını eksi tutarla ("-30,00") lineItems'a yaz.
-KDV'siz ya da matrah dışı kalemleri (katkı payı, havaalanı vergisi, hizmet bedeli; konaklama vergisi KDV değildir) oranı 0 olan bir vatLines satırına yaz, KDV dahil tutarların toplamı total'i tutsun.
+Oran başına KDV dahil tutar yazan belgede KDV'siz ya da matrah dışı kalemleri (katkı payı, havaalanı vergisi, hizmet bedeli; konaklama vergisi KDV değildir) belgede yazdığı gibi oranı 0 olan bir vatLines satırına yaz; kırılım yazmayan fişte bunlar yalnız lineItems'ta oranı 0 ile yer alır.
 Belgede "MALİ DEĞERİ YOKTUR" yazıyorsa noFiscalValue true. Faturada KDV tevkifatı varsa withholding true.
 Fiş birden çok ödeme şekliyle ödenmişse (nakit + kredi kartı, puan, hediye çeki, yemek kartı) her birini tutarıyla payments listesine yaz; paymentMethod en büyük tutarın şekli olsun.
 Yurt dışı faturada: vendorName faturayı kesen şirketin tam adı, receiptNo fatura veya makbuz numarası, total ödenecek toplam, currency para birimi; KDV yazmıyorsa vatLines boş, taxNumber null.
@@ -43,8 +43,14 @@ export type ExtractResult =
 
 let defaultClient: Anthropic | undefined;
 
-/** Reads a normalized (resized, EXIF-free) JPEG, or a PDF as uploaded. Never logs image or receipt content. `strong`: the stronger model only. */
-export async function extractReceipt(file: Buffer, client: ExtractClient = (defaultClient ??= new Anthropic()), mediaType: "image/jpeg" | "application/pdf" = "image/jpeg", strong = false): Promise<ExtractResult> {
+/** A request cut off by its time limit (AbortSignal.timeout) while the answer was read: not an AnthropicError, still the API's failure. */
+const aborted = (err: unknown) => err instanceof Error && (err.name === "AbortError" || err.name === "TimeoutError");
+
+/**
+ * Reads a normalized (resized, EXIF-free) JPEG, or a PDF as uploaded. Never logs image or receipt content. `strong`: the stronger
+ * model first. `until`: the time (ms) the whole upload must be done by, so a photo of several receipts read one after another ends too.
+ */
+export async function extractReceipt(file: Buffer, client: ExtractClient = (defaultClient ??= new Anthropic()), mediaType: "image/jpeg" | "application/pdf" = "image/jpeg", strong = false, until = Infinity): Promise<ExtractResult> {
   const source = mediaType === "application/pdf"
     ? { type: "document" as const, source: { type: "base64" as const, media_type: mediaType, data: file.toString("base64") } }
     : { type: "image" as const, source: { type: "base64" as const, media_type: mediaType, data: file.toString("base64") } };
@@ -55,7 +61,7 @@ export async function extractReceipt(file: Buffer, client: ExtractClient = (defa
 
   // Strong: Sonnet first, Haiku only when Sonnet fails or reads worse (an overloaded API must not leave the receipt empty).
   const order = strong ? [FALLBACK_MODEL, PRIMARY_MODEL] : [PRIMARY_MODEL, FALLBACK_MODEL];
-  const deadline = Date.now() + READ_BUDGET_MS;
+  const deadline = Math.min(Date.now() + READ_BUDGET_MS, until);
   for (const model of order) {
     const left = deadline - Date.now();
     if (model !== order[0] && left < READ_MIN_MS) break;
@@ -78,15 +84,18 @@ export async function extractReceipt(file: Buffer, client: ExtractClient = (defa
       outputTokens += response.usage.output_tokens;
       if (response.stop_reason === "refusal" || !response.parsed_output) continue;
       const problems = checkExtraction(response.parsed_output);
-      // Keep the earlier read when the retry is worse.
-      if (!best || problems.length < best.problems.length) best = { extraction: response.parsed_output, problems, model };
+      // Keep the earlier read when the retry is worse; a read that saw "MALİ DEĞERİ YOKTUR" wins, whatever else it got wrong
+      // (it is deleted, not booked, and costs no credit).
+      const rank = (r: { extraction: ReceiptExtraction; problems: string[] }) => (r.extraction.noFiscalValue ? -1 : r.problems.length);
+      const read = { extraction: response.parsed_output, problems, model };
+      if (!best || rank(read) < rank(best)) best = read;
       if (problems.length === 0 || response.parsed_output.noFiscalValue) break;
     } catch (err) {
       // AnthropicError also covers output that fails ReceiptExtractionSchema, so the stronger model still gets its try.
-      if (!(err instanceof Anthropic.AnthropicError)) throw err;
+      if (!(err instanceof Anthropic.AnthropicError) && !aborted(err)) throw err;
       // The API's own message says why a request was refused (credit, model access, request shape); it never echoes the image.
       const api = err instanceof Anthropic.APIError ? { status: err.status, requestId: err.requestID, message: err.message.slice(0, 300) } : {};
-      console.error("receipt extraction failed", { model, error: err.constructor.name, ...api });
+      console.error("receipt extraction failed", { model, error: (err as Error).constructor.name, ...api });
     }
   }
 
@@ -104,8 +113,17 @@ const LocateSchema = z.object({
     .describe("Fotoğraftaki her ayrı fişin sınırları piksel olarak, soldan sağa, yukarıdan aşağıya"),
 });
 
-/** Finds the separate receipts laid side by side in one photo. An empty list (one receipt, or the call failed) means read the photo whole. */
-export async function locateReceipts(jpeg: Buffer, client: ExtractClient = (defaultClient ??= new Anthropic())): Promise<ReceiptBox[]> {
+/** Share of a box's area that lies inside another. */
+const inside = (a: ReceiptBox, b: ReceiptBox) => {
+  const w = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)), h = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  return (w * h) / ((a.right - a.left) * (a.bottom - a.top));
+};
+
+/**
+ * Finds the separate receipts laid side by side in one photo. An empty list (one receipt) means read the photo whole; null means the
+ * call failed, so the photo is read whole and the user is told other receipts in it may not have been read.
+ */
+export async function locateReceipts(jpeg: Buffer, client: ExtractClient = (defaultClient ??= new Anthropic())): Promise<ReceiptBox[] | null> {
   try {
     const { width = 0, height = 0 } = await sharp(jpeg).metadata().catch(() => ({ width: 0, height: 0 }));
     if (!width || !height) return [];
@@ -126,11 +144,13 @@ export async function locateReceipts(jpeg: Buffer, client: ExtractClient = (defa
     const scale = (v: number, size: number) => Math.round((Math.min(v, size) / size) * 1000);
     const boxes = (response.parsed_output?.receipts ?? [])
       .map((b) => ({ left: scale(b.left, width), top: scale(b.top, height), right: scale(b.right, width), bottom: scale(b.bottom, height) }))
-      .filter((b) => b.right - b.left >= 20 && b.bottom - b.top >= 20);
+      .filter((b) => b.right - b.left >= 20 && b.bottom - b.top >= 20)
+      // The same receipt boxed twice (or a part of it boxed again) would be read, booked and charged twice.
+      .filter((b, i, all) => !all.some((o, j) => j < i && (inside(b, o) > 0.6 || inside(o, b) > 0.6)));
     return boxes.length > 1 ? boxes : [];
   } catch (err) {
-    if (!(err instanceof Anthropic.AnthropicError)) throw err;
-    console.error("receipt locate failed", { error: err.constructor.name });
-    return [];
+    if (!(err instanceof Anthropic.AnthropicError) && !aborted(err)) throw err;
+    console.error("receipt locate failed", { error: (err as Error).constructor.name });
+    return null;
   }
 }

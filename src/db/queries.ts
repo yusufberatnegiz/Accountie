@@ -84,7 +84,10 @@ export async function importLucaFirm(userId: string, f: { lucaId: string; name: 
     const id = found?.id ?? (await tx.insert(firms).values({ userId, name: f.name, taxNumber: f.taxNumber, lucaSirketId: f.lucaId }).returning({ id: firms.id }))[0].id;
     if (found) await tx.update(firms).set({ lucaSirketId: f.lucaId, taxNumber: found.taxNumber ?? f.taxNumber }).where(and(eq(firms.id, id), eq(firms.userId, userId)));
     await tx.delete(firmAccounts).where(and(eq(firmAccounts.firmId, id), eq(firmAccounts.userId, userId)));
-    await tx.insert(firmAccounts).values(f.accounts.map((a) => ({ code: a.code, name: a.name, userId, firmId: id }))).onConflictDoNothing();
+    // In parts: one insert of a 20.000-account plan would pass Postgres' 65.535 parameters.
+    for (let i = 0; i < f.accounts.length; i += 5000) {
+      await tx.insert(firmAccounts).values(f.accounts.slice(i, i + 5000).map((a) => ({ code: a.code, name: a.name, userId, firmId: id }))).onConflictDoNothing();
+    }
     return { id, created: !found };
   });
 }
@@ -111,15 +114,28 @@ export async function getRules(userId: string, firmId?: string | null): Promise<
       .from(firmRules).where(and(eq(firmRules.userId, userId), eq(firmRules.firmId, firmId)));
     rows = [...rows.map((r) => own.find((o) => same(o, r)) ?? r), ...own.filter((o) => !rows.some((r) => same(o, r)))];
   }
-  // Rules added after the user's table was made (foreign invoice, Z report) show with their defaults until saved.
-  const missing = rulesToRows(DEFAULT_RULES).filter((d) => !rows.some((r) => r.kind === d.kind && r.key === d.key));
-  rows = [...rows, ...missing];
+  // Rules added after the user's table was made (foreign invoice, Z report) show with their defaults until saved. Vehicle repairs
+  // were split from workplace repairs later: until saved, they keep the code the user had chosen for repairs.
+  const defaults = rulesToRows(DEFAULT_RULES);
+  const repairs = rows.find((r) => r.kind === "expense" && r.key === "maintenance");
+  const missing = defaults.filter((d) => !rows.some((r) => same(r, d)))
+    .map((d) => (d.kind === "expense" && d.key === "vehicle_maintenance" && repairs ? { ...d, accountCode: repairs.accountCode, accountName: repairs.accountName } : d));
+  // Labels are the app's, not the stored copy (a rule renamed since shows its new name), in the app's order.
+  const order = (r: RuleRow) => { const i = defaults.findIndex((d) => same(d, r)); return i < 0 ? defaults.length : i; };
+  rows = [...rows, ...missing].map((r) => ({ ...r, label: defaults.find((d) => same(d, r))?.label ?? r.label })).sort((a, b) => order(a) - order(b));
+  // Before round 2 a save wrote every rule of the firm, so a row equal to the default is no choice of the user's: it is fitted too.
+  const chose = (o: RuleRow) => !defaults.some((d) => same(d, o) && d.accountCode === o.accountCode && d.accountName === o.accountName);
   // A firm with its Luca plan imported books to that plan, with nothing to save: every rule the firm has not set itself is fitted
   // to the plan (src/lib/plan-suggest.ts fitRulesToPlan), so a default code never lands on an account that means something else.
   // Read once here and handed back, so callers that also check codes against the plan do not read it again.
   const plan = firmId ? await listFirmAccounts(userId, firmId) : [];
-  if (plan.length) rows = fitRulesToPlan(rows, plan, (r) => own.some((o) => same(o, r)));
+  if (plan.length) rows = fitRulesToPlan(rows, plan, (r) => own.some((o) => same(o, r) && chose(o)));
   return { rules: rulesFromRows(rows), rows, plan };
+}
+
+/** Deletes the firm's own rules (Kurallar's "Varsayılanlara dön" on a firm). */
+export async function clearFirmRules(userId: string, firmId: string): Promise<void> {
+  await getDb().delete(firmRules).where(and(eq(firmRules.userId, userId), eq(firmRules.firmId, firmId)));
 }
 
 /** Saves the rows as the firm's own rules when a firm is given, else as the user's. */
@@ -184,10 +200,14 @@ export async function createReceipt(userId: string, firmId: string, receipt: New
   return id;
 }
 
-/** Same seller, receipt number and date already saved by this user: the same paper receipt photographed twice. */
-export async function hasDuplicateReceipt(userId: string, taxNumber: string, receiptNo: string, receiptDate: string): Promise<boolean> {
+/**
+ * Same seller, receipt number, date and total already saved for this firm: the same paper receipt photographed twice. The firm and the
+ * total keep two firms' receipts from one chain store (one VKN, numbers restarting per till) apart.
+ */
+export async function hasDuplicateReceipt(userId: string, firmId: string, taxNumber: string, receiptNo: string, receiptDate: string, totalKurus: number | null): Promise<boolean> {
   const rows = await getDb().select({ id: receipts.id }).from(receipts)
-    .where(and(eq(receipts.userId, userId), eq(receipts.taxNumber, taxNumber), eq(receipts.receiptNo, receiptNo), eq(receipts.receiptDate, receiptDate)))
+    .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), eq(receipts.taxNumber, taxNumber), eq(receipts.receiptNo, receiptNo), eq(receipts.receiptDate, receiptDate),
+      totalKurus === null ? undefined : eq(receipts.totalKurus, totalKurus)))
     .limit(1);
   return rows.length > 0;
 }
@@ -199,10 +219,10 @@ const listColumns = {
   ...summaryColumns,
   category: receipts.category,
   warnings: receipts.warnings,
-  // A passenger car's draft already split to KKEG (src/lib/vehicle.ts): its vehicle is chosen.
-  // Same test as src/lib/vehicle.ts isKkegLine.
-  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = "receipts"."id" and jl.user_id = "receipts"."user_id" and jl.debit_kurus > 0 and (jl.account_code like '689%' or jl.account_name ~* 'kanunen kabul|kkeg'))`,
-  // "ticari" once the user has said so on the review screen (setVehicleChoice).
+  // A draft split to a 689 KKEG line before the choice was stored: its vehicle is chosen (src/lib/vehicle.ts isKkegLine without the
+  // firm's code). A split to another KKEG code is made on the review screen, which stores the choice (vehicle).
+  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = "receipts"."id" and jl.user_id = "receipts"."user_id" and jl.debit_kurus > 0 and jl.account_code like '689%')`,
+  // "ticari" or "binek" once the user has said so on the review screen (setVehicleChoice).
   vehicle: sql<string | null>`${receipts.extraction}->>'vehicle'`,
   invoice: sql<boolean>`coalesce(${receipts.extraction}->>'documentKind' = 'domestic_invoice', false)`,
   expenseCode: sql<string | null>`(select jl.account_code from journal_lines jl where jl.receipt_id = "receipts"."id" and jl.user_id = "receipts"."user_id" and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
@@ -223,7 +243,7 @@ export async function listReceipts(userId: string, firmId: string, { status, mon
     .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), status ? eq(receipts.status, status) : undefined, month ? eq(RECEIPT_MONTH, month) : undefined))
     .orderBy(desc(receipts.createdAt)).limit(200);
   return rows.map(({ binek, vehicle, planLines, ...r }) => {
-    const warnings = current(r.warnings, r, binek || vehicle === "ticari");
+    const warnings = current(r.warnings, r, binek || vehicle === "ticari" || vehicle === "binek");
     // A draft with a code that means another account in the firm's Luca plan says so in the list too, as on its screen.
     const off = planLines ? planMismatches(planLines, planLines.map((l) => ({ code: l.accountCode, name: l.luca }))) : [];
     return { ...r, warnings: off.length ? [planMismatchWarning(off), ...warnings] : warnings };
@@ -237,7 +257,9 @@ export async function listReceipts(userId: string, firmId: string, { status, mon
 export function current(warnings: Warning[], r: { status: string; category: string | null }, chosen: boolean): Warning[] {
   const kept = warnings.filter((w) => !RETIRED_WARNINGS.includes(w.code));
   const vehicle = CATEGORIES.some((c) => c.key === r.category && c.vehicle);
-  return r.status === "draft" && vehicle && !chosen ? [warn("vehicle_choice"), ...kept] : kept;
+  // A document with no fiscal value is deleted, not booked: asking about its vehicle would send the user the wrong way.
+  const noValue = kept.some((w) => w.code === "no_fiscal_value");
+  return r.status === "draft" && vehicle && !chosen && !noValue ? [warn("vehicle_choice"), ...kept] : kept;
 }
 
 /** Remembers on a draft that its vehicle was chosen on the review screen ("ticari" leaves the lines as they are, so only this says it). */
@@ -256,7 +278,8 @@ export async function getReceipt(userId: string, id: string) {
   if (!receipt) return null;
   const lines: JournalLine[] = await db.select(lineColumns).from(journalLines)
     .where(and(eq(journalLines.receiptId, id), eq(journalLines.userId, userId))).orderBy(asc(journalLines.lineNo));
-  const chosen = lines.some((l) => l.debitKurus > 0 && isKkegLine(l)) || (receipt.extraction as { vehicle?: string } | null)?.vehicle === "ticari";
+  const saved = (receipt.extraction as { vehicle?: string } | null)?.vehicle;
+  const chosen = lines.some((l) => l.debitKurus > 0 && isKkegLine(l)) || saved === "ticari" || saved === "binek";
   return { ...receipt, warnings: current(receipt.warnings, receipt, chosen), lines };
 }
 
@@ -274,11 +297,15 @@ export async function nextDraft(userId: string, firmId: string | null, exceptId:
 /** Rewrites a draft's lines; false when the receipt is no longer a draft (the row is locked, so a parallel approve waits). */
 export async function replaceLines(userId: string, id: string, lines: readonly JournalLine[]): Promise<boolean> {
   return getDb().transaction(async (tx) => {
-    const [draft] = await tx.select({ id: receipts.id }).from(receipts)
+    const [draft] = await tx.select({ id: receipts.id, warnings: receipts.warnings }).from(receipts)
       .where(and(eq(receipts.id, id), eq(receipts.userId, userId), eq(receipts.status, "draft"))).for("update");
     if (!draft) return false;
     await tx.delete(journalLines).where(and(eq(journalLines.receiptId, id), eq(journalLines.userId, userId)));
     await tx.insert(journalLines).values(lineRows(userId, id, lines));
+    // "No account in the plan for this line" goes once every line has a code, here and in the list.
+    if (draft.warnings.some((w) => w.code === "plan_no_account") && lines.every((l) => l.accountCode.trim())) {
+      await tx.update(receipts).set({ warnings: draft.warnings.filter((w) => w.code !== "plan_no_account") }).where(and(eq(receipts.id, id), eq(receipts.userId, userId)));
+    }
     return true;
   });
 }
@@ -314,7 +341,7 @@ export async function deleteDraft(userId: string, id: string): Promise<boolean> 
 export async function listForExport(userId: string, firmId: string | null, ids?: readonly string[], month?: string) {
   const db = getDb();
   const mine = firmId ? and(eq(receipts.userId, userId), eq(receipts.firmId, firmId)) : eq(receipts.userId, userId);
-  const rows = await db.select({ id: receipts.id, firmName: firms.name, taxNumber: receipts.taxNumber }).from(receipts).leftJoin(firms, eq(firms.id, receipts.firmId))
+  const rows = await db.select({ id: receipts.id, firmId: receipts.firmId, firmName: firms.name, firmLucaId: firms.lucaSirketId, taxNumber: receipts.taxNumber }).from(receipts).leftJoin(firms, eq(firms.id, receipts.firmId))
     .where(ids?.length
       ? and(mine, inArray(receipts.id, [...ids]), inArray(receipts.status, ["approved", "exported"]))
       : and(mine, eq(receipts.status, "approved"), month ? eq(RECEIPT_MONTH, month) : undefined))
@@ -323,7 +350,7 @@ export async function listForExport(userId: string, firmId: string | null, ids?:
   const lines = await db.select({ ...lineColumns, receiptId: journalLines.receiptId }).from(journalLines)
     .where(and(eq(journalLines.userId, userId), inArray(journalLines.receiptId, rows.map((r) => r.id))))
     .orderBy(asc(journalLines.lineNo));
-  return rows.map((r) => ({ id: r.id, firmName: r.firmName, taxNumber: r.taxNumber, lines: lines.filter((l) => l.receiptId === r.id).map(({ receiptId, ...l }) => l) }));
+  return rows.map((r) => ({ id: r.id, firmId: r.firmId, firmName: r.firmName, firmLucaId: r.firmLucaId, taxNumber: r.taxNumber, lines: lines.filter((l) => l.receiptId === r.id).map(({ receiptId, ...l }) => l) }));
 }
 
 export async function markExported(userId: string, ids: readonly string[]): Promise<void> {

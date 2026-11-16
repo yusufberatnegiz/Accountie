@@ -46,8 +46,8 @@ describe("KKEG satırı tanıma", () => {
     const other = { code: "770.00", name: "Kanunen Kabul Edilmeyen Giderler" };
     const once = toPassengerCar(fuel, other, make);
     expect(isPassengerCar(once, other)).toBe(true);
-    // Read back with no rule at hand (the list, the server): the name still tells it.
-    expect(isPassengerCar(once, { code: "", name: "" })).toBe(true);
+    // Read back with no rule at hand (the list, the server): the name does not count: the server reads the stored choice.
+    expect(isPassengerCar(once, { code: "", name: "" })).toBe(false);
     expect(toPassengerCar(fuel, { code: "", name: "" }, make)).toEqual(fuel);
   });
 });
@@ -60,8 +60,24 @@ describe("jüri turu 3: KKEG adı", () => {
     // Ticari never removes an expense line for its name.
     expect(fromPassengerCar(plain, kkeg)).toEqual(plain);
     expect(isPassengerCar([{ ...l("770.01.10", 300), accountName: "Binek Oto Gider Kısıtlamasına Tabi Giderler" }], kkeg)).toBe(false);
-    // The firm's KKEG account under 770, by its code; one named KKEG in capitals ("İ"), by its name.
-    expect(isPassengerCar([{ ...l("770.99", 300), accountName: "BİNEK ARAÇ GİDER KISITLAMASI" }], { code: "770.99", name: "x" })).toBe(true);
-    expect(isPassengerCar([{ ...l("770.00", 300), accountName: "KANUNEN KABUL EDİLMEYEN GİDERLER" }], { code: "", name: "" })).toBe(true);
+    // The firm's KKEG account under 770, by its code, beside the expense it was split from.
+    expect(isPassengerCar([l("770.10", 700), { ...l("770.99", 300), accountName: "BİNEK ARAÇ GİDER KISITLAMASI" }], { code: "770.99", name: "x" })).toBe(true);
+    // A line that is the whole expense is never a split, whatever its name or code.
+    expect(isPassengerCar([{ ...l("689.01", 300) }, { ...l("100.01", 0, 300) }], { code: "689.01", name: "x" })).toBe(false);
+  });
+});
+
+describe("jüri turu 5: KKEG", () => {
+  it("adında KKEG geçen gider satırı binek sayılmaz ve Ticari onu silmez", () => {
+    const kkeg = { code: "689.01", name: "KKEG" };
+    const lines = [{ ...l("770.01.01", 100000), accountName: "AKARYAKIT KKEG" }, l("191.03.20", 20000), l("100.01", 0, 120000)];
+    expect(isPassengerCar(lines, kkeg)).toBe(false);
+    expect(fromPassengerCar(lines, kkeg)).toEqual(lines);
+  });
+  it("689 dışındaki KKEG kodu (770.00) bölmede tanınır ve Ticari onu geri alır", () => {
+    const kkeg = { code: "770.00", name: "Kanunen Kabul Edilmeyen Giderler" };
+    const once = toPassengerCar(fuel, kkeg, make);
+    expect(isPassengerCar(once, kkeg)).toBe(true);
+    expect(fromPassengerCar(once, kkeg, fuel)).toEqual(fuel);
   });
 });

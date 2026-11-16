@@ -1,6 +1,6 @@
 import { descriptionFromVendor } from "./description";
 import { FOREIGN_VAT_RATE, type Account, type PaymentMethod, type Rules } from "./default-rules";
-import { formatTrAmount, vatFromGross } from "./money";
+import { formatTrAmount, perItemVatTolerance, vatFromGross } from "./money";
 import { isBalanced, warn, type JournalLine, type VatLine, type Warning } from "./journal";
 
 /** A foreign service invoice (Google, Meta, AWS...) as read. Amounts in the invoice currency's hundredths. */
@@ -86,7 +86,8 @@ export function buildSalesLines(data: SalesData, rules: Rules): Built {
   for (const v of data.vatLines) {
     const expected = vatFromGross(v.grossKurus, v.rate);
     const vat = v.vatKurus ?? expected;
-    if (v.vatKurus !== null && Math.abs(v.vatKurus - expected) > 1) warnings.push(warn("vat_mismatch"));
+    // Same tolerance as the read check (src/lib/extract/schema.ts): a Z report rounds its KDV per sale.
+    if (v.vatKurus !== null && Math.abs(v.vatKurus - expected) > perItemVatTolerance(expected)) warnings.push(warn("vat_mismatch"));
     grossSum += v.grossKurus;
     const revenue = line(s.revenue[v.rate] ?? { code: "", name: "" }, 0, v.grossKurus - vat);
     if (!s.revenue[v.rate]) warnings.push(warn("z_unknown_rate"));

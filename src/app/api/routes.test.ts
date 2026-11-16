@@ -9,7 +9,7 @@ vi.mock("@/lib/auth/session", () => {
 vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(async () => false), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
   getVendorRule: vi.fn(async () => null), learnVendorRule: vi.fn(async () => {}), listFirmAccounts: vi.fn(async () => []),
-  replaceLines: vi.fn(async () => true), setVehicleChoice: vi.fn(async () => true), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
+  replaceLines: vi.fn(async () => true), setVehicleChoice: vi.fn(async () => true), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(), clearFirmRules: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), clientIp: () => "203.0.113.9" }));
@@ -238,7 +238,7 @@ describe("tek fiş", () => {
 
 describe("POST /api/exports", () => {
   it("dengeli fişlerden xlsx üretir ve aktarıldı işaretler", async () => {
-    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", taxNumber: null, lines }, { id: "bad", firmName: "ÖRNEK FİRMA", taxNumber: null, lines: lines.slice(0, 1) }]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: null, firmName: "ÖRNEK FİRMA", firmLucaId: null, taxNumber: null, lines }, { id: "bad", firmId: null, firmName: "ÖRNEK FİRMA", firmLucaId: null, taxNumber: null, lines: lines.slice(0, 1) }]);
     const res = await exportsRoute.POST(json({}, "POST"));
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("spreadsheetml");
@@ -246,7 +246,7 @@ describe("POST /api/exports", () => {
   });
 
   it("ay seçiliyken yalnız o ayın onaylı fişleri istenir; bozuk ay 400", async () => {
-    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", taxNumber: null, lines }]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: null, firmName: "ÖRNEK FİRMA", firmLucaId: null, taxNumber: null, lines }]);
     expect((await exportsRoute.POST(json({ month: "2026-10" }, "POST"))).status).toBe(200);
     expect(q.listForExport).toHaveBeenCalledWith(USER, "firm-1", undefined, "2026-10");
     expect((await exportsRoute.POST(json({ month: "2026-13" }, "POST"))).status).toBe(400);
@@ -285,5 +285,22 @@ describe("PUT /api/account-rules", () => {
     const res = await rulesRoute.PUT(json({ rows: [{ kind: "payment", key: "card", accountCode: "309.01", accountName: "Diğer Mali Borçlar", label: "x" }] }, "PUT"));
     expect(res.status).toBe(200);
     expect(q.saveRules).toHaveBeenCalledWith(USER, [{ kind: "payment", key: "card", accountCode: "309.01", accountName: "Diğer Mali Borçlar", label: "Kart" }], "firm-1");
+  });
+
+  it("planlı firmada plan dışı kodu ve grup hesabını reddeder, plandaki adı yazar", async () => {
+    vi.mocked(q.listFirmAccounts).mockResolvedValue([{ code: "309", name: "DİĞER MALİ BORÇLAR" }, { code: "309.01", name: "KREDİ KARTI" }]);
+    const row = (accountCode: string) => json({ rows: [{ kind: "payment", key: "card", accountCode, accountName: "x" }] }, "PUT");
+    expect(await (await rulesRoute.PUT(row("331.01"))).json()).toMatchObject({ error: expect.stringContaining("planında yok") });
+    expect(await (await rulesRoute.PUT(row("309"))).json()).toMatchObject({ error: expect.stringContaining("alt hesapları var") });
+    expect(q.saveRules).not.toHaveBeenCalled();
+    expect((await rulesRoute.PUT(row("309.01"))).status).toBe(200);
+    expect(q.saveRules).toHaveBeenCalledWith(USER, [expect.objectContaining({ accountCode: "309.01", accountName: "KREDİ KARTI" })], "firm-1");
+    vi.mocked(q.listFirmAccounts).mockResolvedValue([]);
+  });
+
+  it("sayfanın firması bulunamazsa başka firmaya yazmaz", async () => {
+    const res = await rulesRoute.PUT(json({ firmId: "00000000-0000-4000-8000-000000000999", rows: [{ kind: "payment", key: "card", accountCode: "309.01", accountName: "x" }] }, "PUT"));
+    expect(res.status).toBe(404);
+    expect(q.saveRules).not.toHaveBeenCalled();
   });
 });

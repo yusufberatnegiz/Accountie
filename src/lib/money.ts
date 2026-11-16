@@ -18,6 +18,12 @@ export function formatTrAmount(kurus: number): string {
 }
 
 /** VAT inside a VAT-inclusive gross, rounded half up to the kuruş. */
+/**
+ * Kuruş a document's KDV per rate may differ from the KDV worked out from its gross amount when the KDV is rounded item by item
+ * (an e-Arşiv invoice, a Z report's day of sales): a few kuruş, growing with the amount, never above 1 TL.
+ */
+export const perItemVatTolerance = (expectedKurus: number) => Math.min(100, Math.max(3, Math.ceil(expectedKurus / 5000)));
+
 export function vatFromGross(grossKurus: number, rate: number): number {
   return Math.floor((grossKurus * rate * 2 + (100 + rate)) / (2 * (100 + rate)));
 }

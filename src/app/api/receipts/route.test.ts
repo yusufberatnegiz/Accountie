@@ -83,7 +83,7 @@ describe("POST /api/receipts", () => {
     });
     const res = await POST(jpeg());
     expect(res.status).toBe(201);
-    expect(hasDuplicateReceipt).toHaveBeenCalledWith("user-1", "1111111114", "0047", "2026-09-05");
+    expect(hasDuplicateReceipt).toHaveBeenCalledWith("user-1", expect.any(String), "1111111114", "0047", "2026-09-05", expect.any(Number));
     expect(vi.mocked(createReceipt).mock.calls[0][2].warnings.map((w) => w.code)).toContain("duplicate");
     expect(vi.mocked(createReceipt).mock.calls[0][2].extraction).toMatchObject({ fallback: true });
   });
@@ -102,7 +102,7 @@ describe("POST /api/receipts", () => {
     expect(vi.mocked(extractReceipt).mock.calls.every((c) => c[3] === false)).toBe(true);
     // The photo counts once; each further receipt is one more read on the user's and the global limit.
     const kinds = vi.mocked(hitRateLimit).mock.calls.map(([k]) => k.split(":")[0]);
-    expect(kinds).toEqual(["receipt", "receiptIp", "receiptGlobal", "receipt", "receiptGlobal", "receipt", "receiptGlobal"]);
+    expect(kinds).toEqual(["receipt", "receiptIp", "receiptGlobal", "receipt", "receiptIp", "receiptGlobal", "receipt", "receiptIp", "receiptGlobal"]);
   });
 
   it("dörtten çok fişli karede her fişi doğrudan güçlü model okur", async () => {
@@ -191,7 +191,7 @@ describe("POST /api/receipts", () => {
     vi.mocked(extractReceipt).mockResolvedValue(read({ documentKind: "z_report", vendorName: "ÖRNEK KAFE", taxNumber: "1111111114", zNo: "0128", total: "1.200,00", vatLines: [{ rate: 20, gross: "1.200,00", vat: "200,00" }], cashTotal: "200,00", cardTotal: "1.000,00" }));
     const res = await POST(jpeg());
     expect(res.status).toBe(201);
-    expect(hasDuplicateReceipt).toHaveBeenCalledWith("user-1", "1111111114", "0128", "2026-10-31");
+    expect(hasDuplicateReceipt).toHaveBeenCalledWith("user-1", expect.any(String), "1111111114", "0128", "2026-10-31", 120000);
     const [, , receipt, lines] = vi.mocked(createReceipt).mock.calls[0];
     expect(receipt).toMatchObject({ category: "z_report", receiptNo: "0128", totalKurus: 120000 });
     expect(receipt.warnings.map((w) => w.code)).toContain("duplicate");

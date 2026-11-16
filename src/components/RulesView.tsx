@@ -4,7 +4,7 @@ import type { VendorRule } from "@/db/queries";
 import type { Account, RuleRow } from "@/lib/default-rules";
 
 /** Rules screen body; the page and the dev preview both render it. */
-export function RulesView({ rows, vendorRules, firmName, plan }: { rows: RuleRow[]; vendorRules?: VendorRule[]; firmName?: string; plan?: Account[] }) {
+export function RulesView({ rows, vendorRules, firmName, firmId, plan }: { rows: RuleRow[]; vendorRules?: VendorRule[]; firmName?: string; firmId?: string; plan?: Account[] }) {
   const n = (kind: RuleRow["kind"]) => rows.filter((r) => r.kind === kind).length;
   return (
     <main id="icerik" tabIndex={-1} className="canvas canvas-settings">
@@ -14,7 +14,7 @@ export function RulesView({ rows, vendorRules, firmName, plan }: { rows: RuleRow
           <p className="finding">Fişler {n("expense")} gider, {n("vat")} KDV ve {n("payment")} ödeme kuralıyla {firmName ? `${firmName} firmasının` : "sizin"} hesap planındaki kodlara yazılır.</p>
         </div>
       </div>
-      <RulesEditor rows={rows} plan={plan} />
+      <RulesEditor rows={rows} plan={plan} firmId={firmId} />
       {vendorRules && firmName ? <VendorRulesList rules={vendorRules} firmName={firmName} /> : null}
     </main>
   );

@@ -42,13 +42,16 @@ const ALLOWED_RULE_KEYS = new Map(
 );
 
 export const RulesPutSchema = z.object({
+  // The firm the page was opened for, not the one the cookie names now (another tab may have switched it).
+  firmId: z.uuid().optional(),
   rows: z.array(z.object({
     kind: z.enum(RULE_KINDS),
     key: z.string().max(40),
-    accountCode: z.string().trim().min(1).max(20),
+    // Luca takes codes up to 60 characters (src/lib/api-schemas.ts firm accounts); a rule can use any of them.
+    accountCode: z.string().trim().min(1).max(60),
     accountName: z.string().trim().max(120),
   })).max(100),
-}).transform(({ rows }, ctx) => rows.flatMap((r) => {
+}).transform(({ firmId, rows }, ctx) => ({ firmId, rows: rows.flatMap((r) => {
   const label = ALLOWED_RULE_KEYS.get(`${r.kind}:${r.key}`);
   const codeOk = r.kind === "setting" ? r.accountCode.length <= 10 : ACCOUNT_CODE_PATTERN.test(r.accountCode);
   if (!label || !codeOk) {
@@ -56,7 +59,9 @@ export const RulesPutSchema = z.object({
     return [];
   }
   return [{ ...r, label }];
-}));
+}) }));
+
+export const RulesDeleteSchema = z.object({ firmId: z.uuid() });
 
 export const idSchema = z.uuid();
 
@@ -65,6 +70,8 @@ export const FirmCreateSchema = z.object({
   name: z.string().trim().min(2).max(120),
   taxNumber: z.string().trim().regex(/^\d{10,11}$/).optional(),
 });
+/** The largest Luca chart of accounts taken in one import (big holding plans run to a few thousand sub-accounts). */
+export const MAX_PLAN_ACCOUNTS = 20_000;
 // What the extension read in Luca for one firm. Names are cut to the lengths the app keeps.
 export const LucaFirmSchema = z.object({
   lucaId: z.string().regex(/^\d{1,20}$/),
@@ -73,6 +80,6 @@ export const LucaFirmSchema = z.object({
   accounts: z.array(z.object({
     code: z.string().trim().max(60).regex(ACCOUNT_CODE_PATTERN),
     name: z.string().trim().max(400).transform((s) => s.slice(0, 120)),
-  })).min(1).max(5000),
+  })).min(1).max(MAX_PLAN_ACCOUNTS),
 });
 export const FirmActiveSchema = z.object({ id: z.uuid() });

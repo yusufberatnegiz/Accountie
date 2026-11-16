@@ -29,7 +29,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(session.getUserId).mockResolvedValue(USER);
   vi.mocked(q.userIdForTokenHash).mockImplementation(async (h) => (h === hashToken(TOKEN) ? USER : null));
-  vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", taxNumber: null, lines }]);
+  vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: null, firmName: "ÖRNEK FİRMA", firmLucaId: null, taxNumber: null, lines }]);
 });
 
 describe("anahtar süresi", () => {
@@ -89,14 +89,22 @@ describe("GET /api/extension/receipts", () => {
     expect(q.listForExport).toHaveBeenCalledWith(USER, null);
     const { receipts } = await res.json();
     expect(receipts).toEqual([{
-      id: ID, firm: "ÖRNEK FİRMA", title: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", documentNo: "0047", documentDate: "05/09/2026", total: "8.725,00",
+      id: ID, firm: "ÖRNEK FİRMA", firmId: "", firmLucaId: "", title: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", documentNo: "0047", documentDate: "05/09/2026", total: "8.725,00",
       rows: expect.arrayContaining([expect.objectContaining({ accountCode: "331.01", credit: "8.725,00", debit: "" })]),
     }]);
     expect(receipts[0].rows).toHaveLength(3);
   });
 
+  it("Luca'da açık firmanın fişlerini ve yazılmış olanları döndürür", async () => {
+    const at = (id: string, firmLucaId: string | null) => ({ id, firmId: `f-${firmLucaId}`, firmName: "F", firmLucaId, taxNumber: null, lines });
+    vi.mocked(q.listForExport).mockResolvedValue([at("a", "7"), at("b", "8"), at("c", null), at("d", "8")]);
+    const req = new Request("http://test/api/extension/receipts?sirket=7&keep=d", { headers: { authorization: `Bearer ${TOKEN}` } });
+    const { receipts } = await (await listRoute.GET(req)).json();
+    expect(receipts.map((r: { id: string }) => r.id)).toEqual(["d", "a", "c"]);
+  });
+
   it("dengesiz fişi göndermez", async () => {
-    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmName: "ÖRNEK FİRMA", taxNumber: null, lines: lines.slice(0, 2) }]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: null, firmName: "ÖRNEK FİRMA", firmLucaId: null, taxNumber: null, lines: lines.slice(0, 2) }]);
     expect((await (await listRoute.GET(bearer())).json()).receipts).toEqual([]);
   });
 });

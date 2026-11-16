@@ -40,7 +40,8 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
   // Under Tümü only approved and exported receipts count, so a draft never reads as a booked figure.
   const counted = tab.status ? receipts : receipts.filter((r) => r.status !== "draft");
   // A Z report is sales, not an expense: it stays out of the KDV sum.
-  const vatTotal = counted.reduce((n, r) => n + (r.expenseCode && docKind(r.category) !== "z_report" ? r.vatKurus : 0), 0);
+  // A line left without a code (no account in the firm's plan) still carries its KDV.
+  const vatTotal = counted.reduce((n, r) => n + (r.expenseCode !== null && docKind(r.category) !== "z_report" ? r.vatKurus : 0), 0);
 
   return (
     <main id="icerik" tabIndex={-1} className="canvas canvas-list">
@@ -51,6 +52,8 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
           <h1>Fişler</h1>
           {/* Excel and the extension are desktop tasks; on the phone the finding says where the file is downloaded. */}
           <p className="finding">{listFinding(drafts, ready.length)}{ready.length ? <span className="phone-only-inline"> Dosyayı bilgisayardan indirin.</span> : null}</p>
+          {/* The list reads the newest 200 (src/db/queries.ts listReceipts); older ones are a month away, never silently gone. */}
+          {!month && all.length >= 200 ? <p className="muted small">En yeni 200 fiş gösteriliyor. Daha eskiler ve sayıların tamamı için ay seçin.</p> : null}
         </div>
         <div className="title-actions">
           {months ? <MonthPicker months={months} value={month} path={base} /> : null}
@@ -81,7 +84,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                 <CaptureButton base={base} />
                 {/* First run: the whole way to Luca, in the order it happens. */}
                 <ol className="first-run">
-                  <li><strong>Hesap kodlarını kontrol edin.</strong> Varsayılan plan kopyalandı; <Link href={`${base}/kurallar`}>hesap kurallarında</Link> kendi kodlarınızı yazın.</li>
+                  <li><strong>Firmanın Luca planı çekilir.</strong> Eklenti firmalarınızı hesap planlarıyla getirir; satırlar her firmanın kendi planındaki hesaplara yazılır. İsterseniz <Link href={`${base}/kurallar`}>hesap kurallarında</Link> değiştirin.</li>
                   <li><strong>Fişi çekin ya da faturayı yükleyin.</strong> Satıcı, tarih, KDV ve toplam okunur, satırlar hazırlanır.</li>
                   <li><strong>Kontrol edip onaylayın.</strong> Borç ile alacak eşit olmadan onay verilmez.</li>
                   <li><strong>Luca&apos;ya aktarın.</strong> <a href={EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">Chrome eklentisi</a> onaylı fişleri Luca&apos;nın Fiş Detayı ekranına yazar. İsterseniz Excel dosyası olarak da indirebilirsiniz.</li>
@@ -110,11 +113,11 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                         <RowPending />
                       </Link>
                       {r.invoice || DOC_KIND_LABEL[docKind(r.category)] ? <span className="r-kind">{r.invoice ? "Fatura" : DOC_KIND_LABEL[docKind(r.category)]}</span> : null}
-                      {notes ? <span className="r-notes" title={r.warnings.map((w) => w.message).join("\n")}>{notes} uyarı<span className="visually-hidden">: {r.warnings[0].message}</span></span> : null}
+                      {notes ? <span className="r-notes" title={r.warnings.map((w) => w.message).join("\n")}>{notes} uyarı<span className="visually-hidden">: {r.warnings.map((w) => w.message).join(" ")}</span></span> : null}
                     </td>
                     <td className="r-no num" translate="no" title={r.receiptNo ?? undefined}>{r.receiptNo ?? <span className="dash">-</span>}</td>
                     <td className="r-date num">{trDate(r.receiptDate) ?? <span className="dash">Tarih yok</span>}</td>
-                    <td className="r-code num" translate="no">{docKind(r.category) === "z_report" ? <span className="dash">Satış</span> : r.expenseCode ?? <span className="dash">-</span>}</td>
+                    <td className="r-code num" translate="no">{docKind(r.category) === "z_report" ? <span className="dash">Satış</span> : r.expenseCode || <span className="dash">-</span>}</td>
                     <td className="r-total num">{r.totalKurus === null ? <span className="dash">-</span> : <>{formatTrAmount(r.totalKurus)}<span className="unit">&nbsp;TL</span></>}</td>
                     <td className="r-status"><span className={`status status-${r.status}`}>{STATUS_LABELS[r.status]}</span></td>
                   </tr>

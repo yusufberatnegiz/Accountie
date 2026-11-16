@@ -9,15 +9,19 @@ export const PASSENGER_CAR_KKEG_PERCENT = 30;
 type Line = { accountCode: string; accountName: string; debitKurus: number; creditKurus: number };
 
 /**
- * A KKEG line: the firm's KKEG account, or any 689 account or one named as KKEG. The same test runs on the server (src/db/queries.ts)
- * and on the screen, so a receipt split once is never split again, whatever the firm's KKEG rule says.
+ * A KKEG line: the firm's KKEG account, or a 689 account. Never by name: an expense account named "... KKEG" or "Gider Kısıtlamasına
+ * Tabi" is an ordinary expense line. The server knows the choice from the receipt itself (extraction.vehicle, src/db/queries.ts).
  */
-export const isKkegLine = (l: { accountCode: string; accountName: string }, kkeg?: Account) =>
-  (!!kkeg?.code && l.accountCode === kkeg.code) || l.accountCode.startsWith("689") || KKEG_NAME.test(l.accountName.toLocaleLowerCase("tr"));
-// Only names that say KKEG: "Binek Araç Giderleri" or "Gider Kısıtlamasına Tabi Giderler" are ordinary expense accounts. Compared in Turkish lower case ("İ").
-export const KKEG_NAME = /kanunen kabul|kkeg/;
+export const isKkegLine = (l: { accountCode: string }, kkeg?: Account) => (!!kkeg?.code && l.accountCode === kkeg.code) || l.accountCode.startsWith("689");
 
-export const isPassengerCar = (lines: readonly Line[], kkeg: Account) => lines.some((l) => l.debitKurus > 0 && isKkegLine(l, kkeg));
+/** The KKEG debit and the other debits; a split is one only when KKEG is a share (at most 30/70) of the rest, never the whole expense. */
+function shares(lines: readonly Line[], kkeg: Account) {
+  let kk = 0, rest = 0;
+  for (const l of lines) if (l.debitKurus > 0) { if (isKkegLine(l, kkeg)) kk += l.debitKurus; else rest += l.debitKurus; }
+  return { kk, rest, split: kk > 0 && rest > 0 && kk * (100 - PASSENGER_CAR_KKEG_PERCENT) <= rest * PASSENGER_CAR_KKEG_PERCENT + 100 };
+}
+
+export const isPassengerCar = (lines: readonly Line[], kkeg: Account) => shares(lines, kkeg).split;
 
 /** Moves 30% of every debit line into one KKEG line, put just before the credit. `make` builds that line from a debit line. */
 export function toPassengerCar<L extends Line>(lines: readonly L[], kkeg: Account, make: (from: L) => L): L[] {
@@ -42,9 +46,9 @@ export function toPassengerCar<L extends Line>(lines: readonly L[], kkeg: Accoun
  * were. Otherwise each line is grown back by 100/70 and any kuruş left over goes to the largest.
  */
 export function fromPassengerCar<L extends Line>(lines: readonly L[], kkeg: Account, original?: readonly Line[]): L[] {
-  // The KKEG line by the same test that found it, so Ticari takes back what Binek put there.
+  // The KKEG line by the same test that found it, so Ticari takes back what Binek put there; never a line that is the expense itself.
+  if (!shares(lines, kkeg).split) return [...lines];
   const kept = lines.filter((l) => !(l.debitKurus > 0 && isKkegLine(l, kkeg)));
-  if (kept.length === lines.length) return [...lines];
   if (original && !isPassengerCar(original, kkeg)) {
     const turned = toPassengerCar(original.map((l) => ({ ...l })), kkeg, (from) => ({ ...from }));
     const amounts = (ls: readonly Line[]) => JSON.stringify(ls.map((l) => [l.accountCode, l.debitKurus, l.creditKurus]));

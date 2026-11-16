@@ -17,7 +17,7 @@ export default async function RulesPage() {
   const [{ rows, plan }, vendorRules] = await Promise.all([getRules(userId, firm.id), listVendorRules(userId, firm.id)]);
   return (
     <AppShell current="kurallar" email={user.email} firmId={firm.id} setup={!firms.some((f) => f.fromLuca)}>
-      <RulesView key={firm.id} rows={rows} vendorRules={vendorRules} firmName={firm.name} plan={plan} />
+      <RulesView key={firm.id} rows={rows} vendorRules={vendorRules} firmName={firm.name} firmId={firm.id} plan={plan} />
     </AppShell>
   );
 }

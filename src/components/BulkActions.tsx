@@ -19,9 +19,9 @@ export function BulkActions({ approveIds, deleteIds }: { approveIds: string[]; d
     setMessage("");
     const res = await fetch(`/api/receipts/bulk-${kind}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ids }) }).catch(() => null);
     setBusy(null);
-    const body = res?.ok ? ((await res.json()) as { approved?: number; deleted?: number; skipped: number }) : null;
+    const body = res?.ok ? ((await res.json()) as { approved?: number; deleted?: number; skipped: number; stopped?: boolean }) : null;
     if (!body) setMessage(kind === "approve" ? "Fişler onaylanamadı. Tekrar deneyin." : "Fişler silinemedi. Tekrar deneyin.");
-    else if (kind === "approve") setMessage(`${body.approved} fiş onaylandı.${body.skipped ? ` ${body.skipped} fiş kontrol bekliyor.` : ""}`);
+    else if (kind === "approve") setMessage(`${body.approved} fiş onaylandı.${body.stopped ? " Kalanlar bir hata yüzünden onaylanamadı; tekrar deneyin." : body.skipped ? ` ${body.skipped} fiş kontrol bekliyor.` : ""}`);
     else setMessage(`${body.deleted} taslak silindi.${body.skipped ? ` ${body.skipped} fiş artık taslak olmadığı için silinmedi.` : ""}`);
     status.current?.focus();
     if (body) startTransition(() => router.refresh());
