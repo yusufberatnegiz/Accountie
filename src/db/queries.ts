@@ -562,11 +562,13 @@ export async function listPayments(userId: string, limit = 24) {
 
 /** What the order confirmation e-mail says about a paid checkout: the buyer's sign-in address, the purchase and the new balance. */
 export async function paidPaymentForMail(id: string) {
+  // The outer table named in full ("payments"."user_id"): a bare column (as Drizzle writes it here) would mean credit_balances'
+  // own user_id, matching every row (see listColumns).
   const [row] = await getDb().select({
-    email: sql<string | null>`(select u.email from auth.users u where u.id::text = ${payments.userId})`,
+    email: sql<string | null>`(select u.email from auth.users u where u.id::text = "payments"."user_id")`,
     packageId: payments.packageId, credits: payments.credits, amountKurus: payments.amountKurus, paidAt: payments.paidAt,
     providerPaymentId: payments.providerPaymentId, billing: payments.billing,
-    balance: sql<number>`coalesce((select b.balance from credit_balances b where b.user_id = ${payments.userId}), 0)::int`,
+    balance: sql<number>`coalesce((select b.balance from credit_balances b where b.user_id = "payments"."user_id"), 0)::int`,
   }).from(payments).where(and(eq(payments.id, id), eq(payments.status, "paid")));
   return row ?? null;
 }
