@@ -217,3 +217,35 @@ describe("jüri turu 2: plan eşleme", () => {
     expect(planMismatches([own], REAL)).toEqual([{ code: "770.12", ours: "Mutfak Giderleri", luca: "Küçük Demirbaş Alımları" }]);
   });
 });
+
+describe("jüri turu 3: plan eşleme", () => {
+  const one = (plan: { code: string; name: string }[], kind: string, key: string) => fitRulesToPlan(rows, plan).find((r) => r.kind === kind && r.key === key)?.accountCode;
+
+  it("bakım türleri varsayılan kod korunurken de ayrılır", () => {
+    const plan = [{ code: "770", name: "G" }, { code: "770.07", name: "Taşıt Bakım Onarım Giderleri" }, { code: "770.15", name: "Bina Bakım Onarım Giderleri" }];
+    expect(one(plan, "expense", "vehicle_maintenance")).toBe("770.07");
+    expect(one(plan, "expense", "maintenance")).toBe("770.15");
+  });
+
+  it("adında 'ortak' geçen kişi hesapları da olsa birden çok 331 alt hesabında kart kodu boş kalır", () => {
+    const plan = [{ code: "331", name: "ORTAKLARA BORÇLAR" }, { code: "331.01", name: "ORTAK AHMET YILMAZ" }, { code: "331.02", name: "ORTAK MEHMET YILMAZ" }];
+    expect(one(plan, "payment", "card")).toBe("");
+    const named = [{ code: "331", name: "x" }, { code: "331.01", name: "Ortaklara Borçlar Ahmet" }, { code: "331.02", name: "Ortaklara Borçlar Mehmet" }];
+    expect(one(named, "payment", "card")).toBe("");
+  });
+
+  it("tevkifat kısaltmaları elenir; personel yemeği ağırlama sayılmaz", () => {
+    const vat = [{ code: "191", name: "KDV" }, { code: "191.01", name: "%20 KDV TEVK. 5/10" }, { code: "191.02", name: "%20 İNDİRİLECEK KDV" }];
+    expect(one(vat, "vat", "20")).toBe("191.02");
+    const meal = [{ code: "770", name: "G" }, { code: "770.003", name: "PERSONEL YEMEK GİDERLERİ" }, { code: "770.008", name: "TEMSİL VE AĞIRLAMA GİDERLERİ" }, { code: "770.009", name: "MUTFAK GİDERLERİ" }];
+    expect(one(meal, "expense", "meal")).toBe("770.008");
+    expect(one(meal, "expense", "food_grocery")).toBe("770.009");
+  });
+
+  it("noter harcı kırtasiyede, 'Altındağ' kasası TL kasası sayılır; şablon planda yurt dışı fatura ana hesaplara gider", () => {
+    expect(one([{ code: "770", name: "G" }, { code: "770.01", name: "Kırtasiye Noter Harç Giderleri" }], "expense", "stationery")).toBe("770.01");
+    expect(one([{ code: "100", name: "KASA" }, { code: "100.01", name: "ALTINDAĞ ŞUBE KASA" }, { code: "100.02", name: "EURO KASA" }], "payment", "cash")).toBe("100.01");
+    const bare = [{ code: "191", name: "KDV" }, { code: "360", name: "ÖDENECEK VERGİ" }, { code: "770", name: "GENEL YÖNETİM" }];
+    expect([one(bare, "foreign", "expense"), one(bare, "foreign", "vatIn"), one(bare, "foreign", "vatOut")]).toEqual(["770", "191", "360"]);
+  });
+});

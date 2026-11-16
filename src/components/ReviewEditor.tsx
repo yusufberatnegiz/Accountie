@@ -84,8 +84,11 @@ function goTo(el: HTMLElement | null) {
 /** The other draft to open once this one is done, and how many drafts wait besides this one. */
 export type NextDraft = { id: string; left: number } | null;
 
-/** `plan`: the firm's Luca chart of accounts (codes offered while typing, names taken from it). `mismatched`: codes on this draft that mean another account in it. */
-export function ReviewEditor({ receipt, rules, next = null, learned = null, base = "/panel", plan = [], mismatched = [] }: { receipt: ReceiptDetail; rules: Rules; next?: NextDraft; learned?: VendorRule | null; base?: string; plan?: { code: string; name: string }[]; mismatched?: string[] }) {
+/**
+ * `plan`: the firm's Luca chart of accounts (names taken from it); `postable`: its accounts that can be posted to, offered while
+ * typing a code. `mismatched`: codes on this draft that mean another account in it.
+ */
+export function ReviewEditor({ receipt, rules, next = null, learned = null, base = "/panel", plan = [], postable = [], mismatched = [] }: { receipt: ReceiptDetail; rules: Rules; next?: NextDraft; learned?: VendorRule | null; base?: string; plan?: { code: string; name: string }[]; postable?: { code: string; name: string }[]; mismatched?: string[] }) {
   const router = useRouter();
   const editable = receipt.status === "draft";
   const [lines, setLines] = useState(() => receipt.lines.map(toEdit));
@@ -223,10 +226,12 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   // A firm whose plan has no KKEG account cannot split: Binek is offered only with one.
   const kkeg = rules.expense[KKEG_KEY]?.code ? rules.expense[KKEG_KEY] : undefined;
   const binek = isPassengerCar(parsed, kkeg ?? { code: "", name: "" });
-  const vehicle = kind === "receipt" && (binek || !!CATEGORIES.find((c) => c.key === receipt.category)?.vehicle);
+  const vehicleCost = !!CATEGORIES.find((c) => c.key === receipt.category)?.vehicle;
+  // A repair read before the two kinds of repair were told apart may be a car's: the choice is offered, not required.
+  const vehicle = kind === "receipt" && (binek || vehicleCost || receipt.category === "maintenance");
   // Not approved until the vehicle is chosen (Ticari is kept on the receipt once pressed, setVehicleChoice); a binek split is a choice made.
   const ticariSaved = (receipt.extraction as { vehicle?: string } | null)?.vehicle === "ticari";
-  const vehicleOpen = editable && vehicle && !binek && !ticariSaved && !seen.has("vehicle");
+  const vehicleOpen = editable && vehicleCost && !binek && !ticariSaved && !seen.has("vehicle");
   const problem = invalid ? "Tutar biçimi hatalı." : vehicleOpen ? "Araç binek mi ticari mi, seçin." : approvalProblem(parsed);
   const creditCode = lines.find(isPayment)?.accountCode ?? "";
   // Paid more than one way (cash and card): each way has its own credit line, and one choice for all would merge them.
@@ -239,7 +244,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const flagged = (name: string, unsure: boolean) => editable && unsure && !seen.has(name);
   // A field warning goes away once the user has edited that field, like its flag.
   // The plan warning goes once no line carries a code it named.
-  const stillMismatched = mismatched.filter((c) => lines.some((l) => l.accountCode === c));
+  const stillMismatched = mismatched.filter((c) => lines.some((l) => l.accountCode === c && l.accountName !== plan.find((a) => a.code === c)?.name));
   const warnings = receipt.warnings.filter((w) => !(editable && (seen.has(WARNING_FIELD[w.code] ?? "") || (w.code === "plan_name" && !stillMismatched.length))));
   const flag = (on: boolean) => (on ? { "data-check": "", ...(warnings.length ? { "aria-describedby": "uyarilar" } : {}) } : {});
   const checkNote = (on: boolean) => (on ? <span className="check-note">Kontrol edin</span> : null);
@@ -287,7 +292,14 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     if (invalid || (on && !kkeg)) return;
     touch("vehicle");
     // Kept on the receipt at once: a Ticari choice changes no line, so saving the lines would not record it.
-    if (editable) fetch(`/api/receipts/${receipt.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ vehicle: on ? "binek" : "ticari" }) }).catch(() => {});
+    if (editable) {
+      fetch(`/api/receipts/${receipt.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ vehicle: on ? "binek" : "ticari" }) })
+        .then((res) => { if (!res.ok) throw new Error(); })
+        .catch(() => {
+          setError("Araç seçimi kaydedilemedi. Bağlantıyı kontrol edip yeniden seçin.");
+          setSeen((s) => { const n = new Set(s); n.delete("vehicle"); return n; });
+        });
+    }
     if (on === binek) return;
     const amounts = lines.map((l) => ({ ...l, debitKurus: kurus(l.debit), creditKurus: kurus(l.credit) }));
     const next = on ? toPassengerCar(amounts, kkeg!, (from) => ({ ...from, key: nextKey.current++ })) : fromPassengerCar(amounts, kkeg ?? { code: "", name: "" }, receipt.lines);
@@ -450,11 +462,12 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
                 <span className="seg" role="group" aria-labelledby="arac-turu" aria-describedby={binek ? "binek-not" : undefined} {...flag(vehicleOpen)}>
                   <button id="arac-ticari" className="side-opt" type="button" aria-pressed={!binek && !vehicleOpen} disabled={invalid || working} onClick={() => setBinek(false)}>Ticari</button>
                   <button className="side-opt" type="button" aria-pressed={binek} disabled={invalid || working || !kkeg}
-                    title={kkeg ? undefined : "Firmanın Luca planında KKEG hesabı yok; Kurallar'da Binek araç KKEG hesabını girin."} onClick={() => setBinek(true)}>Binek</button>
+                    aria-describedby={kkeg ? undefined : "binek-yok"} onClick={() => setBinek(true)}>Binek</button>
                 </span>
               </div>
             ) : null}
           </div>
+          {editable && vehicle && !kkeg ? <p id="binek-yok" className="muted small vehicle-note">Binek seçilemez: firmanın Luca planında KKEG hesabı bulunamadı. <Link href={`${base}/kurallar`}>Kurallar</Link>&apos;da Binek araç KKEG hesabını girin.</p> : null}
           {binek && kkeg ? <p id="binek-not" className="muted small vehicle-note">Binek: gider ve KDV&apos;nin %{PASSENGER_CAR_KKEG_PERCENT}&apos;u <span className="tnum" translate="no">{kkeg.code}</span> {kkeg.name} satırına yazıldı (GVK 40/5, KDVK 30/d).</p> : null}
           {/* Locked: the header fields every line carries, one strip over the lines in the balance strip's rhythm. */}
           {!editable ? (
@@ -484,7 +497,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
                 <tr key={l.key} data-key={l.key} data-side={side} data-new={firstKeys.has(l.key) ? undefined : ""} {...traced(src)} onMouseEnter={(e) => traceOn(src, e.currentTarget)} onMouseLeave={traceOff} onFocus={(e) => traceOn(src, e.currentTarget)} onBlur={traceOff}>
                   {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
                   <td data-label="Hesap kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
-                    autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder="770.08…" list={plan.length ? "plan-kodlari" : undefined} aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
+                    autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder={postable.length ? "Plandan seçin…" : "770.08…"} list={postable.length ? "plan-kodlari" : undefined} aria-invalid={!!l.accountCode && !ACCOUNT_CODE_PATTERN.test(l.accountCode.trim())}
                     {...flag(codeFlag)} onChange={(e) => { touch(`code-${l.key}`); setCode(l.key, e.target.value); }} />{checkNote(codeFlag)}</td>
                   {/* A textarea so a long name wraps on the phone instead of being cut; it stays one line of text (no line breaks). */}
                   <td data-label="Hesap adı"><textarea rows={1} autoComplete="off" className="field name-field" aria-label={`Satır ${i + 1} hesap adı`} value={l.accountName} disabled={!editable}
@@ -504,7 +517,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
             </tbody>
           </table>
           {/* The firm's Luca accounts, offered as a code is typed. */}
-          {editable && plan.length ? <datalist id="plan-kodlari">{plan.map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}</datalist> : null}
+          {editable && postable.length ? <datalist id="plan-kodlari">{postable.map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}</datalist> : null}
           {editable ? <div className="journal-add"><button id="satir-ekle" className="btn btn-sm" type="button" disabled={working} onClick={addLine}>Satır ekle</button></div> : null}
           <dl className="balance-strip" data-balanced={!gap && !invalid ? "" : undefined}>
             <div><dt>Borç toplamı</dt><dd className="num"><Odometer value={formatTrAmount(debit)} instant={typing} /></dd></div>

@@ -231,6 +231,7 @@
 .seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius-control); background: var(--active); }
 .seg .side-opt { min-height: calc(var(--control-sm) - 4px); padding: 0 var(--s3); }
 .seg[data-check] { box-shadow: 0 0 0 1px var(--warn-ink); }
+.vehicle-field { min-width: 16rem; }
 .side-opt:disabled { opacity: 0.5; cursor: default; }
 @media (hover: hover) { .side-opt:not([aria-pressed="true"]):not(:disabled):hover { color: var(--ink); } }
 .vehicle-note { margin: 0; padding: 0 var(--s5) var(--s3); }

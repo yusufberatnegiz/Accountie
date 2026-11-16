@@ -13,8 +13,9 @@ type Line = { accountCode: string; accountName: string; debitKurus: number; cred
  * and on the screen, so a receipt split once is never split again, whatever the firm's KKEG rule says.
  */
 export const isKkegLine = (l: { accountCode: string; accountName: string }, kkeg?: Account) =>
-  (!!kkeg?.code && l.accountCode === kkeg.code) || l.accountCode.startsWith("689") || KKEG_NAME.test(l.accountName);
-export const KKEG_NAME = /kanunen kabul|kkeg|binek araç gider/i;
+  (!!kkeg?.code && l.accountCode === kkeg.code) || l.accountCode.startsWith("689") || KKEG_NAME.test(l.accountName.toLocaleLowerCase("tr"));
+// Only names that say KKEG: "Binek Araç Giderleri" is an ordinary expense account. Compared in Turkish lower case ("İ").
+export const KKEG_NAME = /kanunen kabul|kkeg|gider kısıtlama/;
 
 export const isPassengerCar = (lines: readonly Line[], kkeg: Account) => lines.some((l) => l.debitKurus > 0 && isKkegLine(l, kkeg));
 
@@ -41,7 +42,8 @@ export function toPassengerCar<L extends Line>(lines: readonly L[], kkeg: Accoun
  * were. Otherwise each line is grown back by 100/70 and any kuruş left over goes to the largest.
  */
 export function fromPassengerCar<L extends Line>(lines: readonly L[], kkeg: Account, original?: readonly Line[]): L[] {
-  const kept = lines.filter((l) => !(l.debitKurus > 0 && isKkegLine(l, kkeg)));
+  const removable = (l: Line) => l.debitKurus > 0 && ((!!kkeg.code && l.accountCode === kkeg.code) || l.accountCode.startsWith("689"));
+  const kept = lines.filter((l) => !removable(l));
   if (kept.length === lines.length) return [...lines];
   if (original && !isPassengerCar(original, kkeg)) {
     const turned = toPassengerCar(original.map((l) => ({ ...l })), kkeg, (from) => ({ ...from }));

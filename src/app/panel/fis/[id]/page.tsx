@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getReceipt, getRules, getVendorRule, nextDraft, listFirms } from "@/db/queries";
-import { planMismatches, planMismatchWarning } from "@/lib/plan-suggest";
+import { leavesOf, planMismatches, planMismatchWarning } from "@/lib/plan-suggest";
 import { AppShell } from "@/components/AppShell";
 import { ReceiptView } from "@/components/ReceiptView";
 import { idSchema } from "@/lib/api-schemas";
@@ -31,7 +31,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
   return (
     <AppShell current="fis" email={user.email} firmId={receipt.firmId} setup={!(await listFirms(user.id)).some((f) => f.fromLuca)}>
-      <ReceiptView receipt={receipt} rules={rules} next={next} learned={learned} plan={plan} mismatched={mismatches.map((m) => m.code)} />
+      <ReceiptView receipt={receipt} rules={rules} next={next} learned={learned} plan={plan} postable={leavesOf(plan).map(({ code, name }) => ({ code, name }))} mismatched={mismatches.map((m) => m.code)} />
     </AppShell>
   );
 }

@@ -52,6 +52,8 @@ async function send(token, firm) {
 async function run() {
   const { token } = await chrome.storage.local.get("token");
   if (!token) return status("Önce eklenti penceresini açıp Accountie anahtarını girin.", true);
+  const { filledIds = [] } = await chrome.storage.local.get("filledIds");
+  if (filledIds.length) return status("Luca'da yazılmış ama kaydedilmemiş fiş var. Önce Luca'da Kaydet'e basıp eklenti penceresinde Luca'da kaydettim'e basın, sonra firmaları çekin.", true);
   const luca = await lucaFrame();
   if (!luca) return status("Açık Luca sekmesi bulunamadı. Luca'ya girip ana ekranı açın, sonra Başlat'a basın.", true);
   const original = AccountieLuca.selected(luca.list, luca.sirket, luca.donem);
@@ -60,9 +62,15 @@ async function run() {
   if (!firms.length) return status("Luca'da dönemi olan firma bulunamadı.", true);
 
   await chrome.scripting.executeScript({ target: luca.target, files: ["luca-import.js"] });
+  // 8: Luca's session numbers are trusted only if, on the firm open now, they are the ones the firm list gives it.
+  const pre = await chrome.scripting.executeScript({ target: luca.target, func: () => globalThis.AccountieLuca.probe().catch(() => null) }).then(([r]) => r?.result, () => null);
+  const verifyIds = !!pre?.ids?.sirket && pre.ids.sirket === String(original.lucaId);
   // The Kurulum page asks the background whether a run is going (background.js importStatus); a stale beat means it ended.
   const beat = () => chrome.storage.local.set({ importingAt: Date.now() }).catch(() => {});
   await beat();
+  // 7: kept beating while one firm takes long, and a lock that stays until Luca is back on the first firm (popup.js lucaTab).
+  const ticker = setInterval(beat, 20_000);
+  await chrome.storage.local.set({ lucaAway: original.shortName });
   let done = 0;
   let failed = 0;
   let errorsInARow = 0;
@@ -74,35 +82,38 @@ async function run() {
       await beat();
       try {
         const [{ result }] = await chrome.scripting.executeScript({
-          target: luca.target, args: [f],
-          func: (firm) => globalThis.AccountieLuca.readFirm(firm).then((ok) => ({ ok }), (e) => ({ error: e.message })),
+          target: luca.target,
+          args: [f, verifyIds], func: (firm, verify) => globalThis.AccountieLuca.readFirm(firm, verify).then((ok) => ({ ok }), (e) => ({ error: e.message })),
         });
         if (!result?.ok) throw new Error(result?.error ?? "Luca sekmesine ulaşılamadı.");
         // Art arda aynı firma geliyorsa Luca firmayı değiştirmiyordur: yanlış plan kaydetmek yerine dur.
         const id = `${result.ok.taxNumber}|${result.ok.name}`;
-        if (id === last) throw Object.assign(new Error("Luca aynı firmayı iki kez verdi; firma değişmiyor."), { fatal: true });
+        if (id === last && !result.ok.verified) throw Object.assign(new Error("Luca aynı firmayı iki kez verdi; firma değişmiyor."), { fatal: true });
         last = id;
-        const saved = await send(token, result.ok);
+        const { verified, ...firm } = result.ok;
+        const saved = await send(token, firm);
         done++;
         errorsInARow = 0;
         log(result.ok.name, `${saved.accounts} hesap${saved.created ? ", yeni firma" : ""}`);
       } catch (e) {
         failed++;
         log(f.shortName, e.message);
-        // Only errors that say the session is gone count toward stopping; a firm Luca will not open is skipped and the run goes on.
-        const session = /firma bilgisini vermedi|yanıt vermedi|ulaşılamadı/.test(e.message);
-        errorsInARow = session ? errorsInARow + 1 : 0;
+        // A firm Luca will not open or that has no plan is skipped and the run goes on; any other error counts toward stopping.
+        const firmOnly = /bu firmaya geçmedi|hesap planı boş/.test(e.message);
+        if (!firmOnly) errorsInARow++;
         if (e.fatal || errorsInARow >= MAX_ERRORS_IN_A_ROW) {
-          status(e.fatal ? e.message : `Art arda ${MAX_ERRORS_IN_A_ROW} firmada Luca yanıt vermedi; Luca oturumu kapanmış olabilir. Durduruldu. Son hata: ${e.message}`, true);
+          status(e.fatal ? e.message : `Art arda ${MAX_ERRORS_IN_A_ROW} hata; Luca oturumu kapanmış olabilir. Durduruldu. Son hata: ${e.message}`, true);
           break;
         }
       }
       await pause(250);
     }
   } finally {
-    await chrome.storage.local.remove("importingAt").catch(() => {});
     // Luca'nın kendi seçicisinin yaptığı gibi: çerçeveyi ilk firmaya götür ki oturum ve ekran aynı firmayı göstersin.
-    const back = await chrome.scripting.executeScript({ target: luca.target, args: [original], func: (o) => globalThis.AccountieLuca.switchBack(o) }).then(([r]) => r?.result === true, () => false);
+    const back = await chrome.scripting.executeScript({ target: luca.target, args: [original, verifyIds], func: (o, v) => globalThis.AccountieLuca.switchBack(o, v) }).then(([r]) => r?.result === true, () => false);
+    // The write lock lifts only once Luca is shown to be back on the first firm; otherwise the popup asks first (lucaAway).
+    clearInterval(ticker);
+    await chrome.storage.local.remove(back ? ["importingAt", "lucaAway"] : ["importingAt"]).catch(() => {});
     const tail = back ? `Luca ${original.shortName} firmasına döndürüldü.` : `Luca'nın ilk firmaya döndüğü doğrulanamadı: Luca'da ${original.shortName} firmasını yeniden seçin.`;
     const head = `${done} firma kaydedildi${failed ? `, ${failed} firma atlandı` : ""}.`;
     if ($("status").className !== "error") status(`${head} ${tail}`, !back);

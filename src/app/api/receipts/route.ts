@@ -83,6 +83,7 @@ export async function POST(request: Request) {
       // A crop that fails (an odd box) is skipped; if none worked the photo is read whole.
       const crop = await cropReceipt(bytes, box).catch(() => null);
       if (crop) images.push(crop);
+      else limited++;
     }
   }
   if (images.length === 0) images = [jpeg];
@@ -195,9 +196,11 @@ async function saveOther(userId: string, firmId: string, result: Extract<Extract
     receipt = { vendorName: data.vendorName, taxNumber: null, receiptNo: data.invoiceNo, receiptDate: data.date, totalKurus: foreignTotalTl(data, fx), paymentMethod: data.paymentMethod, category: "foreign", extraction: { ...x, fx, fallback: result.fallback }, warnings: [], ...meta };
   }
   if (built.lines.some((l) => !l.accountCode)) extra.push(warn("plan_no_account"));
+  if (x.noFiscalValue) extra.unshift(warn("no_fiscal_value"));
+  if (x.withholding) extra.unshift(warn("withholding"));
   receipt.warnings = [...built.warnings, ...extra.filter((w) => !built.warnings.some((b) => b.code === w.code))];
   try {
-    return { id: await createReceipt(userId, firmId, receipt, built.lines), readable: true, billable: receipt.vendorName !== null || receipt.totalKurus !== null, kind: kindOf(x) };
+    return { id: await createReceipt(userId, firmId, receipt, built.lines), readable: true, billable: !x.noFiscalValue && (receipt.vendorName !== null || receipt.totalKurus !== null), kind: kindOf(x) };
   } catch (err) {
     console.error("receipt save failed", { error: err instanceof Error ? err.name : "unknown" });
     return null;

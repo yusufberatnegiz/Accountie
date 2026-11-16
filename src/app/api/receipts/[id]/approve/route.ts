@@ -17,7 +17,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   if (receipt.status !== "draft") return fail("Fiş zaten onaylı.", 409);
   // Once the firm's Luca plan is imported, a code Luca does not have is caught here instead of at transfer. The rules come with
   // the plan (one read), and teach the seller below.
-  const fitted = receipt.firmId ? await getRules(userId, receipt.firmId).catch(() => null) : null;
+  const fitted = receipt.firmId ? await getRules(userId, receipt.firmId) : null;
   const problem = approvalProblem(receipt.lines, fitted?.plan.length ? new Set(fitted.plan.map((a) => a.code)) : undefined);
   if (problem) return fail(`Fiş onaylanamadı. ${problem}`, 422);
   if (!(await transitionReceipt(userId, receipt.id, "draft", "approved"))) return fail("Fiş durumu değişti. Sayfayı yenileyin.", 409);

@@ -126,6 +126,10 @@ describe("indirimli fiş", () => {
     expect(toReceiptData(off).payments).toBeUndefined();
     expect(checkExtraction(off)).toContain("payment_unsure");
   });
+  it("tevkifatlı faturada toplamın düşük olması 'tutmuyor' sayılmaz (Sonnet'e gidilmez)", () => {
+    const x = { ...a101, lineItems: [], discounts: [], totalVat: null, withholding: true, total: "1.100,00", vatLines: [{ rate: 20, gross: null, vat: "200,00", net: "1.000,00" }] };
+    expect(checkExtraction(x)).toEqual([]);
+  });
   it("indirim okunmazsa toplam tutmaz", () => {
     expect(checkExtraction({ ...a101, discounts: [] })).toContain("total_mismatch");
   });

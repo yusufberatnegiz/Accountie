@@ -9,7 +9,7 @@ vi.mock("@/lib/auth/session", () => {
 vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(async () => false), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
   getVendorRule: vi.fn(async () => null), learnVendorRule: vi.fn(async () => {}), listFirmAccounts: vi.fn(async () => []),
-  replaceLines: vi.fn(async () => true), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
+  replaceLines: vi.fn(async () => true), setVehicleChoice: vi.fn(async () => true), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(),
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), clientIp: () => "203.0.113.9" }));
@@ -164,6 +164,15 @@ describe("tek fiş", () => {
     expect([userId, id]).toEqual([USER, ID]);
     expect(saved[0]).not.toHaveProperty("userId");
     expect(q.transitionReceipt).not.toHaveBeenCalled();
+  });
+
+  it("PATCH araç seçimini satırlara dokunmadan saklar; boş gövdeyi reddeder", async () => {
+    const res = await receiptRoute.PATCH(json({ vehicle: "ticari" }), params());
+    expect(res.status).toBe(200);
+    expect(q.setVehicleChoice).toHaveBeenCalledWith(USER, ID, "ticari");
+    expect(q.replaceLines).not.toHaveBeenCalled();
+    expect((await receiptRoute.PATCH(json({}), params())).status).toBe(400);
+    expect((await receiptRoute.PATCH(json({ vehicle: "kamyon" }), params())).status).toBe(400);
   });
 
   it("PATCH hatalı hesap kodunu reddeder", async () => {

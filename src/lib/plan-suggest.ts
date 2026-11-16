@@ -12,7 +12,7 @@ const EXPENSE_WORDS: Record<string, readonly string[]> = {
   // The workplace's repairs; a vehicle's go to vehicle_maintenance.
   maintenance: ["bina bakım", "demirbaş tamir", "bakım", "tamir", "onarım"],
   vehicle_maintenance: ["taşıt bakım", "taşıt tamir", "taşıt yakıt ve tamir", "araç bakım", "araç tamir", "taşıt gider"],
-  meal: ["yeme", "ağırlama"],
+  meal: ["ağırlama", "temsil", "yeme-içme", "yeme içme", "yeme"],
   telecom: ["haberleşme", "telefon", "internet", "ptt"],
   lodging: ["konaklama"],
   office_supplies: ["büro", "ofis", "küçük demirbaş", "demirbaş alım"],
@@ -24,18 +24,22 @@ const EXPENSE_WORDS: Record<string, readonly string[]> = {
 const NOT_AN_EXPENSE = /küçük demirbaş|demirbaş alım|vergi|harç|finansman|faiz|kur fark|olağan|amortisman/;
 const SKIP: Record<string, RegExp> = {
   office_supplies: /vergi|harç|finansman|faiz|kur fark|olağan|amortisman/,
+  // A notary's fee (harç) sits with stationery in many plans ("Kırtasiye Noter Harç").
+  stationery: /küçük demirbaş|demirbaş alım|vergi|finansman|faiz|kur fark|olağan|amortisman/,
   maintenance: new RegExp(`${NOT_AN_EXPENSE.source}|taşıt|araç`),
   vehicle_maintenance: new RegExp(`${NOT_AN_EXPENSE.source}|bina`),
+  meal: new RegExp(`${NOT_AN_EXPENSE.source}|personel`),
+  food_grocery: new RegExp(`${NOT_AN_EXPENSE.source}|personel`),
 };
-/** A foreign-currency or gold till: never the receipt's Kasa. */
-const FOREIGN_TILL = /usd|eur|euro|avro|dolar|döviz|gbp|sterlin|altın/;
-/** KDV accounts that are not a receipt's own deductible KDV: withholding, reverse charge, import, refund. */
-const OTHER_VAT = /sorumlu|ithal|iade|tevkifatlı/;
+/** A foreign-currency or gold till: never the receipt's Kasa. Whole words: "Altındağ Kasa" is a lira till. */
+const FOREIGN_TILL = /(^|[^\p{L}])(usd|eur|euro|avro|dolar|döviz|gbp|sterlin|altın)([^\p{L}]|$)/u;
+/** KDV accounts that are not a receipt's own deductible KDV: withholding (tevkifat, TEVK.), reverse charge, import, refund. */
+const OTHER_VAT = /sorumlu|ithal|iade|tevk(?!ifatsız)/;
 /** A rule the plan has a family of accounts for but none that can be told apart by name (each partner's own 331): left to the user. */
 const BLANK: Account = { code: "", name: "" };
 
 /** The plan's accounts that can be posted to (no sub-account under them), sorted by code, with lower-case names. */
-function leavesOf(plan: readonly Account[]) {
+export function leavesOf(plan: readonly Account[]) {
   const parents = new Set<string>();
   for (const a of plan) for (let i = a.code.lastIndexOf("."); i > 0; i = a.code.lastIndexOf(".", i - 1)) parents.add(a.code.slice(0, i));
   return plan.filter((a) => !parents.has(a.code)).map((a) => ({ ...a, lower: a.name.toLocaleLowerCase("tr") })).sort((a, b) => a.code.localeCompare(b.code));
@@ -53,11 +57,12 @@ export function suggestRules(rows: readonly RuleRow[], plan: readonly Account[])
     for (const prefix of prefixes) for (const w of words) { const hit = find(prefix, (n) => n.includes(w) && !skip?.test(n)); if (hit) return hit; }
   };
   const partner = (key: string) => {
-    const hit = find("331", (n) => n.includes("ortak"));
-    if (hit) return hit;
-    // One 331 sub-account per partner, named after the person: which partner paid is the user's to say.
-    if (leaves.some((a) => a.code.startsWith("331."))) return BLANK;
-    return key === "card" ? find("3", (n) => n.includes("kredi kart")) : undefined;
+    // Several 331 sub-accounts are one per partner ("ORTAK AHMET YILMAZ"): which partner paid is the user's to say.
+    const subs = leaves.filter((a) => a.code.startsWith("331."));
+    if (subs.length > 1) return BLANK;
+    if (subs.length === 1) return subs[0];
+    // No sub-accounts: 331 itself when it is there, a company card account only without it.
+    return find("331", (n) => n.includes("ortak")) ?? (key === "card" ? find("3", (n) => n.includes("kredi kart")) : undefined);
   };
   const pick = (r: RuleRow): Account | undefined => {
     if (r.kind === "expense" && r.key === "kkeg") return byWords(["689"], ["binek araç gider", "kanunen kabul", "kkeg"]);
@@ -74,7 +79,8 @@ export function suggestRules(rows: readonly RuleRow[], plan: readonly Account[])
     if (r.kind === "payment" && (r.key === "card" || r.key === "other")) return partner(r.key);
     if ((r.kind === "payment" || r.kind === "sales") && r.key === "cash") return find("100", (n) => !FOREIGN_TILL.test(n));
     // Foreign services: the expense under 760/770 that names abroad or advertising; the KDV pair the plan calls "sorumlu" or KDV 2.
-    if (r.kind === "foreign" && r.key === "expense") return byWords(["760", "770"], ["yurt dışı", "yurtdışı", "dijital", "reklam"]);
+    // A domestic withholding account ("Tevkifatlı Reklam Giderleri") is not a foreign service.
+    if (r.kind === "foreign" && r.key === "expense") return byWords(["760", "770"], ["yurt dışı", "yurtdışı", "dijital", "reklam"], /tevkifat/);
     // The KDV on a foreign service is computed at the general rate: the sorumlu account of that rate, not the plan's first.
     if (r.kind === "foreign" && r.key === "vatIn") return find("191", (n) => n.includes("sorumlu") && hasRate(n, 20)) ?? find("191", (n) => n.includes("sorumlu") && !/\d/.test(n));
     if (r.kind === "foreign" && r.key === "vatOut") return find("360", (n) => /kdv ?2|sorumlu/.test(n));
@@ -91,6 +97,8 @@ export function suggestRules(rows: readonly RuleRow[], plan: readonly Account[])
   };
   // A plan with no sub-accounts under these (Luca's bare template) is posted to the main account itself.
   const main = (r: RuleRow) => {
+    // Only a bare template plan (770 itself postable): a plan with 770 sub-accounts but no matching one leaves the code to the user.
+    if (r.kind === "foreign") return leaves.find((a) => a.code === (r.key === "expense" ? "770" : r.key === "vatIn" ? "191" : "360"));
     const code = r.kind === "expense" ? (r.key === "kkeg" ? "689" : "770") : r.kind === "vat" ? "191"
       : r.kind === "sales" ? (r.key.startsWith("revenue") ? "600" : r.key.startsWith("vat") ? "391" : r.key === "card" ? "108" : "100") : null;
     if (r.kind === "payment" && (r.key === "card" || r.key === "other")) return leaves.find((a) => a.code === "331") ?? (r.key === "card" ? leaves.find((a) => a.code === "309") : undefined);
@@ -126,6 +134,7 @@ export function fitRulesToPlan(rows: readonly RuleRow[], plan: readonly Account[
   const postable = new Set(leavesOf(plan).map((a) => a.code));
   // One pass over the plan for every rule, not one per rule: a plan may hold thousands of accounts.
   const suggestions = suggestRules(rows, plan);
+  const partnerSubs = [...postable].filter((c) => c.startsWith("331.")).length;
   return rows.map((r, i) => {
     if (own(r)) return r;
     const lucaName = byCode.get(r.accountCode) ?? "";
@@ -136,7 +145,9 @@ export function fitRulesToPlan(rows: readonly RuleRow[], plan: readonly Account[
     const rate = ruleRate(r);
     const rateOk = rate === null || !/\d/.test(lucaName) || hasRate(lower, rate);
     // The same name may still be the wrong kind: a withholding KDV account, a dollar till.
-    const kindOk = !(r.kind === "vat" && OTHER_VAT.test(lower)) && !(r.key === "cash" && FOREIGN_TILL.test(lower));
+    const kindOk = !(r.kind === "vat" && OTHER_VAT.test(lower)) && !(r.key === "cash" && FOREIGN_TILL.test(lower))
+      && !(r.kind === "expense" && r.key !== "kkeg" && (SKIP[r.key] ?? NOT_AN_EXPENSE).test(lower))
+      && !(r.kind === "payment" && (r.key === "card" || r.key === "other") && partnerSubs > 1);
     if (postable.has(r.accountCode) && rateOk && kindOk && sameMeaning(r.accountName, lucaName)) return named;
     const suggested = suggestions[i];
     return suggested === r ? { ...r, accountCode: "", accountName: "" } : suggested;

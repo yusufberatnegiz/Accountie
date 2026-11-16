@@ -199,12 +199,15 @@ const listColumns = {
   warnings: receipts.warnings,
   // A passenger car's draft already split to KKEG (src/lib/vehicle.ts): its vehicle is chosen.
   // Same test as src/lib/vehicle.ts isKkegLine.
-  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and (jl.account_code like '689%' or jl.account_name ~* 'kanunen kabul|kkeg|binek araç gider'))`,
+  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and (jl.account_code like '689%' or jl.account_name ~* 'kanunen kabul|kkeg|g[iİı]der k[ıiIİ]s[ıiIİ]tlama'))`,
   // "ticari" once the user has said so on the review screen (setVehicleChoice).
   vehicle: sql<string | null>`${receipts.extraction}->>'vehicle'`,
   invoice: sql<boolean>`coalesce(${receipts.extraction}->>'documentKind' = 'domestic_invoice', false)`,
   expenseCode: sql<string | null>`(select jl.account_code from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
-  expenseName: sql<string | null>`(select jl.account_name from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
+  // A draft's lines with the name the firm's Luca plan gives each code, for the same check the review screen makes (planMismatches).
+  planLines: sql<{ accountCode: string; accountName: string; luca: string }[] | null>`(select jsonb_agg(jsonb_build_object('accountCode', jl.account_code, 'accountName', jl.account_name, 'luca', fa.name))
+    from journal_lines jl join firm_accounts fa on fa.firm_id = ${receipts.firmId} and fa.code = jl.account_code
+    where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and ${receipts.status} = 'draft')`,
   // The 191 VAT debits, so the list never sums gross amounts as KDV.
   vatKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::bigint from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code like '191%')`.mapWith(Number),
 };
@@ -214,16 +217,13 @@ const RECEIPT_MONTH = sql<string>`to_char(coalesce(${receipts.receiptDate}, (${r
 
 /** The firm's receipts, newest first; `month` ("2026-09") keeps one month's. */
 export async function listReceipts(userId: string, firmId: string, { status, month }: { status?: ReceiptStatus; month?: string } = {}) {
-  const [rows, plan] = await Promise.all([
-    getDb().select(listColumns).from(receipts)
-      .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), status ? eq(receipts.status, status) : undefined, month ? eq(RECEIPT_MONTH, month) : undefined))
-      .orderBy(desc(receipts.createdAt)).limit(200),
-    listFirmAccounts(userId, firmId),
-  ]);
-  return rows.map(({ binek, vehicle, expenseName, ...r }) => {
+  const rows = await getDb().select(listColumns).from(receipts)
+    .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), status ? eq(receipts.status, status) : undefined, month ? eq(RECEIPT_MONTH, month) : undefined))
+    .orderBy(desc(receipts.createdAt)).limit(200);
+  return rows.map(({ binek, vehicle, planLines, ...r }) => {
     const warnings = current(r.warnings, r, binek || vehicle === "ticari");
-    // A draft whose expense code means another account in the firm's Luca plan says so in the list too, as on its screen.
-    const off = r.status === "draft" && r.expenseCode ? planMismatches([{ accountCode: r.expenseCode, accountName: expenseName ?? "" }], plan) : [];
+    // A draft with a code that means another account in the firm's Luca plan says so in the list too, as on its screen.
+    const off = planLines ? planMismatches(planLines, planLines.map((l) => ({ code: l.accountCode, name: l.luca }))) : [];
     return { ...r, warnings: off.length ? [planMismatchWarning(off), ...warnings] : warnings };
   });
 }

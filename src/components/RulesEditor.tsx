@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ExtensionTokenPanel } from "@/components/ExtensionTokenPanel";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { useLeaveGuard } from "@/components/useLeaveGuard";
+import { leavesOf } from "@/lib/plan-suggest";
 import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, rulesToRows, type Account, type RuleKind, type RuleRow } from "@/lib/default-rules";
 import { formatTrAmount } from "@/lib/money";
 
@@ -77,7 +78,8 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
           <div className="setting-panel">
             <p className="muted small">Planda uyan hesabı olmayan kuralın kodu boş kalır; o türde bir fiş gelince hesap kodunu fişte seçersiniz.</p>
           </div>
-          <datalist id="plan-kodlari">{plan.map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}</datalist>
+          {/* Only accounts that can be posted to: a group account (one with sub-accounts) is not booked in Luca. */}
+          <datalist id="plan-kodlari">{leavesOf(plan).map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}</datalist>
         </section>
       ) : null}
       {GROUPS.map((g) => {
@@ -162,7 +164,7 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
                   {groupRows.map((r) => (
                     <tr key={r.key} onMouseEnter={() => setActive(r)} onFocus={() => setActive(r)}>
                       <td className="rule-label">{r.label}</td>
-                      <td className="rule-code"><input name={`kod-${r.kind}-${r.key}`} autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={!!r.accountCode && invalid(r, names)} list={setting || !plan.length ? undefined : "plan-kodlari"} value={r.accountCode} onChange={(e) => { const code = e.target.value.trim(); const name = setting ? undefined : names.get(code); update(r, name === undefined ? { accountCode: code } : { accountCode: code, accountName: name }); }} /></td>
+                      <td className="rule-code"><input name={`kod-${r.kind}-${r.key}`} autoComplete="off" spellCheck={false} translate="no" className="field tnum" placeholder={setting ? "ÖK…" : plan.length ? "Plandan seçin…" : "770.08…"} aria-label={`${r.label} ${setting ? "değeri" : "hesap kodu"}`} aria-invalid={!!r.accountCode && invalid(r, names)} list={setting || !plan.length ? undefined : "plan-kodlari"} value={r.accountCode} onChange={(e) => { const code = e.target.value.trim(); const name = setting ? undefined : names.get(code); update(r, name === undefined ? { accountCode: code } : { accountCode: code, accountName: name }); }} /></td>
                       {/* The name is for people only (Luca matches the code), so it reads as text until pointed at or focused. */}
                       {setting ? null : <td className="rule-name"><input name={`ad-${r.kind}-${r.key}`} autoComplete="off" className="field field-quiet" aria-label={`${r.label} hesap adı`} title={r.accountName} placeholder={r.accountCode ? undefined : "Planda uyan hesap yok"} value={r.accountName} onChange={(e) => update(r, { accountName: e.target.value })} /></td>}
                     </tr>

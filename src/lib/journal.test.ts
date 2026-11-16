@@ -171,3 +171,9 @@ describe("jüri turu 2: yevmiye", () => {
     expect(warningCodes(r)).not.toContain("vat_computed");
   });
 });
+
+describe("jüri turu 3: yevmiye", () => {
+  it("tamamı yemek kartı ya da puanla ödenen fiş de uyarı verir", () => {
+    expect(warningCodes(buildJournalLines({ ...sample, paymentMethod: "other" }, DEFAULT_RULES))).toContain("payment_other");
+  });
+});

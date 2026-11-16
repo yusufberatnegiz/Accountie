@@ -113,6 +113,13 @@ async function lucaTab() {
     status("Luca'dan firmalar çekiliyor; Luca oturumu firma firma değişiyor. Çekme bitince fiş yazın.", true);
     return null;
   }
+  // A firm import that could not show Luca back on the first firm (or whose tab was closed): asked once, then the next try writes.
+  const { lucaAway } = await chrome.storage.local.get("lucaAway");
+  if (lucaAway) {
+    await chrome.storage.local.remove("lucaAway");
+    status(`Firma çekmeden sonra Luca'nın ${lucaAway} firmasına döndüğü doğrulanamadı. Luca'da açık firmayı kontrol edin; doğruysa yeniden basın.`, true);
+    return null;
+  }
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url || !LUCA_HOST.test(new URL(tab.url).hostname)) {
     status("Önce Luca'da Fiş Detayı ekranını açın, sonra eklentiyi o sekmede açın.", true);

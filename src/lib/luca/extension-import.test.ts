@@ -49,6 +49,9 @@ describe("Luca oturum numaraları", () => {
     expect(luca.sessionIds(`<script>var __SESSION = { SIRKET_ID: 12, DONEM_ID: 601 };</script>`)).toEqual({ sirket: "12", donem: "601" });
     // No __SESSION: no number, so only the period dates are checked.
     expect(luca.sessionIds(`<input name="SIRKET_ID" value="9">`)).toEqual({ sirket: null, donem: null });
+    // A longer key is not the key; a nested object before it does not end the search.
+    expect(luca.sessionIds(`<script>var __SESSION = {"USER":{"ID":1},"ANA_SIRKET_ID":3,"ONCEKI_DONEM_ID":400,"SIRKET_ID":11,"DONEM_ID":502};</script>`))
+      .toEqual({ sirket: "11", donem: "502" });
   });
 });
 

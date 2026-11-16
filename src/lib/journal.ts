@@ -57,7 +57,7 @@ export const WARNING_MESSAGES: Record<string, string> = {
   domestic_currency: "Belge TL dışında bir para biriminde. Tutarlar TL değildir; TL karşılıklarını belgeden girin.",
   no_fiscal_value: "Belgede “MALİ DEĞERİ YOKTUR” yazıyor: gider ve KDV belgesi değildir. Bu taslağı silin, asıl fişi ya da faturayı yükleyin.",
   vehicle_choice: "Araç binek mi ticari mi? Yevmiye satırlarının üstündeki Araç seçiminden seçin; seçilmeden onaylanmaz.",
-  payment_other: "Bir kısmı puan, hediye çeki, yemek kartı ya da açık hesapla ödenmiş. O alacak satırının hesabını kontrol edin.",
+  payment_other: "Ödemenin tamamı ya da bir kısmı puan, hediye çeki, yemek kartı ya da açık hesapla. O alacak satırının hesabını kontrol edin.",
   withholding: "Faturada KDV tevkifatı var. Tevkif edilen KDV satırları (191 ve 360) eklenmedi; satırları faturaya göre düzeltin.",
   plan_no_account: "Firmanın Luca planında bu satıra uyan hesap bulunamadı. Hesap kodunu plandan seçin.",
   z_unknown_rate: "Kural tablosunda olmayan KDV oranı var. Satış ve KDV hesabını seçin.",
@@ -126,7 +126,7 @@ export function buildJournalLines(receipt: ReceiptData, rules: Rules): { lines: 
   if (split) for (const p of split) lines.push(line(rules.payment[p.method], 0, p.kurus));
   else lines.push(line(credit, 0, total));
   // Points, a gift card, a meal card or an open account paid part of it: not the partner's money, the user says what it is.
-  if (split?.some((p) => p.method === "other")) warnings.push(warn("payment_other"));
+  if (split ? split.some((p) => p.method === "other") : receipt.paymentMethod === "other") warnings.push(warn("payment_other"));
 
   const categoryWarning = CATEGORIES.find((c) => c.key === receipt.category)?.warning;
   if (categoryWarning) warnings.push(warn(categoryWarning));

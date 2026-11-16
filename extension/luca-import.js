@@ -59,7 +59,9 @@
   }
 
   async function page(path) {
-    const res = await fetch(path, { credentials: "same-origin", cache: "no-store" });
+    const res = await fetch(path, { credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(30_000) }).catch((e) => {
+      throw new Error(e?.name === "TimeoutError" ? "Luca yanıt vermedi (30 sn zaman aşımı)." : "Luca yanıt vermedi (bağlantı).");
+    });
     if (!res.ok) throw new Error(`Luca yanıt vermedi (${res.status}).`);
     const bytes = await res.arrayBuffer();
     // Luca sayfaları çoğunlukla windows-1254; başlık ya da meta ne diyorsa o.
@@ -71,28 +73,39 @@
 
   /** Luca sayfalarındaki __SESSION nesnesinin firma ve dönem numarası; bulunamazsa null (o zaman yalnız dönem tarihine bakılır). */
   function sessionIds(html) {
-    // Yalnız __SESSION nesnesinin içinden: sayfadaki başka bir SIRKET_ID (bir form alanı) yanlış alarm vermesin.
-    const block = /__SESSION\s*=\s*\{([^}]{0,2000})\}/.exec(html)?.[1] ?? "";
-    const sirket = /SIRKET_ID["']?\s*:\s*["']?(\d+)/.exec(block)?.[1] ?? null;
-    const donem = /DONEM_ID["']?\s*:\s*["']?(\d+)/.exec(block)?.[1] ?? null;
-    return { sirket, donem };
+    // Yalnız __SESSION nesnesinin başladığı yerden sonrası: sayfadaki başka bir SIRKET_ID (bir form alanı) yanlış alarm vermesin.
+    const at = html.search(/__SESSION\s*=\s*\{/);
+    if (at < 0) return { sirket: null, donem: null };
+    const block = html.slice(at, at + 3000);
+    // Tam anahtar: "ANA_SIRKET_ID" ya da "ONCEKI_DONEM_ID" sayılmaz.
+    const key = (name) => new RegExp(`(?:^|[^A-Za-z_])["']?${name}["']?\\s*:\\s*["']?(\\d+)`).exec(block)?.[1] ?? null;
+    return { sirket: key("SIRKET_ID"), donem: key("DONEM_ID") };
   }
 
-  /** Oturumu firmaya çevirir ve gerçekten o firmaya ve döneme geçtiğini doğrular. Luca geçişi bazen geç yansıtır: bir kez daha dener. */
-  async function switchTo(f) {
+  /** Geçiş yapmadan şu an açık firmanın kimliği ve oturum numaraları: numara kontrolüne güvenilip güvenilemeyeceğini sınamak için. */
+  async function probe() {
+    const info = await page(`musteriBilgileri.do?time=${Date.now()}`);
+    return { identity: parseIdentity(info.body?.textContent ?? ""), ids: sessionIds(info.documentElement?.innerHTML ?? "") };
+  }
+
+  /**
+   * Oturumu firmaya çevirir ve gerçekten o firmaya ve döneme geçtiğini doğrular. Luca geçişi bazen geç yansıtır: bir kez daha dener.
+   * `verifyIds`: Luca'nın oturum numaraları firma listesindekilerle aynı (ön sınamada görüldü); öyleyse onlar da tutmalı.
+   */
+  async function switchTo(f, verifyIds = false) {
     let identity = null, ids = null, reply = "";
     for (let attempt = 0; attempt < 2; attempt++) {
       if (attempt) await new Promise((r) => setTimeout(r, 1500));
       const sw = await page(switchUrl(f));
       // Luca'nın geçiş yanıtındaki uyarı ya da hata metni: geçmezse nedeni budur.
-      reply = (sw.body?.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 150)
-        || /alert\(["']([^"']{1,150})/.exec(sw.documentElement?.innerHTML ?? "")?.[1] || "";
+      reply = /alert\(["']([^"']{1,150})/.exec(sw.documentElement?.innerHTML ?? "")?.[1]
+        || (sw.getElementById("SirketCombo") ? "" : (sw.body?.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 150));
       const info = await page(`musteriBilgileri.do?time=${Date.now()}`);
       identity = parseIdentity(info.body?.textContent ?? "");
       ids = sessionIds(info.documentElement?.innerHTML ?? "");
       // Aynı dönem tarihli başka bir firmada kalınmışsa yalnız tarih tutar; Luca firma numarasını veriyorsa o da tutmalı.
-      const sameFirm = !ids.sirket || ids.sirket === String(f.lucaId);
-      if (identity && identity.start === f.start && identity.end === f.end && sameFirm) return { ok: true, identity };
+      const sameFirm = !verifyIds || ((!ids.sirket || ids.sirket === String(f.lucaId)) && (!ids.donem || ids.donem === String(f.donemId)));
+      if (identity && identity.start === f.start && identity.end === f.end && sameFirm) return { ok: true, identity, verified: verifyIds && !!ids.sirket };
     }
     return { ok: false, identity, ids, reply };
   }
@@ -100,23 +113,23 @@
   /**
    * Oturumu firmaya çevirir, kimliğini ve hesap planını okur. Geçiş doğrulanmazsa durur, yanlış firmanın planı alınmaz.
    */
-  async function readFirm(f) {
-    const sw = await switchTo(f);
+  async function readFirm(f, verifyIds = false) {
+    const sw = await switchTo(f, verifyIds);
     const identity = sw.identity;
     if (!identity) throw new Error("Luca firma bilgisini vermedi; Luca oturumu kapanmış olabilir. İki kez denendi.");
     // Both sides in the message: whether Luca stayed on another firm or opened this firm with other dates tells the cause.
     if (!sw.ok) throw new Error(`Luca bu firmaya geçmedi. İstenen: ${f.shortName} (no ${f.lucaId}) ${f.start} - ${f.end}. Luca'nın açık gösterdiği: ${identity.name}${sw.ids?.sirket ? ` (no ${sw.ids.sirket})` : ""} ${identity.start} - ${identity.end}.${sw.reply ? ` Luca'nın yanıtı: ${sw.reply}` : ""}`);
     const accounts = parsePlan(await page(`listAltHesapTempAction.do?time=${Date.now()}`));
     if (accounts.length === 0) throw new Error("Luca'da bu firmanın hesap planı boş. Luca'da plan tanımlanınca yeniden çekin.");
-    return { lucaId: f.lucaId, name: identity.name, taxNumber: identity.taxNumber, accounts };
+    return { lucaId: f.lucaId, name: identity.name, taxNumber: identity.taxNumber, accounts, verified: sw.verified };
   }
 
   /** İlk firmaya döner, doğrular ve firma seçici çerçevesini o firmayla yeniler. Dönüş doğrulanamazsa false. */
-  async function switchBack(o) {
-    const sw = await switchTo(o).catch(() => ({ ok: false }));
+  async function switchBack(o, verifyIds = false) {
+    const sw = await switchTo(o, verifyIds).catch(() => ({ ok: false }));
     location.href = switchUrl(o);
     return sw.ok;
   }
 
-  root.AccountieLuca = { firmsToImport, selected, switchUrl, parseIdentity, parsePlan, sessionIds, readFirm, switchBack };
+  root.AccountieLuca = { firmsToImport, selected, switchUrl, parseIdentity, parsePlan, sessionIds, probe, readFirm, switchBack };
 })(globalThis);

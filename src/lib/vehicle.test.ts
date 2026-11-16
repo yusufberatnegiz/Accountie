@@ -51,3 +51,14 @@ describe("KKEG satırı tanıma", () => {
     expect(toPassengerCar(fuel, { code: "", name: "" }, make)).toEqual(fuel);
   });
 });
+
+describe("jüri turu 3: KKEG adı", () => {
+  it("'Binek Araç Giderleri' sıradan gider hesabıdır; büyük harfli 'GİDER KISITLAMASI' KKEG'dir", () => {
+    const kkeg = { code: "689.01", name: "KKEG" };
+    const plain = [l("770.10", 10000), l("191.03.20", 2000), l("331.01", 0, 12000)].map((x, i) => (i === 0 ? { ...x, accountName: "Binek Araç Giderleri" } : x));
+    expect(isPassengerCar(plain, kkeg)).toBe(false);
+    // Ticari never removes an expense line for its name.
+    expect(fromPassengerCar(plain, kkeg)).toEqual(plain);
+    expect(isPassengerCar([{ ...l("770.99", 300), accountName: "BİNEK ARAÇ GİDER KISITLAMASI" }], { code: "", name: "" })).toBe(true);
+  });
+});

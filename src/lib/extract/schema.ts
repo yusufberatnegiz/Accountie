@@ -206,16 +206,17 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
   const problems: string[] = [];
   const sum = data.vatLines.reduce((s, v) => s + v.grossKurus, 0);
   // A breakdown line that could not be read, unless the item lines made up a breakdown that adds up anyway.
-  if (data.totalKurus === null || (x.vatLines.some((v) => amountOrNull(v.gross) === null) && sum !== data.totalKurus)) problems.push("amount_unreadable");
+  if (data.totalKurus === null || (x.vatLines.some((v) => amountOrNull(v.gross ?? null) === null && amountOrNull(v.net ?? null) === null) && sum !== data.totalKurus && !x.withholding)) problems.push("amount_unreadable");
   // A foreign invoice usually shows no KDV at all; its total stands alone.
-  else if (kind !== "foreign_invoice" && sum !== data.totalKurus) problems.push("total_mismatch");
+  else if (kind !== "foreign_invoice" && sum !== data.totalKurus && !(x.withholding && sum > data.totalKurus)) problems.push("total_mismatch");
   if (kind === "foreign_invoice" && !/^[A-Z]{3}$/.test(x.currency ?? "")) problems.push("currency_unsure");
   if (kind === "z_report" && data.totalKurus !== null) {
     const cash = amountOrNull(x.cashTotal), card = amountOrNull(x.cardTotal);
     if (cash === null && card === null) problems.push("z_payment_split");
     else if (cash !== null && card !== null && cash + card !== data.totalKurus) problems.push("z_payment_split");
   }
-  if (data.vatLines.some((v) => v.vatKurus !== null && Math.abs(v.vatKurus - vatFromGross(v.grossKurus, v.rate)) > vatTolerance(x, 1))) problems.push("vat_mismatch");
+  const lineTolerance = x.vatLines.length ? 1 : vatTolerance(x, 1);
+  if (data.vatLines.some((v) => v.vatKurus !== null && Math.abs(v.vatKurus - vatFromGross(v.grossKurus, v.rate)) > lineTolerance)) problems.push("vat_mismatch");
   // TOPKDV against the KDV of the lines: a discount taken off the wrong rate shows here.
   const totalVat = amountOrNull(x.totalVat ?? null);
   const vatSum = data.vatLines.reduce((s, v) => s + (v.vatKurus ?? vatFromGross(v.grossKurus, v.rate)), 0);
@@ -237,7 +238,7 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
   if (unsure("total")) add("amount_unreadable");
   if (unsure("vatLines") && x.vatLines.length > 0) add("vat_mismatch");
   if (unsure("date")) add("date_invalid");
-  if (unsure("paymentMethod")) add("payment_unsure");
+  if (unsure("paymentMethod") || (unsure("payments") && (x.payments?.length ?? 0) > 1)) add("payment_unsure");
   // Several ways of paying that do not add up to the total: the credit side cannot be split, so it is checked by hand.
   const paid = (x.payments ?? []).map((p) => amountOrNull(p.amount));
   if (paid.length > 1 && (paid.some((k) => k === null) || paid.reduce<number>((s, k) => s + (k ?? 0), 0) !== data.totalKurus)) add("payment_unsure");
