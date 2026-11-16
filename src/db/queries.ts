@@ -194,22 +194,24 @@ export async function hasDuplicateReceipt(userId: string, taxNumber: string, rec
 
 // The list shows each receipt's expense account (first debit line that is not VAT) and its line count (for Luca's 400-line file limit).
 const listColumns = {
+  // Subqueries name the outer table in full ("receipts"."id"): Drizzle writes a column of a one-table select without its table, and
+  // journal_lines and firm_accounts have their own id, user_id and firm_id, which a bare "id" would silently (or ambiguously) mean.
   ...summaryColumns,
   category: receipts.category,
   warnings: receipts.warnings,
   // A passenger car's draft already split to KKEG (src/lib/vehicle.ts): its vehicle is chosen.
   // Same test as src/lib/vehicle.ts isKkegLine.
-  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and (jl.account_code like '689%' or jl.account_name ~* 'kanunen kabul|kkeg'))`,
+  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = "receipts"."id" and jl.user_id = "receipts"."user_id" and jl.debit_kurus > 0 and (jl.account_code like '689%' or jl.account_name ~* 'kanunen kabul|kkeg'))`,
   // "ticari" once the user has said so on the review screen (setVehicleChoice).
   vehicle: sql<string | null>`${receipts.extraction}->>'vehicle'`,
   invoice: sql<boolean>`coalesce(${receipts.extraction}->>'documentKind' = 'domestic_invoice', false)`,
-  expenseCode: sql<string | null>`(select jl.account_code from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
+  expenseCode: sql<string | null>`(select jl.account_code from journal_lines jl where jl.receipt_id = "receipts"."id" and jl.user_id = "receipts"."user_id" and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
   // A draft's lines with the name the firm's Luca plan gives each code, for the same check the review screen makes (planMismatches).
   planLines: sql<{ accountCode: string; accountName: string; luca: string }[] | null>`(select jsonb_agg(jsonb_build_object('accountCode', jl.account_code, 'accountName', jl.account_name, 'luca', fa.name))
-    from journal_lines jl join firm_accounts fa on fa.firm_id = ${receipts.firmId} and fa.code = jl.account_code
-    where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and ${receipts.status} = 'draft')`,
+    from journal_lines jl join firm_accounts fa on fa.firm_id = "receipts"."firm_id" and fa.code = jl.account_code
+    where jl.receipt_id = "receipts"."id" and jl.user_id = "receipts"."user_id" and "receipts"."status" = 'draft')`,
   // The 191 VAT debits, so the list never sums gross amounts as KDV.
-  vatKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::bigint from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.account_code like '191%')`.mapWith(Number),
+  vatKurus: sql<number>`(select coalesce(sum(jl.debit_kurus), 0)::bigint from journal_lines jl where jl.receipt_id = "receipts"."id" and jl.user_id = "receipts"."user_id" and jl.account_code like '191%')`.mapWith(Number),
 };
 
 // A receipt's month (src/lib/month.ts): its date, or the Turkey-time upload day when the date was not read.
