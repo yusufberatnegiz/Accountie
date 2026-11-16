@@ -10,4 +10,11 @@ describe("cropReceipt", () => {
     const mid = await sharp(await cropReceipt(photo, { left: 500, top: 100, right: 600, bottom: 900 })).metadata();
     expect([mid.width, mid.height]).toEqual([260, 830]);
   });
+
+  it("telefonun yan çevrilmiş fotoğrafında (EXIF 6) kutuyu döndürülmüş görüntüden keser", async () => {
+    // Stored 1000 wide, 2000 high; shown turned a quarter, 2000 wide and 1000 high, as the model saw it.
+    const photo = await sharp({ create: { width: 1000, height: 2000, channels: 3, background: "#fff" } }).withMetadata({ orientation: 6 }).jpeg().toBuffer();
+    const left = await sharp(await cropReceipt(photo, { left: 0, top: 0, right: 250, bottom: 1000 })).metadata();
+    expect([left.width, left.height]).toEqual([530, 1000]);
+  });
 });

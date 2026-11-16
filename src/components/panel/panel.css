@@ -134,6 +134,11 @@
 .r-kind { display: block; font-size: var(--fs-small); color: var(--muted); } /* Z raporu, yurt dışı fatura */
 .r-code { color: var(--ink); }
 .list-foot { padding: var(--s4) var(--s5); border-top: 1px solid var(--rule); }
+.list-foot-actions { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s3); }
+.list-foot-actions .bulk-delete { margin-left: auto; }
+.list-foot-actions .bulk-status { flex-basis: 100%; margin: 0; }
+.list-foot-actions .bulk-status:not(:empty) { margin-top: var(--s2); }
+@media (pointer: coarse) { .seg .side-opt { min-height: var(--touch); } }
 .empty-row { display: grid; gap: var(--s3); justify-items: start; padding: var(--s6) var(--s5); }
 .empty-row h3 { font-size: var(--fs-section); }
 .empty-row p { font-size: var(--fs-section); max-width: 60ch; color: var(--muted); }
@@ -223,6 +228,9 @@
 #fis-kaynak { scroll-margin-top: var(--s4); }
 .inline-field { display: grid; gap: var(--s1); font-size: var(--fs-small); color: var(--muted); }
 .inline-field .field { width: 260px; min-height: var(--control-sm); color: var(--ink); }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius-control); background: var(--active); }
+.seg .side-opt { min-height: calc(var(--control-sm) - 4px); padding: 0 var(--s3); }
+.vehicle-note { margin: 0; padding: 0 var(--s5) var(--s3); }
 .journal td, .journal th { padding: var(--s2) var(--s1); vertical-align: top; }
 .journal thead th { vertical-align: bottom; }
 .journal td:first-child, .journal th:first-child { padding-left: var(--s5); }
@@ -451,6 +459,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .read { padding: var(--s4); }
   .panel-head { padding: var(--s4); }
   .inline-field, .inline-field .field { width: 100%; }
+  .seg { display: flex; }
+  .seg .side-opt { min-height: var(--touch); }
+  .vehicle-note { padding: 0 var(--s4) var(--s3); }
   .journal-add { padding: var(--s3) var(--s4); }
   .inline-field .field { min-height: var(--touch); font-size: 16px; }
   .balance-strip { grid-template-columns: 1fr 1fr; }

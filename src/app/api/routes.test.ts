@@ -13,7 +13,7 @@ vi.mock("@/db/queries", () => ({
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), clientIp: () => "203.0.113.9" }));
-vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(async () => []) }));
+vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(async () => []), STRONG_READ_ABOVE: 4 }));
 vi.mock("@/lib/image", async (original) => ({ ...(await original<typeof import("@/lib/image")>()), normalizeImage: vi.fn(async () => Buffer.from("jpeg")) }));
 
 const session = await import("@/lib/auth/session");
@@ -80,8 +80,8 @@ describe("POST /api/receipts", () => {
       ok: true, model: "claude-haiku-5-5", fallback: false, problems: [], inputTokens: 1, outputTokens: 1,
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
-        receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null,
+        receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18", net: null }], total: "8.725,00",
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false,
       },
     });
     expect((await receiptsRoute.POST(upload())).status).toBe(201);
@@ -95,8 +95,8 @@ describe("POST /api/receipts", () => {
       ok: true, model: "claude-haiku-5-5", fallback: false, problems: [], inputTokens: 3000, outputTokens: 300,
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
-        receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null,
+        receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18", net: null }], total: "8.725,00",
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false,
       },
     });
     const res = await receiptsRoute.POST(upload());

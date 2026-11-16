@@ -35,7 +35,7 @@ export const PREVIEW_RECEIPTS: ReceiptDetail[] = [
   base("00000000-0000-4000-8000-000000000002", {
     vendorName: "ÖRNEK AKARYAKIT A.Ş.", receiptNo: "1182", date: null,
     vatLines: [{ rate: 20, grossKurus: 250000, vatKurus: null }], totalKurus: 250000, paymentMethod: "cash", category: "fuel",
-  }, { warnings: [warn("vehicle"), warn("date_invalid"), warn("vat_computed"), warn("tax_number_invalid")], taxNumber: "1234567890" }),
+  }, { warnings: [warn("date_invalid"), warn("vat_computed"), warn("tax_number_invalid")], taxNumber: "1234567890" }),
   { ...base("00000000-0000-4000-8000-000000000003", {
     vendorName: "ÖRNEK KIRTASİYE", receiptNo: "0912", date: "2026-09-02",
     vatLines: [{ rate: 20, grossKurus: 48000, vatKurus: 8000 }], totalKurus: 48000, paymentMethod: "cash", category: "stationery",

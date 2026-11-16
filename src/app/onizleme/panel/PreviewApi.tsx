@@ -57,6 +57,11 @@ export function PreviewApi({ approved }: { approved: string[] }) {
         setStatus(chosen, "approved");
         return json({ approved: chosen.length, skipped: 0 });
       }
+      if (url === "/api/receipts/bulk-delete") {
+        const chosen: string[] = JSON.parse(String(init?.body ?? "{}")).ids ?? [];
+        setStatus(chosen, "silindi");
+        return json({ deleted: chosen.length, skipped: 0 });
+      }
       const action = /^\/api\/receipts\/([^/]+)\/(approve|reopen|exported)$/.exec(url);
       if (action) setStatus([action[1]], init?.method === "DELETE" ? "approved" : { approve: "approved", reopen: "draft", exported: "exported" }[action[2]]!);
       if (url === "/api/exports") {

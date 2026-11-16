@@ -60,6 +60,7 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
     let added = 0;
     let failed = false;
     let skipped = 0;
+    let limited = 0;
     // Each photo becomes its own receipt; files are copied out of the input first because iOS replaces them on the next capture.
     for (const [i, file] of list.entries()) {
       setSlow(false);
@@ -93,18 +94,21 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
         break;
       }
       // One photo may hold several receipts side by side; each gets the photo for its review screen.
-      const { ids, skipped: left = 0 } = (await res.json()) as { ids: string[]; skipped?: number };
+      const { ids, skipped: left = 0, limited: over = 0 } = (await res.json()) as { ids: string[]; skipped?: number; limited?: number };
       skipped += left;
+      limited += over;
       setStage(2);
       if (!pdf) for (const id of ids) setPhoto(id, blob);
       lastId = ids[0];
       added += ids.length;
     }
     // The balance reached its floor inside a photo of several receipts: the list shows what was read, the rest is named.
-    if (skipped) {
+    if (skipped || limited) {
       setBusy(false);
       setStatus("");
-      setNotice(`${added} belge eklendi. Kontör bittiği için ${skipped} fiş okunmadı. Kontör yükledikten sonra okunmayan fişleri ayrı çekin.`);
+      setNotice(skipped
+        ? `${added} belge eklendi. Kontör bittiği için ${skipped} fiş okunmadı. Kontör yükledikten sonra okunmayan fişleri ayrı çekin.`
+        : `${added} belge eklendi. Dakikalık okuma sınırına gelindiği için ${limited} fiş okunmadı. Bir dakika sonra okunmayan fişleri ayrı çekin.`);
       startTransition(() => { addTransitionType("fis-eklendi"); router.refresh(); });
       return;
     }

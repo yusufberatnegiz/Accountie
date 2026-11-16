@@ -1,7 +1,8 @@
 // The only module that talks to the database (Supabase Postgres through its pooler). Every function takes the session user's id and filters by it.
 import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
-import type { JournalLine, Warning } from "@/lib/journal";
+import { fitRulesToPlan } from "@/lib/plan-suggest";
+import { RETIRED_WARNINGS, type JournalLine, type Warning } from "@/lib/journal";
 import { getDb } from "./index";
 import { accountRules, billingProfiles, creditBalances, creditLedger, extensionTokens, firmAccounts, firmRules, firms, journalLines, payments, rateLimitHits, receipts, vendorRules } from "./schema";
 
@@ -102,15 +103,22 @@ export async function getRules(userId: string, firmId?: string | null): Promise<
     rows = rulesToRows(DEFAULT_RULES);
     await db.insert(accountRules).values(rows.map((r) => ({ ...r, userId }))).onConflictDoNothing();
   }
+  const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
+  let own: RuleRow[] = [];
   if (firmId) {
-    const own: RuleRow[] = await db.select({ kind: firmRules.kind, key: firmRules.key, label: firmRules.label, accountCode: firmRules.accountCode, accountName: firmRules.accountName })
+    own = await db.select({ kind: firmRules.kind, key: firmRules.key, label: firmRules.label, accountCode: firmRules.accountCode, accountName: firmRules.accountName })
       .from(firmRules).where(and(eq(firmRules.userId, userId), eq(firmRules.firmId, firmId)));
-    const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
     rows = [...rows.map((r) => own.find((o) => same(o, r)) ?? r), ...own.filter((o) => !rows.some((r) => same(o, r)))];
   }
   // Rules added after the user's table was made (foreign invoice, Z report) show with their defaults until saved.
   const missing = rulesToRows(DEFAULT_RULES).filter((d) => !rows.some((r) => r.kind === d.kind && r.key === d.key));
   rows = [...rows, ...missing];
+  // A firm with its Luca plan imported books to that plan, with nothing to save: every rule the firm has not set itself is fitted
+  // to the plan (src/lib/plan-suggest.ts fitRulesToPlan), so a default code never lands on an account that means something else.
+  if (firmId) {
+    const plan = await listFirmAccounts(userId, firmId);
+    rows = fitRulesToPlan(rows, plan, (r) => own.some((o) => same(o, r)));
+  }
   return { rules: rulesFromRows(rows), rows };
 }
 
@@ -202,8 +210,11 @@ const RECEIPT_MONTH = sql<string>`to_char(coalesce(${receipts.receiptDate}, (${r
 export async function listReceipts(userId: string, firmId: string, { status, month }: { status?: ReceiptStatus; month?: string } = {}) {
   return getDb().select(listColumns).from(receipts)
     .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), status ? eq(receipts.status, status) : undefined, month ? eq(RECEIPT_MONTH, month) : undefined))
-    .orderBy(desc(receipts.createdAt)).limit(200);
+    .orderBy(desc(receipts.createdAt)).limit(200)
+    .then((rows) => rows.map((r) => ({ ...r, warnings: current(r.warnings) })));
 }
+
+const current = (warnings: Warning[]) => warnings.filter((w) => !RETIRED_WARNINGS.includes(w.code));
 
 export async function getReceipt(userId: string, id: string) {
   const db = getDb();
@@ -212,7 +223,7 @@ export async function getReceipt(userId: string, id: string) {
   if (!receipt) return null;
   const lines: JournalLine[] = await db.select(lineColumns).from(journalLines)
     .where(and(eq(journalLines.receiptId, id), eq(journalLines.userId, userId))).orderBy(asc(journalLines.lineNo));
-  return { ...receipt, lines };
+  return { ...receipt, warnings: current(receipt.warnings), lines };
 }
 
 export type ReceiptDetail = NonNullable<Awaited<ReturnType<typeof getReceipt>>>;
@@ -245,6 +256,14 @@ export async function transitionReceipt(userId: string, id: string, from: Receip
     .where(and(eq(receipts.id, id), eq(receipts.userId, userId), eq(receipts.status, from)))
     .returning({ id: receipts.id });
   return rows.length > 0;
+}
+
+/** Deletes the given receipts that are the user's drafts; approved and transferred ones stay. Returns how many went. */
+export async function deleteDrafts(userId: string, ids: readonly string[]): Promise<number> {
+  const rows = await getDb().delete(receipts)
+    .where(and(inArray(receipts.id, [...ids]), eq(receipts.userId, userId), eq(receipts.status, "draft")))
+    .returning({ id: receipts.id });
+  return rows.length;
 }
 
 export async function deleteDraft(userId: string, id: string): Promise<boolean> {

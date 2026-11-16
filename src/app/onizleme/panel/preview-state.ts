@@ -6,5 +6,6 @@ export function withStatuses<T extends { id: string; status: string }>(rows: T[]
   try {
     map = raw ? JSON.parse(decodeURIComponent(raw)) : {};
   } catch {}
-  return rows.map((r) => (map[r.id] ? { ...r, status: map[r.id] as T["status"] } : r));
+  // "silindi": a draft the bulk delete took away.
+  return rows.filter((r) => map[r.id] !== "silindi").map((r) => (map[r.id] ? { ...r, status: map[r.id] as T["status"] } : r));
 }

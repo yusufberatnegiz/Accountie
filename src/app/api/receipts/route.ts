@@ -5,7 +5,7 @@ import { isValidTaxNumber } from "@/lib/checks";
 import { withVendorAccount } from "@/lib/vendor-rule";
 import { activeFirm } from "@/lib/firm";
 import { getSessionUser, getUserId } from "@/lib/auth/session";
-import { extractReceipt, locateReceipts, type ExtractResult } from "@/lib/extract/extract";
+import { extractReceipt, locateReceipts, STRONG_READ_ABOVE, type ExtractResult } from "@/lib/extract/extract";
 import { kindOf, toForeignData, toReceiptData, toSalesData } from "@/lib/extract/schema";
 import { buildForeignLines, buildSalesLines, foreignTotalTl } from "@/lib/journal-kinds";
 import { tcmbRate } from "@/lib/tcmb";
@@ -72,25 +72,29 @@ export async function POST(request: Request) {
   // Several receipts laid side by side in one photo: each is cut from the full-size upload and read on its own.
   const boxes = await locateReceipts(jpeg).catch(() => []);
   let images = [jpeg];
+  // Receipts of the photo not read because the per-minute limit was reached: told to the user, never dropped silently.
+  let limited = 0;
   if (boxes.length > 1) {
     images = [];
-    for (const box of boxes) {
+    for (const [i, box] of boxes.entries()) {
       // The photo was counted once above; every further receipt is one more read against the same limits.
-      if (images.length && (!(await allow("receipt", userId)) || !(await allow("receiptGlobal", "all")))) break;
+      if (images.length && (!(await allow("receipt", userId)) || !(await allow("receiptGlobal", "all")))) { limited = boxes.length - i; break; }
       // A crop that fails (an odd box) is skipped; if none worked the photo is read whole.
       const crop = await cropReceipt(bytes, box).catch(() => null);
       if (crop) images.push(crop);
     }
   }
   if (images.length === 0) images = [jpeg];
-  const results = await Promise.all(images.map((image) => readMetered(metered, userId, firm.id, image, rules)));
+  // Judged by the receipts found, not the ones read: a crowded photo's cut-outs are narrow either way.
+  const strong = boxes.length > STRONG_READ_ABOVE;
+  const results = await Promise.all(images.map((image) => readMetered(metered, userId, firm.id, image, rules, undefined, strong)));
   // Receipts left unread because the balance reached its floor: said once, the rest of the photo is not lost silently.
   const skipped = results.filter((r) => r === "no_credit").length;
   const saved = results.filter((r) => r !== "no_credit");
   const ids = saved.flatMap((r) => (r ? [r.id] : []));
   if (ids.length === 0 && skipped) return NextResponse.json({ error: "Kontörünüz bitti. Belge okumak için kontör yükleyin.", kontor: true }, { status: 402 });
   if (ids.length === 0) return fail("Fiş kaydedilemedi. Tekrar deneyin.", 500);
-  return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable), skipped }, { status: 201 });
+  return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable), skipped, limited }, { status: 201 });
 }
 
 // billable: something was read (a seller or a total); an empty record costs no credit (Koşullar md. 6).
@@ -100,12 +104,12 @@ type Saved = { id: string; readable: boolean; billable: boolean; kind: string } 
  * One document read against the balance: 1 credit is taken before the read (none left above the floor: "no_credit", the model
  * is not called), then settled to its real cost (an invoice 2, an unread or unsaved document 0) and tied to the receipt.
  */
-async function readMetered(metered: boolean, userId: string, firmId: string, image: Buffer, rules: Rules, mediaType?: "image/jpeg" | "application/pdf"): Promise<Saved | "no_credit"> {
+async function readMetered(metered: boolean, userId: string, firmId: string, image: Buffer, rules: Rules, mediaType?: "image/jpeg" | "application/pdf", strong = false): Promise<Saved | "no_credit"> {
   const entry = metered ? await reserveCredit(userId, firmId, MIN_BALANCE) : null;
   if (metered && !entry) return "no_credit";
   let saved: Saved = null;
   try {
-    saved = await readAndSave(userId, firmId, image, rules, mediaType);
+    saved = await readAndSave(userId, firmId, image, rules, mediaType, strong);
   } finally {
     // Also when the read throws: the reserved credit is given back, never kept for a document that was not read.
     if (entry) {
@@ -117,10 +121,10 @@ async function readMetered(metered: boolean, userId: string, firmId: string, ima
   return saved;
 }
 
-async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: Rules, mediaType: "image/jpeg" | "application/pdf" = "image/jpeg"): Promise<Saved> {
+async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: Rules, mediaType: "image/jpeg" | "application/pdf" = "image/jpeg", strong = false): Promise<Saved> {
   let result: ExtractResult;
   try {
-    result = await extractReceipt(jpeg, undefined, mediaType);
+    result = await extractReceipt(jpeg, undefined, mediaType, strong);
   } catch (err) {
     console.error("receipt extraction crashed", { error: err instanceof Error ? err.name : "unknown" });
     result = { ok: false, inputTokens: 0, outputTokens: 0 };
@@ -134,6 +138,10 @@ async function readAndSave(userId: string, firmId: string, jpeg: Buffer, rules: 
   const learned = taxNumber && isValidTaxNumber(taxNumber) ? await getVendorRule(userId, firmId, taxNumber).catch(() => null) : null;
   const { lines, warnings } = buildJournalLines(data, { ...withVendorAccount(rules, data.category, learned && { code: learned.accountCode, name: learned.accountName }), ...(kind === "domestic_invoice" && { documentType: rules.foreign.documentType }) });
   const extra = result.ok ? result.problems : ["extraction_failed"];
+  // Not a tax document (an order slip, a meal card slip): said first, never retried with the stronger model.
+  if (result.ok && result.extraction.noFiscalValue) extra.unshift("no_fiscal_value");
+  // A rule the firm's Luca plan had no account for (fitRulesToPlan) leaves the code empty: said, not guessed.
+  if (lines.some((l) => !l.accountCode)) extra.push("plan_no_account");
   const allWarnings: Warning[] = [...warnings, ...extra.filter((c) => !warnings.some((w) => w.code === c)).map(warn)];
   // Warn only, never block: the user decides. A failed lookup must not lose the upload.
   if (taxNumber && data.receiptNo && data.date && (await hasDuplicateReceipt(userId, taxNumber, data.receiptNo, data.date).catch(() => false))) {
@@ -184,6 +192,7 @@ async function saveOther(userId: string, firmId: string, result: Extract<Extract
     built = buildForeignLines(data, rules, fx);
     receipt = { vendorName: data.vendorName, taxNumber: null, receiptNo: data.invoiceNo, receiptDate: data.date, totalKurus: foreignTotalTl(data, fx), paymentMethod: data.paymentMethod, category: "foreign", extraction: { ...x, fx, fallback: result.fallback }, warnings: [], ...meta };
   }
+  if (built.lines.some((l) => !l.accountCode)) extra.push(warn("plan_no_account"));
   receipt.warnings = [...built.warnings, ...extra.filter((w) => !built.warnings.some((b) => b.code === w.code))];
   try {
     return { id: await createReceipt(userId, firmId, receipt, built.lines), readable: true, billable: receipt.vendorName !== null || receipt.totalKurus !== null, kind: kindOf(x) };

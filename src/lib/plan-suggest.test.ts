@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RULES, rulesToRows } from "./default-rules";
-import { suggestRules } from "./plan-suggest";
+import { fitRulesToPlan, planMismatches, suggestRules } from "./plan-suggest";
 
 // A plan shaped like a real Luca one: parents with sub-accounts, the firm's own numbering and names.
 const PLAN = [
@@ -54,10 +54,25 @@ describe("suggestRules", () => {
   it("alt hesabı olmayan şablon planda gider 770'e, KDV 191'e, kart 309'a, nakit 100'e önerilir", () => {
     const bare = [{ code: "100", name: "KASA" }, { code: "191", name: "İNDİRİLECEK KATMA DEĞER VERGİSİ" }, { code: "309", name: "DİĞER MALİ BORÇLAR" }, { code: "770", name: "GENEL YÖNETİM GİDERLERİ" }];
     const got = suggestRules(rows, bare);
-    expect(new Set(got.filter((r) => r.kind === "expense").map((r) => r.accountCode))).toEqual(new Set(["770"]));
+    expect(new Set(got.filter((r) => r.kind === "expense" && r.key !== "kkeg").map((r) => r.accountCode))).toEqual(new Set(["770"]));
+    // No 689 in the plan: the KKEG rule keeps its default instead of landing on 770.
+    expect(code(got, "expense", "kkeg")).toBe("689.02");
     expect(new Set(got.filter((r) => r.kind === "vat").map((r) => r.accountCode))).toEqual(new Set(["191"]));
     expect(code(got, "payment", "card")).toBe("309");
     expect(code(got, "payment", "cash")).toBe("100");
+  });
+
+  it("demirbaş hesabını yalnız büro malzemesine önerir; market ve diğer oraya düşmez", () => {
+    const plan = [{ code: "770.05", name: "Diğer Küçük Demirbaşlar" }, { code: "770.12", name: "Mutfak Giderleri" }, { code: "770.99", name: "Diğer Çeşitli Giderler" }];
+    const got = suggestRules(rows, plan);
+    expect(code(got, "expense", "other")).toBe("770.99");
+    expect(code(got, "expense", "food_grocery")).toBe("770.12");
+    expect(code(got, "expense", "office_supplies")).toBe("770.05");
+  });
+
+  it("binek KKEG kuralını plandaki kanunen kabul edilmeyen gider hesabına önerir", () => {
+    const plan = [{ code: "689", name: "Diğer Olağandışı Gider Ve Zararlar" }, { code: "689.01", name: "Kanunen Kabul Edilmeyen Giderler" }, { code: "770.01", name: "Akaryakıt" }];
+    expect(code(suggestRules(rows, plan), "expense", "kkeg")).toBe("689.01");
   });
 
   it("alt hesabı olan planda eşleşmeyen kural ana hesaba atılmaz", () => {
@@ -84,5 +99,85 @@ describe("suggestRules: yurt dışı fatura ve Z raporu", () => {
     expect([code(out, "sales", "cash"), code(out, "sales", "card")]).toEqual(["100.01", "108.01"]);
     expect(["revenue:0", "revenue:1", "revenue:10", "revenue:20"].map((k) => code(out, "sales", k))).toEqual(["600.00", "600.01", "600.10", "600.20"]);
     expect(["vat:1", "vat:10", "vat:20"].map((k) => code(out, "sales", k))).toEqual(["391.01", "391.10", "391.20"]);
+  });
+});
+
+// A real Luca plan (codes and names only) where the default codes mean other accounts: 770.12 is fixtures, 770.01 stationery.
+const REAL = [
+  ["100", "KASA"], ["100.01", "Kasa"], ["108", "DİĞER HAZIR DEĞERLER"], ["108.01", "Kredi Kartı Satışları"],
+  ["191", "İNDİRİLECEK KATMA DEĞER VERGİSİ"], ["191.03", "Bu Döneme Ait İndirilecek Kdv"], ["191.03.01", "% 01 Li İndirilecek Kdv"],
+  ["191.03.10", "%10 İndirilecek KDV - Yurtiçi Tevkifatsız Alımlar İçin Ödenen"], ["191.03.20", "%20 İndirilecek KDV - Yurtiçi Tevkifatsız Alımlar İçin Ödenen"],
+  ["191.04", "Sorumlu Sıfatıyla Ödenen Kdv"], ["191.04.20", "%20 İndirilecek KDV - Sorumlu Sıfatıyla Alımlar İçin Ödenen"],
+  ["309", "DİĞER MALİ BORÇLAR"], ["309.01", "Kredi Kartı İle Ödemeler"], ["331", "ORTAKLARA BORÇLAR"], ["331.01", "Ortaklara Borçlar"],
+  ["335", "PERSONELE BORÇLAR"], ["335.01", "Personele Borçlar"], ["360", "ÖDENECEK VERGİ VE FONLAR"], ["360.01", "Katma Değer Vergisi Ve Ekleri"],
+  ["689", "DİĞER OLAĞANDIŞI GİDER VE ZARARLAR (-)"], ["689.02", "Kanunen Kabul Edilmeyen Giderler"], ["689.03", "Binek Araç Gider Kısıtlaması"],
+  ["770", "GENEL YÖNETİM GİDERLERİ"], ["770.00", "Kanunen Kabul Edilmeyen Giderler"], ["770.01", "Kırtasiye-Noter-Pul Giderleri"],
+  ["770.02", "Ptt-Elektrik-Su Giderleri"], ["770.04", "Demirbaş Tamir Bakım Giderleri"], ["770.05", "Sigorta-Seyahat-Konaklama Giderleri"],
+  ["770.08", "Yeme-İçme Ve Ağırlama Giderleri"], ["770.10", "Taşıt Yakıt Ve Tamir Bakım Giderleri"], ["770.12", "Küçük Demirbaş Alımları"],
+  ["770.13", "Temizlik Giderleri"], ["770.14", "Diğer Çeşitli Giderler"], ["770.16", "Kargo Ve Nakliye Giderleri"],
+].map(([c, n]) => ({ code: c, name: n }));
+
+describe("fitRulesToPlan (kaydetmeden firmanın Luca planı)", () => {
+  const fit = fitRulesToPlan(rows, REAL);
+  const get = (kind: string, key: string) => fit.find((r) => r.kind === kind && r.key === key);
+
+  it("market fişi küçük demirbaşa, akaryakıt kırtasiyeye, kırtasiye PTT'ye gitmez", () => {
+    expect(get("expense", "food_grocery")?.accountCode).toBe("770.08");
+    expect(get("expense", "fuel")?.accountCode).toBe("770.10");
+    expect(get("expense", "stationery")?.accountCode).toBe("770.01");
+    expect(get("expense", "telecom")?.accountCode).toBe("770.02");
+    expect(get("expense", "office_supplies")?.accountCode).toBe("770.12");
+    expect(get("expense", "other")?.accountCode).toBe("770.14");
+    expect(get("expense", "parking")?.accountCode).toBe("770.10");
+    expect(get("expense", "kkeg")?.accountCode).toBe("689.02");
+  });
+
+  it("anlamı tutan varsayılan kalır ve adı Luca'daki gibi olur", () => {
+    expect(get("vat", "1")).toMatchObject({ accountCode: "191.03.01", accountName: "% 01 Li İndirilecek Kdv" });
+    expect(get("vat", "20")?.accountCode).toBe("191.03.20");
+    expect(get("payment", "card")).toMatchObject({ accountCode: "331.01", accountName: "Ortaklara Borçlar" });
+    expect(get("payment", "cash")?.accountCode).toBe("100.01");
+    expect(get("expense", "meal")?.accountName).toBe("Yeme-İçme Ve Ağırlama Giderleri");
+  });
+
+  it("oranı başka olan hesabı aynı anlamda saymaz; kart ortaklara borçlarda kalır; yurt dışı KDV %20 sorumlu hesabına gider", () => {
+    const plan = [...REAL, { code: "600", name: "YURTİÇİ SATIŞLAR" }, { code: "600.20", name: "% 10 Kdv Li Satışlar" },
+      { code: "191.04.10", name: "%10 İndirilecek KDV - Sorumlu Sıfatıyla Alımlar İçin Ödenen" }].filter((a) => a.code !== "331.01");
+    const got = fitRulesToPlan(rows, plan);
+    const one = (kind: string, key: string) => got.find((r) => r.kind === kind && r.key === key)?.accountCode;
+    expect(one("sales", "revenue:20")).toBe("");
+    expect(one("payment", "card")).toBe("331");
+    expect(one("foreign", "vatIn")).toBe("191.04.20");
+  });
+
+  it("alt hesabı olmayan şablon planda Z raporu 600 ve 391 ana hesaplarına yazılır", () => {
+    const bare = [{ code: "100", name: "KASA" }, { code: "108", name: "DİĞER HAZIR DEĞERLER" }, { code: "391", name: "HESAPLANAN KDV" }, { code: "600", name: "YURTİÇİ SATIŞLAR" }];
+    const got = fitRulesToPlan(rows, bare);
+    expect(got.find((r) => r.key === "revenue:20")?.accountCode).toBe("600");
+    expect(got.find((r) => r.kind === "sales" && r.key === "vat:20")?.accountCode).toBe("391");
+    expect(got.find((r) => r.kind === "sales" && r.key === "card")?.accountCode).toBe("108");
+  });
+
+  it("planda uyan hesap yoksa kod boş kalır, yanlış hesaba gitmez", () => {
+    // No 600 sales accounts in this plan: a Z report waits for the user.
+    expect(get("sales", "revenue:20")?.accountCode).toBe("");
+  });
+
+  it("firmaya kaydedilmiş kural olduğu gibi kalır; plan yoksa hiçbir şey değişmez", () => {
+    const own = fitRulesToPlan(rows, REAL, (r) => r.kind === "expense" && r.key === "food_grocery");
+    expect(own.find((r) => r.key === "food_grocery")?.accountCode).toBe("770.12");
+    expect(fitRulesToPlan(rows, [])).toEqual(rows);
+  });
+});
+
+describe("planMismatches", () => {
+  it("Luca'da başka anlama gelen kodu bulur, aynı anlamdakini geçer", () => {
+    const lines = [
+      { accountCode: "770.12", accountName: "Mutfak Giderleri" },
+      { accountCode: "191.03.20", accountName: "%20 İndirilecek KDV" },
+      { accountCode: "331.01", accountName: "Ortaklara Borçlar" },
+    ];
+    expect(planMismatches(lines, REAL)).toEqual([{ code: "770.12", ours: "Mutfak Giderleri", luca: "Küçük Demirbaş Alımları" }]);
+    expect(planMismatches(lines, [])).toEqual([]);
   });
 });

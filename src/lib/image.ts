@@ -13,17 +13,27 @@ export async function normalizeImage(input: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-/** One receipt cut from the full-size upload (EXIF-rotated, as the model saw it), with a margin, normalized like a single photo. */
+/** A cut-out's long edge: the models read up to 2576 px, and a narrow receipt from a crowded photo needs every pixel of its width. */
+const CROP_MAX_EDGE = 2576;
+
+/** One receipt cut from the full-size upload (EXIF-rotated, as the model saw it), with a margin, in one pass and one JPEG encoding. */
 export async function cropReceipt(input: Buffer, box: { left: number; top: number; right: number; bottom: number }): Promise<Buffer> {
-  const rotated = await sharp(input, { limitInputPixels: 40_000_000 }).rotate().toBuffer({ resolveWithObject: true });
-  const { width, height } = rotated.info;
+  const meta = await sharp(input, { limitInputPixels: 40_000_000 }).metadata();
+  // Orientations 5-8 turn the photo a quarter: width and height swap once rotated.
+  const turned = (meta.orientation ?? 1) >= 5;
+  const width = (turned ? meta.height : meta.width) ?? 0;
+  const height = (turned ? meta.width : meta.height) ?? 0;
   const pad = 15; // thousandths: the model's edges are approximate
   const x0 = Math.floor((Math.max(0, box.left - pad) / 1000) * width);
   const y0 = Math.floor((Math.max(0, box.top - pad) / 1000) * height);
   const x1 = Math.ceil((Math.min(1000, box.right + pad) / 1000) * width);
   const y1 = Math.ceil((Math.min(1000, box.bottom + pad) / 1000) * height);
-  const crop = await sharp(rotated.data).extract({ left: x0, top: y0, width: Math.max(1, x1 - x0), height: Math.max(1, y1 - y0) }).toBuffer();
-  return normalizeImage(crop);
+  return sharp(input, { limitInputPixels: 40_000_000 })
+    .rotate()
+    .extract({ left: x0, top: y0, width: Math.max(1, Math.min(width, x1) - x0), height: Math.max(1, Math.min(height, y1) - y0) })
+    .resize({ width: CROP_MAX_EDGE, height: CROP_MAX_EDGE, fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 90 })
+    .toBuffer();
 }
 
 /** A PDF by its magic bytes ("%PDF-"); it is never decoded here, only passed to the reader. */

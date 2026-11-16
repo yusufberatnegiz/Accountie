@@ -18,7 +18,7 @@ const Z_SAMPLE = { total: 120000, cash: 20000 };
 const rateOf = (key: string) => Number(/:(\d+)$/.exec(key)?.[1] ?? 20);
 
 const GROUPS: { kind: RuleKind; title: string; text: string; first: string; caption: (r: RuleRow) => string }[] = [
-  { kind: "expense", title: "Gider hesapları", text: "Fiş türüne göre borç satırına yazılan hesap.", first: "meal", caption: (r) => `${r.label} fişi` },
+  { kind: "expense", title: "Gider hesapları", text: "Fiş türüne göre borç satırına yazılan hesap. Firmanın Luca planı çekildiyse hesaplar o plandan seçilir; kaydetmeniz gerekmez.", first: "meal", caption: (r) => (r.key === "kkeg" ? "Binek araç fişinin %30'u" : `${r.label} fişi`) },
   { kind: "vat", title: "İndirilecek KDV", text: "Fişteki KDV oranına göre 191 hesabı. KDV yeniden hesaplanmaz, fişteki tutar yazılır.", first: "10", caption: (r) => `${r.label} içeren fiş` },
   { kind: "payment", title: "Ödeme ve alacak", text: "Ödeme şekline göre alacak satırına yazılan hesap. Fiş ekranında fiş başına değiştirilebilir.", first: "card", caption: (r) => PAID[r.key] ?? r.label },
   { kind: "setting", title: "Belge türü", text: "Luca'daki BT sütununa yazılır. Yazar kasa fişi için ÖK; faturalar (bilet, otel, e-Arşiv, yurt dışı) ve Z raporunun kendi BT'si var.", first: "documentType", caption: (r) => `${r.label}: ${r.accountCode}` },
@@ -50,14 +50,14 @@ export function RulesEditor({ rows: initial, plan = [] }: { rows: RuleRow[]; pla
     setNote(null);
     const bad = rows.find((r) => r.kind === kind && invalid(r, names));
     if (bad) {
-      setNote({ kind, text: invalid(bad) ? "Hesap kodu 770.08 biçiminde olmalı." : `${bad.accountCode} firmanın Luca planında yok. Plandaki bir kodu seçin.`, error: true });
+      setNote({ kind, text: !bad.accountCode ? `${bad.label}: firmanın Luca planında uyan hesap bulunamadı. Plandan bir kod seçin.` : invalid(bad) ? "Hesap kodu 770.08 biçiminde olmalı." : `${bad.accountCode} firmanın Luca planında yok. Plandaki bir kodu seçin.`, error: true });
       // Let React paint aria-invalid first, then jump to the field the user must fix.
       requestAnimationFrame(() => document.querySelector<HTMLInputElement>(`#kural-${kind} [aria-invalid="true"]`)?.focus());
       return;
     }
     const next = saved.map((s) => (s.kind === kind ? rows.find((r) => same(r, s)) ?? s : s));
     setBusy(kind);
-    const res = await fetch("/api/account-rules", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ rows: next }) }).catch(() => null);
+    const res = await fetch("/api/account-rules", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ rows: next.filter((r) => r.kind === kind) }) }).catch(() => null);
     setBusy(null);
     if (res?.ok) {
       setSaved(next);

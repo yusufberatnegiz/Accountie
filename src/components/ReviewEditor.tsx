@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition, ViewTransition } from "react";
 import type { ReceiptDetail, VendorRule } from "@/db/queries";
-import { ACCOUNT_CODE_PATTERN, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type Account, type PaymentMethod, type Rules } from "@/lib/default-rules";
+import { ACCOUNT_CODE_PATTERN, CATEGORIES, KKEG_KEY, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type Account, type PaymentMethod, type Rules } from "@/lib/default-rules";
+import { fromPassengerCar, isPassengerCar, PASSENGER_CAR_KKEG_PERCENT, toPassengerCar } from "@/lib/vehicle";
 import { approvalProblem, type JournalLine } from "@/lib/journal";
 import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount, parseTrAmount } from "@/lib/money";
@@ -266,6 +267,16 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     }
   };
   const addLine = () => setLines((ls) => [...ls, { ...ls[0], key: nextKey.current++, accountCode: "", accountName: "", debit: "", credit: "" }]);
+  // A vehicle cost asks whether the vehicle is a passenger car: binek moves 30% of the expense and its KDV to KKEG (src/lib/vehicle.ts).
+  const kkeg = rules.expense[KKEG_KEY];
+  const binek = !!kkeg && isPassengerCar(parsed, kkeg);
+  const vehicle = kind === "receipt" && !!kkeg && (binek || !!CATEGORIES.find((c) => c.key === receipt.category)?.vehicle);
+  const setBinek = (on: boolean) => {
+    if (invalid || !kkeg || on === binek) return;
+    const amounts = lines.map((l) => ({ ...l, debitKurus: kurus(l.debit), creditKurus: kurus(l.credit) }));
+    const next = on ? toPassengerCar(amounts, kkeg, (from) => ({ ...from, key: nextKey.current++ })) : fromPassengerCar(amounts, kkeg, receipt.lines);
+    setLines(next.map(({ debitKurus, creditKurus, ...l }) => ({ ...l, debit: debitKurus ? formatTrAmount(debitKurus) : "", credit: creditKurus ? formatTrAmount(creditKurus) : "" })));
+  };
 
   async function call(url: string, init?: RequestInit): Promise<boolean> {
     const res = await fetch(url, init).catch(() => null);
@@ -414,7 +425,17 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
                 </select>
               </label>
             ) : null}
+            {editable && vehicle ? (
+              <div className="inline-field vehicle-field">
+                <span id="arac-turu">Araç</span>
+                <span className="seg" role="group" aria-labelledby="arac-turu" aria-describedby={binek ? "binek-not" : undefined}>
+                  <button className="side-opt" type="button" aria-pressed={!binek} disabled={invalid || working} onClick={() => setBinek(false)}>Ticari</button>
+                  <button className="side-opt" type="button" aria-pressed={binek} disabled={invalid || working} onClick={() => setBinek(true)}>Binek</button>
+                </span>
+              </div>
+            ) : null}
           </div>
+          {binek && kkeg ? <p id="binek-not" className="muted small vehicle-note">Binek: gider ve KDV&apos;nin %{PASSENGER_CAR_KKEG_PERCENT}&apos;u <span className="tnum" translate="no">{kkeg.code}</span> {kkeg.name} satırına yazıldı (GVK 40/5, KDVK 30/d).</p> : null}
           {/* Locked: the header fields every line carries, one strip over the lines in the balance strip's rhythm. */}
           {!editable ? (
             <dl className="head-strip" aria-label="Fiş bilgileri">

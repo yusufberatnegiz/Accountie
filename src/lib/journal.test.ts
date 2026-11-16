@@ -24,7 +24,8 @@ describe("buildJournalLines", () => {
       { accountCode: "331.01", accountName: "Ortaklara Borçlar", debitKurus: 0, creditKurus: 872500, description: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", documentNo: "0047", documentDate: "2026-09-05", documentType: "ÖK", quantity: 0, babs: false },
     ]);
     expect(result.balanced).toBe(true);
-    expect(warningCodes(result)).toEqual(["meal"]);
+    // Ağırlama is no longer warned about.
+    expect(warningCodes(result)).toEqual([]);
   });
 
   it("çok oranlı fişte her oran için gider ve 191 satırı açar", () => {
@@ -97,9 +98,9 @@ describe("buildJournalLines", () => {
     expect(result.balanced).toBe(false);
   });
 
-  it("araç kategorisinde binek araç uyarısı verir", () => {
+  it("araç kategorisinde uyarı vermez; binek mi ticari mi fiş ekranında seçilir", () => {
     const result = buildJournalLines({ ...sample, category: "fuel", vatLines: [{ rate: 20, grossKurus: 120000, vatKurus: 20000 }], totalKurus: 120000 }, DEFAULT_RULES);
-    expect(warningCodes(result)).toEqual(["vehicle"]);
+    expect(warningCodes(result)).toEqual([]);
   });
 
   it("kullanıcının kural tablosunu kullanır", () => {

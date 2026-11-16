@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { listReceipts, ReceiptStatus } from "@/db/queries";
-import { BulkApproveButton } from "@/components/BulkApproveButton";
+import { BulkActions } from "@/components/BulkActions";
 import { CaptureButton } from "@/components/CaptureButton";
 import { ExportButton } from "@/components/ExportButton";
 import { InstallHint } from "@/components/InstallHint";
@@ -36,6 +36,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
   const drafts = count("draft");
   // Only drafts without a single warning; the rest still need a look on their own screen.
   const clean = tab.status === "draft" || !tab.status ? receipts.filter((r) => r.status === "draft" && r.warnings.length === 0) : [];
+  const shownDrafts = receipts.filter((r) => r.status === "draft");
   // Under Tümü only approved and exported receipts count, so a draft never reads as a booked figure.
   const counted = tab.status ? receipts : receipts.filter((r) => r.status !== "draft");
   // A Z report is sales, not an expense: it stays out of the KDV sum.
@@ -124,7 +125,9 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
           </table>
         )}
         <p className="side-links small list-links"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
-        {clean.length > 1 ? <div className="list-foot"><BulkApproveButton receiptIds={clean.map((r) => r.id)} /></div> : null}
+        {/* The drafts this list shows (this month, this tab): misread ones are cleared in one go; approved ones are never touched. */}
+        {/* Stays while the tab can hold drafts, so its status line outlives the buttons it reports on. */}
+        {tab.status === "draft" || !tab.status ? <BulkActions approveIds={clean.map((r) => r.id)} deleteIds={shownDrafts.map((r) => r.id)} /> : null}
         {tab.status === "exported" && receipts.length > 0 ? (
           <div className="list-foot desktop-only">
             {/* shortcut: re-downloads only the newest 50 (one Luca file); older ones are re-downloaded one by one from the receipt page. */}

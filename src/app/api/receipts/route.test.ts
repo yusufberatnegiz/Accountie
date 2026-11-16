@@ -4,7 +4,7 @@ vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), createReceipt: vi.fn(), 
 const session = vi.hoisted(() => ({ createdAt: new Date(0) }));
 vi.mock("@/lib/auth/session", () => ({ getUserId: async () => "user-1", getSessionUser: async () => ({ id: "user-1", createdAt: session.createdAt }) }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
-vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn() }));
+vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(), STRONG_READ_ABOVE: 4 }));
 vi.mock("@/lib/tcmb", () => ({ tcmbRate: vi.fn(async () => ({ rate: 50, bulletinDate: "2026-10-30" })) }));
 vi.mock("@/lib/image", async (orig) => ({ ...(await orig<typeof import("@/lib/image")>()), normalizeImage: async (b: Buffer) => b, cropReceipt: vi.fn(async () => Buffer.from("crop")) }));
 
@@ -19,7 +19,7 @@ const read = (over: Record<string, unknown>) => ({
   extraction: {
     vendorName: "x", taxOffice: null, taxNumber: null, date: "31.10.2026", time: null, receiptNo: null, zNo: null, ekuNo: null, vatLines: [],
     total: "100,00", paymentMethod: "card" as const, category: "other" as const, unreadableFields: [], documentKind: "receipt" as const,
-    currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, ...over,
+    currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false, ...over,
   },
 });
 const pdf = () => {
@@ -77,8 +77,8 @@ describe("POST /api/receipts", () => {
       ok: true, model: "m", fallback: true, inputTokens: 1, outputTokens: 1, problems: [],
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null, receiptNo: "0047",
-        zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null,
+        zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18", net: null }], total: "8.725,00",
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false,
       },
     });
     const res = await POST(jpeg());
@@ -98,9 +98,20 @@ describe("POST /api/receipts", () => {
     expect((await res.json()).ids).toEqual(["r-1", "r-2", "r-3"]);
     expect(extractReceipt).toHaveBeenCalledTimes(3);
     expect(vi.mocked(extractReceipt).mock.calls.every(([b]) => b.toString() === "crop")).toBe(true);
+    // Three receipts: each still read by the cheaper model first.
+    expect(vi.mocked(extractReceipt).mock.calls.every((c) => c[3] === false)).toBe(true);
     // The photo counts once; each further receipt is one more read on the user's and the global limit.
     const kinds = vi.mocked(hitRateLimit).mock.calls.map(([k]) => k.split(":")[0]);
     expect(kinds).toEqual(["receipt", "receiptIp", "receiptGlobal", "receipt", "receiptGlobal", "receipt", "receiptGlobal"]);
+  });
+
+  it("dörtten çok fişli karede her fişi doğrudan güçlü model okur", async () => {
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(createReceipt).mockResolvedValue("r-1");
+    vi.mocked(locateReceipts).mockResolvedValue([0, 120, 240, 360, 480].map((left) => ({ left, top: 0, right: left + 100, bottom: 1000 })));
+    await POST(jpeg());
+    expect(extractReceipt).toHaveBeenCalledTimes(5);
+    expect(vi.mocked(extractReceipt).mock.calls.every((c) => c[3] === true)).toBe(true);
   });
 
   it("sınır dolunca karedeki kalan fişleri okumaz", async () => {
@@ -108,7 +119,8 @@ describe("POST /api/receipts", () => {
     vi.mocked(createReceipt).mockResolvedValue("r-1");
     vi.mocked(locateReceipts).mockResolvedValue([{ left: 0, top: 0, right: 400, bottom: 1000 }, { left: 500, top: 0, right: 900, bottom: 1000 }]);
     const res = await POST(jpeg());
-    expect((await res.json()).ids).toEqual(["r-1"]);
+    // The receipt left out is counted, so the screen can say it was not read.
+    expect(await res.json()).toMatchObject({ ids: ["r-1"], limited: 1 });
     expect(extractReceipt).toHaveBeenCalledTimes(1);
   });
 

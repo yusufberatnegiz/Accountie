@@ -31,8 +31,6 @@ export type JournalLine = {
 export type Warning = { code: string; message: string };
 
 export const WARNING_MESSAGES: Record<string, string> = {
-  vehicle: "Binek araç gideri ise %30 KKEG ve KDV indirimi kısıtlarını kontrol edin.",
-  meal: "Ağırlama işle ilgili değilse KDV indirilemez (KDVK 30/d). İşle ilgisini belgeleyin.",
   lodging_tax: "Konaklama vergisi KDV değildir, 191 hesabına yazılmaz.",
   legacy_rate: "Fişte güncel olmayan KDV oranı var (%8 veya %18). 191 hesabını seçin.",
   unknown_rate: "Kural tablosunda olmayan KDV oranı var. 191 hesabını seçin.",
@@ -54,10 +52,16 @@ export const WARNING_MESSAGES: Record<string, string> = {
   foreign_vat_charged: "Faturada KDV görünüyor; sorumlu sıfatıyla KDV hesaplanmadı. Satırları faturayla karşılaştırın.",
   foreign_withholding: "Yurt dışından alınan hizmette gelir veya kurumlar vergisi stopajı gerekebilir; muhtasarı kontrol edin.",
   z_payment_split: "Nakit ve kartlı tahsilat Z raporundan tam okunamadı ya da toplamı tutmuyor. Tahsilat satırlarını kontrol edin.",
+  domestic_currency: "Belge TL dışında bir para biriminde. Tutarlar TL değildir; TL karşılıklarını belgeden girin.",
+  no_fiscal_value: "Belgede \"MALİ DEĞERİ YOKTUR\" yazıyor: gider ve KDV belgesi değildir. Asıl fişi ya da faturayı yükleyin.",
+  plan_no_account: "Firmanın Luca planında bu satıra uyan hesap bulunamadı. Hesap kodunu plandan seçin.",
   z_unknown_rate: "Kural tablosunda olmayan KDV oranı var. Satış ve KDV hesabını seçin.",
 };
 
 export const warn = (code: string): Warning => ({ code, message: WARNING_MESSAGES[code] });
+
+/** Warnings no longer given; receipts read before keep them in the database, so they are dropped where shown. Binek is now a choice on the review screen. */
+export const RETIRED_WARNINGS: readonly string[] = ["vehicle", "meal"];
 
 export function buildJournalLines(receipt: ReceiptData, rules: Rules): { lines: JournalLine[]; warnings: Warning[]; balanced: boolean } {
   const warnings: Warning[] = [];
@@ -115,8 +119,7 @@ export function buildJournalLines(receipt: ReceiptData, rules: Rules): { lines: 
   lines.push(line(credit, 0, total));
 
   const categoryWarning = CATEGORIES.find((c) => c.key === receipt.category)?.warning;
-  // Meal is only questionable when a partner paid; company money is fine.
-  if (categoryWarning && (categoryWarning !== "meal" || credit.code.startsWith("331"))) warnings.push(warn(categoryWarning));
+  if (categoryWarning) warnings.push(warn(categoryWarning));
 
   const unique = warnings.filter((w, i) => warnings.findIndex((x) => x.code === w.code) === i);
   return { lines, warnings: unique, balanced: isBalanced(lines) };

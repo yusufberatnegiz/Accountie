@@ -25,7 +25,7 @@ describe("ana sayfa fiş tezgâhı örnekleri", () => {
     for (const s of SAMPLES) for (const p of PAYMENTS) {
       const r = journalFor(s, p.id);
       expect(r.balanced).toBe(true);
-      expect(r.warnings.map((w) => w.code).filter((c) => c !== "meal")).toEqual([]);
+      expect(r.warnings).toEqual([]);
     }
   });
 
@@ -45,12 +45,6 @@ describe("ana sayfa fiş tezgâhı örnekleri", () => {
     expect(r(AKARYAKIT)).toEqual([["770.01", 179167, 0], ["191.03.20", 35833, 0], ["331.01", 0, 215000]]);
     expect(r(KAFE)).toEqual([["770.08", 24091, 0], ["191.03.10", 2409, 0], ["331.01", 0, 26500]]);
     expect(r(OTOPARK)).toEqual([["770.04", 10000, 0], ["191.03.20", 2000, 0], ["331.01", 0, 12000]]);
-  });
-
-  it("ağırlama uyarısı ortağın kartında çıkar, şirket kartında çıkmaz", () => {
-    const codes = (p: Payment["id"]) => journalFor(SAMPLES[0], p).warnings.map((w) => w.code);
-    expect(codes("partner")).toContain("meal");
-    expect(codes("company")).not.toContain("meal");
   });
 
   it("Luca hesap adları sayfada yazım kuralıyla görünür", () => {

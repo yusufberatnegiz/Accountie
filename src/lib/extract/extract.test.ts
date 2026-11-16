@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import Anthropic from "@anthropic-ai/sdk";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { extractReceipt, type ExtractClient } from "./extract";
@@ -12,7 +13,7 @@ const goodOutput: ReceiptExtraction = {
   receiptNo: "0047",
   zNo: null,
   ekuNo: "0001",
-  vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }],
+  vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18", net: null }],
   total: "8.725,00",
   paymentMethod: "card",
   category: "meal",
@@ -21,7 +22,7 @@ const goodOutput: ReceiptExtraction = {
   currency: "TRY",
   cashTotal: null,
   cardTotal: null,
-  invoicedTotal: null,
+  invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false,
 };
 
 // checkExtraction flags dates far from "today"; pin it so the sample receipt stays current.
@@ -59,9 +60,67 @@ describe("toReceiptData", () => {
     });
   });
   it("okunamayan tutarı uydurmaz", () => {
-    const data = toReceiptData({ ...goodOutput, total: "8.7?5,00", vatLines: [{ rate: 10, gross: "8.725,00", vat: null }] });
+    const data = toReceiptData({ ...goodOutput, total: "8.7?5,00", vatLines: [{ rate: 10, gross: "8.725,00", vat: null, net: null }] });
     expect(data.totalKurus).toBeNull();
     expect(data.vatLines[0].vatKurus).toBeNull();
+  });
+});
+
+// The A101 e-Arşiv bilgi fişi a user sent: no per-rate breakdown, item discounts ("-D") on %20 items, TOPKDV 58,78, TOPLAM 474,00.
+const a101: ReceiptExtraction = {
+  ...goodOutput, documentKind: "domestic_invoice", vendorName: "A101 YENİ MAĞAZACILIK A.Ş.", taxNumber: null, date: "30.07.2026", receiptNo: "0024",
+  category: "food_grocery", vatLines: [], total: "474,00", totalVat: "58,78", unreadableFields: [],
+  lineItems: [
+    { rate: 20, amount: "65,00" }, { rate: 20, amount: "119,00" }, { rate: 20, amount: "119,00" }, { rate: 1, amount: "59,50" },
+    { rate: 1, amount: "69,50" }, { rate: 20, amount: "275,00" }, { rate: 20, amount: "1,00" },
+  ],
+  discounts: [{ rate: 20, amount: "146,00" }, { rate: 20, amount: "44,00" }, { rate: 20, amount: "44,00" }],
+};
+
+describe("indirimli fiş", () => {
+  it("kırılımsız fişte kalemlerden indirimleri oranına göre düşer; KDV TOPKDV ile tutar", () => {
+    const data = toReceiptData(a101);
+    expect(data.vatLines).toEqual([{ rate: 20, grossKurus: 34500, vatKurus: 5750 }, { rate: 1, grossKurus: 12900, vatKurus: 128 }]);
+    expect(checkExtraction(a101)).toEqual([]);
+  });
+  it("indirimden önceki kırılımı yazan fişte indirimi düşer", () => {
+    const x = { ...a101, lineItems: [], vatLines: [{ rate: 20, gross: "579,00", vat: "96,50", net: null }, { rate: 1, gross: "129,00", vat: "1,28", net: null }] };
+    expect(toReceiptData(x).vatLines).toEqual([{ rate: 20, grossKurus: 34500, vatKurus: 5750 }, { rate: 1, grossKurus: 12900, vatKurus: 128 }]);
+  });
+  it("sepet indirimini oranlara tutarları oranında dağıtır", () => {
+    const x = { ...a101, total: "474,00", totalVat: null, noFiscalValue: false, discounts: [{ rate: null, amount: "234,00" }] };
+    const lines = toReceiptData(x).vatLines;
+    expect(lines.reduce((s, v) => s + v.grossKurus, 0)).toBe(47400);
+    expect(lines.map((v) => v.grossKurus)).toEqual([38764, 8636]);
+  });
+  it("indirim yanlış orandan düşülmüşse TOPKDV tutmaz ve Sonnet denenir", () => {
+    const wrong = { ...a101, discounts: [{ rate: 1, amount: "100,00" }, { rate: 20, amount: "134,00" }] };
+    expect(checkExtraction(wrong)).toContain("vat_mismatch");
+  });
+  it("e-faturada oran başına matrah ve KDV'den KDV dahil tutarı kurar", () => {
+    const x = { ...a101, lineItems: [], discounts: [], totalVat: "250,00", total: "1.750,00",
+      vatLines: [{ rate: 20, gross: null, vat: "200,00", net: "1.000,00" }, { rate: 10, gross: null, vat: "50,00", net: "500,00" }] };
+    expect(toReceiptData(x).vatLines).toEqual([{ rate: 20, grossKurus: 120000, vatKurus: 20000 }, { rate: 10, grossKurus: 55000, vatKurus: 5000 }]);
+    expect(checkExtraction(x)).toEqual([]);
+  });
+  it("iptal edilen satırı (eksi tutar) düşer; indirim kalemden büyükse sonucu kabul etmez", () => {
+    const x = { ...a101, discounts: [], totalVat: null, total: "50,00", lineItems: [{ rate: 20, amount: "80,00" }, { rate: 20, amount: "-30,00" }] };
+    expect(toReceiptData(x).vatLines).toEqual([{ rate: 20, grossKurus: 5000, vatKurus: null }]);
+    const neg = { ...a101, totalVat: null, total: "100,00", lineItems: [{ rate: 20, amount: "110,00" }, { rate: 1, amount: "5,00" }], discounts: [{ rate: 1, amount: "15,00" }] };
+    expect(checkExtraction(neg)).toContain("total_mismatch");
+  });
+  it("kalem kalem yuvarlanan TOPKDV'yi kabul eder ve 191'e belgedeki KDV yazılır", () => {
+    const items = Array.from({ length: 40 }, () => ({ rate: 1, amount: "1,50" }));
+    const x = { ...a101, discounts: [], lineItems: items, total: "60,00", totalVat: "0,40" };
+    expect(toReceiptData(x).vatLines).toEqual([{ rate: 1, grossKurus: 6000, vatKurus: 40 }]);
+    expect(checkExtraction(x)).toEqual([]);
+  });
+  it("TL dışı yurt içi faturayı işaretler; Z raporunda TOPKDV denetlenmez", () => {
+    expect(checkExtraction({ ...a101, currency: "EUR" })).toContain("domestic_currency");
+    expect(checkExtraction({ ...goodOutput, documentKind: "z_report", cashTotal: "8.725,00", totalVat: "45.300,00" })).not.toContain("vat_mismatch");
+  });
+  it("indirim okunmazsa toplam tutmaz", () => {
+    expect(checkExtraction({ ...a101, discounts: [] })).toContain("total_mismatch");
   });
 });
 
@@ -73,7 +132,7 @@ describe("checkExtraction", () => {
     expect(checkExtraction({ ...goodOutput, total: "8.752,00" })).toContain("total_mismatch");
     expect(checkExtraction({ ...goodOutput, taxNumber: "0790014527" })).toContain("tax_number_invalid");
     expect(checkExtraction({ ...goodOutput, date: "31.02.2026" })).toContain("date_invalid");
-    expect(checkExtraction({ ...goodOutput, vatLines: [{ rate: 10, gross: "8.725,00", vat: "893,18" }] })).toContain("vat_mismatch");
+    expect(checkExtraction({ ...goodOutput, vatLines: [{ rate: 10, gross: "8.725,00", vat: "893,18", net: null }] })).toContain("vat_mismatch");
   });
   it("KDV kırılımı boşsa sorun bildirir, böylece Sonnet denenir", () => {
     expect(checkExtraction({ ...goodOutput, vatLines: [] })).toEqual(["total_mismatch"]);
@@ -110,7 +169,7 @@ describe("ReceiptExtractionSchema sınırları", () => {
   it("anlamsız KDV oranını, uzun fiş no'yu ve aşırı satırı reddeder", () => {
     expect(ReceiptExtractionSchema.safeParse(goodOutput).success).toBe(true);
     expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: [{ rate: -100, gross: "1,00", vat: null }] }).success).toBe(false);
-    expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: [{ rate: 150, gross: "1,00", vat: null }] }).success).toBe(false);
+    expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: [{ rate: 150, gross: "1,00", vat: null, net: null }] }).success).toBe(false);
     expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, receiptNo: "1".repeat(41) }).success).toBe(false);
     expect(ReceiptExtractionSchema.safeParse({ ...goodOutput, vatLines: Array(11).fill(goodOutput.vatLines[0]) }).success).toBe(false);
   });
@@ -136,6 +195,24 @@ describe("extractReceipt", () => {
     expect(parse.mock.calls[1][0].model).toBe("claude-sonnet-5-5");
     expect(parse.mock.calls[1][0]).not.toHaveProperty("thinking");
     expect(result).toMatchObject({ ok: true, model: "claude-sonnet-5-5", problems: [], fallback: true, inputTokens: 6000, outputTokens: 600 });
+  });
+
+  it("çok fişli fotoğrafın kırpıntısını doğrudan Sonnet okur", async () => {
+    const { client, parse } = mockClient(response(goodOutput));
+    const result = await extractReceipt(image, client, "image/jpeg", true);
+    expect(parse).toHaveBeenCalledTimes(1);
+    expect(parse.mock.calls[0][0].model).toBe("claude-sonnet-5-5");
+    expect(result).toMatchObject({ ok: true, model: "claude-sonnet-5-5", fallback: false });
+  });
+
+  it("çok fişli kırpıntıda Sonnet hata verirse Haiku okur", async () => {
+    const err = new Anthropic.InternalServerError(500, undefined, "boom", new Headers());
+    const { client, parse } = mockClient(err, response(goodOutput));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = await extractReceipt(image, client, "image/jpeg", true);
+    expect(parse.mock.calls.map((c) => c[0].model)).toEqual(["claude-sonnet-5-5", "claude-haiku-5-5"]);
+    expect(result).toMatchObject({ ok: true, model: "claude-haiku-5-5", fallback: true });
+    log.mockRestore();
   });
 
   it("Sonnet de geçemezse sorunlarla döner", async () => {
@@ -182,20 +259,29 @@ describe("extractReceipt", () => {
 
 describe("locateReceipts", () => {
   const boxes = (...b: { left: number; top: number; right: number; bottom: number }[]) => ({ parsed_output: { receipts: b }, stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } });
-  it("returns the boxes only when the photo holds more than one receipt", async () => {
+  // 2000x1000 photo: pixel edges come back as thousandths of the width and height.
+  const photo = () => sharp({ create: { width: 2000, height: 1000, channels: 3, background: "#fff" } }).jpeg().toBuffer();
+  it("piksel kutularını binde birlere çevirir; yalnız birden çok fiş varsa döner", async () => {
     const { locateReceipts } = await import("./extract");
-    const two = mockClient(boxes({ left: 0, top: 0, right: 400, bottom: 1000 }, { left: 500, top: 0, right: 900, bottom: 1000 }));
-    expect(await locateReceipts(Buffer.from("x"), two.client)).toHaveLength(2);
-    const one = mockClient(boxes({ left: 0, top: 0, right: 1000, bottom: 1000 }));
-    expect(await locateReceipts(Buffer.from("x"), one.client)).toEqual([]);
+    const two = mockClient(boxes({ left: 0, top: 0, right: 800, bottom: 1000 }, { left: 1000, top: 0, right: 1800, bottom: 1000 }));
+    expect(await locateReceipts(await photo(), two.client)).toEqual([{ left: 0, top: 0, right: 400, bottom: 1000 }, { left: 500, top: 0, right: 900, bottom: 1000 }]);
+    expect(two.parse.mock.calls[0][0].system).toContain("2000x1000");
+    const one = mockClient(boxes({ left: 0, top: 0, right: 2000, bottom: 1000 }));
+    expect(await locateReceipts(await photo(), one.client)).toEqual([]);
     // A sliver the model marks by mistake does not split the photo.
-    const sliver = mockClient(boxes({ left: 0, top: 0, right: 900, bottom: 1000 }, { left: 950, top: 0, right: 960, bottom: 1000 }));
-    expect(await locateReceipts(Buffer.from("x"), sliver.client)).toEqual([]);
+    const sliver = mockClient(boxes({ left: 0, top: 0, right: 1800, bottom: 1000 }, { left: 1900, top: 0, right: 1920, bottom: 1000 }));
+    expect(await locateReceipts(await photo(), sliver.client)).toEqual([]);
+  });
+  it("sınırdan fazla kutu gelince ilk on fişi okur, fotoğrafı tek fiş saymaz", async () => {
+    const { locateReceipts } = await import("./extract");
+    const many = mockClient(boxes(...Array.from({ length: 12 }, (_, i) => ({ left: i * 160, top: 0, right: i * 160 + 150, bottom: 1000 }))));
+    expect(await locateReceipts(await photo(), many.client)).toHaveLength(10);
   });
   it("reads the photo whole when the call fails", async () => {
     const { locateReceipts } = await import("./extract");
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     const failed = mockClient(new Anthropic.APIConnectionError({ message: "down" }));
+    expect(await locateReceipts(await photo(), failed.client)).toEqual([]);
     expect(await locateReceipts(Buffer.from("x"), failed.client)).toEqual([]);
     log.mockRestore();
   });
