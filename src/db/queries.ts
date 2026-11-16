@@ -1,8 +1,8 @@
 // The only module that talks to the database (Supabase Postgres through its pooler). Every function takes the session user's id and filters by it.
 import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "drizzle-orm";
-import { DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
+import { CATEGORIES, DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import { fitRulesToPlan } from "@/lib/plan-suggest";
-import { RETIRED_WARNINGS, type JournalLine, type Warning } from "@/lib/journal";
+import { RETIRED_WARNINGS, warn, type JournalLine, type Warning } from "@/lib/journal";
 import { getDb } from "./index";
 import { accountRules, billingProfiles, creditBalances, creditLedger, extensionTokens, firmAccounts, firmRules, firms, journalLines, payments, rateLimitHits, receipts, vendorRules } from "./schema";
 
@@ -197,6 +197,8 @@ const listColumns = {
   ...summaryColumns,
   category: receipts.category,
   warnings: receipts.warnings,
+  // A passenger car's draft already split to KKEG (src/lib/vehicle.ts): its vehicle is chosen.
+  binek: sql<boolean>`exists (select 1 from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code like '689%')`,
   invoice: sql<boolean>`coalesce(${receipts.extraction}->>'documentKind' = 'domestic_invoice', false)`,
   expenseCode: sql<string | null>`(select jl.account_code from journal_lines jl where jl.receipt_id = ${receipts.id} and jl.user_id = ${receipts.userId} and jl.debit_kurus > 0 and jl.account_code not like '191%' order by jl.line_no limit 1)`,
   // The 191 VAT debits, so the list never sums gross amounts as KDV.
@@ -211,10 +213,18 @@ export async function listReceipts(userId: string, firmId: string, { status, mon
   return getDb().select(listColumns).from(receipts)
     .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), status ? eq(receipts.status, status) : undefined, month ? eq(RECEIPT_MONTH, month) : undefined))
     .orderBy(desc(receipts.createdAt)).limit(200)
-    .then((rows) => rows.map((r) => ({ ...r, warnings: current(r.warnings) })));
+    .then((rows) => rows.map(({ binek, ...r }) => ({ ...r, warnings: current(r.warnings, r, binek) })));
 }
 
-const current = (warnings: Warning[]) => warnings.filter((w) => !RETIRED_WARNINGS.includes(w.code));
+/**
+ * The warnings a receipt shows now: retired ones dropped, and on a vehicle-cost draft whose vehicle is not chosen yet (no KKEG line)
+ * the request to choose it, which also keeps it out of the bulk approval.
+ */
+function current(warnings: Warning[], r: { status: string; category: string | null }, binek: boolean): Warning[] {
+  const kept = warnings.filter((w) => !RETIRED_WARNINGS.includes(w.code));
+  const vehicle = CATEGORIES.some((c) => c.key === r.category && c.vehicle);
+  return r.status === "draft" && vehicle && !binek ? [warn("vehicle_choice"), ...kept] : kept;
+}
 
 export async function getReceipt(userId: string, id: string) {
   const db = getDb();
@@ -223,7 +233,8 @@ export async function getReceipt(userId: string, id: string) {
   if (!receipt) return null;
   const lines: JournalLine[] = await db.select(lineColumns).from(journalLines)
     .where(and(eq(journalLines.receiptId, id), eq(journalLines.userId, userId))).orderBy(asc(journalLines.lineNo));
-  return { ...receipt, warnings: current(receipt.warnings), lines };
+  const binek = lines.some((l) => l.debitKurus > 0 && l.accountCode.startsWith("689"));
+  return { ...receipt, warnings: current(receipt.warnings, receipt, binek), lines };
 }
 
 export type ReceiptDetail = NonNullable<Awaited<ReturnType<typeof getReceipt>>>;

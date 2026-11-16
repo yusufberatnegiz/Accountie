@@ -81,7 +81,7 @@ describe("POST /api/receipts", () => {
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
         receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18", net: null }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false,
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false, payments: [],
       },
     });
     expect((await receiptsRoute.POST(upload())).status).toBe(201);
@@ -96,7 +96,7 @@ describe("POST /api/receipts", () => {
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null,
         receiptNo: "0047", zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18", net: null }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false,
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false, payments: [],
       },
     });
     const res = await receiptsRoute.POST(upload());

@@ -12,6 +12,8 @@ export type ReceiptData = {
   vatLines: VatLine[];
   totalKurus: number | null;
   paymentMethod: PaymentMethod;
+  /** Paid more than one way (cash and card, points, a gift card): one credit line per way. Adds up to the total. */
+  payments?: { method: PaymentMethod; kurus: number }[];
   category: string;
 };
 
@@ -54,6 +56,7 @@ export const WARNING_MESSAGES: Record<string, string> = {
   z_payment_split: "Nakit ve kartlı tahsilat Z raporundan tam okunamadı ya da toplamı tutmuyor. Tahsilat satırlarını kontrol edin.",
   domestic_currency: "Belge TL dışında bir para biriminde. Tutarlar TL değildir; TL karşılıklarını belgeden girin.",
   no_fiscal_value: "Belgede \"MALİ DEĞERİ YOKTUR\" yazıyor: gider ve KDV belgesi değildir. Asıl fişi ya da faturayı yükleyin.",
+  vehicle_choice: "Araç binek mi ticari mi? Yevmiye satırlarının üstündeki Araç seçiminden seçin; seçilmeden onaylanmaz.",
   plan_no_account: "Firmanın Luca planında bu satıra uyan hesap bulunamadı. Hesap kodunu plandan seçin.",
   z_unknown_rate: "Kural tablosunda olmayan KDV oranı var. Satış ve KDV hesabını seçin.",
 };
@@ -116,7 +119,9 @@ export function buildJournalLines(receipt: ReceiptData, rules: Rules): { lines: 
   }
 
   const credit = rules.payment[receipt.paymentMethod];
-  lines.push(line(credit, 0, total));
+  const split = receipt.payments && receipt.payments.reduce((s, p) => s + p.kurus, 0) === total ? receipt.payments : null;
+  if (split) for (const p of split) lines.push(line(rules.payment[p.method], 0, p.kurus));
+  else lines.push(line(credit, 0, total));
 
   const categoryWarning = CATEGORIES.find((c) => c.key === receipt.category)?.warning;
   if (categoryWarning) warnings.push(warn(categoryWarning));

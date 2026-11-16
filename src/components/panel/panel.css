@@ -231,6 +231,7 @@
 .seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius-control); background: var(--active); }
 .seg .side-opt { min-height: calc(var(--control-sm) - 4px); padding: 0 var(--s3); }
 .vehicle-note { margin: 0; padding: 0 var(--s5) var(--s3); }
+.mixed-payment { color: var(--ink); max-width: 260px; }
 .journal td, .journal th { padding: var(--s2) var(--s1); vertical-align: top; }
 .journal thead th { vertical-align: bottom; }
 .journal td:first-child, .journal th:first-child { padding-left: var(--s5); }

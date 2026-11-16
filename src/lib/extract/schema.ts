@@ -50,6 +50,10 @@ export const ReceiptExtractionSchema = z.object({
   cardTotal: z.string().max(40).nullable().describe("Yalnız Z raporu: kredi kartı ile tahsilat toplamı"),
   invoicedTotal: z.string().max(40).nullable().describe("Yalnız Z raporu: faturalı satış toplamı, yazıyorsa"),
   paymentMethod: z.enum(["cash", "card", "other"]).describe("NAKİT ise cash, banka veya kredi kartı ise card"),
+  payments: z.array(z.object({
+    method: z.enum(["cash", "card", "other"]).describe("NAKİT cash; kredi veya banka kartı card; puan, hediye çeki, yemek kartı, açık hesap other"),
+    amount: z.string().max(40).describe("Bu ödeme şekliyle ödenen tutar, yazıldığı gibi"),
+  })).max(6).describe("Fişte birden çok ödeme şekli varsa (nakit + kart, puan, hediye çeki, yemek kartı) her biri tutarıyla; tek ödeme şeklinde boş"),
   category: z.enum(CATEGORY_KEYS).describe(CATEGORY_GUIDE),
   noFiscalValue: z.boolean().describe("Belgede 'MALİ DEĞERİ YOKTUR' yazıyorsa true (sipariş belgesi, e-adisyon, yemek kartı ödeme belgesi, bilgi slibi)"),
   unreadableFields: z.array(z.string().max(100)).max(30).describe("Okunamayan veya fişte olmayan alanların adları"),
@@ -169,8 +173,20 @@ export function toReceiptData(x: ReceiptExtraction): ReceiptData {
     vatLines: vatLinesOf(x),
     totalKurus: amountOrNull(x.total),
     paymentMethod: x.paymentMethod,
+    payments: paymentsOf(x),
     category: x.category,
   };
+}
+
+/** A receipt paid more than one way, by method, when the parts read and add up to the total; otherwise none (one credit line). */
+function paymentsOf(x: ReceiptExtraction): { method: "cash" | "card" | "other"; kurus: number }[] | undefined {
+  const parts = (x.payments ?? []).map((p) => ({ method: p.method, kurus: amountOrNull(p.amount) }));
+  const total = amountOrNull(x.total);
+  if (parts.length < 2 || total === null || parts.some((p) => p.kurus === null || p.kurus <= 0)) return undefined;
+  const merged = new Map<"cash" | "card" | "other", number>();
+  for (const p of parts) merged.set(p.method, (merged.get(p.method) ?? 0) + p.kurus!);
+  if ([...merged.values()].reduce((s, n) => s + n, 0) !== total || merged.size < 2) return undefined;
+  return [...merged].map(([method, kurus]) => ({ method, kurus }));
 }
 
 const DAY_MS = 86_400_000;
@@ -216,6 +232,8 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
   if (unsure("vatLines") && x.vatLines.length > 0) add("vat_mismatch");
   if (unsure("date")) add("date_invalid");
   if (unsure("paymentMethod")) add("payment_unsure");
+  // Several ways of paying that do not add up to the total: the credit side cannot be split, so it is checked by hand.
+  if ((x.payments?.length ?? 0) > 1 && !data.payments) add("payment_unsure");
   if (unsure("receiptNo")) add("receipt_no_unsure");
   return problems;
 }

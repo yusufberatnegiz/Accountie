@@ -148,3 +148,15 @@ describe("approvalProblem", () => {
     expect(approvalProblem([debit, credit], new Set())).toBeNull();
   });
 });
+
+describe("karma ödeme", () => {
+  it("nakit ve kartla ödenen fişte her ödeme kendi alacak satırına yazılır", () => {
+    const r = buildJournalLines({ ...sample, payments: [{ method: "cash", kurus: 300000 }, { method: "card", kurus: 572500 }] }, DEFAULT_RULES);
+    expect(r.lines.filter((l) => l.creditKurus > 0).map((l) => [l.accountCode, l.creditKurus])).toEqual([["100.01", 300000], ["331.01", 572500]]);
+    expect(r.balanced).toBe(true);
+  });
+  it("toplamı tutmayan ödeme kırılımında tek alacak satırı kalır", () => {
+    const r = buildJournalLines({ ...sample, payments: [{ method: "cash", kurus: 100 }, { method: "card", kurus: 200 }] }, DEFAULT_RULES);
+    expect(r.lines.filter((l) => l.creditKurus > 0)).toHaveLength(1);
+  });
+});

@@ -45,7 +45,7 @@ const toLine = ({ key, debit, credit, ...rest }: EditLine): JournalLine => ({ ..
 // Warning codes that mean "the reader was unsure about this field".
 const AMOUNT_WARNINGS = ["amount_unreadable", "total_mismatch", "vat_mismatch", "vat_computed", "vat_missing", "rounding_adjusted", "extraction_failed"];
 // Warnings about one header field; they clear once that field is edited.
-const WARNING_FIELD: Record<string, string> = { date_invalid: "documentDate", date_unusual: "documentDate", receipt_no_unsure: "documentNo", payment_unsure: "credit" };
+const WARNING_FIELD: Record<string, string> = { date_invalid: "documentDate", date_unusual: "documentDate", receipt_no_unsure: "documentNo", payment_unsure: "credit", vehicle_choice: "vehicle" };
 
 type Source = "base" | "vat" | "total";
 /** Where a journal line's figure was read on the receipt: the fiş izi (docs/design/YON.md 5.3). */
@@ -60,6 +60,7 @@ export function problemTarget(problem: string, lines: JournalLine[] = [], totalK
   if (problem.startsWith("Evrak tarihi") || problem.startsWith("Satırlarda evrak tarihi")) return { id: "evrak-tarihi", action: "Evrak tarihini girin" };
   if (problem.startsWith("Evrak no")) return { id: "evrak-no", action: "Evrak numarasını girin" };
   if (problem.startsWith("Satır yok")) return { id: "satir-ekle", action: "Satır ekleyin" };
+  if (problem.startsWith("Araç")) return { id: "arac-ticari", action: "Araç türünü seçin" };
   if (problem.startsWith("Borç ile alacak") && totalKurus !== null) {
     const debitOff = lines.reduce((s, l) => s + l.debitKurus, 0) !== totalKurus;
     const creditOff = lines.reduce((s, l) => s + l.creditKurus, 0) !== totalKurus;
@@ -217,8 +218,16 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     const t = setTimeout(() => setTyping(false), 300);
     return () => clearTimeout(t);
   }, [typing, lines]);
-  const problem = invalid ? "Tutar biçimi hatalı." : approvalProblem(parsed);
+  // A vehicle cost asks whether the vehicle is a passenger car: binek moves 30% of the expense and its KDV to KKEG (src/lib/vehicle.ts).
+  const kkeg = rules.expense[KKEG_KEY];
+  const binek = !!kkeg && isPassengerCar(parsed, kkeg);
+  const vehicle = kind === "receipt" && !!kkeg && (binek || !!CATEGORIES.find((c) => c.key === receipt.category)?.vehicle);
+  // Not approved until the vehicle is chosen on this screen (Ticari counts once pressed); a binek split is a choice made.
+  const vehicleOpen = editable && vehicle && !binek && !seen.has("vehicle");
+  const problem = invalid ? "Tutar biçimi hatalı." : vehicleOpen ? "Araç binek mi ticari mi, seçin." : approvalProblem(parsed);
   const creditCode = lines.find(isPayment)?.accountCode ?? "";
+  // Paid more than one way (cash and card): each way has its own credit line, and one choice for all would merge them.
+  const mixedPayment = new Set(lines.filter(isPayment).map((l) => l.accountCode)).size > 1;
   const head = lines[0];
 
   const codes = receipt.warnings.map((w) => w.code);
@@ -267,11 +276,8 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     }
   };
   const addLine = () => setLines((ls) => [...ls, { ...ls[0], key: nextKey.current++, accountCode: "", accountName: "", debit: "", credit: "" }]);
-  // A vehicle cost asks whether the vehicle is a passenger car: binek moves 30% of the expense and its KDV to KKEG (src/lib/vehicle.ts).
-  const kkeg = rules.expense[KKEG_KEY];
-  const binek = !!kkeg && isPassengerCar(parsed, kkeg);
-  const vehicle = kind === "receipt" && !!kkeg && (binek || !!CATEGORIES.find((c) => c.key === receipt.category)?.vehicle);
   const setBinek = (on: boolean) => {
+    touch("vehicle");
     if (invalid || !kkeg || on === binek) return;
     const amounts = lines.map((l) => ({ ...l, debitKurus: kurus(l.debit), creditKurus: kurus(l.credit) }));
     const next = on ? toPassengerCar(amounts, kkeg, (from) => ({ ...from, key: nextKey.current++ })) : fromPassengerCar(amounts, kkeg, receipt.lines);
@@ -416,7 +422,9 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
         <section className="panel" aria-labelledby="satir-baslik">
           <div className="panel-head">
             <h2 id="satir-baslik">Yevmiye satırları</h2>
-            {editable && kind !== "z_report" ? (
+            {editable && kind !== "z_report" && mixedPayment ? (
+              <p className="inline-field"><span>Alacak hesabı</span><span className="mixed-payment">Karma ödeme: her ödeme şekli ayrı alacak satırında.</span></p>
+            ) : editable && kind !== "z_report" ? (
               <label className="inline-field"><span>Alacak hesabı {checkNote(headFlags.credit)}</span>
                 <select className="field" value={PAYMENT_ALTERNATIVES.some((a) => a.code === creditCode) ? creditCode : ""} {...flag(headFlags.credit)}
                   onChange={(e) => { touch("credit"); setCreditAccount(e.target.value); }}>
@@ -429,7 +437,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
               <div className="inline-field vehicle-field">
                 <span id="arac-turu">Araç</span>
                 <span className="seg" role="group" aria-labelledby="arac-turu" aria-describedby={binek ? "binek-not" : undefined}>
-                  <button className="side-opt" type="button" aria-pressed={!binek} disabled={invalid || working} onClick={() => setBinek(false)}>Ticari</button>
+                  <button id="arac-ticari" className="side-opt" type="button" aria-pressed={!binek && !vehicleOpen} disabled={invalid || working} onClick={() => setBinek(false)}>Ticari</button>
                   <button className="side-opt" type="button" aria-pressed={binek} disabled={invalid || working} onClick={() => setBinek(true)}>Binek</button>
                 </span>
               </div>

@@ -22,7 +22,7 @@ const goodOutput: ReceiptExtraction = {
   currency: "TRY",
   cashTotal: null,
   cardTotal: null,
-  invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false,
+  invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, noFiscalValue: false, payments: [],
 };
 
 // checkExtraction flags dates far from "today"; pin it so the sample receipt stays current.
@@ -88,7 +88,7 @@ describe("indirimli fiş", () => {
     expect(toReceiptData(x).vatLines).toEqual([{ rate: 20, grossKurus: 34500, vatKurus: 5750 }, { rate: 1, grossKurus: 12900, vatKurus: 128 }]);
   });
   it("sepet indirimini oranlara tutarları oranında dağıtır", () => {
-    const x = { ...a101, total: "474,00", totalVat: null, noFiscalValue: false, discounts: [{ rate: null, amount: "234,00" }] };
+    const x = { ...a101, total: "474,00", totalVat: null, noFiscalValue: false, payments: [], discounts: [{ rate: null, amount: "234,00" }] };
     const lines = toReceiptData(x).vatLines;
     expect(lines.reduce((s, v) => s + v.grossKurus, 0)).toBe(47400);
     expect(lines.map((v) => v.grossKurus)).toEqual([38764, 8636]);
@@ -118,6 +118,13 @@ describe("indirimli fiş", () => {
   it("TL dışı yurt içi faturayı işaretler; Z raporunda TOPKDV denetlenmez", () => {
     expect(checkExtraction({ ...a101, currency: "EUR" })).toContain("domestic_currency");
     expect(checkExtraction({ ...goodOutput, documentKind: "z_report", cashTotal: "8.725,00", totalVat: "45.300,00" })).not.toContain("vat_mismatch");
+  });
+  it("karma ödemeyi tutarlarıyla okur; toplamı tutmazsa ödeme şeklini kontrol ettirir", () => {
+    const x = { ...a101, payments: [{ method: "cash" as const, amount: "200,00" }, { method: "card" as const, amount: "274,00" }] };
+    expect(toReceiptData(x).payments).toEqual([{ method: "cash", kurus: 20000 }, { method: "card", kurus: 27400 }]);
+    const off = { ...a101, payments: [{ method: "cash" as const, amount: "200,00" }, { method: "card" as const, amount: "200,00" }] };
+    expect(toReceiptData(off).payments).toBeUndefined();
+    expect(checkExtraction(off)).toContain("payment_unsure");
   });
   it("indirim okunmazsa toplam tutmaz", () => {
     expect(checkExtraction({ ...a101, discounts: [] })).toContain("total_mismatch");
