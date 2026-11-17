@@ -151,7 +151,6 @@ describe("jüri tur 19 düzeltmeleri", () => {
     expect(pdfPageCount(pdf)).toBe(2);
   });
 });
-});
 
 describe("Z raporu BT", () => {
   it("Z raporu ZR ile yazılır; eski kayıtlardaki ÖK de ZR sayılır, başka seçim korunur", async () => {
