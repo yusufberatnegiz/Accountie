@@ -34,7 +34,9 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
     }
   }
   const [{ firm, firms }, balance, billing, usage, history, paid] = await Promise.all([
-    activeFirm(user.id), getBalance(user.id), getBillingProfile(user.id), creditUseByFirm(user.id), listPayments(user.id), recentPaid(user.id, PAID_RECENTLY_MS),
+    activeFirm(user.id), getBalance(user.id), getBillingProfile(user.id), creditUseByFirm(user.id), listPayments(user.id),
+    // Only the "payment received" note: a slow database (Sentry: statement timeout on a cold start) must not take the page down.
+    recentPaid(user.id, PAID_RECENTLY_MS).catch(() => null),
   ]);
   const ranOut = bitti !== undefined && /^\d{1,4}$/.test(bitti) ? Number(bitti) : undefined;
   // "Added" only for a purchase really paid moments ago, whatever the address says; otherwise a waiting result keeps its own word.
