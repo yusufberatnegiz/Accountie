@@ -6,7 +6,8 @@ import { PREVIEW_COOKIE, withStatuses } from "../../preview-state";
 import { PreviewTheme } from "../../PreviewTheme";
 import { AppShell } from "@/components/AppShell";
 import { ReceiptView } from "@/components/ReceiptView";
-import { DEFAULT_RULES } from "@/lib/default-rules";
+import { DEFAULT_PLAN, DEFAULT_RULES } from "@/lib/default-rules";
+import { leavesOf } from "@/lib/plan-suggest";
 import { PREVIEW_RECEIPTS, PREVIEW_EMAIL } from "@/lib/preview-fixtures";
 
 export default async function PreviewReceipt({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tema?: string; ogrenilen?: string }> }) {
@@ -23,7 +24,8 @@ export default async function PreviewReceipt({ params, searchParams }: { params:
       <PreviewTheme tema={tema} />
       <PreviewApi approved={[]} />
       <AppShell current="fis" base="/onizleme/panel" email={PREVIEW_EMAIL} firmId={receipt.firmId}>
-        <ReceiptView receipt={receipt} rules={DEFAULT_RULES} next={next} learned={learned} base="/onizleme/panel" />
+        {/* The preview firm has a Luca plan (the default accounts), as every firm that takes receipts must. */}
+        <ReceiptView receipt={receipt} rules={DEFAULT_RULES} next={next} learned={learned} base="/onizleme/panel" plan={[...DEFAULT_PLAN]} postable={leavesOf(DEFAULT_PLAN).map(({ code, name }) => ({ code, name }))} />
       </AppShell>
     </>
   );
