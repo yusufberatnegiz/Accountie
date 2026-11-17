@@ -22,7 +22,7 @@ const goodOutput: ReceiptExtraction = {
   currency: "TRY",
   cashTotal: null,
   cardTotal: null,
-  invoicedTotal: null, lineItems: [], discounts: [], departments: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [],
+  invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [],
 };
 
 // checkExtraction flags dates far from "today"; pin it so the sample receipt stays current.
@@ -98,20 +98,20 @@ describe("indirimli fiş", () => {
     expect(checkExtraction(wrong)).toContain("vat_mismatch");
   });
   it("e-faturada oran başına matrah ve KDV'den KDV dahil tutarı kurar", () => {
-    const x = { ...a101, lineItems: [], discounts: [], departments: [], totalVat: "250,00", total: "1.750,00",
+    const x = { ...a101, lineItems: [], discounts: [], totalVat: "250,00", total: "1.750,00",
       vatLines: [{ rate: 20, gross: null, vat: "200,00", net: "1.000,00" }, { rate: 10, gross: null, vat: "50,00", net: "500,00" }] };
     expect(toReceiptData(x).vatLines).toEqual([{ rate: 20, grossKurus: 120000, vatKurus: 20000 }, { rate: 10, grossKurus: 55000, vatKurus: 5000 }]);
     expect(checkExtraction(x)).toEqual([]);
   });
   it("iptal edilen satırı (eksi tutar) düşer; indirim kalemden büyükse sonucu kabul etmez", () => {
-    const x = { ...a101, discounts: [], departments: [], totalVat: null, total: "50,00", lineItems: [{ rate: 20, amount: "80,00" }, { rate: 20, amount: "-30,00" }] };
+    const x = { ...a101, discounts: [], totalVat: null, total: "50,00", lineItems: [{ rate: 20, amount: "80,00" }, { rate: 20, amount: "-30,00" }] };
     expect(toReceiptData(x).vatLines).toEqual([{ rate: 20, grossKurus: 5000, vatKurus: null }]);
     const neg = { ...a101, totalVat: null, total: "100,00", lineItems: [{ rate: 20, amount: "110,00" }, { rate: 1, amount: "5,00" }], discounts: [{ rate: 1, amount: "15,00" }] };
     expect(checkExtraction(neg)).toContain("total_mismatch");
   });
   it("kalem kalem yuvarlanan TOPKDV'yi kabul eder ve 191'e belgedeki KDV yazılır", () => {
     const items = Array.from({ length: 40 }, () => ({ rate: 1, amount: "1,50" }));
-    const x = { ...a101, discounts: [], departments: [], lineItems: items, total: "60,00", totalVat: "0,40" };
+    const x = { ...a101, discounts: [], lineItems: items, total: "60,00", totalVat: "0,40" };
     expect(toReceiptData(x).vatLines).toEqual([{ rate: 1, grossKurus: 6000, vatKurus: 40 }]);
     expect(checkExtraction(x)).toEqual([]);
   });
@@ -127,14 +127,14 @@ describe("indirimli fiş", () => {
     expect(checkExtraction(off)).toContain("payment_unsure");
   });
   it("tevkifat yalnız yurt içi faturada ve fark KDV kadarsa toplam farkını açıklar", () => {
-    const inv = { ...a101, lineItems: [], discounts: [], departments: [], totalVat: null, withholding: true, total: "1.100,00", vatLines: [{ rate: 20, gross: null, vat: "200,00", net: "1.000,00" }] };
+    const inv = { ...a101, lineItems: [], discounts: [], totalVat: null, withholding: true, total: "1.100,00", vatLines: [{ rate: 20, gross: null, vat: "200,00", net: "1.000,00" }] };
     expect(withholdingGap(inv)).toBe(10000);
     // Bigger than its KDV, or on a till receipt: not withholding, the totals do not agree.
     expect(checkExtraction({ ...inv, total: "100,00" })).toContain("total_mismatch");
     expect(checkExtraction({ ...inv, documentKind: "receipt" })).toContain("total_mismatch");
   });
   it("tevkifatlı faturada toplamın düşük olması 'tutmuyor' sayılmaz (Sonnet'e gidilmez)", () => {
-    const x = { ...a101, lineItems: [], discounts: [], departments: [], totalVat: null, withholding: true, total: "1.100,00", vatLines: [{ rate: 20, gross: null, vat: "200,00", net: "1.000,00" }] };
+    const x = { ...a101, lineItems: [], discounts: [], totalVat: null, withholding: true, total: "1.100,00", vatLines: [{ rate: 20, gross: null, vat: "200,00", net: "1.000,00" }] };
     expect(checkExtraction(x)).toEqual([]);
   });
   it("indirim okunmazsa toplam tutmaz", () => {
