@@ -89,7 +89,14 @@ export function buildSalesLines(data: SalesData, rules: Rules, department: (name
   const credits: JournalLine[] = [];
   const revenues: JournalLine[] = [];
   let grossSum = 0;
+  // One line per rate: a read may give a rate twice (once per department, 2026-11-17); its departments are split once, over the whole rate.
+  const byRate = new Map<number, VatLine>();
   for (const v of data.vatLines) {
+    const had = byRate.get(v.rate);
+    byRate.set(v.rate, had ? { rate: v.rate, grossKurus: had.grossKurus + v.grossKurus, vatKurus: had.vatKurus === null && v.vatKurus === null ? null : (had.vatKurus ?? vatFromGross(had.grossKurus, v.rate)) + (v.vatKurus ?? vatFromGross(v.grossKurus, v.rate)) } : v);
+  }
+  const rates = [...byRate.values()];
+  for (const v of rates) {
     const expected = vatFromGross(v.grossKurus, v.rate);
     const vat = v.vatKurus ?? expected;
     // Same tolerance as the read check (src/lib/extract/schema.ts): a Z report rounds its KDV per sale.
@@ -122,12 +129,12 @@ export function buildSalesLines(data: SalesData, rules: Rules, department: (name
     }
   }
   const total = data.totalKurus ?? grossSum;
-  if (data.vatLines.length === 0) {
+  if (rates.length === 0) {
     if (total > 0) warnings.push(warn("vat_missing"));
     credits.push(line(s.revenue[0] ?? { code: "", name: "" }, 0, total));
   } else if (total !== grossSum) {
     const diff = total - grossSum;
-    if (Math.abs(diff) <= data.vatLines.length) {
+    if (Math.abs(diff) <= rates.length) {
       revenues.reduce((a, b) => (b.creditKurus > a.creditKurus ? b : a)).creditKurus += diff;
       warnings.push(warn("rounding_adjusted"));
     } else warnings.push(warn("total_mismatch"));

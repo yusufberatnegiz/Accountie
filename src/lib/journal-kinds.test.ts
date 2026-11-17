@@ -199,3 +199,25 @@ describe("Z raporu departmanları", () => {
     expect(lines(buildSalesLines({ ...data, departments: [{ name: "ALKOLLÜ İÇECE", rate: 20, grossKurus: 40000 }] }, rules, departmentAccounts(plan)))[1]).toEqual(["600.20.01", 0, 25000]);
   });
 });
+
+describe("Z raporu: aynı oran iki satır okunursa", () => {
+  // A real read (2026-11-17): %1 came as two vatLines, one per department; each department must be booked once.
+  const plan = [{ code: "600.01", name: "% 01 MATRAHA TABİ SATIŞLAR" }, { code: "600.01.01", name: "% 01 Un Satışları" }, { code: "600.01.02", name: "% 01 Bakliyat Satışları" }];
+  it("BAKLİYAT ve UN kendi hesaplarına birer kez yazılır, KDV tek satırda, fiş dengede", async () => {
+    const { departmentAccounts } = await import("./plan-suggest");
+    const rules = { ...DEFAULT_RULES, sales: { ...DEFAULT_RULES.sales, revenue: { ...DEFAULT_RULES.sales.revenue, 1: { code: "600.01.01", name: "% 01 Un Satışları" } } } };
+    const data: SalesData = { vendorName: "ÖRNEK DEĞİRMEN", zNo: "0015", date: "2026-10-01", totalKurus: 2039000, cashKurus: 0, cardKurus: 2039000, invoicedKurus: null,
+      vatLines: [{ rate: 1, grossKurus: 244500, vatKurus: null }, { rate: 1, grossKurus: 1794500, vatKurus: null }],
+      departments: [{ name: "BAKLİYAT", rate: 1, grossKurus: 244500 }, { name: "UN", rate: 1, grossKurus: 1794500 }] };
+    const r = buildSalesLines(data, rules, departmentAccounts(plan));
+    expect(lines(r)).toEqual([["108.01", 2039000, 0], ["600.01.02", 0, 242079], ["600.01.01", 0, 1776733], ["391.01", 0, 20188]]);
+    expect(r.balanced).toBe(true);
+  });
+  it("iki harfli UN, Un Satışları ile eşleşir; Unlu Mamuller ile eşleşmez", async () => {
+    const { departmentAccounts } = await import("./plan-suggest");
+    expect(departmentAccounts(plan)("UN", 1)?.code).toBe("600.01.01");
+    expect(departmentAccounts([{ code: "600.01", name: "% 01 Satışlar" }, { code: "600.01.05", name: "% 01 Unlu Mamuller" }])("UN", 1)).toBeUndefined();
+    // "%10'LU" is no goods word: two %10 accounts named "Lu Gıda" and "Lu Temizlik" do not both match a GIDA department.
+    expect(departmentAccounts([{ code: "600.10", name: "% 10 Satışlar" }, { code: "600.10.01", name: "%10 Lu Gıda" }, { code: "600.10.02", name: "%10 Lu Temizlik" }])("GIDA %10'LU", 10)?.code).toBe("600.10.01");
+  });
+});

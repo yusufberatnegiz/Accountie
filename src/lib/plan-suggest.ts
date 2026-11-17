@@ -235,8 +235,9 @@ export const planMismatchWarning = (m: readonly { code: string; ours: string; lu
 });
 
 // Words that say "sales" or "KDV", not which goods: they never tie a till department to an account.
-const DEPARTMENT_STOP = new Set(["ile", "satis", "satisi", "satislar", "satislari", "kdv", "kdvli", "matraha", "tabi", "hizmet", "geliri", "malz", "malzeme", "malzemesi"]);
-const stems = (name: string) => fold(name).split(/[^\p{L}]+/u).filter((w) => w.length >= 3 && !DEPARTMENT_STOP.has(w)).map((w) => w.slice(0, 5));
+const DEPARTMENT_STOP = new Set(["ve", "li", "lu", "de", "da", "ile", "satis", "satisi", "satislar", "satislari", "kdv", "kdvli", "matraha", "tabi", "hizmet", "geliri", "malz", "malzeme", "malzemesi"]);
+// Two letters count ("UN", the flour department), so short goods names find their account.
+const stems = (name: string) => fold(name).split(/[^\p{L}]+/u).filter((w) => w.length >= 2 && !DEPARTMENT_STOP.has(w)).map((w) => w.slice(0, 5));
 
 /**
  * The firm's own Luca sales account for a Z report department ("ALKOLLÜ İÇECE" %20 → "600.20.03 % 20 Alköllü İçki Satışları"):
