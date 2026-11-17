@@ -27,6 +27,8 @@ export type SalesData = {
   cashKurus: number | null;
   cardKurus: number | null;
   invoicedKurus: number | null;
+  /** The till's departments (TEKEL, EKMEK, ALKOLLÜ İÇECEK...): name, KDV rate and KDV-inclusive sales; none on older reads. */
+  departments?: { name: string; rate: number; grossKurus: number }[];
 };
 
 type Built = { lines: JournalLine[]; warnings: Warning[]; balanced: boolean };
@@ -73,7 +75,11 @@ export function buildForeignLines(data: ForeignData, rules: Rules, fx: FxRate | 
  * The day's sales from a Z report: cash and card on the debit; per KDV rate, the sales (600) and the KDV on them (391) on the
  * credit. Sales already invoiced (e-Arşiv, e-Fatura) are only flagged: they reach Luca on their own and must not count twice.
  */
-export function buildSalesLines(data: SalesData, rules: Rules): Built {
+/**
+ * A Z report as the day's sales. `department`: the firm's own sales account for a department (src/lib/plan-suggest.ts
+ * departmentAccounts); departments it names get their own revenue line within their rate, KDV shared out by amount.
+ */
+export function buildSalesLines(data: SalesData, rules: Rules, department: (name: string, rate: number) => Account | undefined = () => undefined): Built {
   const warnings: Warning[] = [];
   const s = rules.sales;
   const description = descriptionFromVendor(`Z RAPORU ${data.zNo ?? ""}`.trim());
@@ -89,10 +95,27 @@ export function buildSalesLines(data: SalesData, rules: Rules): Built {
     // Same tolerance as the read check (src/lib/extract/schema.ts): a Z report rounds its KDV per sale.
     if (v.vatKurus !== null && Math.abs(v.vatKurus - expected) > perItemVatTolerance(expected)) warnings.push(warn("vat_mismatch"));
     grossSum += v.grossKurus;
-    const revenue = line(s.revenue[v.rate] ?? { code: "", name: "" }, 0, v.grossKurus - vat);
+    const own = s.revenue[v.rate] ?? { code: "", name: "" };
     if (!s.revenue[v.rate]) warnings.push(warn("z_unknown_rate"));
-    revenues.push(revenue);
-    credits.push(revenue);
+    // The rate's sales by account: each department the plan has an account for, the rest in the rate's account. Departments that add
+    // up to more than the rate's sales were misread: the rate stays whole.
+    const parts = new Map<string, { account: Account; gross: number }>();
+    for (const d of data.departments ?? []) {
+      const a = d.rate === v.rate && d.grossKurus > 0 ? department(d.name, d.rate) : undefined;
+      if (a) parts.set(a.code, { account: a, gross: (parts.get(a.code)?.gross ?? 0) + d.grossKurus });
+    }
+    const named = [...parts.values()].reduce((n, p) => n + p.gross, 0);
+    const split = named > 0 && named <= v.grossKurus ? [...parts.values()] : [];
+    const rest = v.grossKurus - split.reduce((n, p) => n + p.gross, 0);
+    const shares = [...split, ...(rest > 0 || split.length === 0 ? [{ account: own, gross: rest }] : [])];
+    let vatLeft = vat;
+    shares.forEach((p, i) => {
+      const share = i === shares.length - 1 ? vatLeft : Math.round((vat * p.gross) / v.grossKurus);
+      vatLeft -= share;
+      const revenue = line(p.account, 0, p.gross - share);
+      revenues.push(revenue);
+      credits.push(revenue);
+    });
     if (v.rate > 0 && vat > 0) {
       if (!s.vat[v.rate]) warnings.push(warn("z_unknown_rate"));
       credits.push(line(s.vat[v.rate] ?? { code: "", name: "" }, 0, vat));

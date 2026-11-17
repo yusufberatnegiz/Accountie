@@ -13,7 +13,8 @@ import { tcmbRate } from "@/lib/tcmb";
 import { NO_STORE, fail, unauthorized } from "@/lib/http";
 import { ALLOWED_IMAGE_TYPES, cropReceipt, isPdf, MAX_PDF_PAGES, MAX_UPLOAD_BYTES, normalizeImage, pdfPageCount, sniffImageType } from "@/lib/image";
 import { allow, clientIp } from "@/lib/rate-limit";
-import type { Rules } from "@/lib/default-rules";
+import type { Account, Rules } from "@/lib/default-rules";
+import { departmentAccounts } from "@/lib/plan-suggest";
 import { buildJournalLines, warn, type JournalLine, type ReceiptData, type Warning } from "@/lib/journal";
 
 export const runtime = "nodejs";
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
   const wanted = form?.get("firma");
   const { firm } = await activeFirm(userId, typeof wanted === "string" ? wanted : null);
   const { rules, plan } = await getRules(userId, firm.id);
-  const ctx: Ctx = { userId, firmId: firm.id, rules, planned: plan.length > 0, until };
+  const ctx: Ctx = { userId, firmId: firm.id, rules, plan, planned: plan.length > 0, until };
   if (typeof wanted === "string" && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's data
   if (pdf) {
     const one = await readMetered(metered, ctx, jpeg, "application/pdf");
@@ -113,7 +114,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable), skipped, limited, uncut, failed, unlocated }, { status: 201 });
 }
 
-type Ctx = { userId: string; firmId: string; rules: Rules; planned: boolean; until: number };
+type Ctx = { userId: string; firmId: string; rules: Rules; plan: readonly Account[]; planned: boolean; until: number };
 
 // billable: something was read (a seller or a total); an empty record costs no credit (Koşullar md. 6).
 type Saved = { id: string; readable: boolean; billable: boolean; kind: string } | null;
@@ -214,7 +215,8 @@ async function saveOther(ctx: Ctx, result: Extract<ExtractResult, { ok: true }>)
   let built: { lines: JournalLine[]; warnings: Warning[] };
   if (kindOf(x) === "z_report") {
     const data = toSalesData(x);
-    built = buildSalesLines(data, rules);
+    // Each department to the firm's own Luca sales account for it (TEKEL, EKMEK, ALKOLLÜ İÇECEK apart within their rate).
+    built = buildSalesLines(data, rules, departmentAccounts(ctx.plan));
     // The VKN on a Z report is the firm's own: kept to find the same report uploaded twice, never to learn a seller.
     const taxNumber = x.taxNumber && isValidTaxNumber(x.taxNumber) ? x.taxNumber : null;
     if (taxNumber && data.zNo && data.date && (await hasDuplicateReceipt(userId, firmId, taxNumber, data.zNo, data.date, data.totalKurus).catch(() => false))) extra.unshift(warn("duplicate"));

@@ -161,3 +161,41 @@ describe("Z raporu BT", () => {
     expect(set("Z")).toBe("Z");
   });
 });
+
+describe("Z raporu departmanları", () => {
+  // A market's plan: per-rate sales split by goods, as real Luca plans keep them.
+  const plan = [
+    { code: "600", name: "YURTİÇİ SATIŞLAR" }, { code: "600.00", name: "ÖZEL MATRAHA TABİ SATIŞLAR" }, { code: "600.00.01", name: "TEKEL SATIŞLARI" },
+    { code: "600.01", name: "% 01 MATRAHA TABİ SATIŞLAR" }, { code: "600.01.01", name: "% 01 EKMEK SATIŞLARI" }, { code: "600.01.02", name: "GIDA SATIŞLARI" },
+    { code: "600.10", name: "% 10 Kdv Li Satışlar" }, { code: "600.10.01", name: "% 10 Kdv Li Satışlar" }, { code: "600.10.02", name: "Tüp Satışları" },
+    { code: "600.20", name: "% 20 Kdv Li Satışlar" }, { code: "600.20.01", name: "% 20 Gıda Satışları" }, { code: "600.20.02", name: "%20 Kdv Li Temizlik Malzemesi Satışları" },
+    { code: "600.20.03", name: "% 20 Alköllü İçki Satışları" }, { code: "600.20.04", name: "Fatura Ödeme Hizmet Geliri" },
+  ];
+  it("departman adıyla firmanın kendi satış hesabı bulunur, oran tutmalı", async () => {
+    const { departmentAccounts } = await import("./plan-suggest");
+    const dep = departmentAccounts(plan);
+    expect(dep("ALKOLLÜ İÇECE", 20)?.code).toBe("600.20.03");
+    expect(dep("TEMİZLİK MALZ", 20)?.code).toBe("600.20.02");
+    expect(dep("FATURA ÖDEME", 20)?.code).toBe("600.20.04");
+    expect(dep("EKMEK", 1)?.code).toBe("600.01.01");
+    expect(dep("TEMEL GIDA", 1)?.code).toBe("600.01.02");
+    expect(dep("TEKEL", 0)?.code).toBe("600.00.01");
+    expect(dep("TÜP", 10)?.code).toBe("600.10.02");
+    expect(dep("GIDA", 10)).toBeUndefined(); // no %10 food account: stays in the rate's account
+    expect(dep("KNV", 0)).toBeUndefined();
+  });
+  it("aynı orandaki alkollü içecek ve temizlik ayrı satış satırlarına, KDV tutara göre paylaşılarak yazılır", async () => {
+    const { departmentAccounts } = await import("./plan-suggest");
+    const rules = { ...DEFAULT_RULES, sales: { ...DEFAULT_RULES.sales, revenue: { ...DEFAULT_RULES.sales.revenue, 20: { code: "600.20.01", name: "% 20 Gıda Satışları" } } } };
+    const data: SalesData = { vendorName: "ÖRNEK MARKET", zNo: "0416", date: "2026-10-02", totalKurus: 30000, cashKurus: 0, cardKurus: 30000, invoicedKurus: null,
+      vatLines: [{ rate: 20, grossKurus: 30000, vatKurus: 5000 }],
+      departments: [{ name: "ALKOLLÜ İÇECE", rate: 20, grossKurus: 13000 }, { name: "TEMİZLİK MALZ", rate: 20, grossKurus: 12000 }, { name: "GIDA", rate: 20, grossKurus: 5000 }] };
+    const r = buildSalesLines(data, rules, departmentAccounts(plan));
+    expect(lines(r)).toEqual([["108.01", 30000, 0], ["600.20.03", 0, 10833], ["600.20.02", 0, 10000], ["600.20.01", 0, 4167], ["391.20", 0, 5000]]);
+    expect(r.balanced).toBe(true);
+    // Without departments (older reads) the rate stays one line.
+    expect(lines(buildSalesLines({ ...data, departments: [] }, rules, departmentAccounts(plan)))).toEqual([["108.01", 30000, 0], ["600.20.01", 0, 25000], ["391.20", 0, 5000]]);
+    // Departments adding up to more than the rate's sales were misread: the rate stays whole.
+    expect(lines(buildSalesLines({ ...data, departments: [{ name: "ALKOLLÜ İÇECE", rate: 20, grossKurus: 40000 }] }, rules, departmentAccounts(plan)))[1]).toEqual(["600.20.01", 0, 25000]);
+  });
+});

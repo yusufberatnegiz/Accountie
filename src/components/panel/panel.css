@@ -889,3 +889,10 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 .setup-banner p { margin: 0; color: var(--ink); }
 .setup-banner-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
 @media (forced-colors: active) { .pack[data-selected] { outline: 3px solid Highlight; outline-offset: -3px; } }
+
+/* Camera shots waiting for "Devam et" (CaptureButton): count, small photos, then take another, read them all, or drop them. */
+.capture-queue { display: grid; gap: var(--s2); }
+.capture-queue .queue-count { margin: 0; }
+.capture-queue .queue-thumbs { display: flex; gap: var(--s1); overflow-x: auto; }
+.capture-queue .queue-thumbs img { width: 40px; height: 56px; object-fit: cover; border-radius: 4px; flex: none; }
+.capture-queue .queue-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }

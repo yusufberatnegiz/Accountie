@@ -52,6 +52,10 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
     if (variant !== "head") return;
     try { const kept = sessionStorage.getItem(NOTICE_KEY); if (kept) setNoticeState(kept); } catch {}
   }, [variant]);
+  // Photos taken with the camera wait here, small, until "Devam et": the next receipt is shot at once, not after this one is read.
+  const [queue, setQueue] = useState<{ file: File; url: string }[]>([]);
+  const clearQueue = () => setQueue((q) => { for (const x of q) URL.revokeObjectURL(x.url); return []; });
+  const readQueue = () => { const files = queue.map((x) => x.file); clearQueue(); if (files.length) upload(files); };
   // The photo being read, shown small in the reading card; its object URL is released when the next one replaces it.
   const [thumb, setThumb] = useState("");
   useEffect(() => () => { if (thumb) URL.revokeObjectURL(thumb); }, [thumb]);
@@ -148,7 +152,10 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
       onChange={(e) => {
         const files = e.target.files?.length ? [...e.target.files] : [];
         e.target.value = "";
-        if (files.length) upload(files);
+        if (!files.length) return;
+        // A camera shot joins the queue; a gallery or invoice pick (all chosen at once) is read straight away.
+        if (capture) { setError(""); setNotice(""); setQueue((q) => [...q, ...files.map((file) => ({ file, url: URL.createObjectURL(file) }))]); }
+        else upload(files);
       }}
     />
   );
@@ -162,7 +169,7 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
   return (
     <div className={`capture capture-${variant}`}>
       {/* The status region stays mounted so screen readers announce its text changes. */}
-      <div role="status" className={busy ? "reading" : notice ? "" : "visually-hidden"}>
+      <div role="status" className={busy ? "reading" : notice || queue.length ? "" : "visually-hidden"}>
         {busy ? (
           <>
             {/* The photo itself, settling in once when it arrives; the stage beside it rolls on as the real work moves (YON 23.4.3).
@@ -196,6 +203,19 @@ export function CaptureButton({ pickers = ["camera", "gallery", "invoice"], vari
               <p className="small">Sayfadan ayrılmayın.{slow ? " Hâlâ okunuyor, fiş uzunsa biraz sürebilir." : ""}</p>
             </div>
           </>
+        ) : queue.length ? (
+          <div className="alert capture-queue">
+            <p className="queue-count">{queue.length} fiş çekildi. Hepsini çekince Devam et&apos;e basın.</p>
+            <span className="queue-thumbs" aria-hidden="true">
+              {/* eslint-disable-next-line @next/next/no-img-element -- blob: URLs from this device */}
+              {queue.map((x) => <img key={x.url} src={x.url} alt="" />)}
+            </span>
+            <div className="queue-actions">
+              <label className="btn">Bir fiş daha çek{input(true)}</label>
+              <button type="button" className="btn btn-primary" onClick={readQueue}>Devam et ({queue.length} fişi oku)</button>
+              <button type="button" className="link-button" onClick={clearQueue}>Vazgeç</button>
+            </div>
+          </div>
         ) : notice ? (
           <p className="alert alert-close">
             {notice}

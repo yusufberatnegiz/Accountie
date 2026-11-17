@@ -233,3 +233,26 @@ export const planMismatchWarning = (m: readonly { code: string; ours: string; lu
   code: "plan_name",
   message: `${m.map((x) => `${x.code} Luca planında “${x.luca}” (satırda “${x.ours}” yazıyor)`).join("; ")}. Luca'ya bu hesap yazılır; hesap kodunu kontrol edin.`,
 });
+
+// Words that say "sales" or "KDV", not which goods: they never tie a till department to an account.
+const DEPARTMENT_STOP = new Set(["ile", "satis", "satisi", "satislar", "satislari", "kdv", "kdvli", "matraha", "tabi", "hizmet", "geliri", "malz", "malzeme", "malzemesi"]);
+const stems = (name: string) => fold(name).split(/[^\p{L}]+/u).filter((w) => w.length >= 3 && !DEPARTMENT_STOP.has(w)).map((w) => w.slice(0, 5));
+
+/**
+ * The firm's own Luca sales account for a Z report department ("ALKOLLÜ İÇECE" %20 → "600.20.03 % 20 Alköllü İçki Satışları"):
+ * a postable 600 account under the same KDV rate (its name or the accounts above it carry the rate; one without any rate only for
+ * %0) sharing a telling word. Several or none: undefined, and the department stays in its rate's account.
+ */
+export function departmentAccounts(plan: readonly Account[]): (name: string, rate: number) => Account | undefined {
+  const sales = leavesOf(plan).filter((a) => a.code.startsWith("600") && !OTHER_SALES.test(a.path));
+  return (name, rate) => {
+    const want = stems(name);
+    if (!want.length) return undefined;
+    const hits = sales.filter((a) => {
+      const path = a.path.replace(/\d{1,2}[./-]\d{1,2}[./-]\d{2,4}/g, " ");
+      const rateOk = /\d/.test(path) ? hasRate(path, rate) : rate === 0;
+      return rateOk && stems(a.name).some((s) => want.includes(s));
+    });
+    return hits.length === 1 ? { code: hits[0].code, name: hits[0].name } : undefined;
+  };
+}

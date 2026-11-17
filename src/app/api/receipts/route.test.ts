@@ -19,7 +19,7 @@ const read = (over: Record<string, unknown>) => ({
   extraction: {
     vendorName: "x", taxOffice: null, taxNumber: null, date: "31.10.2026", time: null, receiptNo: null, zNo: null, ekuNo: null, vatLines: [],
     total: "100,00", paymentMethod: "card" as const, category: "other" as const, unreadableFields: [], documentKind: "receipt" as const,
-    currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [], ...over,
+    currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], departments: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [], ...over,
   },
 });
 const pdf = () => {
@@ -78,7 +78,7 @@ describe("POST /api/receipts", () => {
       extraction: {
         vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: "1111111114", date: "05.09.2026", time: null, receiptNo: "0047",
         zNo: null, ekuNo: null, vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18", net: null }], total: "8.725,00",
-        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [],
+        paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt", currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], departments: [], totalVat: null, withholding: false, noFiscalValue: false, payments: [],
       },
     });
     const res = await POST(jpeg());

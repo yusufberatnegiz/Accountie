@@ -39,6 +39,11 @@ export const ReceiptExtractionSchema = z.object({
     rate: z.number().int().min(0).max(100).describe("Ürünün KDV oranı (%01 ise 1, %20 ise 20)"),
     amount: z.string().max(40).describe("Ürün satırının tutarı, Türk biçiminde"),
   })).max(400).describe("Yalnız fişte oran bazlı KDV dahil toplamlar yazmıyorsa: her ürün satırı, oranı ve tutarıyla. Kırılım yazıyorsa boş"),
+  departments: z.array(z.object({
+    name: z.string().max(60).describe("Departman adı, yazıldığı gibi (TEKEL, EKMEK, ALKOLLÜ İÇECE, TEMİZLİK MALZ)"),
+    rate: z.number().int().min(0).max(100).describe("Departmanın KDV oranı"),
+    amount: z.string().max(40).describe("Departmanın KDV dahil satış tutarı, Türk biçiminde"),
+  })).max(60).describe("Yalnız Z raporu: departman (bölüm) satırları; tutarı 0,00 olanları yazma. Diğer belgelerde boş"),
   discounts: z.array(z.object({
     rate: z.number().int().min(0).max(100).nullable().describe("İndirimin uygulandığı ürünün KDV oranı; sepetin tamamına yapılan indirimde null"),
     amount: z.string().max(40).describe("İndirim tutarı, eksi işareti ve -D olmadan"),
@@ -90,7 +95,9 @@ export function toForeignData(x: ReceiptExtraction): ForeignData {
 /** A Z report as read. */
 export function toSalesData(x: ReceiptExtraction): SalesData {
   const data = toReceiptData(x);
-  return { vendorName: x.vendorName, zNo: x.zNo, date: data.date, vatLines: data.vatLines, totalKurus: data.totalKurus, cashKurus: amountOrNull(x.cashTotal), cardKurus: amountOrNull(x.cardTotal), invoicedKurus: amountOrNull(x.invoicedTotal) };
+  // Older reads have no departments.
+  const departments = (x.departments ?? []).flatMap((d) => { const g = amountOrNull(d.amount); return g && g > 0 ? [{ name: d.name, rate: d.rate, grossKurus: g }] : []; });
+  return { vendorName: x.vendorName, zNo: x.zNo, date: data.date, vatLines: data.vatLines, totalKurus: data.totalKurus, cashKurus: amountOrNull(x.cashTotal), cardKurus: amountOrNull(x.cardTotal), invoicedKurus: amountOrNull(x.invoicedTotal), departments };
 }
 
 /** Older reads (before Z reports and foreign invoices) have no kind: they are receipts. */
