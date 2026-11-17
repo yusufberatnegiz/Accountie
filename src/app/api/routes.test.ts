@@ -13,7 +13,7 @@ vi.mock("@/db/queries", () => ({
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(), clientIp: () => "203.0.113.9" }));
-vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(async () => []), STRONG_READ_ABOVE: 4, MAX_RECEIPTS_PER_PHOTO: 10 }));
+vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipts: vi.fn(async () => []), readDepartments: vi.fn(async () => null), STRONG_READ_ABOVE: 4, MAX_RECEIPTS_PER_PHOTO: 10 }));
 vi.mock("@/lib/image", async (original) => ({ ...(await original<typeof import("@/lib/image")>()), normalizeImage: vi.fn(async () => Buffer.from("jpeg")) }));
 
 const session = await import("@/lib/auth/session");

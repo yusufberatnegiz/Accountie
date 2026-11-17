@@ -5,7 +5,7 @@ import { isValidTaxNumber } from "@/lib/checks";
 import { withVendorAccount } from "@/lib/vendor-rule";
 import { activeFirm } from "@/lib/firm";
 import { getSessionUser, getUserId } from "@/lib/auth/session";
-import { extractReceipt, locateReceipts, MAX_RECEIPTS_PER_PHOTO, STRONG_READ_ABOVE, type ExtractResult } from "@/lib/extract/extract";
+import { extractReceipt, locateReceipts, readDepartments, MAX_RECEIPTS_PER_PHOTO, STRONG_READ_ABOVE, type ExtractResult } from "@/lib/extract/extract";
 import { kindOf, toForeignData, toReceiptData, toSalesData, withholdingGap } from "@/lib/extract/schema";
 import { formatTrAmount } from "@/lib/money";
 import { buildForeignLines, buildSalesLines, foreignTotalTl } from "@/lib/journal-kinds";
@@ -156,7 +156,7 @@ async function readAndSave(ctx: Ctx, jpeg: Buffer, mediaType: "image/jpeg" | "ap
     result = { ok: false, inputTokens: 0, outputTokens: 0 };
   }
   const kind = result.ok ? kindOf(result.extraction) : "receipt";
-  if (result.ok && kind !== "receipt" && kind !== "domestic_invoice") return saveOther(ctx, result);
+  if (result.ok && kind !== "receipt" && kind !== "domestic_invoice") return saveOther(ctx, result, jpeg, mediaType);
 
   const data = result.ok ? toReceiptData(result.extraction) : EMPTY;
   const taxNumber = result.ok ? result.extraction.taxNumber : null;
@@ -206,11 +206,13 @@ async function readAndSave(ctx: Ctx, jpeg: Buffer, mediaType: "image/jpeg" | "ap
 }
 
 /** A Z report or a foreign service invoice: its own lines (src/lib/journal-kinds.ts), no seller learning, the TL rate kept with the read. */
-async function saveOther(ctx: Ctx, result: Extract<ExtractResult, { ok: true }>): Promise<Saved> {
+async function saveOther(ctx: Ctx, result: Extract<ExtractResult, { ok: true }>, file: Buffer, mediaType: "image/jpeg" | "application/pdf"): Promise<Saved> {
   const { userId, firmId, rules } = ctx;
-  const x = result.extraction;
+  // A Z report's departments, from a read of their own: when it fails or time is short, the report is saved without them.
+  const deps = kindOf(result.extraction) === "z_report" ? await readDepartments(file, mediaType, ctx.until - 3_000).catch(() => null) : null;
+  const x = deps ? { ...result.extraction, departments: deps.departments } : result.extraction;
   const extra = result.problems.map(warn);
-  const meta = { model: result.model, inputTokens: result.inputTokens, outputTokens: result.outputTokens };
+  const meta = { model: result.model, inputTokens: result.inputTokens + (deps?.inputTokens ?? 0), outputTokens: result.outputTokens + (deps?.outputTokens ?? 0) };
   let receipt: NewReceipt;
   let built: { lines: JournalLine[]; warnings: Warning[] };
   if (kindOf(x) === "z_report") {

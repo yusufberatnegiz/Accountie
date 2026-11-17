@@ -47,6 +47,24 @@ function mockClient(...results: unknown[]) {
 
 const image = Buffer.from("fake-jpeg");
 
+describe("readDepartments", () => {
+  it("Z raporunun departmanlarını ayrı küçük okumayla verir", async () => {
+    const { readDepartments } = await import("./extract");
+    const { client, parse } = mockClient({ parsed_output: { departments: [{ name: "TEKEL", rate: 0, amount: "24.504,00" }] }, stop_reason: "end_turn", usage: { input_tokens: 10, output_tokens: 2 } });
+    expect(await readDepartments(image, "image/jpeg", Infinity, client)).toEqual({ departments: [{ name: "TEKEL", rate: 0, amount: "24.504,00" }], inputTokens: 10, outputTokens: 2 });
+    expect(parse.mock.calls[0][0].output_config.format).toBeDefined();
+  });
+  it("API hatası, ret ya da az kalan süre: null döner, hata fırlatmaz", async () => {
+    const { readDepartments } = await import("./extract");
+    expect(await readDepartments(image, "image/jpeg", Infinity, mockClient(new Anthropic.APIError(500, undefined, "x", undefined)).client)).toBeNull();
+    expect(await readDepartments(image, "image/jpeg", Infinity, mockClient(new TypeError("x")).client)).toBeNull();
+    expect(await readDepartments(image, "image/jpeg", Infinity, mockClient({ parsed_output: null, stop_reason: "refusal", usage: { input_tokens: 1, output_tokens: 1 } }).client)).toBeNull();
+    const { client, parse } = mockClient();
+    expect(await readDepartments(image, "image/jpeg", Date.now() + 1000, client)).toBeNull();
+    expect(parse).not.toHaveBeenCalled();
+  });
+});
+
 describe("toReceiptData", () => {
   it("metin tutarları kuruşa ve tarihi ISO'ya çevirir", () => {
     expect(toReceiptData(goodOutput)).toEqual({

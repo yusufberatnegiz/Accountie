@@ -88,9 +88,11 @@ export function toForeignData(x: ReceiptExtraction): ForeignData {
 }
 
 /** A Z report as read. */
-export function toSalesData(x: ReceiptExtraction): SalesData {
+export function toSalesData(x: ReceiptExtraction & { departments?: readonly { name: string; rate: number; amount: string }[] }): SalesData {
   const data = toReceiptData(x);
-  return { vendorName: x.vendorName, zNo: x.zNo, date: data.date, vatLines: data.vatLines, totalKurus: data.totalKurus, cashKurus: amountOrNull(x.cashTotal), cardKurus: amountOrNull(x.cardTotal), invoicedKurus: amountOrNull(x.invoicedTotal) };
+  // Departments come from their own read (src/lib/extract/extract.ts readDepartments), stored with the reading; older reads have none.
+  const departments = (x.departments ?? []).flatMap((d) => { const g = amountOrNull(d.amount); return g && g > 0 ? [{ name: d.name, rate: d.rate, grossKurus: g }] : []; });
+  return { vendorName: x.vendorName, zNo: x.zNo, date: data.date, vatLines: data.vatLines, totalKurus: data.totalKurus, cashKurus: amountOrNull(x.cashTotal), cardKurus: amountOrNull(x.cardTotal), invoicedKurus: amountOrNull(x.invoicedTotal), departments };
 }
 
 /** Older reads (before Z reports and foreign invoices) have no kind: they are receipts. */
