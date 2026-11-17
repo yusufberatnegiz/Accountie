@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RULES } from "./default-rules";
-import { approvalProblem, buildJournalLines, isBalanced, type ReceiptData } from "./journal";
+import { approvalProblem, buildJournalLines, isBalanced, linesProblem, NO_PLAN, type ReceiptData } from "./journal";
+import { planIndex } from "./plan-suggest";
 
 const sample: ReceiptData = {
   vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ",
@@ -128,24 +129,28 @@ describe("isBalanced", () => {
 
 describe("approvalProblem", () => {
   const head = { documentNo: "0047", documentDate: "2026-09-05" };
-  const debit = { ...head, accountCode: "770.08", debitKurus: 100, creditKurus: 0 };
-  const credit = { ...head, accountCode: "331.01", debitKurus: 0, creditKurus: 100 };
-  it("tam kayıtta sorun yok", () => expect(approvalProblem([debit, credit])).toBeNull());
+  const debit = { ...head, accountCode: "770.08", accountName: "Yeme İçme Giderleri", debitKurus: 100, creditKurus: 0 };
+  const credit = { ...head, accountCode: "331.01", accountName: "Ortaklara Borçlar", debitKurus: 0, creditKurus: 100 };
+  const plan = planIndex([{ code: "770", name: "Genel Yönetim Giderleri" }, { code: "770.08", name: "Yeme İçme Giderleri" }, { code: "331.01", name: "Ortaklara Borçlar" }]);
+  it("tam kayıtta sorun yok", () => expect(approvalProblem([debit, credit], plan)).toBeNull());
   it("sebebi satır numarasıyla söyler", () => {
-    expect(approvalProblem([debit, { ...credit, accountCode: "" }])).toBe("2. satırda hesap kodu yok.");
-    expect(approvalProblem([debit, credit, { ...credit, creditKurus: 0 }])).toBe("3. satırda tutar yok.");
-    expect(approvalProblem([{ ...debit, creditKurus: 100 }, credit])).toBe("1. satırda hem borç hem alacak var.");
-    expect(approvalProblem([debit, { ...credit, creditKurus: 50 }])).toBe("Borç ile alacak farkı 0,50 TL.");
+    expect(approvalProblem([debit, { ...credit, accountCode: "" }], plan)).toBe("2. satırda hesap kodu yok.");
+    expect(linesProblem([debit, credit, { ...credit, creditKurus: 0 }])).toBe("3. satırda tutar yok.");
+    expect(linesProblem([{ ...debit, creditKurus: 100 }, credit])).toBe("1. satırda hem borç hem alacak var.");
+    expect(linesProblem([debit, { ...credit, creditKurus: 50 }])).toBe("Borç ile alacak farkı 0,50 TL.");
   });
   it("evrak tarihi ve evrak no olmadan onaylanmaz", () => {
-    expect(approvalProblem([{ ...debit, documentDate: null }, { ...credit, documentDate: null }])).toBe("Evrak tarihi eksik.");
-    expect(approvalProblem([{ ...debit, documentNo: " " }, credit])).toBe("Evrak no eksik.");
-    expect(approvalProblem([debit, { ...credit, documentDate: "2026-09-06" }])).toBe("Satırlarda evrak tarihi farklı.");
+    expect(linesProblem([{ ...debit, documentDate: null }, { ...credit, documentDate: null }])).toBe("Evrak tarihi eksik.");
+    expect(linesProblem([{ ...debit, documentNo: " " }, credit])).toBe("Evrak no eksik.");
+    expect(linesProblem([debit, { ...credit, documentDate: "2026-09-06" }])).toBe("Satırlarda evrak tarihi farklı.");
   });
-  it("firmanın Luca planı varsa planda olmayan kod onaylanmaz; plan yoksa bakılmaz", () => {
-    expect(approvalProblem([debit, credit], new Set(["770.08", "309.01"]))).toBe("2. satırdaki 331.01 hesabı firmanın Luca planında yok.");
-    expect(approvalProblem([debit, credit], new Set(["770.08", "331.01"]))).toBeNull();
-    expect(approvalProblem([debit, credit], new Set())).toBeNull();
+  it("Luca planı olmayan firmanın fişi onaylanmaz", () => {
+    expect(approvalProblem([debit, credit], planIndex([]))).toBe(NO_PLAN);
+  });
+  it("planda olmayan, alt hesabı olan ya da planda başka anlamdaki kod onaylanmaz", () => {
+    expect(approvalProblem([debit, { ...credit, accountCode: "309.01" }], plan)).toBe("2. satırdaki 309.01 hesabı firmanın Luca planında yok.");
+    expect(approvalProblem([{ ...debit, accountCode: "770" }, credit], plan)).toBe("1. satırdaki 770 hesabının alt hesapları var; alt hesaplardan birini seçin.");
+    expect(approvalProblem([{ ...debit, accountName: "Kırtasiye Giderleri" }, credit], plan)).toMatch(/770.08 Luca planında “Yeme İçme Giderleri”, satırda “Kırtasiye Giderleri”.*plandan yeniden seçin/);
   });
 });
 
@@ -178,9 +183,3 @@ describe("jüri turu 3: yevmiye", () => {
   });
 });
 
-describe("jüri turu 4: onay", () => {
-  it("planda olan ama alt hesabı bulunan (grup) kodla onay verilmez", () => {
-    const lines = [{ accountCode: "770", debitKurus: 100, creditKurus: 0, documentNo: "1", documentDate: "2026-09-05" }, { accountCode: "100.01", debitKurus: 0, creditKurus: 100, documentNo: "1", documentDate: "2026-09-05" }];
-    expect(approvalProblem(lines, new Set(["770", "770.01", "100.01"]), new Set(["770.01", "100.01"]))).toBe("1. satırdaki 770 hesabının alt hesapları var; alt hesaplardan birini seçin.");
-  });
-});

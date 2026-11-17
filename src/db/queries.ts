@@ -1,7 +1,7 @@
 // The only module that talks to the database (Supabase Postgres through its pooler). Every function takes the session user's id and filters by it.
-import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import { CATEGORIES, DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
-import { fitRulesToPlan, leavesOf, planMismatches, planMismatchWarning } from "@/lib/plan-suggest";
+import { mergeRules, planIndex, planMismatches, planMismatchWarning } from "@/lib/plan-suggest";
 import { isKkegLine } from "@/lib/vehicle";
 import { approvalProblem, RETIRED_WARNINGS, warn, type JournalLine, type Warning } from "@/lib/journal";
 import { getDb } from "./index";
@@ -67,11 +67,6 @@ export async function listFirms(userId: string): Promise<Firm[]> {
   return [first];
 }
 
-export async function createFirm(userId: string, name: string, taxNumber: string | null): Promise<Firm> {
-  const [row] = await getDb().insert(firms).values({ userId, name, taxNumber }).returning(firmColumns);
-  return row;
-}
-
 /**
  * A firm Luca lists, with its chart of accounts: matched to the user's firm by VKN, else by Luca's id, else added. The plan is
  * replaced whole, so a second import only refreshes. Null when a new firm would pass `maxFirms`.
@@ -79,7 +74,8 @@ export async function createFirm(userId: string, name: string, taxNumber: string
 export async function importLucaFirm(userId: string, f: { lucaId: string; name: string; taxNumber: string | null; accounts: readonly { code: string; name: string }[] }, maxFirms: number): Promise<{ id: string; created: boolean } | null> {
   return getDb().transaction(async (tx) => {
     const mine = await tx.select({ id: firms.id, taxNumber: firms.taxNumber, lucaSirketId: firms.lucaSirketId }).from(firms).where(eq(firms.userId, userId));
-    const found = (f.taxNumber ? mine.find((m) => m.taxNumber === f.taxNumber) : undefined) ?? mine.find((m) => m.lucaSirketId === f.lucaId);
+    // Luca's id first: two Luca firms with one VKN stay two firms. The VKN only ties a firm made by hand (no Luca id) to Luca.
+    const found = mine.find((m) => m.lucaSirketId === f.lucaId) ?? (f.taxNumber ? mine.find((m) => !m.lucaSirketId && m.taxNumber === f.taxNumber) : undefined);
     if (!found && mine.length >= maxFirms) return null;
     const id = found?.id ?? (await tx.insert(firms).values({ userId, name: f.name, taxNumber: f.taxNumber, lucaSirketId: f.lucaId }).returning({ id: firms.id }))[0].id;
     if (found) await tx.update(firms).set({ lucaSirketId: f.lucaId, taxNumber: found.taxNumber ?? f.taxNumber }).where(and(eq(firms.id, id), eq(firms.userId, userId)));
@@ -90,6 +86,13 @@ export async function importLucaFirm(userId: string, f: { lucaId: string; name: 
     }
     return { id, created: !found };
   });
+}
+
+/** Luca ids of the user's firms whose plan is in: the extension then reads only the firms Luca has and Accountie lacks. */
+export async function listImportedLucaIds(userId: string): Promise<string[]> {
+  const rows = await getDb().selectDistinct({ id: firms.lucaSirketId }).from(firms).innerJoin(firmAccounts, eq(firmAccounts.firmId, firms.id))
+    .where(and(eq(firms.userId, userId), isNotNull(firms.lucaSirketId)));
+  return rows.flatMap((r) => (r.id ? [r.id] : []));
 }
 
 /** The firm's Luca chart of accounts by code; empty until the extension has imported it. */
@@ -107,30 +110,12 @@ export async function getRules(userId: string, firmId?: string | null): Promise<
     rows = rulesToRows(DEFAULT_RULES);
     await db.insert(accountRules).values(rows.map((r) => ({ ...r, userId }))).onConflictDoNothing();
   }
-  const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
-  let own: RuleRow[] = [];
-  if (firmId) {
-    own = await db.select({ kind: firmRules.kind, key: firmRules.key, label: firmRules.label, accountCode: firmRules.accountCode, accountName: firmRules.accountName })
-      .from(firmRules).where(and(eq(firmRules.userId, userId), eq(firmRules.firmId, firmId)));
-    rows = [...rows.map((r) => own.find((o) => same(o, r)) ?? r), ...own.filter((o) => !rows.some((r) => same(o, r)))];
-  }
-  // Rules added after the user's table was made (foreign invoice, Z report) show with their defaults until saved. Vehicle repairs
-  // were split from workplace repairs later: until saved, they keep the code the user had chosen for repairs.
-  const defaults = rulesToRows(DEFAULT_RULES);
-  const repairs = rows.find((r) => r.kind === "expense" && r.key === "maintenance");
-  const missing = defaults.filter((d) => !rows.some((r) => same(r, d)))
-    .map((d) => (d.kind === "expense" && d.key === "vehicle_maintenance" && repairs ? { ...d, accountCode: repairs.accountCode, accountName: repairs.accountName } : d));
-  // Labels are the app's, not the stored copy (a rule renamed since shows its new name), in the app's order.
-  const order = (r: RuleRow) => { const i = defaults.findIndex((d) => same(d, r)); return i < 0 ? defaults.length : i; };
-  rows = [...rows, ...missing].map((r) => ({ ...r, label: defaults.find((d) => same(d, r))?.label ?? r.label })).sort((a, b) => order(a) - order(b));
-  // Before round 2 a save wrote every rule of the firm, so a row equal to the default is no choice of the user's: it is fitted too.
-  const chose = (o: RuleRow) => !defaults.some((d) => same(d, o) && d.accountCode === o.accountCode && d.accountName === o.accountName);
-  // A firm with its Luca plan imported books to that plan, with nothing to save: every rule the firm has not set itself is fitted
-  // to the plan (src/lib/plan-suggest.ts fitRulesToPlan), so a default code never lands on an account that means something else.
+  const own = firmId ? await db.select({ kind: firmRules.kind, key: firmRules.key, label: firmRules.label, accountCode: firmRules.accountCode, accountName: firmRules.accountName })
+    .from(firmRules).where(and(eq(firmRules.userId, userId), eq(firmRules.firmId, firmId))) : [];
   // Read once here and handed back, so callers that also check codes against the plan do not read it again.
   const plan = firmId ? await listFirmAccounts(userId, firmId) : [];
-  if (plan.length) rows = fitRulesToPlan(rows, plan, (r) => own.some((o) => same(o, r) && chose(o)));
-  return { rules: rulesFromRows(rows), rows, plan };
+  const merged = mergeRules(rows, own, plan);
+  return { rules: rulesFromRows(merged), rows: merged, plan };
 }
 
 /** Deletes the firm's own rules (Kurallar's "Varsayılanlara dön" on a firm). */
@@ -259,9 +244,8 @@ export async function listReceipts(userId: string, firmId: string, { status, mon
         .where(and(eq(journalLines.userId, userId), inArray(journalLines.receiptId, quiet))).orderBy(asc(journalLines.lineNo)),
       listFirmAccounts(userId, firmId),
     ]);
-    const codes = plan.length ? new Set(plan.map((a) => a.code)) : undefined;
-    const postable = plan.length ? new Set(leavesOf(plan).map((a) => a.code)) : undefined;
-    for (const id of quiet) if (!approvalProblem(lines.filter((l) => l.receiptId === id), codes, postable)) ready.add(id);
+    const index = planIndex(plan);
+    for (const id of quiet) if (!approvalProblem(lines.filter((l) => l.receiptId === id), index)) ready.add(id);
   }
   return shown.map((r) => ({ ...r, ready: ready.has(r.id) }));
 }
@@ -326,6 +310,23 @@ export async function replaceLines(userId: string, id: string, lines: readonly J
   });
 }
 
+/**
+ * Sends an approved receipt back to draft with new lines and warnings, in one step; the vehicle choice goes too (the new lines have
+ * no binek split, so it is asked again). False when the receipt is no longer approved.
+ */
+export async function reopenRebuilt(userId: string, id: string, lines: readonly JournalLine[], warnings: readonly Warning[]): Promise<boolean> {
+  return getDb().transaction(async (tx) => {
+    const [row] = await tx.update(receipts)
+      .set({ status: "draft", approvedAt: null, warnings: [...warnings], extraction: sql`${receipts.extraction} - 'vehicle'` })
+      .where(and(eq(receipts.id, id), eq(receipts.userId, userId), eq(receipts.status, "approved")))
+      .returning({ id: receipts.id });
+    if (!row) return false;
+    await tx.delete(journalLines).where(and(eq(journalLines.receiptId, id), eq(journalLines.userId, userId)));
+    await tx.insert(journalLines).values(lineRows(userId, id, lines));
+    return true;
+  });
+}
+
 /** Moves one receipt between states; false when it is not the user's or not in `from`. */
 export async function transitionReceipt(userId: string, id: string, from: ReceiptStatus, to: ReceiptStatus): Promise<boolean> {
   const rows = await getDb().update(receipts)
@@ -357,7 +358,7 @@ export async function deleteDraft(userId: string, id: string): Promise<boolean> 
 export async function listForExport(userId: string, firmId: string | null, ids?: readonly string[], month?: string) {
   const db = getDb();
   const mine = firmId ? and(eq(receipts.userId, userId), eq(receipts.firmId, firmId)) : eq(receipts.userId, userId);
-  const rows = await db.select({ id: receipts.id, firmId: receipts.firmId, firmName: firms.name, firmLucaId: firms.lucaSirketId, taxNumber: receipts.taxNumber }).from(receipts).leftJoin(firms, eq(firms.id, receipts.firmId))
+  const rows = await db.select({ id: receipts.id, firmId: receipts.firmId, firmName: firms.name, firmLucaId: firms.lucaSirketId, firmTaxNumber: firms.taxNumber, taxNumber: receipts.taxNumber }).from(receipts).leftJoin(firms, eq(firms.id, receipts.firmId))
     .where(ids?.length
       ? and(mine, inArray(receipts.id, [...ids]), inArray(receipts.status, ["approved", "exported"]))
       : and(mine, eq(receipts.status, "approved"), month ? eq(RECEIPT_MONTH, month) : undefined))
@@ -366,7 +367,7 @@ export async function listForExport(userId: string, firmId: string | null, ids?:
   const lines = await db.select({ ...lineColumns, receiptId: journalLines.receiptId }).from(journalLines)
     .where(and(eq(journalLines.userId, userId), inArray(journalLines.receiptId, rows.map((r) => r.id))))
     .orderBy(asc(journalLines.lineNo));
-  return rows.map((r) => ({ id: r.id, firmId: r.firmId, firmName: r.firmName, firmLucaId: r.firmLucaId, taxNumber: r.taxNumber, lines: lines.filter((l) => l.receiptId === r.id).map(({ receiptId, ...l }) => l) }));
+  return rows.map((r) => ({ id: r.id, firmId: r.firmId, firmName: r.firmName, firmLucaId: r.firmLucaId, firmTaxNumber: r.firmTaxNumber, taxNumber: r.taxNumber, lines: lines.filter((l) => l.receiptId === r.id).map(({ receiptId, ...l }) => l) }));
 }
 
 export async function markExported(userId: string, ids: readonly string[]): Promise<void> {

@@ -1,6 +1,7 @@
 import { descriptionFromVendor } from "./description";
 import { CATEGORIES, LEGACY_VAT_RATES, type Account, type PaymentMethod, type Rules } from "./default-rules";
 import { formatTrAmount, vatFromGross } from "./money";
+import { planMismatches, type PlanIndex } from "./plan-suggest";
 
 export type VatLine = { rate: number; grossKurus: number; vatKurus: number | null };
 
@@ -59,7 +60,8 @@ export const WARNING_MESSAGES: Record<string, string> = {
   vehicle_choice: "Araç binek mi ticari mi? Yevmiye satırlarının üstündeki Araç seçiminden seçin; seçilmeden onaylanmaz.",
   payment_other: "Ödemenin tamamı ya da bir kısmı puan, hediye çeki, yemek kartı ya da açık hesapla. O alacak satırının hesabını kontrol edin.",
   withholding: "Faturada KDV tevkifatı var; tevkif edilen tutar okunamadı. Tevkif edilen KDV için 360 alacak satırını faturaya göre ekleyin, 191 ve toplamı kontrol edin.",
-  plan_no_account: "Firmanın Luca planında bu satıra uyan hesap bulunamadı. Hesap kodunu plandan seçin.",
+  plan_no_account: "Firmanın Luca planında bu satıra uyan hesap bulunamadı (ya da birden çok kasa var). Hesap kodunu plandan seçin; kasayı Kurallar'da bu firma için bir kez seçebilirsiniz.",
+  plan_rebuilt: "Satırlar firmanın Luca planına göre yeniden kuruldu; elle yaptığınız değişiklikler kalmadı. Kontrol edip onaylayın.",
   z_unknown_rate: "Kural tablosunda olmayan KDV oranı var. Satış ve KDV hesabını seçin.",
 };
 
@@ -147,15 +149,32 @@ export function isBalanced(lines: readonly Pick<JournalLine, "accountCode" | "de
   return debit > 0 && debit === credit;
 }
 
-type ApprovalLine = Pick<JournalLine, "accountCode" | "debitKurus" | "creditKurus" | "documentNo" | "documentDate">;
+/** Why a firm with no Luca plan takes no receipt: its codes would be guesses, not Luca's. */
+export const NO_PLAN = "Bu firmanın Luca hesap planı Accountie'de yok. Luca'da bu firmayı açın, eklentide “Luca'dan firmaları çek” ile “Yeni firmaları çek”e basın.";
 
-/** First reason the lines cannot be approved or exported, in Turkish; null when they can. With the firm's Luca plan, every code must be in it. */
-export function approvalProblem(lines: readonly ApprovalLine[], plan?: ReadonlySet<string>, postable?: ReadonlySet<string>): string | null {
+type ApprovalLine = Pick<JournalLine, "accountCode" | "accountName" | "debitKurus" | "creditKurus" | "documentNo" | "documentDate">;
+
+/**
+ * First reason the lines cannot be approved, exported or written to Luca, in Turkish; null when they can. Every code must be an
+ * account of the firm's Luca plan that can be posted to, with the meaning Luca gives it: a firm with no plan books nothing.
+ */
+export function approvalProblem(lines: readonly ApprovalLine[], plan: PlanIndex): string | null {
+  if (plan.accounts.length === 0) return NO_PLAN;
+  for (const [i, l] of lines.entries()) {
+    if (!l.accountCode) continue; // said by linesProblem
+    if (!plan.codes.has(l.accountCode)) return `${i + 1}. satırdaki ${l.accountCode} hesabı firmanın Luca planında yok.`;
+    if (!plan.postable.has(l.accountCode)) return `${i + 1}. satırdaki ${l.accountCode} hesabının alt hesapları var; alt hesaplardan birini seçin.`;
+  }
+  const [off] = planMismatches(lines, plan.accounts);
+  if (off) return `${off.code} Luca planında “${off.luca}”, satırda “${off.ours}” yazıyor. Hesabı plandan yeniden seçin; ad Luca'daki ad olur.`;
+  return linesProblem(lines);
+}
+
+/** The checks that need no plan: codes present, amounts, balance, date and number. */
+export function linesProblem(lines: readonly Omit<ApprovalLine, "accountName">[]): string | null {
   if (lines.length === 0) return "Satır yok.";
   for (const [i, l] of lines.entries()) {
     if (!l.accountCode) return `${i + 1}. satırda hesap kodu yok.`;
-    if (plan?.size && !plan.has(l.accountCode)) return `${i + 1}. satırdaki ${l.accountCode} hesabı firmanın Luca planında yok.`;
-    if (postable?.size && !postable.has(l.accountCode)) return `${i + 1}. satırdaki ${l.accountCode} hesabının alt hesapları var; alt hesaplardan birini seçin.`;
     if (l.debitKurus < 0 || l.creditKurus < 0) return `${i + 1}. satırda eksi tutar var.`;
     if (l.debitKurus > 0 && l.creditKurus > 0) return `${i + 1}. satırda hem borç hem alacak var.`;
     if (l.debitKurus === 0 && l.creditKurus === 0) return `${i + 1}. satırda tutar yok.`;

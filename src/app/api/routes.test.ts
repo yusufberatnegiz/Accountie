@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_RULES } from "@/lib/default-rules";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_PLAN, DEFAULT_RULES } from "@/lib/default-rules";
 import { buildJournalLines } from "@/lib/journal";
 
 vi.mock("@/lib/auth/session", () => {
@@ -8,7 +8,7 @@ vi.mock("@/lib/auth/session", () => {
 });
 vi.mock("@/db/queries", () => ({
   createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(async () => false), getRules: vi.fn(), listReceipts: vi.fn(), getReceipt: vi.fn(),
-  getVendorRule: vi.fn(async () => null), learnVendorRule: vi.fn(async () => {}), listFirmAccounts: vi.fn(async () => []),
+  getVendorRule: vi.fn(async () => null), learnVendorRule: vi.fn(async () => {}), listFirmAccounts: vi.fn(async () => []), reopenRebuilt: vi.fn(),
   replaceLines: vi.fn(async () => true), setVehicleChoice: vi.fn(async () => true), deleteDraft: vi.fn(), transitionReceipt: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), saveRules: vi.fn(), clearFirmRules: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
@@ -35,7 +35,7 @@ const { lines } = buildJournalLines({
   vendorName: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", receiptNo: "0047", date: "2026-09-05",
   vatLines: [{ rate: 10, grossKurus: 872500, vatKurus: 79318 }], totalKurus: 872500, paymentMethod: "card", category: "meal",
 }, DEFAULT_RULES);
-const draft = { id: ID, status: "draft", lines, warnings: [] } as unknown as Awaited<ReturnType<typeof q.getReceipt>>;
+const draft = { id: ID, status: "draft", firmId: "firm-1", lines, warnings: [] } as unknown as Awaited<ReturnType<typeof q.getReceipt>>;
 
 const JPEG_MAGIC = [0xff, 0xd8, 0xff, 0xe0];
 function upload(type = "image/jpeg", size = 100, head: number[] = JPEG_MAGIC) {
@@ -51,7 +51,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(session.getUserId).mockResolvedValue(USER);
   vi.mocked(allow).mockResolvedValue(true);
-  vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [], plan: [] });
+  vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [], plan: [...DEFAULT_PLAN] });
   vi.mocked(q.createReceipt).mockResolvedValue(ID);
   vi.mocked(q.getReceipt).mockResolvedValue(draft);
 });
@@ -209,6 +209,41 @@ describe("tek fiş", () => {
     expect(q.transitionReceipt).not.toHaveBeenCalled();
   });
 
+  it("Luca planı olmayan firmanın ya da firmasız fiş onaylanmaz (422)", async () => {
+    vi.mocked(q.getRules).mockResolvedValueOnce({ rules: DEFAULT_RULES, rows: [], plan: [] });
+    const res = await approveRoute.POST(new Request("http://test"), params());
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toMatch(/Luca hesap planı Accountie'de yok/);
+    vi.mocked(q.getReceipt).mockResolvedValueOnce({ ...draft!, firmId: null });
+    expect((await approveRoute.POST(new Request("http://test"), params())).status).toBe(422);
+    expect(q.transitionReceipt).not.toHaveBeenCalled();
+  });
+
+  it("taslağa alınca plana uymayan onaylı fiş okunan belgeden plana göre yeniden kurulur, araç seçimi sorulur", async () => {
+    const x = { vendorName: "ÖRNEK BALIK LOKANTASI", taxOffice: null, taxNumber: null, date: "05.09.2026", time: null, receiptNo: "0047", zNo: null, ekuNo: null,
+      vatLines: [{ rate: 10, gross: "8.725,00", vat: "793,18" }], total: "8.725,00", paymentMethod: "card", category: "meal", unreadableFields: [], documentKind: "receipt",
+      currency: "TRY", cashTotal: null, cardTotal: null, invoicedTotal: null, lineItems: [], discounts: [], totalVat: "793,18", withholding: false, noFiscalValue: false, payments: [], vehicle: "binek" };
+    // Approved with the default 331.01 before the plan came; the firm's Luca plan calls its partner account 331.001.
+    const plan = [...DEFAULT_PLAN.filter((a) => a.code !== "331.01"), { code: "331.001", name: "Ortaklara Borçlar" }];
+    vi.mocked(q.getReceipt).mockResolvedValueOnce({ ...draft!, status: "approved", extraction: x, warnings: [{ code: "duplicate", message: "d" }] });
+    vi.mocked(q.getRules).mockResolvedValueOnce({ rules: { ...DEFAULT_RULES, payment: { ...DEFAULT_RULES.payment, card: { code: "331.001", name: "Ortaklara Borçlar" } } }, rows: [], plan });
+    vi.mocked(q.reopenRebuilt).mockResolvedValueOnce(true);
+    const res = await reopenRoute.POST(new Request("http://test"), params());
+    expect(await res.json()).toEqual({ status: "draft", rebuilt: true });
+    const [, , rebuilt, warnings] = vi.mocked(q.reopenRebuilt).mock.calls[0];
+    expect(rebuilt.map((l) => l.accountCode)).toEqual(["770.08", "191.03.10", "331.001"]);
+    expect(warnings.map((w) => w.code)).toEqual(expect.arrayContaining(["plan_rebuilt", "duplicate"]));
+    expect(q.transitionReceipt).not.toHaveBeenCalled();
+  });
+
+  it("taslağa alınca plana uyan fişin satırlarına dokunulmaz", async () => {
+    vi.mocked(q.getReceipt).mockResolvedValueOnce({ ...draft!, status: "approved", extraction: { documentKind: "receipt" } });
+    vi.mocked(q.transitionReceipt).mockResolvedValueOnce(true);
+    expect(await (await reopenRoute.POST(new Request("http://test"), params())).json()).toEqual({ status: "draft" });
+    expect(q.reopenRebuilt).not.toHaveBeenCalled();
+    expect(q.transitionReceipt).toHaveBeenCalledWith(USER, ID, "approved", "draft");
+  });
+
   it("dengeli fiş onaylanır", async () => {
     vi.mocked(q.transitionReceipt).mockResolvedValue(true);
     expect((await approveRoute.POST(new Request("http://test"), params())).status).toBe(200);
@@ -217,7 +252,7 @@ describe("tek fiş", () => {
 
   it("onay, satıcının düzeltilmiş gider hesabını o firmada öğrenir; varsayılana dönen onay öğrenileni unutur", async () => {
     vi.mocked(q.transitionReceipt).mockResolvedValue(true);
-    vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [], plan: [] });
+    vi.mocked(q.getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [], plan: [...DEFAULT_PLAN] });
     const seller = { taxNumber: "1111111114", firmId: "firm-1", vendorName: "ÖRNEK BALIK LOKANTASI", category: "meal" };
     const corrected = lines.map((l, i) => (i === 0 ? { ...l, accountCode: "770.05", accountName: "Ulaşım Giderleri" } : l));
     vi.mocked(q.getReceipt).mockResolvedValueOnce({ ...draft!, ...seller, lines: corrected });
@@ -237,8 +272,20 @@ describe("tek fiş", () => {
 });
 
 describe("POST /api/exports", () => {
+  beforeEach(() => { vi.mocked(q.listFirmAccounts).mockResolvedValue([...DEFAULT_PLAN]); });
+  afterEach(() => { vi.mocked(q.listFirmAccounts).mockResolvedValue([]); });
+
+  it("firmanın Luca planına uymayan onaylı fiş dosyaya girmez, nedeni söylenir", async () => {
+    vi.mocked(q.listFirmAccounts).mockResolvedValue([]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: "firm-1", firmName: "ÖRNEK FİRMA", firmLucaId: "7", firmTaxNumber: null, taxNumber: null, lines }]);
+    const res = await exportsRoute.POST(json({}, "POST"));
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toMatch(/1 fiş firmanın Luca planına uymuyor/);
+    expect(q.markExported).not.toHaveBeenCalled();
+  });
+
   it("dengeli fişlerden xlsx üretir ve aktarıldı işaretler", async () => {
-    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: null, firmName: "ÖRNEK FİRMA", firmLucaId: null, taxNumber: null, lines }, { id: "bad", firmId: null, firmName: "ÖRNEK FİRMA", firmLucaId: null, taxNumber: null, lines: lines.slice(0, 1) }]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: "firm-1", firmName: "ÖRNEK FİRMA", firmLucaId: "7", firmTaxNumber: null, taxNumber: null, lines }, { id: "bad", firmId: "firm-1", firmName: "ÖRNEK FİRMA", firmLucaId: "7", firmTaxNumber: null, taxNumber: null, lines: lines.slice(0, 1) }]);
     const res = await exportsRoute.POST(json({}, "POST"));
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("spreadsheetml");
@@ -246,7 +293,7 @@ describe("POST /api/exports", () => {
   });
 
   it("ay seçiliyken yalnız o ayın onaylı fişleri istenir; bozuk ay 400", async () => {
-    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: null, firmName: "ÖRNEK FİRMA", firmLucaId: null, taxNumber: null, lines }]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: "firm-1", firmName: "ÖRNEK FİRMA", firmLucaId: "7", firmTaxNumber: null, taxNumber: null, lines }]);
     expect((await exportsRoute.POST(json({ month: "2026-10" }, "POST"))).status).toBe(200);
     expect(q.listForExport).toHaveBeenCalledWith(USER, "firm-1", undefined, "2026-10");
     expect((await exportsRoute.POST(json({ month: "2026-13" }, "POST"))).status).toBe(400);

@@ -1,7 +1,8 @@
 // Sample data for the dev-only screen preview (/onizleme) and nothing else. Invented ÖRNEK vendor and tax number.
 import type { Firm, ReceiptDetail, VendorRule } from "@/db/queries";
-import { DEFAULT_RULES, rulesToRows } from "./default-rules";
+import { DEFAULT_PLAN, DEFAULT_RULES, rulesToRows } from "./default-rules";
 import { approvalProblem, buildJournalLines, warn, type ReceiptData } from "./journal";
+import { planIndex } from "./plan-suggest";
 import { buildForeignLines, buildSalesLines, type ForeignData, type SalesData } from "./journal-kinds";
 // A müşavir's mükellefs: invented ÖRNEK names, enough of them to show the search. The first holds the preview receipts.
 const FIRM_NAMES = ["BALIK LOKANTASI LTD.ŞTİ","İNŞAAT A.Ş.","KUAFÖR","MOBİLYA SAN.TİC.LTD.ŞTİ","ECZANE","OTO SERVİS","KIRTASİYE","DİŞ KLİNİĞİ","LOJİSTİK A.Ş.","FIRIN","YAZILIM LTD.ŞTİ","TEKSTİL","KAFE","NAKLİYAT","OPTİK","ÇİÇEKÇİLİK","MATBAA","ELEKTRİK MALZEMELERİ","HIRDAVAT","SPOR SALONU","VETERİNER KLİNİĞİ","TURİZM SEYAHAT","GIDA PAZARLAMA","OTO KİRALAMA","MİMARLIK OFİSİ","REKLAM AJANSI","KUYUMCU","BUTİK OTEL","PASTANE","BİLGİSAYAR TEKNİK","TEMİZLİK HİZMETLERİ","KASAP","EMLAK","DANIŞMANLIK LTD.ŞTİ","KREŞ","ZİRAAT ÜRÜNLERİ"];
@@ -85,6 +86,7 @@ export const PREVIEW_RECEIPTS: ReceiptDetail[] = [
 ];
 
 export const PREVIEW_RULE_ROWS = rulesToRows(DEFAULT_RULES);
+const PREVIEW_PLAN = planIndex(DEFAULT_PLAN); // the preview firm books to the default accounts, as an imported plan would hold them
 export const PREVIEW_EMAIL = "muhasebe@buro.example";
 
 /** The list screen's row shape, computed from the fixtures the way listReceipts computes it in SQL. */
@@ -93,7 +95,7 @@ export const PREVIEW_LIST = PREVIEW_RECEIPTS.map(({ lines, taxNumber, paymentMet
   invoice: (extraction as { documentKind?: string } | null)?.documentKind === "domestic_invoice",
   expenseCode: lines.find((l) => l.debitKurus > 0 && !l.accountCode.startsWith("191"))?.accountCode ?? null,
   vatKurus: lines.reduce((n, l) => n + (l.accountCode.startsWith("191") ? l.debitKurus : 0), 0),
-  ready: r.status === "draft" && r.warnings.length === 0 && !approvalProblem(lines),
+  ready: r.status === "draft" && r.warnings.length === 0 && !approvalProblem(lines, PREVIEW_PLAN),
 }));
 
 

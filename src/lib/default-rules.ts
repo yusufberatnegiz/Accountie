@@ -141,6 +141,10 @@ export function rulesToRows(rules: Rules): RuleRow[] {
   ];
 }
 
+/** A Luca plan holding exactly the default accounts: the preview firm's, and the plan tests book against. */
+export const DEFAULT_PLAN: readonly Account[] = [...new Map([...rulesToRows(DEFAULT_RULES).filter((r) => r.kind !== "setting"), ...PAYMENT_ALTERNATIVES.map((a) => ({ accountCode: a.code, accountName: a.name }))]
+  .map((r) => [r.accountCode, { code: r.accountCode, name: r.accountName }])).values()];
+
 /** Missing rows fall back to defaults, so a partial table still works. */
 export function rulesFromRows(rows: readonly RuleRow[]): Rules {
   const rules: Rules = structuredClone(DEFAULT_RULES);

@@ -112,6 +112,9 @@ async function load() {
   renderCards(filled);
   if (!receipts.length) $("cards").replaceChildren(el("li", { className: "empty muted", textContent: "Aktarılacak onaylı fiş yok. Accountie'de fişleri onaylayınca burada görünür." }));
   $("fill").hidden = !receipts.length;
+  // Approved receipts the firm's Luca plan no longer takes (or whose firm is not from Luca): never listed, but said.
+  $("off-plan").hidden = !data.offPlan;
+  $("off-plan").textContent = data.offPlan ? `${data.offPlan} onaylı fiş listede yok: firması Luca'dan çekilmemiş ya da satırları firmanın Luca planına uymuyor. Accountie'de fişi açıp “Taslağa al”a basın; satırlar plana göre yeniden kurulur.` : "";
   // While written receipts wait for Luca's Kaydet, marking them is the next step: that button leads.
   $("done").className = filled.length ? "primary" : "";
   $("fill").className = filled.length ? "" : "primary";
@@ -155,12 +158,26 @@ async function lucaTab() {
   return tab;
 }
 
-/** False (and says why) when Luca shows another firm than the receipts': they would be booked to that firm. */
+/**
+ * The firm of Luca's session (where Kaydet books), read without changing anything: its firm number and VKN from Luca's own customer
+ * page (luca-import.js probe), in the frame that holds the firm picker. Null when it cannot be read.
+ */
+async function lucaSession(tabId) {
+  const frames = await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, func: () => !!document.getElementById("SirketCombo") }).catch(() => []);
+  const hit = frames.find((f) => f.result);
+  if (!hit) return null;
+  const target = { tabId, frameIds: [hit.frameId] };
+  const probe = await chrome.scripting.executeScript({ target, files: ["luca-import.js"] })
+    .then(() => chrome.scripting.executeScript({ target, func: () => globalThis.AccountieLuca.probe().catch(() => null) }))
+    .then(([r]) => r?.result, () => null);
+  return probe?.identity ? { sirket: probe.ids?.sirket ?? null, taxNumber: probe.identity.taxNumber ?? null } : null;
+}
+
+/** False (and says why) unless Luca's screen and session both show the receipts' firm, brought from Luca: else they would be booked elsewhere. */
 async function sameFirm(tab, list) {
-  const open = await openLucaFirm(tab.id);
-  const other = open && list.find((r) => r.firmLucaId && r.firmLucaId !== open);
-  if (!other) return true;
-  status(`Luca'da açık firma bu fişlerin firması değil. Luca'da ${other.firm} firmasını seçin, eklentiyi yeniden açıp yazın.`, true);
+  const problem = AccountieFirmCheck.firmProblem(list, await openLucaFirm(tab.id), await lucaSession(tab.id));
+  if (!problem) return true;
+  status(problem, true);
   return false;
 }
 
@@ -240,6 +257,8 @@ async function autoAll() {
       await load();
       return status(`${saved} fiş kaydedildi. Son fiş (${receipt.documentNo}) dolduruldu ve ekranla karşılaştırıldı. Kontrol edip Kaydet'e siz basın, sonra Luca'da kaydettim'e basın.`);
     }
+    // Kaydet books to Luca's session: checked again before every press, another tab may have changed firm meanwhile.
+    if (!(await sameFirm(tab, [receipt]))) return stop(receipt, `${receipt.documentNo} dolduruldu ama kaydedilmedi. ${$("status").textContent}`);
     // The configured button must still read "Kaydet": a selector that drifted onto another button is never pressed.
     const pressed = await inTab(tab.id, () => {
       const b = document.querySelector(globalThis.AccountieSelectors.save);

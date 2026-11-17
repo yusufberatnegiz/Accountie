@@ -8,10 +8,17 @@
 </head>
 <body class="wide">
   <h1>Luca'dan firmaları ve hesap planlarını çek</h1>
-  <p class="muted">Her firma için (bu yılın dönemi açılmamışsa son dönemiyle) Luca'dan tam unvan, vergi numarası ve hesap planı okunur, Accountie'ye kaydedilir. Luca'da hiçbir kayıt değişmez. Yeniden çalıştırmak yalnız planları tazeler.</p>
+  <p class="muted">Firma için (bu yılın dönemi açılmamışsa son dönemiyle) Luca'dan tam unvan, vergi numarası ve hesap planı okunur, Accountie'ye kaydedilir. Fişlerin her hesap kodu bu plandan gelir. Luca'da hiçbir kayıt değişmez.</p>
+  <ul class="muted">
+    <li><strong>Yeni firmaları çek:</strong> yalnız Luca'da olup Accountie'de olmayan firmalar okunur. Luca'ya firma eklediğinizde bunu kullanın.</li>
+    <li><strong>Yalnız açık firmayı çek:</strong> Luca'da şu an açık firmanın planı yeniden okunur (planı Luca'da değiştiyse).</li>
+    <li><strong>Tümünü yeniden çek:</strong> bütün firmaların planları yeniden okunur; uzun sürer.</li>
+  </ul>
   <p><strong>Sürerken Luca'da çalışmayın.</strong> Okuma sırasında Luca oturumundaki açık firma değişir; bitince ya da durdurunca ilk firmanıza geri döner. Bu sekmeyi kapatırsanız Luca'da firmayı kendiniz yeniden seçin.</p>
   <div>
-    <button id="start" type="button" class="primary">Başlat</button>
+    <button id="start-new" type="button" class="primary">Yeni firmaları çek</button>
+    <button id="start-one" type="button">Yalnız açık firmayı çek</button>
+    <button id="start-all" type="button">Tümünü yeniden çek</button>
     <button id="stop" type="button" hidden>Durdur</button>
   </div>
   <p id="status" role="status"></p>

@@ -9,7 +9,7 @@ vi.mock("@/lib/tcmb", () => ({ tcmbRate: vi.fn(async () => ({ rate: 50, bulletin
 vi.mock("@/lib/image", async (orig) => ({ ...(await orig<typeof import("@/lib/image")>()), normalizeImage: async (b: Buffer) => b, cropReceipt: vi.fn(async () => Buffer.from("crop")) }));
 
 const { hitRateLimit, createReceipt, getRules, hasDuplicateReceipt, getBalance, reserveCredit, settleCredit } = await import("@/db/queries");
-const { DEFAULT_RULES } = await import("@/lib/default-rules");
+const { DEFAULT_PLAN, DEFAULT_RULES } = await import("@/lib/default-rules");
 const { extractReceipt, locateReceipts, readDepartments } = await import("@/lib/extract/extract");
 const { POST } = await import("./route");
 const { tcmbRate } = await import("@/lib/tcmb");
@@ -36,7 +36,7 @@ const jpeg = () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [], plan: [] });
+  vi.mocked(getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [], plan: [...DEFAULT_PLAN] });
   vi.mocked(extractReceipt).mockResolvedValue({ ok: false, inputTokens: 0, outputTokens: 0 });
   vi.mocked(locateReceipts).mockResolvedValue([]);
 });
@@ -60,6 +60,17 @@ describe("POST /api/receipts", () => {
     await POST(jpeg());
     expect(kinds()).toEqual(["receipt", "receiptIp", "receiptGlobal"]);
     session.createdAt = new Date(0);
+  });
+
+  it("Luca planı olmayan firmaya belge yüklenmez: okunmaz, kontör ayrılmaz, kaydedilmez", async () => {
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(getRules).mockResolvedValue({ rules: DEFAULT_RULES, rows: [], plan: [] });
+    const res = await POST(jpeg());
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/Luca hesap planı Accountie'de yok/);
+    expect(extractReceipt).not.toHaveBeenCalled();
+    expect(reserveCredit).not.toHaveBeenCalled();
+    expect(createReceipt).not.toHaveBeenCalled();
   });
 
   it("günlük genel tavan dolunca modeli çağırmaz", async () => {

@@ -2,20 +2,19 @@ import { NextResponse } from "next/server";
 import { createReceipt, getBalance, getRules, getVendorRule, hasDuplicateReceipt, listReceipts, reserveCredit, settleCredit, type NewReceipt } from "@/db/queries";
 import { creditCost, creditsRequired, MIN_BALANCE } from "@/lib/credits";
 import { isValidTaxNumber } from "@/lib/checks";
-import { withVendorAccount } from "@/lib/vendor-rule";
+import { linesFor } from "@/lib/rebuild";
 import { activeFirm } from "@/lib/firm";
 import { getSessionUser, getUserId } from "@/lib/auth/session";
 import { extractReceipt, locateReceipts, readDepartments, MAX_RECEIPTS_PER_PHOTO, STRONG_READ_ABOVE, type ExtractResult } from "@/lib/extract/extract";
 import { kindOf, toForeignData, toReceiptData, toSalesData, withholdingGap } from "@/lib/extract/schema";
 import { formatTrAmount } from "@/lib/money";
-import { buildForeignLines, buildSalesLines, foreignTotalTl } from "@/lib/journal-kinds";
+import { foreignTotalTl } from "@/lib/journal-kinds";
 import { tcmbRate } from "@/lib/tcmb";
 import { NO_STORE, fail, unauthorized } from "@/lib/http";
 import { ALLOWED_IMAGE_TYPES, cropReceipt, isPdf, MAX_PDF_PAGES, MAX_UPLOAD_BYTES, normalizeImage, pdfPageCount, sniffImageType } from "@/lib/image";
 import { allow, clientIp } from "@/lib/rate-limit";
 import type { Account, Rules } from "@/lib/default-rules";
-import { departmentAccounts } from "@/lib/plan-suggest";
-import { buildJournalLines, warn, type JournalLine, type ReceiptData, type Warning } from "@/lib/journal";
+import { buildJournalLines, NO_PLAN, warn, type JournalLine, type ReceiptData, type Warning } from "@/lib/journal";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -60,17 +59,19 @@ export async function POST(request: Request) {
     }
   }
 
+  const wanted = form?.get("firma");
+  const { firm } = await activeFirm(userId, typeof wanted === "string" ? wanted : null);
+  if (typeof wanted === "string" && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's data
+  const { rules, plan } = await getRules(userId, firm.id);
+  // Every code comes from the firm's Luca plan: without one nothing is read, no credit is taken, no default code is guessed.
+  if (plan.length === 0) return NextResponse.json({ error: NO_PLAN, plan: false }, { status: 409 });
+  const ctx: Ctx = { userId, firmId: firm.id, rules, plan, planned: true, until };
+
   // Kontör: a new upload needs at least one credit; inside it the balance may go down to MIN_BALANCE (reserveCredit).
   if (metered && (await getBalance(userId)) < 1) return NextResponse.json({ error: "Kontörünüz bitti. Belge okumak için kontör yükleyin.", kontor: true }, { status: 402 });
 
   // Counted only for valid photos that are about to reach the model.
   if (limits && !(await allow("receiptGlobal", "all"))) return fail("Fiş okuma bugün için geçici olarak durduruldu. Yarın tekrar deneyin.", 503);
-
-  const wanted = form?.get("firma");
-  const { firm } = await activeFirm(userId, typeof wanted === "string" ? wanted : null);
-  const { rules, plan } = await getRules(userId, firm.id);
-  const ctx: Ctx = { userId, firmId: firm.id, rules, plan, planned: plan.length > 0, until };
-  if (typeof wanted === "string" && wanted !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's data
   if (pdf) {
     const one = await readMetered(metered, ctx, jpeg, "application/pdf");
     if (one === "no_credit") return NextResponse.json({ error: "Kontörünüz bitti. Belge okumak için kontör yükleyin.", kontor: true }, { status: 402 });
@@ -162,7 +163,7 @@ async function readAndSave(ctx: Ctx, jpeg: Buffer, mediaType: "image/jpeg" | "ap
   const taxNumber = result.ok ? result.extraction.taxNumber : null;
   // A seller this firm has corrected before gets its learned expense account (src/lib/vendor-rule.ts); a failed lookup falls back.
   const learned = taxNumber && isValidTaxNumber(taxNumber) ? await getVendorRule(userId, firmId, taxNumber).catch(() => null) : null;
-  const { lines, warnings } = buildJournalLines(data, { ...withVendorAccount(rules, data.category, learned && { code: learned.accountCode, name: learned.accountName }), ...(kind === "domestic_invoice" && { documentType: rules.foreign.documentType }) });
+  const { lines, warnings } = result.ok ? linesFor(result.extraction, rules, learned && { code: learned.accountCode, name: learned.accountName }) : buildJournalLines(data, rules);
   const extra = result.ok ? result.problems : ["extraction_failed"];
   // Nothing was read of how it was paid (an empty read, or the method flagged unsure): no claim it was paid with points or a card.
   const paidUnknown = !result.ok || extra.includes("payment_unsure");
@@ -218,7 +219,7 @@ async function saveOther(ctx: Ctx, result: Extract<ExtractResult, { ok: true }>,
   if (kindOf(x) === "z_report") {
     const data = toSalesData(x);
     // Each department to the firm's own Luca sales account for it (TEKEL, EKMEK, ALKOLLÜ İÇECEK apart within their rate).
-    built = buildSalesLines(data, rules, departmentAccounts(ctx.plan));
+    built = linesFor(x, rules, null, ctx.plan);
     // The VKN on a Z report is the firm's own: kept to find the same report uploaded twice, never to learn a seller.
     const taxNumber = x.taxNumber && isValidTaxNumber(x.taxNumber) ? x.taxNumber : null;
     if (taxNumber && data.zNo && data.date && (await hasDuplicateReceipt(userId, firmId, taxNumber, data.zNo, data.date, data.totalKurus).catch(() => false))) extra.unshift(warn("duplicate"));
@@ -226,7 +227,7 @@ async function saveOther(ctx: Ctx, result: Extract<ExtractResult, { ok: true }>,
   } else {
     const data = toForeignData(x);
     const fx = data.currency !== "TRY" && data.date ? await tcmbRate(data.currency, data.date).catch(() => null) : null;
-    built = buildForeignLines(data, rules, fx);
+    built = linesFor({ ...x, fx }, rules);
     receipt = { vendorName: data.vendorName, taxNumber: null, receiptNo: data.invoiceNo, receiptDate: data.date, totalKurus: foreignTotalTl(data, fx), paymentMethod: data.paymentMethod, category: "foreign", extraction: { ...x, fx, fallback: result.fallback }, warnings: [], ...meta };
   }
   if (ctx.planned && built.lines.some((l) => !l.accountCode)) extra.push(warn("plan_no_account"));

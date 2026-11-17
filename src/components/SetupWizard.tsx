@@ -123,7 +123,7 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
         if (running === false || (running === null && stable >= 5)) { setFirms(n); done(`${n} firma Luca'dan alındı.`, 4); return; }
         setNote({ tone: "wait", text: `${n} firma geldi, okuma sürüyor` });
       }
-      else if (tries === HINT_AFTER) setNote({ tone: "wait", text: "Hâlâ bekleniyor. Luca sekmesinin açık olduğundan ve eklenti sekmesinde Başlat'a bastığınızdan emin olun; orada bir hata görünüyorsa oradaki talimatı izleyin" });
+      else if (tries === HINT_AFTER) setNote({ tone: "wait", text: "Hâlâ bekleniyor. Luca sekmesinin açık olduğundan ve eklenti sekmesinde Yeni firmaları çek'e bastığınızdan emin olun; orada bir hata görünüyorsa oradaki talimatı izleyin" });
       timer = setTimeout(tick, POLL_MS);
     };
     timer = setTimeout(tick, demo ? 1500 : POLL_MS);
@@ -210,7 +210,7 @@ export function SetupWizard({ initialStep, initialFirms = 0, base = "/panel", de
               <ol className="setup-howto">
                 <li>Luca&apos;ya her zamanki gibi girin.</li>
                 <li>Chrome&apos;un sağ üstündeki yapboz simgesinden (Uzantılar) <b>Accountie Luca Doldurucu</b>&apos;yu açın.</li>
-                <li><b>Luca&apos;dan firmaları çek</b>&apos;e, açılan sekmede <b>Başlat</b>&apos;a basın. Okuma bitene kadar Luca&apos;da çalışmayın; bitince bu sayfa kendiliğinden ilerler.</li>
+                <li><b>Luca&apos;dan firmaları çek</b>&apos;e, açılan sekmede <b>Yeni firmaları çek</b>açılan sekmede <b>Başlat</b>&apos;a basınapos;e basın. Okuma bitene kadar Luca&apos;da çalışmayın; bitince bu sayfa kendiliğinden ilerler.</li>
               </ol>
               {noteLine}
               <div className="setup-actions">

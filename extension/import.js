@@ -64,19 +64,31 @@ async function send(token, firm) {
   return res.json();
 }
 
-async function run() {
+/** Luca ids of the firms whose plan Accountie already has. */
+async function imported(token) {
+  const res = await fetch(`${APP_ORIGIN}/api/extension/firms`, { credentials: "omit", headers: { authorization: `Bearer ${token}` } });
+  if (res.status === 401) throw new Error("Anahtar geçersiz veya süresi dolmuş. Accountie'den yeni anahtar alıp eklenti penceresine girin.");
+  if (!res.ok) throw new Error("Accountie'deki firmalar okunamadı; yeniden deneyin.");
+  return new Set((await res.json()).lucaIds.map(String));
+}
+
+/** `mode`: "new" reads only the firms Luca has and Accountie lacks, "one" only the firm open in Luca, "all" every firm again. */
+async function run(mode) {
   const { token } = await chrome.storage.local.get("token");
   if (!token) return status("Önce eklenti penceresini açıp Accountie anahtarını girin.", true);
   const { filledIds = [] } = await chrome.storage.local.get("filledIds");
   if (filledIds.length) return status("Luca'da yazılmış ama kaydedilmemiş fiş var. Önce Luca'da Kaydet'e basıp eklenti penceresinde Luca'da kaydettim'e basın, sonra firmaları çekin.", true);
   const luca = await lucaFrame();
-  if (!luca) return status("Açık Luca sekmesi bulunamadı. Luca'ya girip ana ekranı açın, sonra Başlat'a basın.", true);
+  if (!luca) return status("Açık Luca sekmesi bulunamadı. Luca'ya girip ana ekranı açın, sonra yeniden basın.", true);
   const original = AccountieLuca.selected(luca.list, luca.sirket, luca.donem);
   if (!original) return status("Luca'da şu an açık olan firma okunamadı. Hiçbir şey değiştirilmedi.", true);
-  const firms = AccountieLuca.firmsToImport(luca.list, YEAR);
-  if (!firms.length) return status("Luca'da dönemi olan firma bulunamadı.", true);
+  const open = AccountieLuca.firmsToImport(luca.list, YEAR);
+  // The open firm with the period open now, even a closed one; a new firm only if Accountie has no plan for it.
+  const have = mode === "new" ? await imported(token) : null;
+  const firms = mode === "one" ? [original] : have ? open.filter((f) => !have.has(String(f.lucaId))) : open;
+  if (!firms.length) return status(mode === "new" ? `Yeni firma yok: Luca'daki ${open.length} firmanın hepsi Accountie'de. Bir firmanın planı Luca'da değiştiyse o firmayı açıp “Yalnız açık firmayı çek”e basın.` : "Luca'da dönemi olan firma bulunamadı.", mode !== "new");
   // Firms whose last period ended before last year (closed) are left out; said in the result, not dropped silently.
-  const closed = luca.list.length - firms.length;
+  const closed = mode === "all" ? luca.list.length - open.length : 0;
 
   // One run at a time: another tab's run moves Luca's session too. The beat is set before anything is read from Luca.
   const { importingAt } = await chrome.storage.local.get("importingAt");
@@ -162,17 +174,20 @@ async function run() {
   }
 }
 
-$("start").addEventListener("click", async () => {
-  if (running) return;
-  running = true;
-  stopped = false;
-  $("start").disabled = true;
-  $("stop").hidden = false;
-  await run().catch((e) => status(e.message, true));
-  running = false;
-  $("start").disabled = false;
-  $("stop").hidden = true;
-});
+const STARTS = { "start-new": "new", "start-one": "one", "start-all": "all" };
+for (const [id, mode] of Object.entries(STARTS)) {
+  $(id).addEventListener("click", async () => {
+    if (running) return;
+    running = true;
+    stopped = false;
+    for (const b of Object.keys(STARTS)) $(b).disabled = true;
+    $("stop").hidden = false;
+    await run(mode).catch((e) => status(turkish(e.message), true));
+    running = false;
+    for (const b of Object.keys(STARTS)) $(b).disabled = false;
+    $("stop").hidden = true;
+  });
+}
 $("stop").addEventListener("click", () => { stopped = true; status("Durduruluyor; açık firma geri alınacak."); });
 // Sürerken kapatılırsa Luca oturumu başka firmada kalır.
 window.addEventListener("beforeunload", (e) => { if (running) e.preventDefault(); });

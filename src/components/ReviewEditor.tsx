@@ -7,6 +7,7 @@ import type { ReceiptDetail, VendorRule } from "@/db/queries";
 import { ACCOUNT_CODE_PATTERN, CATEGORIES, KKEG_KEY, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type Account, type PaymentMethod, type Rules } from "@/lib/default-rules";
 import { fromPassengerCar, isKkegLine, isPassengerCar, PASSENGER_CAR_KKEG_PERCENT, toPassengerCar } from "@/lib/vehicle";
 import { approvalProblem, type JournalLine } from "@/lib/journal";
+import { planIndex } from "@/lib/plan-suggest";
 import { clipboardText } from "@/lib/luca/clipboard";
 import { formatTrAmount, parseTrAmount } from "@/lib/money";
 import { STATUS_LABELS } from "@/lib/status";
@@ -240,14 +241,13 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const noFiscalValue = receipt.warnings.some((w) => w.code === "no_fiscal_value");
   // 9: with the firm's plan at hand, a group account is caught here as on the server.
   const postableCodes = postable.length ? new Set(postable.map((a) => a.code)) : undefined;
-  const planCodes = plan.length ? new Set(plan.map((a) => a.code)) : undefined;
   const problem = invalid ? "Tutar biçimi hatalı." : noFiscalValue ? "Mali değeri olmayan belge onaylanmaz; bu taslağı silin."
-    : vehicleOpen ? "Araç binek mi ticari mi, seçin." : approvalProblem(parsed, planCodes, postableCodes);
+    : vehicleOpen ? "Araç binek mi ticari mi, seçin." : approvalProblem(parsed, planIndex(plan));
   const creditCode = lines.find(isPayment)?.accountCode ?? "";
   // Paid more than one way (cash and card): each way has its own credit line, and one choice for all would merge them.
   const mixedPayment = new Set(lines.filter(isPayment).map((l) => l.accountCode.trim()).filter(Boolean)).size > 1;
   // 55: the firm's own payment accounts (fitted to its Luca plan) first, then the usual ones its plan has.
-  const creditChoices = [...Object.values(rules.payment).map((a) => ({ ...a, label: a.name })), ...PAYMENT_ALTERNATIVES.filter((a) => !postableCodes || postableCodes.has(a.code))]
+  const creditChoices = [...Object.values(rules.payment).map((a) => ({ ...a, label: a.name })), ...PAYMENT_ALTERNATIVES.filter((a) => postableCodes?.has(a.code))]
     .filter((a, i, all) => a.code && all.findIndex((b) => b.code === a.code) === i);
   const head = lines[0];
 

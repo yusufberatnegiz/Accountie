@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RULES, rulesFromRows, rulesToRows } from "./default-rules";
-import { approvalProblem } from "./journal";
+import { linesProblem } from "./journal";
 import { buildForeignLines, buildSalesLines, foreignTotalTl, type ForeignData, type SalesData } from "./journal-kinds";
 import { bulletinUrl, rateFromBulletin, tcmbRate } from "./tcmb";
 
@@ -15,7 +15,7 @@ describe("yurt dışı hizmet faturası", () => {
     expect(lines(r)).toEqual([["760.01", 125000, 0], ["191.04", 25000, 0], ["360.01", 0, 25000], ["331.01", 0, 125000]]);
     expect(r.balanced).toBe(true);
     expect(r.lines.every((l) => l.documentType === "MF" && l.documentNo === "5234567890" && l.description === "GOOGLE IRELAND LIMITED")).toBe(true);
-    expect(approvalProblem(r.lines)).toBeNull();
+    expect(linesProblem(r.lines)).toBeNull();
     expect(codes(r)).toEqual(["foreign_withholding"]);
   });
 
@@ -32,7 +32,7 @@ describe("yurt dışı hizmet faturası", () => {
   it("kur alınamazsa tutarları boş bırakır: onay tutar girilene kadar kapalı", () => {
     const r = buildForeignLines({ ...google, currency: "USD" }, DEFAULT_RULES, null);
     expect(codes(r)).toContain("foreign_rate_missing");
-    expect(approvalProblem(r.lines)).toMatch(/tutar yok/);
+    expect(linesProblem(r.lines)).toMatch(/tutar yok/);
   });
 
   it("faturada KDV varsa sorumlu sıfatıyla KDV hesaplamaz, uyarır", () => {
@@ -67,7 +67,7 @@ describe("Z raporu gelir fişi", () => {
     expect(r.balanced).toBe(true);
     expect(r.warnings).toEqual([]);
     expect(r.lines[0]).toMatchObject({ documentNo: "0128", documentType: "ZR", description: "Z RAPORU 0128" });
-    expect(approvalProblem(r.lines)).toBeNull();
+    expect(linesProblem(r.lines)).toBeNull();
   });
 
   it("faturalı satış varsa iki kez hasılat uyarısı verir, tutarı söyler", () => {
@@ -91,7 +91,7 @@ describe("Z raporu gelir fişi", () => {
     expect(lines(r).slice(2)).toEqual([["600.00", 0, 450000]]);
     const odd = buildSalesLines({ ...z, vatLines: [{ rate: 8, grossKurus: 450000, vatKurus: 33333 }] }, DEFAULT_RULES);
     expect(codes(odd)).toContain("z_unknown_rate");
-    expect(approvalProblem(odd.lines)).toMatch(/hesap kodu yok/);
+    expect(linesProblem(odd.lines)).toMatch(/hesap kodu yok/);
   });
 });
 
@@ -136,7 +136,7 @@ describe("jüri tur 19 düzeltmeleri", () => {
     const r = buildForeignLines({ ...google, currency: "" }, DEFAULT_RULES, null);
     expect(lines(r)[0]).toEqual(["760.01", 0, 0]);
     expect(codes(r)).toContain("currency_unsure");
-    expect(approvalProblem(r.lines)).toMatch(/tutar yok/);
+    expect(linesProblem(r.lines)).toMatch(/tutar yok/);
   });
 
   it("Z raporunda firmanın VKN'si Kasa ve Kart satırlarına Vergi No olarak yazılmaz; fişte gider satırına yazılır", async () => {

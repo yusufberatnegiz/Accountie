@@ -66,11 +66,6 @@ export const RulesDeleteSchema = z.object({ firmId: z.uuid() });
 
 export const idSchema = z.uuid();
 
-// A mükellef: its name as the user keeps it, and its VKN/TCKN when given (checked like a receipt's).
-export const FirmCreateSchema = z.object({
-  name: z.string().trim().min(2).max(120),
-  taxNumber: z.string().trim().regex(/^\d{10,11}$/).optional(),
-});
 /** The largest Luca chart of accounts taken in one import (big holding plans run to a few thousand sub-accounts). */
 export const MAX_PLAN_ACCOUNTS = 20_000;
 // What the extension read in Luca for one firm. Names are cut to the lengths the app keeps.

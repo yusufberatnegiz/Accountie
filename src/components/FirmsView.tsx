@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Firm } from "@/db/queries";
 import { MonthPicker } from "@/components/MonthPicker";
 import { monthLabel, monthState, type MonthCounts } from "@/lib/month";
@@ -39,14 +39,14 @@ export function FirmsView({ firms, activeId, month, months, counts, base = "/pan
   // Arriving from Ctrl+K elsewhere in the panel (#ara): the search is ready to type into.
   useEffect(() => { if (location.hash === "#ara") search.current?.focus(); }, []);
   const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<{ at: "form" | "list"; text: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const q = tr(query.trim());
   // The open firm leads the list, so it is never hundreds of rows down; a search keeps name order.
   const ordered = [...firms.filter((f) => f.id === activeId), ...firms.filter((f) => f.id !== activeId)];
   const shown = (q ? firms.filter((f) => tr(f.name).includes(q) || f.taxNumber?.includes(q)) : ordered)
     .filter((f) => !state || monthState(of(f)) === state);
 
-  // Errors are shown where the action was: a failed add under the form, a failed switch above the list.
+  // A failed switch is said above the list.
   async function send(url: string, body: unknown, key: string) {
     if (busy) return; // one request at a time; the rest of the screen keeps its look (no blanket disabled state)
     setBusy(key);
@@ -54,18 +54,11 @@ export function FirmsView({ firms, activeId, month, months, counts, base = "/pan
     const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
     if (!res?.ok) {
       setBusy(null);
-      setError({ at: key === "yeni" ? "form" : "list", text: (await res?.json().catch(() => null))?.error ?? "Bağlantı kurulamadı. Tekrar deneyin." });
+      setError((await res?.json().catch(() => null))?.error ?? "Bağlantı kurulamadı. Tekrar deneyin.");
       return;
     }
     router.push(base);
     router.refresh();
-  }
-
-  function add(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    const taxNumber = String(data.get("vkn") ?? "").trim();
-    send("/api/firms", { name: String(data.get("ad") ?? "").trim(), ...(taxNumber ? { taxNumber } : {}) }, "yeni");
   }
 
   return (
@@ -94,7 +87,7 @@ export function FirmsView({ firms, activeId, month, months, counts, base = "/pan
           ))}
         </div>
         <p className="visually-hidden" role="status">{q || state ? `${shown.length} firma.` : ""}</p>
-        {error?.at === "list" ? <p className="alert alert-error" role="alert">{error.text}</p> : null}
+        {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
         <ul className="firms-list">
           {shown.map((f) => (
             <li key={f.id} className="firms-row" data-active={f.id === activeId || undefined} aria-current={f.id === activeId || undefined}>
@@ -107,19 +100,14 @@ export function FirmsView({ firms, activeId, month, months, counts, base = "/pan
               )}
             </li>
           ))}
-          {shown.length === 0 ? <li className="firms-row"><span className="firms-name">{q ? <>“{query.trim()}” ile eşleşen firma yok. Firma ekle formundan ekleyebilirsiniz.</> : "Bu durumda firma yok."}</span></li> : null}
+          {shown.length === 0 ? <li className="firms-row"><span className="firms-name">{q ? <>“{query.trim()}” ile eşleşen firma yok. Luca&apos;da varsa eklentiyle yeni firmaları çekin.</> : "Bu durumda firma yok."}</span></li> : null}
         </ul>
       </section>
 
-      {/* After the list in the source and on a phone (search first; the list scrolls inside its panel there, so the form stays near); beside it on desktop. */}
+      {/* Beside the list on desktop, after it on a phone. A firm comes from Luca only, so every code it books is from its own Luca plan. */}
       <section className="panel firms-add" aria-labelledby="firma-ekle">
-        <h2 id="firma-ekle">Firma ekle</h2>
-        <form className="firms-form" onSubmit={add} aria-describedby={error?.at === "form" ? "firma-hata" : undefined}>
-          <label className="stack"><span>Firma adı</span><input className="field" name="ad" required minLength={2} maxLength={120} autoComplete="off" /></label>
-          <label className="stack"><span>VKN ya da TCKN (isteğe bağlı)</span><input className="field tnum" name="vkn" inputMode="numeric" pattern="\d{10,11}" maxLength={11} autoComplete="off" /></label>
-          {error?.at === "form" ? <p id="firma-hata" className="alert alert-error" role="alert">{error.text}</p> : null}
-          <button type="submit" className="btn btn-primary" aria-disabled={busy !== null || undefined}>{busy === "yeni" ? "Ekleniyor…" : "Ekle ve seç"}</button>
-        </form>
+        <h2 id="firma-ekle">Yeni firma</h2>
+        <p>Firmalar Luca&apos;dan gelir; fişin her hesap kodu firmanın kendi Luca planından alınır. Luca&apos;ya yeni firma eklediyseniz Accountie eklentisinde <strong>Luca&apos;dan firmaları çek</strong> sayfasını açıp <strong>Yeni firmaları çek</strong>&apos;e basın: yalnız Accountie&apos;de olmayan firmalar okunur.</p>
       </section>
     </main>
   );

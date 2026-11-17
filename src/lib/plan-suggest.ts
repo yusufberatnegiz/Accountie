@@ -1,4 +1,4 @@
-import type { Account, RuleRow } from "./default-rules";
+import { DEFAULT_RULES, rulesToRows, type Account, type RuleRow } from "./default-rules";
 
 /**
  * Account names compared in one form: Turkish lower case with the dotless ı read as i, so a plan typed without Turkish letters
@@ -47,6 +47,9 @@ const SKIP: Record<string, (n: string) => boolean> = {
 const skipFor = (key: string) => SKIP[key] ?? ((n: string) => NOT_AN_EXPENSE.test(n));
 /** A foreign-currency or gold till: never the receipt's Kasa. "Altındağ Kasa" is a lira till. */
 const FOREIGN_TILL = F(/(^|[^\p{L}])(usd|eur|avro|dolar|döviz|gbp|sterlin|chf|frank|yen|jpy|riyal|ruble|yabancı para)|(^|[^\p{L}])altın([^\p{L}]|$)/u);
+/** A lira till: a 100 account named as a till ("Kasa", "TL Kasası"), not card takings, dues (often spelt "aydat") or a bank's unknowns. */
+const NOT_A_TILL = F(/kredi kart|tahsilat|aidat|aydat|bilinmeyen|banka/);
+const isTill = (a: { code: string; lower: string }) => a.code.startsWith("100") && /kas[ai]/.test(a.lower) && !FOREIGN_TILL.test(a.lower) && !NOT_A_TILL.test(a.lower);
 /** KDV accounts that are not a receipt's own deductible KDV: withholding, reverse charge, abroad, import, customs, refund, non-deductible. */
 const OTHER_VAT = F(/sorumlu|ithal|gümrük|iade|tevk(?!ifatsız)|yurt ?dışı|indirilemeyecek|kanunen kabul|kkeg/);
 /** Sales accounts that are not a till's day: returns, exports, withholding, tax-free, fixtures, wholesale. */
@@ -125,7 +128,8 @@ export function suggestRules(rows: readonly RuleRow[], plan: readonly Account[])
       return hits.find((a) => a.code.endsWith(`.${r.key.padStart(2, "0")}`)) ?? hits[0];
     }
     if (r.kind === "payment" && (r.key === "card" || r.key === "other")) return partner(r.key);
-    if ((r.kind === "payment" || r.kind === "sales") && r.key === "cash") return find("100", (a) => !FOREIGN_TILL.test(a.lower));
+    // Which till (Merkez or Şube, 100.001 or 100.01) only the müşavir knows: more than one lira till leaves it to them.
+    if ((r.kind === "payment" || r.kind === "sales") && r.key === "cash") return onlyOne(leaves.filter(isTill));
     // Foreign services: the expense under 760/770 that names abroad or digital; a domestic advertising account is not one.
     if (r.kind === "foreign" && r.key === "expense") return byWords(["760", "770"], ["yurt dışı", "yurtdışı", "dijital", "internet reklam", "sosyal medya"].map(fold), (n) => F(/tevkifat|seyahat|seyehat|konaklama/).test(n));
     // The KDV on a foreign service is computed at the general rate: the reverse-charge account of that rate, not the plan's first.
@@ -159,6 +163,11 @@ export function suggestRules(rows: readonly RuleRow[], plan: readonly Account[])
   return rows.map((r) => { const hit = pick(r) ?? main(r); return hit ? { ...r, accountCode: hit.code, accountName: hit.name } : r; });
 }
 
+/** A firm's Luca plan as the approval check reads it: its accounts, their codes, and the codes that can be posted to. */
+export type PlanIndex = { accounts: readonly Account[]; codes: ReadonlySet<string>; postable: ReadonlySet<string> };
+export const planIndex = (plan: readonly Account[]): PlanIndex =>
+  ({ accounts: plan, codes: new Set(plan.map((a) => a.code)), postable: new Set(leavesOf(plan).map((a) => a.code)) });
+
 /** The KDV rate a rule is about (vat:20, sales revenue:10), or null. */
 const ruleRate = (r: RuleRow) => (r.kind === "vat" ? Number(r.key) : r.kind === "sales" && /:\d+$/.test(r.key) ? Number(r.key.split(":")[1]) : null);
 
@@ -190,6 +199,7 @@ export function fitRulesToPlan(rows: readonly RuleRow[], plan: readonly Account[
   // One pass over the plan for every rule, not one per rule: a plan may hold thousands of accounts.
   const suggestions = suggestRules(rows, plan);
   const partnerSubs = [...leaves.keys()].filter((c) => c.startsWith("331.")).length;
+  const tills = [...leaves.values()].filter(isTill).length;
   return rows.map((r, i) => {
     if (own(r)) return r;
     const lucaName = byCode.get(r.accountCode) ?? "";
@@ -207,11 +217,41 @@ export function fitRulesToPlan(rows: readonly RuleRow[], plan: readonly Account[
       && !(r.kind === "foreign" && r.key === "vatIn" && !REVERSE_IN.test(path))
       && !(r.kind === "foreign" && r.key === "vatOut" && !REVERSE_OUT.test(path))
       && !(r.kind === "foreign" && r.key === "expense" && F(/tevkifat/).test(lower))
-      && !(r.kind === "payment" && (r.key === "card" || r.key === "other") && partnerSubs > 1);
+      && !(r.kind === "payment" && (r.key === "card" || r.key === "other") && partnerSubs > 1)
+      // A default 100.01 Kasa is a guess when the plan has several lira tills, and never a card-takings or dues account.
+      && !((r.kind === "payment" || r.kind === "sales") && r.key === "cash" && (tills > 1 || !(leaf && isTill(leaf))));
     if (leaf && rateOk && kindOk && sameMeaning(r.accountName, lucaName)) return named;
     const suggested = suggestions[i];
     return suggested === r ? { ...r, accountCode: "", accountName: "" } : suggested;
   });
+}
+
+/**
+ * The rules a firm books with: the user's rows, the firm's own rows laid over them, missing rules at their defaults, all fitted to
+ * the firm's Luca plan when it has one. Pure, so real firms' rules can be rebuilt from what the database holds without writing.
+ */
+export function mergeRules(userRows: readonly RuleRow[], own: readonly RuleRow[], plan: readonly Account[]): RuleRow[] {
+  const same = (a: RuleRow, b: RuleRow) => a.kind === b.kind && a.key === b.key;
+  let rows = [...userRows.map((r) => own.find((o) => same(o, r)) ?? r), ...own.filter((o) => !userRows.some((r) => same(o, r)))];
+  // Rules added after the user's table was made (foreign invoice, Z report) show with their defaults until saved. Vehicle repairs
+  // were split from workplace repairs later: until saved, they keep the code the user had chosen for repairs.
+  const defaults = rulesToRows(DEFAULT_RULES);
+  const repairs = rows.find((r) => r.kind === "expense" && r.key === "maintenance");
+  const missing = defaults.filter((d) => !rows.some((r) => same(r, d)))
+    .map((d) => (d.kind === "expense" && d.key === "vehicle_maintenance" && repairs ? { ...d, accountCode: repairs.accountCode, accountName: repairs.accountName } : d));
+  // Labels are the app's, not the stored copy (a rule renamed since shows its new name), in the app's order.
+  const order = (r: RuleRow) => { const i = defaults.findIndex((d) => same(d, r)); return i < 0 ? defaults.length : i; };
+  rows = [...rows, ...missing].map((r) => ({ ...r, label: defaults.find((d) => same(d, r))?.label ?? r.label })).sort((a, b) => order(a) - order(b));
+  if (plan.length === 0) return rows;
+  // Before round 2 a save wrote every rule of the firm, so a row equal to the default is no choice of the user's: it is fitted too.
+  // A till saved for the firm is the müşavir's choice even when it equals the default (100.01 in a plan with several tills), once
+  // Luca can post to it; a default till an old save-everything wrote on a plan without it is fitted like any default.
+  const postable = new Set(leavesOf(plan).map((a) => a.code));
+  const chose = (o: RuleRow) => !defaults.some((d) => same(d, o) && d.accountCode === o.accountCode && d.accountName === o.accountName)
+    || (o.key === "cash" && (o.kind === "payment" || o.kind === "sales") && postable.has(o.accountCode));
+  // A firm with its Luca plan imported books to that plan, with nothing to save: every rule the firm has not set itself is fitted
+  // to it, so a default code never lands on an account that means something else.
+  return fitRulesToPlan(rows, plan, (r) => own.some((o) => same(o, r) && chose(o)));
 }
 
 /**

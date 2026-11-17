@@ -1,9 +1,9 @@
 import { listForExport, markExported } from "@/db/queries";
+import { bookable } from "@/lib/bookable";
 import { ExportSchema } from "@/lib/api-schemas";
 import { getUserId } from "@/lib/auth/session";
 import { activeFirm } from "@/lib/firm";
 import { fail, readJson, unauthorized } from "@/lib/http";
-import { approvalProblem } from "@/lib/journal";
 import { buildWorkbook, chunkReceipts } from "@/lib/luca/export";
 
 export const runtime = "nodejs";
@@ -22,8 +22,9 @@ export async function POST(request: Request) {
     if (body.data.firmId && body.data.firmId !== firm.id) return fail("Firma bulunamadı.", 404); // never another firm's receipts
     firmId = firm.id;
   }
-  const receipts = (await listForExport(userId, firmId, body.data.receiptIds, body.data.month)).filter((r) => !approvalProblem(r.lines));
-  if (receipts.length === 0) return fail("Aktarılacak onaylı fiş yok.", 404);
+  // Every line must still pass the firm's Luca plan (codes, postable, names); a receipt approved before its plan came stays behind.
+  const { ok: receipts, off } = await bookable(userId, await listForExport(userId, firmId, body.data.receiptIds, body.data.month));
+  if (receipts.length === 0) return fail(off.length ? `Aktarılacak ${off.length} fiş firmanın Luca planına uymuyor. Fişi açıp taslağa alın; satırlar plana göre yeniden kurulur.` : "Aktarılacak onaylı fiş yok.", off.length ? 422 : 404);
 
   // shortcut: one file per request (Luca limit 50 fiş / 400 satır); the client asks again while X-Remaining-Receipts > 0. Upgrade to a zip if users want one download.
   const [first] = chunkReceipts(receipts);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RULES, rulesToRows } from "./default-rules";
-import { fitRulesToPlan, planMismatches, suggestRules } from "./plan-suggest";
+import { fitRulesToPlan, mergeRules, planMismatches, suggestRules } from "./plan-suggest";
 
 // A plan shaped like a real Luca one: parents with sub-accounts, the firm's own numbering and names.
 const PLAN = [
@@ -270,5 +270,44 @@ describe("jüri turu 4: plan eşleme", () => {
     expect([one(both, "expense", "maintenance"), one(both, "expense", "vehicle_maintenance")]).toEqual(["770.04", "770.04"]);
     const tools = [{ code: "770", name: "G" }, { code: "770.05", name: "Makine Araç Gereç Bakım Onarım" }];
     expect([one(tools, "expense", "maintenance"), one(tools, "expense", "vehicle_maintenance")]).toEqual(["770.05", ""]);
+  });
+});
+
+describe("kasa: her firmanın kendi Luca kasası", () => {
+  const cash = (plan: { code: string; name: string }[]) => {
+    const fit = fitRulesToPlan(rows, plan);
+    return [fit.find((r) => r.kind === "payment" && r.key === "cash")?.accountCode, fit.find((r) => r.kind === "sales" && r.key === "cash")?.accountCode];
+  };
+  it("tek TL kasası olan planda o kasa, alt hesabı olmayan planda 100 seçilir", () => {
+    expect(cash([{ code: "100", name: "KASA" }])).toEqual(["100", "100"]);
+    expect(cash([{ code: "100", name: "KASA" }, { code: "100.001", name: "MERKEZ KASA" }])).toEqual(["100.001", "100.001"]);
+    expect(cash([{ code: "100", name: "KASA" }, { code: "100.01", name: "TL KASASI" }, { code: "100.01.001", name: "Merkez TL Kasası" }, { code: "100.02", name: "DÖVİZ KASASI" }, { code: "100.02.001", name: "Merkez USD Kasası" }])).toEqual(["100.01.001", "100.01.001"]);
+  });
+  it("birden çok TL kasası varsa varsayılan 100.01 planda olsa bile kod boş kalır: kasayı müşavir seçer", () => {
+    expect(cash([{ code: "100", name: "KASA" }, { code: "100.01", name: "Kasa" }, { code: "100.02", name: "TL KASA" }])).toEqual(["", ""]);
+    expect(cash([{ code: "100", name: "KASA" }, { code: "100.001", name: "KASA" }, { code: "100.01", name: "Kasa" }])).toEqual(["", ""]);
+    expect(cash([{ code: "100", name: "KASA" }, { code: "100.01", name: "Kasa" }, { code: "100.02", name: "ŞUBE KASA" }, { code: "100.03", name: "ŞUBE PANSIYON KASA" }])).toEqual(["", ""]);
+  });
+  it("kart tahsilatı, aidat, banka ve döviz kasası kasa sayılmaz", () => {
+    expect(cash([{ code: "100", name: "KASA" }, { code: "100.01", name: "MERKEZ KASA" }, { code: "100.02", name: "ALINAN BİNA AYDATLARI" }, { code: "100.03", name: "Kredi Kartı Tahsilatları" }, { code: "100.04", name: "Dolar Kasası" }])).toEqual(["100.01", "100.01"]);
+    expect(cash([{ code: "100", name: "KASA" }, { code: "100.001", name: "KASA HESABI TL" }, { code: "100.002", name: "KUVEYT TÜRK BİLİNMEYENLER" }, { code: "100.004", name: "USD KASA (USD)" }])).toEqual(["100.001", "100.001"]);
+    expect(cash([{ code: "100", name: "KASA" }, { code: "100.01", name: "Kredi Kartı Tahsilatları" }])).toEqual(["", ""]);
+  });
+});
+
+describe("mergeRules: firmanın kayıtlı kasası", () => {
+  const multi = [{ code: "100", name: "KASA" }, { code: "100.01", name: "Kasa" }, { code: "100.02", name: "ŞUBE KASA" }];
+  const saved = (accountCode: string, accountName: string) => ({ kind: "payment" as const, key: "cash", label: "Nakit", accountCode, accountName });
+  const cashOf = (out: ReturnType<typeof mergeRules>) => out.find((r) => r.kind === "payment" && r.key === "cash")?.accountCode;
+  it("çok kasalı planda müşavirin kaydettiği 100.01 varsayılana eşit olsa da kalır", () => {
+    expect(cashOf(mergeRules(rows, [], multi))).toBe("");
+    expect(cashOf(mergeRules(rows, [saved("100.01", "Kasa")], multi))).toBe("100.01");
+    expect(cashOf(mergeRules(rows, [saved("100.02", "ŞUBE KASA")], multi))).toBe("100.02");
+  });
+  it("eski toplu kayıttan kalan, planda postalanamayan varsayılan 100.01 plana uyar", () => {
+    expect(cashOf(mergeRules(rows, [saved("100.01", "Kasa")], [{ code: "100", name: "KASA" }]))).toBe("100");
+  });
+  it("plansız firmada kurallar olduğu gibi kalır (o firmaya fiş zaten yüklenmez)", () => {
+    expect(cashOf(mergeRules(rows, [], []))).toBe("100.01");
   });
 });

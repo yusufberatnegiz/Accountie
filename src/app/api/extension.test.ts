@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_RULES } from "@/lib/default-rules";
+import { DEFAULT_PLAN, DEFAULT_RULES } from "@/lib/default-rules";
 import { buildJournalLines } from "@/lib/journal";
 import { EXTENSION_TOKEN_TTL_MS, extensionUserId, hashToken } from "@/lib/auth/extension-token";
 
 vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
 vi.mock("@/db/queries", () => ({
   createExtensionToken: vi.fn(), revokeExtensionTokens: vi.fn(), userIdForTokenHash: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), importLucaFirm: vi.fn(),
+  listFirmAccounts: vi.fn(), listImportedLucaIds: vi.fn(),
 }));
 
 const session = await import("@/lib/auth/session");
@@ -29,7 +30,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(session.getUserId).mockResolvedValue(USER);
   vi.mocked(q.userIdForTokenHash).mockImplementation(async (h) => (h === hashToken(TOKEN) ? USER : null));
-  vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: null, firmName: "ÖRNEK FİRMA", firmLucaId: null, taxNumber: null, lines }]);
+  vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: "f-7", firmName: "ÖRNEK FİRMA", firmLucaId: "7", firmTaxNumber: "1111111114", taxNumber: null, lines }]);
+  vi.mocked(q.listFirmAccounts).mockResolvedValue([...DEFAULT_PLAN]);
 });
 
 describe("anahtar süresi", () => {
@@ -89,23 +91,39 @@ describe("GET /api/extension/receipts", () => {
     expect(q.listForExport).toHaveBeenCalledWith(USER, null);
     const { receipts } = await res.json();
     expect(receipts).toEqual([{
-      id: ID, firm: "ÖRNEK FİRMA", firmId: "", firmLucaId: "", title: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", documentNo: "0047", documentDate: "05/09/2026", total: "8.725,00",
+      id: ID, firm: "ÖRNEK FİRMA", firmId: "f-7", firmLucaId: "7", firmTaxNumber: "1111111114", title: "ÖRNEK BALIK LOKANTASI VE RES.İŞL.LTD.ŞTİ", documentNo: "0047", documentDate: "05/09/2026", total: "8.725,00",
       rows: expect.arrayContaining([expect.objectContaining({ accountCode: "331.01", credit: "8.725,00", debit: "" })]),
     }]);
     expect(receipts[0].rows).toHaveLength(3);
   });
 
-  it("Luca'da açık firmanın fişlerini ve yazılmış olanları döndürür", async () => {
-    const at = (id: string, firmLucaId: string | null) => ({ id, firmId: `f-${firmLucaId}`, firmName: "F", firmLucaId, taxNumber: null, lines });
+  it("Luca'da açık firmanın fişlerini ve yazılmış olanları döndürür; Luca'dan çekilmemiş firmanın fişi listede yok, sayılır", async () => {
+    const at = (id: string, firmLucaId: string | null) => ({ id, firmId: `f-${firmLucaId}`, firmName: "F", firmLucaId, firmTaxNumber: null, taxNumber: null, lines });
     vi.mocked(q.listForExport).mockResolvedValue([at("a", "7"), at("b", "8"), at("c", null), at("d", "8")]);
     const req = new Request("http://test/api/extension/receipts?sirket=7&keep=d", { headers: { authorization: `Bearer ${TOKEN}` } });
-    const { receipts } = await (await listRoute.GET(req)).json();
-    expect(receipts.map((r: { id: string }) => r.id)).toEqual(["d", "a", "c"]);
+    const body = await (await listRoute.GET(req)).json();
+    expect(body.receipts.map((r: { id: string }) => r.id)).toEqual(["d", "a"]);
+    expect(body.offPlan).toBe(1);
   });
 
   it("dengesiz fişi göndermez", async () => {
-    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: null, firmName: "ÖRNEK FİRMA", firmLucaId: null, taxNumber: null, lines: lines.slice(0, 2) }]);
+    vi.mocked(q.listForExport).mockResolvedValue([{ id: ID, firmId: "f-7", firmName: "ÖRNEK FİRMA", firmLucaId: "7", firmTaxNumber: null, taxNumber: null, lines: lines.slice(0, 2) }]);
     expect((await (await listRoute.GET(bearer())).json()).receipts).toEqual([]);
+  });
+
+  it("firmanın Luca planına uymayan onaylı fişi göndermez: plansız, planda olmayan kod ya da planda başka anlamdaki kod", async () => {
+    vi.mocked(q.listFirmAccounts).mockResolvedValueOnce([]);
+    expect(await (await listRoute.GET(bearer())).json()).toMatchObject({ receipts: [], offPlan: 1 });
+    vi.mocked(q.listFirmAccounts).mockResolvedValueOnce(DEFAULT_PLAN.filter((a) => a.code !== "331.01"));
+    expect(await (await listRoute.GET(bearer())).json()).toMatchObject({ receipts: [], offPlan: 1 });
+    vi.mocked(q.listFirmAccounts).mockResolvedValueOnce(DEFAULT_PLAN.map((a) => (a.code === "770.08" ? { ...a, name: "Küçük Demirbaş Alımları" } : a)));
+    expect(await (await listRoute.GET(bearer())).json()).toMatchObject({ receipts: [], offPlan: 1 });
+  });
+
+  it("yazılıp işaret bekleyen fiş planı değişse de listede kalır", async () => {
+    vi.mocked(q.listFirmAccounts).mockResolvedValueOnce([]);
+    const req = new Request(`http://test/api/extension/receipts?keep=${ID}`, { headers: { authorization: `Bearer ${TOKEN}` } });
+    expect((await (await listRoute.GET(req)).json()).receipts.map((r: { id: string }) => r.id)).toEqual([ID]);
   });
 });
 

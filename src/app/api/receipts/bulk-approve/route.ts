@@ -4,7 +4,7 @@ import { getReceipt, getRules, learnVendorRule, transitionReceipt } from "@/db/q
 import { getUserId } from "@/lib/auth/session";
 import { fail, unauthorized } from "@/lib/http";
 import { approvalProblem } from "@/lib/journal";
-import { leavesOf, planMismatches } from "@/lib/plan-suggest";
+import { planIndex } from "@/lib/plan-suggest";
 import { learnedAccount } from "@/lib/vendor-rule";
 
 export const runtime = "nodejs";
@@ -24,22 +24,22 @@ export async function POST(request: Request) {
   const firms = new Map<string, Awaited<ReturnType<typeof firmOf>>>();
   const firmOf = async (firmId: string) => {
     const { rules, plan } = await getRules(userId, firmId);
-    return { rules, plan, codes: plan.length ? new Set(plan.map((a) => a.code)) : undefined, postable: plan.length ? new Set(leavesOf(plan).map((a) => a.code)) : undefined };
+    return { rules, index: planIndex(plan) };
   };
   // shortcut: one query pair per receipt (at most 200); batch it if lists grow.
   for (const id of new Set(body.data.ids)) {
     try {
       const receipt = await getReceipt(userId, id);
       if (!receipt || receipt.status !== "draft" || receipt.warnings.length > 0) continue;
-      if (receipt.firmId && !firms.has(receipt.firmId)) firms.set(receipt.firmId, await firmOf(receipt.firmId));
-      const firm = receipt.firmId ? firms.get(receipt.firmId) : undefined;
-      if (approvalProblem(receipt.lines, firm?.codes, firm?.postable)) continue;
-      // A line whose code means another account in the firm's Luca plan waits for a look on its own screen.
-      if (planMismatches(receipt.lines, firm?.plan ?? []).length) continue;
+      if (!receipt.firmId) continue;
+      if (!firms.has(receipt.firmId)) firms.set(receipt.firmId, await firmOf(receipt.firmId));
+      const firm = firms.get(receipt.firmId)!;
+      // Codes the firm's Luca plan has, can post to and names the same (a mismatch waits for a look on its own screen).
+      if (approvalProblem(receipt.lines, firm.index)) continue;
       if (!(await transitionReceipt(userId, id, "draft", "approved"))) continue;
       approved++;
       // As one approval does (src/app/api/receipts/[id]/approve/route.ts): the seller learns its account; a failure never undoes it.
-      if (firm && receipt.firmId && receipt.taxNumber && receipt.category !== "z_report" && receipt.category !== "foreign") {
+      if (receipt.taxNumber && receipt.category !== "z_report" && receipt.category !== "foreign") {
         const account = learnedAccount(receipt.lines, firm.rules.expense[receipt.category ?? "other"] ?? firm.rules.expense.other);
         if (account !== undefined) await learnVendorRule(userId, receipt.firmId, receipt.taxNumber, receipt.vendorName, account).catch((e) => console.error("vendor rule not saved", e instanceof Error ? e.name : "unknown"));
       }

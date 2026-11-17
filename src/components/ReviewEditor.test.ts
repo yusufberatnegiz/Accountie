@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { approvalProblem } from "@/lib/journal";
+import { linesProblem } from "@/lib/journal";
 import { PREVIEW_RECEIPTS } from "@/lib/preview-fixtures";
 import { problemTarget } from "./ReviewEditor";
 
@@ -23,6 +23,6 @@ describe("problemTarget", () => {
 
   it("the fuel preview is blocked by its missing date", () => {
     const opet = PREVIEW_RECEIPTS.find((r) => r.receiptNo === "1182")!;
-    expect(problemTarget(approvalProblem(opet.lines)!).id).toBe("evrak-tarihi");
+    expect(problemTarget(linesProblem(opet.lines)!).id).toBe("evrak-tarihi");
   });
 });

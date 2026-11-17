@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
-import { importLucaFirm } from "@/db/queries";
+import { importLucaFirm, listImportedLucaIds } from "@/db/queries";
 import { LucaFirmSchema, MAX_PLAN_ACCOUNTS } from "@/lib/api-schemas";
 import { extensionUserId } from "@/lib/auth/extension-token";
 import { fail, readJson } from "@/lib/http";
 
 export const runtime = "nodejs";
 
-// The same cap as /api/firms.
+// A müşavir keeps a few hundred; the cap only stops a runaway client.
 const MAX_FIRMS = 2000;
+
+/** Luca ids of the firms whose plan Accountie has: "Yeni firmaları çek" reads only the others. */
+export async function GET(request: Request) {
+  const userId = await extensionUserId(request);
+  if (!userId) return fail("Eklenti anahtarı geçersiz veya süresi dolmuş.", 401);
+  return NextResponse.json({ lucaIds: await listImportedLucaIds(userId) }, { headers: { "Cache-Control": "no-store" } });
+}
 
 /** One firm the extension read in Luca: its full name, VKN and chart of accounts. Safe to send again; the plan is replaced. */
 export async function POST(request: Request) {
