@@ -49,7 +49,14 @@ export const PAYMENT_ALTERNATIVES: readonly (Account & { label: string })[] = [
 /** A foreign service invoice (Google, Meta...): the expense, and the KDV the buyer pays as the one responsible (sorumlu sıfatıyla). */
 export type ForeignRules = { expense: Account; vatIn: Account; vatOut: Account; documentType: string };
 /** A Z report booked as the day's sales: what came in (cash, card) and, per KDV rate, the sales and the KDV on them. */
-export type SalesRules = { cash: Account; card: Account; revenue: Record<number, Account>; vat: Record<number, Account>; documentType: string };
+/** `departments`: a Z report department's own sales account, chosen in Kurallar, by departmentKey ("dept:20:ALKOLLÜ İÇECE"). */
+export type SalesRules = { cash: Account; card: Account; revenue: Record<number, Account>; vat: Record<number, Account>; documentType: string; departments: Record<string, Account> };
+
+/** A Z report department's rule key: its KDV rate and name as the till prints it, upper case, within the 40 characters a key has. */
+export const departmentKey = (name: string, rate: number) => `dept:${rate}:${name.trim().replace(/\s+/g, " ").toLocaleUpperCase("tr").slice(0, 30)}`;
+export const DEPARTMENT_KEY = /^dept:(\d{1,2}):(.{1,30})$/u;
+/** "ALKOLLÜ İÇECE (%20)": the department as Kurallar names it. */
+export const departmentLabel = (key: string) => { const m = DEPARTMENT_KEY.exec(key); return m ? `${m[2]} (%${m[1]})` : key; };
 
 export type Rules = {
   expense: Record<string, Account>;
@@ -101,6 +108,7 @@ export const DEFAULT_RULES: Rules = {
     },
     // Luca's BT for a Z report is ZR, not a till receipt's ÖK.
     documentType: "ZR",
+    departments: {},
   },
 };
 
@@ -129,6 +137,7 @@ export function rulesToRows(rules: Rules): RuleRow[] {
     row("sales", "card", "Kartlı tahsilat", sales.card),
     ...Object.entries(sales.revenue).map(([rate, a]) => row("sales", `revenue:${rate}`, rate === "0" ? "KDV'siz satışlar" : `%${rate} satışlar`, a)),
     ...Object.entries(sales.vat).map(([rate, a]) => row("sales", `vat:${rate}`, `%${rate} hesaplanan KDV`, a)),
+    ...Object.entries(sales.departments ?? {}).map(([key, a]) => row("sales", key, departmentLabel(key), a)),
   ];
 }
 
@@ -146,6 +155,7 @@ export function rulesFromRows(rows: readonly RuleRow[]): Rules {
     else if (r.kind === "setting" && r.key === "salesDocumentType") rules.sales.documentType = r.accountCode === "ÖK" ? DEFAULT_RULES.sales.documentType : r.accountCode;
     else if (r.kind === "foreign" && (r.key === "expense" || r.key === "vatIn" || r.key === "vatOut")) rules.foreign[r.key] = account;
     else if (r.kind === "sales" && (r.key === "cash" || r.key === "card")) rules.sales[r.key] = account;
+    else if (r.kind === "sales" && DEPARTMENT_KEY.test(r.key)) { if (r.accountCode) rules.sales.departments[r.key] = account; }
     else if (r.kind === "sales" && /^(revenue|vat):\d{1,2}$/.test(r.key)) {
       const [part, rate] = r.key.split(":");
       rules.sales[part as "revenue" | "vat"][Number(rate)] = account;

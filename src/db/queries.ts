@@ -436,6 +436,16 @@ export async function learnVendorRule(userId: string, firmId: string, taxNumber:
     .onConflictDoUpdate({ target: [vendorRules.firmId, vendorRules.taxNumber], set: { vendorName, accountCode: account.code, accountName: account.name, updatedAt: new Date() }, setWhere: eq(vendorRules.userId, userId) });
 }
 
+/** The departments the firm's Z reports have shown (name and KDV rate), for Kurallar to give each its sales account. */
+export async function listZDepartments(userId: string, firmId: string): Promise<{ name: string; rate: number }[]> {
+  const rows = await getDb().execute<{ name: string; rate: number }>(sql`
+    select distinct d->>'name' as name, (d->>'rate')::int as rate
+    from ${receipts}, jsonb_array_elements(coalesce(${receipts.extraction}->'departments', '[]'::jsonb)) d
+    where ${receipts.userId} = ${userId} and ${receipts.firmId} = ${firmId} and ${receipts.category} = 'z_report' and d->>'name' is not null
+    limit 200`);
+  return [...rows].filter((r) => r.name.trim() && Number.isInteger(r.rate));
+}
+
 export async function listVendorRules(userId: string, firmId: string): Promise<VendorRule[]> {
   return getDb().select(vendorRuleColumns).from(vendorRules)
     .where(and(eq(vendorRules.userId, userId), eq(vendorRules.firmId, firmId))).orderBy(asc(vendorRules.vendorName)).limit(1000);

@@ -221,3 +221,28 @@ describe("Z raporu: aynı oran iki satır okunursa", () => {
     expect(departmentAccounts([{ code: "600.10", name: "% 10 Satışlar" }, { code: "600.10.01", name: "%10 Lu Gıda" }, { code: "600.10.02", name: "%10 Lu Temizlik" }])("GIDA %10'LU", 10)?.code).toBe("600.10.01");
   });
 });
+
+describe("Kurallar'da seçilen departman hesabı", () => {
+  it("anahtar oran ve büyük harfle; kayıtlı kural plandaki ad eşleşmesinin önüne geçer; boş kural yok sayılır", async () => {
+    const { departmentKey, departmentLabel, rulesFromRows, rulesToRows } = await import("./default-rules");
+    expect(departmentKey(" alkollü  içece ", 20)).toBe("dept:20:ALKOLLÜ İÇECE");
+    expect(departmentLabel("dept:20:ALKOLLÜ İÇECE")).toBe("ALKOLLÜ İÇECE (%20)");
+    const rows = [...rulesToRows(DEFAULT_RULES), { kind: "sales" as const, key: "dept:20:HİZMET", label: "HİZMET (%20)", accountCode: "600.20.04", accountName: "Değirmen Hizmeti" }, { kind: "sales" as const, key: "dept:1:UN", label: "UN (%1)", accountCode: "", accountName: "" }];
+    const rules = rulesFromRows(rows);
+    expect(rules.sales.departments).toEqual({ "dept:20:HİZMET": { code: "600.20.04", name: "Değirmen Hizmeti" } });
+    expect(rulesToRows(rules).find((r) => r.key === "dept:20:HİZMET")?.label).toBe("HİZMET (%20)");
+    const data: SalesData = { vendorName: "ÖRNEK", zNo: "1", date: "2026-10-01", totalKurus: 120000, cashKurus: 0, cardKurus: 120000, invoicedKurus: null,
+      vatLines: [{ rate: 20, grossKurus: 120000, vatKurus: 20000 }], departments: [{ name: "Hizmet", rate: 20, grossKurus: 120000 }] };
+    // No name match in the plan for HİZMET: the saved rule decides.
+    expect(lines(buildSalesLines(data, rules, () => undefined))).toEqual([["108.01", 120000, 0], ["600.20.04", 0, 100000], ["391.20", 0, 20000]]);
+    // The saved rule wins over a plan match too.
+    expect(lines(buildSalesLines(data, rules, () => ({ code: "600.20.09", name: "x" })))[1][0]).toBe("600.20.04");
+  });
+  it("kural kaydı departman anahtarını kabul eder, etiketi sunucu koyar; uydurma anahtar reddedilir", async () => {
+    const { RulesPutSchema } = await import("./api-schemas");
+    const ok = RulesPutSchema.safeParse({ rows: [{ kind: "sales", key: "dept:20:ALKOLLÜ İÇECE", accountCode: "600.20.03", accountName: "x" }] });
+    expect(ok.success && ok.data.rows[0].label).toBe("ALKOLLÜ İÇECE (%20)");
+    expect(RulesPutSchema.safeParse({ rows: [{ kind: "sales", key: "dept:x:Y", accountCode: "600.20.03", accountName: "x" }] }).success).toBe(false);
+    expect(RulesPutSchema.safeParse({ rows: [{ kind: "expense", key: "dept:20:Y", accountCode: "600.20.03", accountName: "x" }] }).success).toBe(false);
+  });
+});

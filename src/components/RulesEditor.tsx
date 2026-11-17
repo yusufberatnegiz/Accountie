@@ -15,7 +15,8 @@ const PAID: Record<string, string> = { cash: "Nakit ödenen fiş", card: "Kartla
 // The other two documents' examples: a 1.250,00 TL Google invoice paid by card, and a 1.200,00 TL Z report (200,00 cash, 1.000,00 card).
 const FOREIGN_SAMPLE = 125000;
 const Z_SAMPLE = { total: 120000, cash: 20000 };
-const rateOf = (key: string) => Number(/:(\d+)$/.exec(key)?.[1] ?? 20);
+// revenue:20, vat:10 and a department's dept:20:ALKOLLÜ İÇECE all carry their rate after the first colon.
+const rateOf = (key: string) => Number(/^(?:revenue|vat|dept):(\d+)/.exec(key)?.[1] ?? 20);
 
 const GROUPS: { kind: RuleKind; title: string; text: string; first: string; caption: (r: RuleRow) => string }[] = [
   { kind: "expense", title: "Gider hesapları", text: "Fiş türüne göre borç satırına yazılan hesap. Firmanın Luca planı çekildiyse hesaplar o plandan seçilir; kaydetmeniz gerekmez.", first: "meal", caption: (r) => (r.key === "kkeg" ? "Binek araç fişinin %30'u" : `${r.label} fişi`) },
@@ -23,7 +24,7 @@ const GROUPS: { kind: RuleKind; title: string; text: string; first: string; capt
   { kind: "payment", title: "Ödeme ve alacak", text: "Ödeme şekline göre alacak satırına yazılan hesap. Fiş ekranında fiş başına değiştirilebilir.", first: "card", caption: (r) => PAID[r.key] ?? r.label },
   { kind: "setting", title: "Belge türü", text: "Luca'daki BT sütununa yazılır. Yazar kasa fişi için ÖK; faturalar (bilet, otel, e-Arşiv, yurt dışı) ve Z raporunun kendi BT'si var.", first: "documentType", caption: (r) => `${r.label}: ${r.accountCode}` },
   { kind: "foreign", title: "Yurt dışı faturalar", text: "Google, Meta, AWS gibi yurt dışı hizmet faturası. Gider ve sorumlu sıfatıyla hesaplanan %20 KDV (191 borç, 360 alacak); ödeme satırı yukarıdaki ödeme kuralından gelir. Dövizli tutar TCMB döviz alış kuruyla TL'ye çevrilir.", first: "expense", caption: () => "Kartla ödenen Google faturası" },
-  { kind: "sales", title: "Z raporu (satışlar)", text: "Yazar kasa Z raporu günün satışı olarak yazılır: nakit ve kartlı tahsilat borç, oran başına satış (600) ve hesaplanan KDV (391) alacak.", first: "revenue:20", caption: (r) => (r.key.startsWith("revenue:0") ? "KDV'siz satış içeren Z raporu" : `%${rateOf(r.key)} satış içeren Z raporu`) },
+  { kind: "sales", title: "Z raporu (satışlar)", text: "Yazar kasa Z raporu günün satışı olarak yazılır: nakit ve kartlı tahsilat borç, oran başına satış (600) ve hesaplanan KDV (391) alacak. Z raporundaki departmanlar (TEKEL, EKMEK, ALKOLLÜ İÇECEK…) okundukça burada listelenir; her biri firmanın Luca planında seçtiğiniz satış hesabına ayrı satır olarak yazılır.", first: "revenue:20", caption: (r) => (r.key.startsWith("dept:") ? `${r.label} departmanı içeren Z raporu` : r.key.startsWith("revenue:0") ? "KDV'siz satış içeren Z raporu" : `%${rateOf(r.key)} satış içeren Z raporu`) },
 ];
 
 // With the firm's Luca plan imported, a code Luca does not book to (not in the plan, or one with sub-accounts) is as wrong as a malformed one.
@@ -137,7 +138,8 @@ export function RulesEditor({ rows: initial, plan = [], firmId }: { rows: RuleRo
           lines = [
             { id: "cash", row: rule("sales", "cash"), side: "Borç", amount: Z_SAMPLE.cash, lit: false },
             { id: "card", row: rule("sales", "card"), side: "Borç", amount: Z_SAMPLE.total - Z_SAMPLE.cash, lit: false },
-            { id: "revenue", row: rule("sales", `revenue:${r}`), side: "Alacak", amount: Z_SAMPLE.total - zvat, lit: false },
+            // A department in focus shows its own sales account in place of its rate's.
+            { id: "revenue", row: shown?.key.startsWith("dept:") ? shown : rule("sales", `revenue:${r}`), side: "Alacak", amount: Z_SAMPLE.total - zvat, lit: false },
             ...(zvat ? [{ id: "vat", row: rule("sales", `vat:${r}`), side: "Alacak", amount: zvat, lit: false }] : []),
           ];
         } else {

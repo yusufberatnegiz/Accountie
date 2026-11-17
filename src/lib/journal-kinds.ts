@@ -1,5 +1,5 @@
 import { descriptionFromVendor } from "./description";
-import { FOREIGN_VAT_RATE, type Account, type PaymentMethod, type Rules } from "./default-rules";
+import { departmentKey, FOREIGN_VAT_RATE, type Account, type PaymentMethod, type Rules } from "./default-rules";
 import { formatTrAmount, perItemVatTolerance, vatFromGross } from "./money";
 import { isBalanced, warn, type JournalLine, type VatLine, type Warning } from "./journal";
 
@@ -108,7 +108,8 @@ export function buildSalesLines(data: SalesData, rules: Rules, department: (name
     // up to more than the rate's sales were misread: the rate stays whole.
     const parts = new Map<string, { account: Account; gross: number }>();
     for (const d of data.departments ?? []) {
-      const a = d.rate === v.rate && d.grossKurus > 0 ? department(d.name, d.rate) : undefined;
+      // The account chosen in Kurallar for this department wins over the one found in the plan by its name.
+      const a = d.rate === v.rate && d.grossKurus > 0 ? s.departments?.[departmentKey(d.name, d.rate)] ?? department(d.name, d.rate) : undefined;
       if (a) parts.set(a.code, { account: a, gross: (parts.get(a.code)?.gross ?? 0) + d.grossKurus });
     }
     const named = [...parts.values()].reduce((n, p) => n + p.gross, 0);

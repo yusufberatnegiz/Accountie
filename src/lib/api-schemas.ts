@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isValidTaxNumber } from "./checks";
-import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, RULE_KINDS, rulesToRows } from "./default-rules";
+import { ACCOUNT_CODE_PATTERN, DEFAULT_RULES, DEPARTMENT_KEY, departmentLabel, RULE_KINDS, rulesToRows } from "./default-rules";
 
 // Client-writable fields only. status, user_id, model, token counts and timestamps are never accepted.
 export const LineInputSchema = z.object({
@@ -52,7 +52,8 @@ export const RulesPutSchema = z.object({
     accountName: z.string().trim().max(120),
   })).max(100),
 }).transform(({ firmId, rows }, ctx) => ({ firmId, rows: rows.flatMap((r) => {
-  const label = ALLOWED_RULE_KEYS.get(`${r.kind}:${r.key}`);
+  // A Z report department (src/lib/default-rules.ts departmentKey) is a sales rule of its own, named after the department.
+  const label = ALLOWED_RULE_KEYS.get(`${r.kind}:${r.key}`) ?? (r.kind === "sales" && DEPARTMENT_KEY.test(r.key) ? departmentLabel(r.key) : undefined);
   const codeOk = r.kind === "setting" ? r.accountCode.length <= 10 : ACCOUNT_CODE_PATTERN.test(r.accountCode);
   if (!label || !codeOk) {
     ctx.addIssue({ code: "custom", message: `Geçersiz kural: ${r.key}` });
