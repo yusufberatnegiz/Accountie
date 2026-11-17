@@ -99,7 +99,8 @@ export const DEFAULT_RULES: Rules = {
       10: { code: "391.10", name: "%10 Hesaplanan KDV" },
       20: { code: "391.20", name: "%20 Hesaplanan KDV" },
     },
-    documentType: "ÖK",
+    // Luca's BT for a Z report is ZR, not a till receipt's ÖK.
+    documentType: "ZR",
   },
 };
 
@@ -141,7 +142,8 @@ export function rulesFromRows(rows: readonly RuleRow[]): Rules {
     else if (r.kind === "payment" && r.key in rules.payment) rules.payment[r.key as PaymentMethod] = account;
     else if (r.kind === "setting" && r.key === "documentType") rules.documentType = r.accountCode;
     else if (r.kind === "setting" && r.key === "foreignDocumentType") rules.foreign.documentType = r.accountCode;
-    else if (r.kind === "setting" && r.key === "salesDocumentType") rules.sales.documentType = r.accountCode;
+    // ÖK here is the old default an earlier save wrote for every user, never a Z report's BT: it reads as the default (ZR).
+    else if (r.kind === "setting" && r.key === "salesDocumentType") rules.sales.documentType = r.accountCode === "ÖK" ? DEFAULT_RULES.sales.documentType : r.accountCode;
     else if (r.kind === "foreign" && (r.key === "expense" || r.key === "vatIn" || r.key === "vatOut")) rules.foreign[r.key] = account;
     else if (r.kind === "sales" && (r.key === "cash" || r.key === "card")) rules.sales[r.key] = account;
     else if (r.kind === "sales" && /^(revenue|vat):\d{1,2}$/.test(r.key)) {

@@ -66,7 +66,7 @@ describe("Z raporu gelir fişi", () => {
     expect(lines(r)).toEqual([["100.01", 150000, 0], ["108.01", 300000, 0], ["600.10", 0, 300000], ["391.10", 0, 30000], ["600.20", 0, 100000], ["391.20", 0, 20000]]);
     expect(r.balanced).toBe(true);
     expect(r.warnings).toEqual([]);
-    expect(r.lines[0]).toMatchObject({ documentNo: "0128", documentType: "ÖK", description: "Z RAPORU 0128" });
+    expect(r.lines[0]).toMatchObject({ documentNo: "0128", documentType: "ZR", description: "Z RAPORU 0128" });
     expect(approvalProblem(r.lines)).toBeNull();
   });
 
@@ -149,5 +149,16 @@ describe("jüri tur 19 düzeltmeleri", () => {
     const { pdfPageCount } = await import("./image");
     const pdf = new TextEncoder().encode("%PDF-1.7\n1 0 obj << /Type /Pages /Count 2 >>\n2 0 obj << /Type /Page >>\n3 0 obj << /Type/Page /Parent 1 0 R >>");
     expect(pdfPageCount(pdf)).toBe(2);
+  });
+});
+});
+
+describe("Z raporu BT", () => {
+  it("Z raporu ZR ile yazılır; eski kayıtlardaki ÖK de ZR sayılır, başka seçim korunur", async () => {
+    const { rulesFromRows, rulesToRows, DEFAULT_RULES: D } = await import("./default-rules");
+    const set = (v: string) => rulesFromRows(rulesToRows(D).map((r) => (r.key === "salesDocumentType" ? { ...r, accountCode: v } : r))).sales.documentType;
+    expect(D.sales.documentType).toBe("ZR");
+    expect(set("ÖK")).toBe("ZR");
+    expect(set("Z")).toBe("Z");
   });
 });
