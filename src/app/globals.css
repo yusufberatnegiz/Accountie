@@ -249,9 +249,9 @@ details.stack > summary h2 { display: inline; }
 .brand { justify-self: start; display: inline-flex; align-items: center; gap: var(--s2); font-weight: var(--w-strong); font-size: var(--fs-section); color: var(--ink); text-decoration: none; letter-spacing: -0.01em; }
 @media (hover: hover) and (pointer: fine) { .brand:hover { color: var(--ink); } }
 .mark { flex: none; width: 24px; height: 24px; }
-.mark-strip { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
-.mark-thermal { stroke: var(--faint); stroke-width: 2; stroke-linecap: round; }
-.mark-luca { stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+.mark-strip { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: miter; }
+.mark-thermal { stroke: var(--faint); stroke-width: 2; }
+.mark-luca { fill: var(--accent); }
 
 /* Buttons. One primary action everywhere: ink in light, light neutral in dark (YON 23.11). Blue stays for figures going to Luca, links and focus.
    Feedback: background shift on hover, scale on press, ring on focus. Never only a fade. */
@@ -393,9 +393,6 @@ tbody tr:last-child td { border-bottom: 0; }
 .status-message .btn { min-height: var(--touch); }
 .status-stage { grid-column: 2; grid-row: 1 / span 2; background: var(--split); display: grid; place-items: center; position: sticky; top: 0; height: 100dvh; overflow: hidden; }
 .status-mark { width: min(56%, 360px); height: auto; }
-.status-mark .mark-strip { stroke-width: 0.6; }
-.status-mark .mark-thermal { stroke-width: 0.9; }
-.status-mark .mark-luca { stroke-width: 1.2; }
 @media (max-width: 900px) {
   .status-page { grid-template-columns: 1fr; }
   .status-stage { display: none; }
