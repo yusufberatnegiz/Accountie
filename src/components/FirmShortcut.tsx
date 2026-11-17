@@ -10,7 +10,8 @@ export function FirmShortcut({ base }: { base: string }) {
   const path = usePathname();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== "k" || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.isComposing) return;
+      // Chrome's autofill sends keydown with no key (Sentry: reading 'toLowerCase' of undefined on /panel/kurallar).
+      if (e.key?.toLowerCase() !== "k" || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.isComposing) return;
       if (document.querySelector("dialog:modal")) return; // an open sheet keeps its keys
       e.preventDefault();
       const search = document.getElementById("firma-ara");
