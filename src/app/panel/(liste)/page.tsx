@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { listReceipts } from "@/db/queries";
 import { AppShell } from "@/components/AppShell";
-import { ReceiptDrawer } from "@/components/ReceiptDrawer";
-import { ReceiptListView, TABS, drawerHref, listHref } from "@/components/ReceiptListView";
+import { ReceiptListView, TABS, openHref, listHref } from "@/components/ReceiptListView";
 import { ReceiptView } from "@/components/ReceiptView";
 import { idSchema } from "@/lib/api-schemas";
 import { loadReceiptView } from "@/lib/receipt-view";
@@ -33,10 +32,8 @@ export default async function PanelPage({ searchParams }: { searchParams: Promis
 
   return (
     <AppShell current="fisler" email={user.email} firmId={firm.id} setup={!firms.some((f) => f.fromLuca)}>
-      <ReceiptListView receipts={receipts} tab={tab} firm={firm} month={month} months={recentMonths(new Date())} setup={!firms.some((f) => f.fromLuca)} />
-      {view && view.receipt.firmId === firm.id ? (
-        <ReceiptDrawer close={close}><ReceiptView {...view} drawer={{ list: close, open: drawerHref("/panel", tab.slug, month) }} /></ReceiptDrawer>
-      ) : null}
+      <ReceiptListView receipts={receipts} tab={tab} firm={firm} month={month} months={recentMonths(new Date())} setup={!firms.some((f) => f.fromLuca)}
+        opened={view && view.receipt.firmId === firm.id ? { id: view.receipt.id, detail: <ReceiptView {...view} inList={{ list: close, open: openHref("/panel", tab.slug, month) }} /> } : undefined} />
     </AppShell>
   );
 }

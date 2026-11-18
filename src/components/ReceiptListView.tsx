@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment, type ReactNode } from "react";
 import type { listReceipts, ReceiptStatus } from "@/db/queries";
 import { BulkActions } from "@/components/BulkActions";
 import { CaptureButton } from "@/components/CaptureButton";
@@ -7,6 +8,7 @@ import { InstallHint } from "@/components/InstallHint";
 import { SetupBanner } from "@/components/SetupBanner";
 import { ListTabs } from "@/components/ListTabs";
 import { RowPending } from "@/components/RowPending";
+import { RowDetail } from "@/components/RowDetail";
 import { MoveTransition } from "@/components/MoveTransition";
 import { MonthPicker } from "@/components/MonthPicker";
 import { DOC_KIND_LABEL, docKind } from "@/lib/doc-kind";
@@ -24,7 +26,7 @@ export const TABS: { slug: string; label: string; status?: ReceiptStatus }[] = [
 
 type Row = Awaited<ReturnType<typeof listReceipts>>[number];
 
-/** The list's own address for this tab and month; with `fis=` + an id after it, that receipt opens in the drawer. */
+/** The list's own address for this tab and month; with `fis=` + an id after it, that receipt opens under its row. */
 export function listHref(base: string, slug: string, month: string) {
   const p = new URLSearchParams();
   if (slug) p.set("durum", slug);
@@ -32,25 +34,32 @@ export function listHref(base: string, slug: string, month: string) {
   const s = p.toString();
   return s ? `${base}?${s}` : base;
 }
-export const drawerHref = (base: string, slug: string, month: string) => { const l = listHref(base, slug, month); return `${l}${l.includes("?") ? "&" : "?"}fis=`; };
+export const openHref = (base: string, slug: string, month: string) => { const l = listHref(base, slug, month); return `${l}${l.includes("?") ? "&" : "?"}fis=`; };
 
 const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : null);
 
-/** Receipt list screen; the page and the dev preview both render it. Rows hold every status, the table shows `tab`. */
-export function ReceiptListView({ receipts: all, tab, firm, month = "", months, base = "/panel", setup = false }: { receipts: Row[]; tab: (typeof TABS)[number]; firm?: { name: string }; month?: string; months?: string[]; base?: string; setup?: boolean }) {
+/**
+ * Receipt list screen; the page and the dev preview both render it. Rows hold every status, the table shows `tab`. `opened`: the
+ * receipt opened from its row (?fis=), whose review screen opens right under that row; pressing the row again closes it.
+ */
+export function ReceiptListView({ receipts: all, tab, firm, month = "", months, base = "/panel", setup = false, opened }: { receipts: Row[]; tab: (typeof TABS)[number]; firm?: { name: string }; month?: string; months?: string[]; base?: string; setup?: boolean; opened?: { id: string; detail: ReactNode } }) {
   // The tabs keep the chosen month, and the month picker keeps the tab.
   const withMonth = (q: string) => { const p = new URLSearchParams(q); if (month) p.set("ay", month); const s = p.toString(); return s ? `${base}?${s}` : base; };
-  // A row opens its receipt in the drawer over this list (ReceiptDrawer), keeping the tab and the month.
-  const open = drawerHref(base, tab.slug, month);
+  // A row opens its receipt under itself, keeping the tab and the month; the open row's link closes it.
+  const open = openHref(base, tab.slug, month);
+  const close = listHref(base, tab.slug, month);
   const count = (s?: ReceiptStatus) => (s ? all.filter((r) => r.status === s).length : all.length);
-  const receipts = tab.status ? all.filter((r) => r.status === tab.status) : all;
+  // The open receipt keeps its row after approval moves it out of this tab, so its screen does not vanish under the user.
+  const receipts = tab.status ? all.filter((r) => r.status === tab.status || r.id === opened?.id) : all;
+  // Opened from elsewhere (the next draft in another month): it opens above the list instead.
+  const loose = opened && !receipts.some((r) => r.id === opened.id) ? opened : null;
   const ready = all.filter((r) => r.status === "approved");
   const drafts = count("draft");
   // Only drafts the bulk approval will approve (no warning, lines that pass its check); the rest still need a look on their own screen.
   const clean = tab.status === "draft" || !tab.status ? receipts.filter((r) => r.status === "draft" && r.ready) : [];
   const shownDrafts = receipts.filter((r) => r.status === "draft");
   // Under Tümü only approved and exported receipts count, so a draft never reads as a booked figure.
-  const counted = tab.status ? receipts : receipts.filter((r) => r.status !== "draft");
+  const counted = receipts.filter((r) => (tab.status ? r.status === tab.status : r.status !== "draft"));
   // A Z report is sales, not an expense: it stays out of the KDV sum.
   // A line left without a code (no account in the firm's plan) still carries its KDV.
   const vatTotal = counted.reduce((n, r) => n + (r.expenseCode !== null && docKind(r.category) !== "z_report" ? r.vatKurus : 0), 0);
@@ -86,6 +95,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
 
       <section className="panel list-panel" aria-labelledby="liste-baslik">
         <h2 id="liste-baslik" className="visually-hidden">Fiş listesi</h2>
+        {loose ? <div className="row-detail row-detail-loose"><RowDetail id={loose.id}>{loose.detail}</RowDetail></div> : null}
         <ListTabs active={tab.slug} tabs={TABS.map((t) => ({ slug: t.slug, label: t.label, href: withMonth(t.slug ? `durum=${t.slug}` : ""), count: count(t.status) }))} />
         {receipts.length === 0 ? (
           <div className="empty-row">
@@ -112,14 +122,16 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
             <tbody>
               {receipts.map((r) => {
                 const notes = r.status === "draft" ? r.warnings.length : 0;
+                const isOpen = opened?.id === r.id;
                 return (
                   // A new receipt rises in at the top; a downloaded one slides out toward the Aktarıldı tab. A tab change uses the same
                   // two moves, in order: rows leaving the filter go out first, then the rest slide to their place and rows joining it rise in.
-                  <MoveTransition key={r.id} enter={{ "fis-eklendi": "row-rise", sekme: "row-join", default: "none" }} exit={{ aktarim: "row-out", sekme: "row-leave", default: "none" }}
+                  <Fragment key={r.id}>
+                  <MoveTransition enter={{ "fis-eklendi": "row-rise", sekme: "row-join", default: "none" }} exit={{ aktarim: "row-out", sekme: "row-leave", default: "none" }}
                     update={{ "fis-eklendi": "row-move", aktarim: "row-move", sekme: "row-shift", default: "none" }} default="none">
-                  <tr>
+                  <tr data-open={isOpen || undefined}>
                     <td className="r-vendor">
-                      <Link className="row-link" href={open + r.id} title={r.vendorName ?? undefined} scroll={false}>
+                      <Link className="row-link" href={isOpen ? close : open + r.id} title={r.vendorName ?? undefined} scroll={false} aria-expanded={isOpen}>
                         {/* The vendor name becomes the review screen's title (ReviewEditor). */}
                         <MoveTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{r.vendorName ?? "Okunamayan fiş"}</span></MoveTransition>
                         <RowPending />
@@ -134,6 +146,8 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                     <td className="r-status"><span className={`status status-${r.status}`}>{STATUS_LABELS[r.status]}</span></td>
                   </tr>
                   </MoveTransition>
+                  {isOpen ? <tr className="row-detail"><td colSpan={6}><RowDetail id={r.id}>{opened.detail}</RowDetail></td></tr> : null}
+                  </Fragment>
                 );
               })}
             </tbody>

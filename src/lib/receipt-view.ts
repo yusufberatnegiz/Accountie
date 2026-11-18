@@ -2,7 +2,7 @@ import "server-only";
 import { getReceipt, getRules, getVendorRule, nextDraft } from "@/db/queries";
 import { leavesOf, planMismatches, planMismatchWarning } from "@/lib/plan-suggest";
 
-/** Everything the review screen needs for one receipt: the full page (/panel/fis/[id]) and the list's drawer (?fis=) both load it here. */
+/** Everything the review screen needs for one receipt: the full page (/panel/fis/[id]) and the list, under the receipt's row (?fis=), both load it here. */
 export async function loadReceiptView(userId: string, id: string) {
   const receipt = await getReceipt(userId, id);
   if (!receipt) return null;
