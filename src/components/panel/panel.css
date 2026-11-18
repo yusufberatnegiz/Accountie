@@ -57,7 +57,10 @@
 /* A receipt opened under its row (ReceiptListView ?fis=): the review screen inside the list, on the page's ground. One amber edge runs
    down the open row and its screen, so the two read as one piece; a heavier rule closes it before the next row. */
 .receipts > tbody > tr.row-detail, .row-detail-loose { background: var(--ground); }
-.receipts > tbody > .row-detail > td { height: auto; padding: var(--s4) var(--s5) var(--s5); border-bottom: 2px solid var(--rule); }
+.receipts > tbody > tr.row-detail > td:first-child { height: auto; padding: 0; border-bottom: 2px solid var(--rule); }
+/* The padding is inside the rolling box, so shut it is truly 0 high (no empty band before it opens or after it closes). */
+.row-detail-roll > * { padding: var(--s4) var(--s5) var(--s5); }
+.row-detail-loose > .row-detail-roll > * { padding: 0; }
 .row-detail-loose { padding: var(--s4) var(--s5) var(--s5); border-bottom: 2px solid var(--rule); }
 .receipts > tbody > tr[data-open] > td:first-child, .receipts > tbody > .row-detail > td, .row-detail-loose { box-shadow: inset 3px 0 0 var(--accent); }
 .row-detail-body { display: grid; gap: var(--s4); min-width: 0; }
@@ -74,6 +77,10 @@
 .row-detail .review > section.panel:not(.info) { order: -1; }
 .row-detail .review > .actions { padding: 0; background: none; border: 0; }
 .row-detail .review > .action-bar { border-radius: var(--radius-card); border-top-color: var(--border); }
+/* Under its row Onayla closes the receipt: the last thing in it, under every part of it, never pinned to the screen. */
+.row-detail .review > .action-bar { position: static; order: 1; }
+/* At the foot of a long receipt the way out is beside Atla on every screen, not only the phone's. */
+.row-detail .action-bar .bar-back { display: inline-flex; }
 /* The folded parts: one quiet line that opens in place. */
 :is(.source-fold, .info-more, .more-actions) > summary {
   display: flex; align-items: center; gap: var(--s2); min-height: var(--touch); width: fit-content; max-width: 100%; cursor: pointer; list-style: none;
@@ -354,6 +361,9 @@
 .action-bar .bar-back { display: none; }
 /* On the tray's --stage ground the secondary fill vanishes; the next draft reads as a button on a surface step. */
 .action-bar .bar-next-draft { background: var(--surface); border-color: var(--border); }
+/* The bar names the problem once, as its links, on the phone and under a row; the sentence stays for screen readers (aria-describedby). */
+@media (max-width: 720px) { .action-bar #onay-engeli { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
+.row-detail .action-bar #onay-engeli { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .action-bar .bar-skip { margin-left: auto; background: transparent; border-color: transparent; }
 /* Saving or approved-and-refreshing: the primary keeps its fill and its label reads at full contrast; only the cursor says wait. */
 .action-bar .btn-primary[data-busy]:disabled { background: var(--primary); color: var(--on-primary); cursor: progress; }
@@ -544,17 +554,18 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   /* Fixed, not sticky: a sticky bar cannot rise above the top of its column, so on a short phone Onayla sat below the fold on load. */
   .action-bar { position: fixed; inset: auto 0 0 0; flex-wrap: wrap; margin: 0; border-radius: 0; border-width: 1px 0 0; }
   .app[data-screen="fis"] .canvas { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
-  /* Under its row the list's bottom menu stays; the receipt's own bar sticks just above it while its screen is on view, and lets go after. */
+  /* Under its row the list's bottom menu stays; the receipt's own bar ends the receipt (not fixed as on its own page). */
   .receipts > tbody > tr.row-detail { display: block; padding: 0; }
-  .receipts > tbody > .row-detail > td { display: block; padding: var(--s3) var(--s3) var(--s4); }
+  .receipts > tbody > .row-detail > td { display: block; padding: 0; }
+  .row-detail-roll > * { padding: var(--s3) var(--s3) var(--s4); }
   .row-detail-loose { padding: var(--s3) var(--s3) var(--s4); }
   /* On the phone the row is a grid, its first cell the seller's name: the amber edge goes on the row itself. */
   .receipts > tbody > tr[data-open] { box-shadow: inset 3px 0 0 var(--accent); }
   .receipts > tbody > tr[data-open] > td:first-child { box-shadow: none; }
   /* The code field keeps a whole code (191.03.20) in the narrower box under a row. */
   .row-detail .journal tr { grid-template-columns: 8.5rem minmax(0, 1fr) auto; padding: var(--s3); }
-  .row-detail .action-bar { position: sticky; bottom: calc(57px + max(var(--s1), env(safe-area-inset-bottom))); z-index: 3; border-width: 1px; border-radius: var(--radius-card); }
-  html:has(.row-detail) { scroll-padding-bottom: 200px; }
+  .row-detail .action-bar { border-width: 1px; border-radius: var(--radius-card); }
+  html:has(.row-detail) { scroll-padding-bottom: 80px; }
   .select-bar-on { bottom: calc(57px + max(var(--s1), env(safe-area-inset-bottom)) + var(--s2)); margin: var(--s2) var(--s3); }
   /* Balanced, the strip says only that: the two totals and the KDV are the lines' own sums, shown again when they differ. */
   .row-detail .balance-strip[data-balanced] { grid-template-columns: 1fr; }
@@ -575,9 +586,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .action-bar:not(:has(.bar-next-draft)) .bar-next .btn { width: 100%; }
   .capture-bar .reading, .capture-bar .alert { position: fixed; left: var(--s4); right: var(--s4); bottom: calc(128px + env(safe-area-inset-bottom)); z-index: 4; }
   /* While the keyboard is up the bar drops its sentence and keeps one row of buttons. */
-  :is(.app[data-screen="fis"], .row-detail):has(.review :is(input, select, textarea):focus) .action-bar:not([data-pointed]) .balance { display: none; }
+  .app[data-screen="fis"]:has(.review :is(input, select, textarea):focus) .action-bar:not([data-pointed]) .balance { display: none; }
   /* The bar names the problem once, as its link; the sentence stays for screen readers (aria-describedby). */
-  .action-bar #onay-engeli { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
   /* A locked amount reads under its label, on the label's edge, not floating at the right of its half. */
   .journal .field.num:disabled { text-align: left; }
   /* Locked lines are text, not fields: no 44px box around each value. */

@@ -113,6 +113,8 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const dirty = editable && signature(lines) !== savedSignature;
   const [seen, setSeen] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState("");
+  // An error is said in the bar at the foot of the receipt; under its row that can be screens away (Ctrl+Enter from the top): it comes into view.
+  useEffect(() => { if (error && inList) statusLine.current?.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" }); }, [error, inList]);
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
   // A saved action keeps its buttons off until the refreshed receipt arrives, so Onayla never flashes back on.
@@ -226,11 +228,11 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   // Ctrl+Enter (Cmd+Enter) approves, as the button would: blocked, it goes to the field that fixes it. A held key, or a press in the
   // first 600ms after this receipt opened (the next draft after an approval), approves nothing: no receipt is approved unseen.
   useEffect(() => {
-    if (!editable) return;
+    if (!editable && !inList) return;
     const opened = performance.now();
     const onKey = (e: KeyboardEvent) => {
       const settled = !e.repeat && performance.now() - opened > 600;
-      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      if (editable && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         if (settled) document.getElementById("onayla")?.click();
         return;
@@ -239,13 +241,16 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
       if (e.ctrlKey || e.metaKey || (e.target instanceof Element && e.target.closest("input, textarea, select, [contenteditable]"))) return;
       const k = e.key.toLocaleLowerCase("tr");
       const press = (el: Element | null | undefined) => { if (el instanceof HTMLElement && !(el as HTMLButtonElement).disabled) { e.preventDefault(); el.click(); } };
+      // Under its row Esc closes it, as Kapat does (the unsaved-edit question first), whatever its status.
+      if (inList && e.key === "Escape") return press(document.querySelector(".row-detail .bar-back"));
+      if (!editable) return;
       if (!e.altKey && k === "t") press(document.getElementById("arac-ticari"));
       else if (!e.altKey && k === "b") press(document.getElementById("arac-binek"));
       else if (settled && ((!e.altKey && k === "j") || (e.altKey && e.key === "ArrowRight"))) press(document.querySelector(".action-bar .bar-skip"));
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [editable]);
+  }, [editable, inList]);
 
   const parsed = lines.map(toLine);
   const invalid = parsed.some((l) => Number.isNaN(l.debitKurus) || Number.isNaN(l.creditKurus));
