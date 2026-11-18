@@ -9,7 +9,7 @@ import { SetupBanner } from "@/components/SetupBanner";
 import { ListTabs } from "@/components/ListTabs";
 import { RowPending } from "@/components/RowPending";
 import { RowDetail } from "@/components/RowDetail";
-import { AllCheck, ListSelection, RowCheck } from "@/components/ListSelection";
+import { ListSelection, RowCheck } from "@/components/ListSelection";
 import { MoveTransition } from "@/components/MoveTransition";
 import { MonthPicker } from "@/components/MonthPicker";
 import { DOC_KIND_LABEL, docKind } from "@/lib/doc-kind";
@@ -133,7 +133,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
           <ListSelection statuses={Object.fromEntries(receipts.map((r) => [r.id, r.status]))}>
           <table className="receipts">
             <thead>
-              <tr><th className="col-check"><AllCheck /></th><th className="col-vendor">Satıcı</th><th className="num col-no">Evrak No</th><th className="num col-date">Tarih</th><th className="num col-code">Gider hesabı</th><th className="num col-total">Toplam</th><th className="col-status">Durum</th></tr>
+              <tr><th className="col-check"><span className="visually-hidden">Seç</span></th><th className="col-vendor">Satıcı</th><th className="num col-no">Evrak No</th><th className="num col-date">Tarih</th><th className="num col-code">Gider hesabı</th><th className="num col-total">Toplam</th><th className="col-status">Durum</th></tr>
             </thead>
             <tbody>
               {receipts.map((r) => {

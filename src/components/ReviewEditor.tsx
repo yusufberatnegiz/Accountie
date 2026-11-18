@@ -691,8 +691,6 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
         </section>
         ) : null}
 
-        {/* Under its row the rare steps (save half-way, copy, undo, delete) fold, so the next receipt is not under a big red button. */}
-        <Fold on={!!inList} className="more-actions" label="Diğer işlemler">
         <div className="actions">
           {editable ? (
             <button className="btn" type="button" disabled={working} onClick={() => run(async () => { if (await save()) { setInfo("Kaydedildi."); refresh(); } })}>Taslağı kaydet</button>
@@ -719,7 +717,6 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           <p role="status" className="muted small">{info}</p>
         </div>
         {inList && editable ? deleteZone : null}
-        </Fold>
 
         <div className="action-bar" data-pointed={pointed || undefined}>
           {/* Errors show here, next to the button that caused them; a box higher up is off screen on the phone. */}

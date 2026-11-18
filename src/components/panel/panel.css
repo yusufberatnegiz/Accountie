@@ -73,8 +73,11 @@
 .row-detail .review { display: flex; flex-direction: column; align-items: stretch; gap: var(--s4); }
 .row-detail .review > * { margin-top: 0 !important; }
 .row-detail .review > .read-brief { display: flex; }
-/* Under its row the journal lines come first (the figures going to Luca), then the brief and the warnings that explain them. */
-.row-detail .review > section.panel:not(.info) { order: -1; }
+/* Under its row the journal lines come first (the figures going to Luca), the header fields they carry next, then the brief and the warnings. */
+.row-detail .review > section.panel { order: -1; }
+.row-detail .review > section.panel.info { align-self: stretch; }
+/* Fişi sil stands apart from Onayla below it: a section's gap, not a row's. */
+.row-detail .review > .danger-zone { margin-bottom: var(--s5); }
 .row-detail .review > .actions { padding: 0; background: none; border: 0; }
 .row-detail .review > .action-bar { border-radius: var(--radius-card); border-top-color: var(--border); }
 /* Under its row Onayla closes the receipt: the last thing in it, under every part of it, never pinned to the screen. */
@@ -82,22 +85,21 @@
 /* At the foot of a long receipt the way out is beside Atla on every screen, not only the phone's. */
 .row-detail .action-bar .bar-back { display: inline-flex; }
 /* The folded parts: one quiet line that opens in place. */
-:is(.source-fold, .info-more, .more-actions) > summary {
+:is(.source-fold, .info-more) > summary {
   display: flex; align-items: center; gap: var(--s2); min-height: var(--touch); width: fit-content; max-width: 100%; cursor: pointer; list-style: none;
   color: var(--muted); font-size: var(--fs-body); font-weight: var(--w-medium); border-radius: var(--radius-chip);
 }
-:is(.source-fold, .info-more, .more-actions) > summary::-webkit-details-marker { display: none; }
-:is(.source-fold, .info-more, .more-actions) > summary::before {
+:is(.source-fold, .info-more) > summary::-webkit-details-marker { display: none; }
+:is(.source-fold, .info-more) > summary::before {
   content: ""; flex: none; width: 6px; height: 6px; margin: 0 4px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg);
   transition: transform var(--t-hover) var(--ease-out);
 }
-:is(.source-fold, .info-more, .more-actions)[open] > summary::before { transform: rotate(45deg); }
-@media (hover: hover) and (pointer: fine) { :is(.source-fold, .info-more, .more-actions) > summary:hover { color: var(--ink); } }
-:is(.source-fold, .info-more, .more-actions) > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+:is(.source-fold, .info-more)[open] > summary::before { transform: rotate(45deg); }
+@media (hover: hover) and (pointer: fine) { :is(.source-fold, .info-more) > summary:hover { color: var(--ink); } }
+:is(.source-fold, .info-more) > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .info-more > summary { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; padding-left: 18px; position: relative; line-height: var(--touch); }
 .info-more > summary::before { position: absolute; left: 0; top: 50%; margin-top: -5px; }
-.source-fold[open] > .source, .more-actions[open] > .actions { margin-top: var(--s3); }
-.more-actions .danger-zone { margin-top: var(--s4); }
+.source-fold[open] > .source { margin-top: var(--s3); }
 /* A Z report's read panel stays open under its row: its labels and figures stay within reach of each other. */
 .row-detail .read-values { max-width: 32rem; }
 /* A text button inside a sentence: the problem line goes to the field that fixes it. */
@@ -154,15 +156,19 @@
 .receipts > thead > tr > th:first-child, .receipts > tbody > tr > td:first-child { padding-left: var(--s5); }
 .receipts > thead > tr > th:last-child, .receipts > tbody > tr > td:last-child { padding-right: var(--s5); }
 .receipts > thead .col-check { width: 52px; }
-/* Until "Seç" the checkbox column stays, at no width: the open receipt's cell still spans all seven. */
-.list-select:not([data-on]) .receipts > thead .col-check { width: 0; }
-.list-select:not([data-on]) .receipts > * > tr > :is(.col-check, .r-check) { padding: 0; overflow: hidden; visibility: hidden; }
-.select-toggle { display: flex; justify-content: flex-end; padding: var(--s2) var(--s5) 0; }
-@media (min-width: 901px) {
-  .list-select:not([data-on]) .receipts > * > tr > :is(.col-vendor, .r-vendor) { padding-left: var(--s5); }
-  /* The amber edge of the open row moves to the first visible cell. */
-  .list-select:not([data-on]) .receipts > tbody > tr[data-open] > .r-vendor { box-shadow: inset 3px 0 0 var(--accent); }
+.select-toggle { display: flex; justify-content: flex-start; padding: var(--s2) var(--s5) 0; }
+.select-all { display: inline-flex; align-items: center; gap: var(--s3); min-height: var(--touch); font-size: var(--fs-small); color: var(--muted); cursor: pointer; }
+.select-bar .select-delete { margin-left: auto; }
+.select-note { flex-basis: 100%; margin: 0; }
+/* While receipts are ticked only the selection bar acts: the whole-list buttons above step aside (keeping their place, so nothing jumps). */
+body:has(.select-bar[data-chosen]) .list-foot-actions > .btn { visibility: hidden; }
+.list-foot-actions { position: relative; }
+body:has(.select-bar[data-chosen]) .list-foot-actions.list-foot::before {
+  content: "Seçilen fişler alttaki çubuktan onaylanır, taslağa alınır ya da silinir."; position: absolute; inset: 0 var(--s5); display: flex; align-items: center;
+  font-size: var(--fs-small); color: var(--muted);
 }
+.row-check-hit { position: relative; z-index: 1; display: inline-grid; place-items: center; width: 44px; height: 44px; margin: -12px; cursor: pointer; }
+.row-check-hit > .row-check { z-index: auto; }
 /* The checkbox sits over the row link (which covers the whole row) so a tick never opens the receipt; 44px to touch. */
 .receipts > * > tr > :is(.col-check, .r-check) { padding-right: 0; }
 .row-check { position: relative; z-index: 1; width: 20px; height: 20px; margin: 0; accent-color: var(--primary); cursor: pointer; }
@@ -197,7 +203,7 @@
 .list-foot { padding: var(--s4) var(--s5); border-top: 1px solid var(--rule); }
 /* Ticked receipts: what can be done to them at once, held at the foot of the screen while any is ticked. */
 .select-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
-.select-bar-on { position: sticky; bottom: var(--s4); z-index: 4; margin: var(--s3) var(--s4); padding: var(--s3) var(--s4); background: var(--stage); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-float); }
+.select-bar-on { position: sticky; bottom: var(--s4); z-index: 4; margin: var(--s3) var(--s4); padding: var(--s3) var(--s4); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-float); }
 .select-count { margin: 0 var(--s2) 0 0; }
 .select-status { flex-basis: 100%; margin: 0; }
 .select-status:empty { display: none; }
@@ -452,7 +458,6 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .receipts > tbody > tr:last-child { border-bottom: 0; }
   .receipts > tbody > tr > td, .receipts > tbody > tr > td:first-child, .receipts > tbody > tr > td:last-child { height: auto; padding: 0; border: 0; }
   .receipts > tbody > tr > .r-check { grid-column: 1; grid-row: 1 / span 2; align-self: center; padding-right: var(--s1); }
-  .list-select:not([data-on]) .receipts > tbody > tr > .r-check { display: none; }
   .select-toggle { padding: var(--s2) var(--s4) 0; }
   .receipts > tbody > tr > .r-vendor { grid-column: 2 / 6; }
   .receipts > tbody > tr > .r-total { grid-column: 6; grid-row: 1; font-weight: var(--w-strong); white-space: nowrap; }
@@ -566,7 +571,10 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .row-detail .journal tr { grid-template-columns: 8.5rem minmax(0, 1fr) auto; padding: var(--s3); }
   .row-detail .action-bar { border-width: 1px; border-radius: var(--radius-card); }
   html:has(.row-detail) { scroll-padding-bottom: 80px; }
-  .select-bar-on { bottom: calc(57px + max(var(--s1), env(safe-area-inset-bottom)) + var(--s2)); margin: var(--s2) var(--s3); }
+  .select-bar-on { bottom: calc(57px + max(var(--s1), env(safe-area-inset-bottom)) + var(--s2)); margin: var(--s2) var(--s3); padding: var(--s2) var(--s3); }
+  /* On the phone the bar keeps to two lines of smaller buttons, so it never hides the rows still being ticked. */
+  .select-bar-on .btn:not(.btn-sm) { min-height: 40px; padding-inline: var(--s3); font-size: var(--fs-small); }
+  .select-bar-on .select-note { display: none; }
   /* Balanced, the strip says only that: the two totals and the KDV are the lines' own sums, shown again when they differ. */
   .row-detail .balance-strip[data-balanced] { grid-template-columns: 1fr; }
   .row-detail .balance-strip[data-balanced] > div:not(.balance-answer) { display: none; }
