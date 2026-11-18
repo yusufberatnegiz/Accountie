@@ -56,16 +56,16 @@
 }
 /* A receipt opened under its row (ReceiptListView ?fis=): the review screen inside the list, on the page's ground. One amber edge runs
    down the open row and its screen, so the two read as one piece; a heavier rule closes it before the next row. */
-.receipts tr.row-detail, .row-detail-loose { background: var(--ground); }
-.receipts .row-detail > td { height: auto; padding: var(--s4) var(--s5) var(--s5); border-bottom: 2px solid var(--rule); }
+.receipts > tbody > tr.row-detail, .row-detail-loose { background: var(--ground); }
+.receipts > tbody > .row-detail > td { height: auto; padding: var(--s4) var(--s5) var(--s5); border-bottom: 2px solid var(--rule); }
 .row-detail-loose { padding: var(--s4) var(--s5) var(--s5); border-bottom: 2px solid var(--rule); }
-.receipts tr[data-open] > td:first-child, .receipts .row-detail > td, .row-detail-loose { box-shadow: inset 3px 0 0 var(--accent); }
+.receipts > tbody > tr[data-open] > td:first-child, .receipts > tbody > .row-detail > td, .row-detail-loose { box-shadow: inset 3px 0 0 var(--accent); }
 .row-detail-body { display: grid; gap: var(--s4); min-width: 0; }
-@media (hover: hover) and (pointer: fine) { .receipts tbody tr.row-detail:hover { background: var(--ground); } }
-.receipts tr[data-open] { background: var(--active); }
+@media (hover: hover) and (pointer: fine) { .receipts > tbody > tr.row-detail:hover { background: var(--ground); } }
+.receipts > tbody > tr[data-open] { background: var(--active); }
 /* The status chip's own ground is --active, the open row's too: it gets the surface step and an edge so it still reads as a chip. */
-.receipts tr[data-open] .status { background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); }
-@media (hover: hover) and (pointer: fine) and (min-width: 901px) { .receipts tr[data-open] .r-status::after { transform: rotate(135deg); border-color: var(--ink); } }
+.receipts > tbody > tr[data-open] .status { background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); }
+@media (hover: hover) and (pointer: fine) and (min-width: 901px) { .receipts > tbody > tr[data-open] .r-status::after { transform: rotate(135deg); border-color: var(--ink); } }
 /* Under its row the screen is one column at every width: the read panel is folded, so a second column would stand empty. */
 .row-detail .review { display: flex; flex-direction: column; align-items: stretch; gap: var(--s4); }
 .row-detail .review > * { margin-top: 0 !important; }
@@ -140,33 +140,33 @@
 .tab-line { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--ink); }
 .tab-count { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
 .receipts { table-layout: fixed; }
-.receipts th, .receipts td { padding: 0 var(--s3); height: 56px; }
-.receipts thead th { height: 40px; }
-.receipts th:first-child, .receipts td:first-child { padding-left: var(--s5); }
-.receipts th:last-child, .receipts td:last-child { padding-right: var(--s5); }
-.receipts .col-no { width: 88px; }
-.receipts .col-date { width: 112px; }
-.receipts .col-code { width: 120px; }
-.receipts .col-total { width: 128px; }
-.receipts .col-status { width: 120px; }
-.receipts tbody tr { position: relative; transition: background-color 120ms ease; }
+.receipts > thead > tr > th, .receipts > tbody > tr > td { padding: 0 var(--s3); height: 56px; }
+.receipts > thead > tr > th { height: 40px; }
+.receipts > thead > tr > th:first-child, .receipts > tbody > tr > td:first-child { padding-left: var(--s5); }
+.receipts > thead > tr > th:last-child, .receipts > tbody > tr > td:last-child { padding-right: var(--s5); }
+.receipts > thead .col-no { width: 88px; }
+.receipts > thead .col-date { width: 112px; }
+.receipts > thead .col-code { width: 120px; }
+.receipts > thead .col-total { width: 128px; }
+.receipts > thead .col-status { width: 120px; }
+.receipts > tbody > tr { position: relative; transition: background-color 120ms ease; }
 @media (hover: hover) and (pointer: fine) and (min-width: 901px) {
   /* The chevron is placed on the row, not a positioned cell, so the row link's ::after stays on top across the status column too. */
   .r-status::after { content: ""; pointer-events: none; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border: solid var(--faint); border-width: 1.5px 1.5px 0 0; transform: rotate(45deg); transition: transform 120ms var(--ease-out), border-color 120ms ease; }
-  .receipts tbody tr:hover .r-status::after { border-color: var(--ink); transform: translateX(4px) rotate(45deg); }
+  .receipts > tbody > tr:hover .r-status::after { border-color: var(--ink); transform: translateX(4px) rotate(45deg); }
 }
 .r-vendor { min-width: 0; }
-@media (min-width: 1100px) { .receipts .r-vendor .row-link span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .receipts .col-no { width: 96px; } .receipts .r-no { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .receipts .col-date { width: 100px; } .receipts .col-code { width: 104px; } .receipts .col-total { width: 116px; } .receipts .col-status { width: 128px; } }
+@media (min-width: 1100px) { .receipts > tbody > tr > .r-vendor .row-link span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .receipts > thead .col-no { width: 96px; } .receipts > tbody > tr > .r-no { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .receipts > thead .col-date { width: 100px; } .receipts > thead .col-code { width: 104px; } .receipts > thead .col-total { width: 116px; } .receipts > thead .col-status { width: 128px; } }
 /* Hidden by width, not removed: the open receipt's cell spans all six columns, and a removed column would still take its share. */
-@media (min-width: 1181px) and (max-width: 1439px) { .receipts :is(.col-no, .col-code) { width: 0; } .receipts :is(.col-no, .r-no, .col-code, .r-code) { padding: 0; overflow: hidden; visibility: hidden; } }
+@media (min-width: 1181px) and (max-width: 1439px) { .receipts > thead > tr > :is(.col-no, .col-code) { width: 0; } .receipts > * > tr > :is(.col-no, .r-no, .col-code, .r-code) { padding: 0; overflow: hidden; visibility: hidden; } }
 .row-link { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.3; overflow-wrap: anywhere; color: var(--ink); font-weight: var(--w-medium); text-decoration: none; }
 /* The whole row opens the receipt; the padding also gives the link's own box 44px without moving the text. */
 .row-link { padding-block: 13px; margin-block: -13px; overflow: clip; overflow-clip-margin: content-box; }
 .row-link::after { content: ""; position: absolute; inset: 0; }
 .row-link:focus-visible { outline: none; }
-.receipts tbody tr:has(.row-link:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
+.receipts > tbody > tr:has(.row-link:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
 /* --raised is 1.07:1 on white; --active is a step the eye catches in both themes. */
-@media (hover: hover) and (pointer: fine) { .receipts tbody tr:hover { background: var(--active); } }
+@media (hover: hover) and (pointer: fine) { .receipts > tbody > tr:hover { background: var(--active); } }
 .r-notes { display: block; font-size: var(--fs-small); color: var(--warn-ink); }
 .kind-tag { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--s2); border-radius: var(--radius-chip); font-size: var(--fs-small); white-space: nowrap; flex: none; color: var(--muted); box-shadow: inset 0 0 0 1px var(--border); }
 .r-kind { display: block; font-size: var(--fs-small); color: var(--muted); } /* Z raporu, yurt dışı fatura */
@@ -332,7 +332,7 @@
 .action-bar .bar-back { display: none; }
 /* On the tray's --stage ground the secondary fill vanishes; the next draft reads as a button on a surface step. */
 .action-bar .bar-next-draft { background: var(--surface); border-color: var(--border); }
-.action-bar .bar-skip { margin-left: auto; }
+.action-bar .bar-skip { margin-left: auto; background: transparent; border-color: transparent; }
 /* Saving or approved-and-refreshing: the primary keeps its fill and its label reads at full contrast; only the cursor says wait. */
 .action-bar .btn-primary[data-busy]:disabled { background: var(--primary); color: var(--on-primary); cursor: progress; }
 /* A focused field is never under the sticky bar. */
@@ -413,19 +413,19 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 }
 @media (max-width: 900px) {
   /* Rows become two lines: vendor and total, then number, date, account and status. Fields move, none is dropped. */
-  .receipts thead { display: none; }
-  .receipts, .receipts tbody { display: block; }
+  .receipts > thead { display: none; }
+  .receipts, .receipts > tbody { display: block; }
   /* Number, date and code sit in fixed columns so their digits line up from row to row; the spacer takes the rest. */
-  .receipts tr { display: grid; grid-template-columns: minmax(0, 3rem) 4.5rem minmax(4rem, max-content) minmax(0, 1fr) auto; gap: 2px var(--s2); align-items: baseline; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
-  .receipts tbody tr:last-child { border-bottom: 0; }
-  .receipts td, .receipts td:first-child, .receipts td:last-child { height: auto; padding: 0; border: 0; }
-  .receipts .r-vendor { grid-column: 1 / 5; }
-  .receipts .r-total { grid-column: 5; grid-row: 1; font-weight: var(--w-strong); white-space: nowrap; }
-  .receipts .r-no, .receipts .r-date, .receipts .r-code { grid-row: 2; font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .receipts > tbody > tr { display: grid; grid-template-columns: minmax(0, 3rem) 4.5rem minmax(4rem, max-content) minmax(0, 1fr) auto; gap: 2px var(--s2); align-items: baseline; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
+  .receipts > tbody > tr:last-child { border-bottom: 0; }
+  .receipts > tbody > tr > td, .receipts > tbody > tr > td:first-child, .receipts > tbody > tr > td:last-child { height: auto; padding: 0; border: 0; }
+  .receipts > tbody > tr > .r-vendor { grid-column: 1 / 5; }
+  .receipts > tbody > tr > .r-total { grid-column: 5; grid-row: 1; font-weight: var(--w-strong); white-space: nowrap; }
+  .receipts > tbody > tr > .r-no, .receipts > tbody > tr > .r-date, .receipts > tbody > tr > .r-code { grid-row: 2; font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
   /* The evrak number starts at the vendor's edge; date and code, the figures compared down the list, are right-aligned. */
-  .receipts .r-no { overflow: hidden; text-overflow: ellipsis; text-align: left; }
-  .receipts .r-code { color: var(--ink); }
-  .receipts .r-status { grid-column: 5; grid-row: 2; text-align: right; }
+  .receipts > tbody > tr > .r-no { overflow: hidden; text-overflow: ellipsis; text-align: left; }
+  .receipts > tbody > tr > .r-code { color: var(--ink); }
+  .receipts > tbody > tr > .r-status { grid-column: 5; grid-row: 2; text-align: right; }
   :is(.r-notes, .r-kind) { display: block; margin: 0; }
   .side { grid-template-columns: minmax(0, 1fr); }
   /* The tablet keeps the journal a table (one line per row), so the balance strip is on the first screen above the tray. */
@@ -520,12 +520,12 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .action-bar { position: fixed; inset: auto 0 0 0; flex-wrap: wrap; margin: 0; border-radius: 0; border-width: 1px 0 0; }
   .app[data-screen="fis"] .canvas { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
   /* Under its row the list's bottom menu stays; the receipt's own bar sticks just above it while its screen is on view, and lets go after. */
-  .receipts tr.row-detail { display: block; padding: 0; }
-  .receipts .row-detail > td { display: block; padding: var(--s3) var(--s3) var(--s4); }
+  .receipts > tbody > tr.row-detail { display: block; padding: 0; }
+  .receipts > tbody > .row-detail > td { display: block; padding: var(--s3) var(--s3) var(--s4); }
   .row-detail-loose { padding: var(--s3) var(--s3) var(--s4); }
   /* On the phone the row is a grid, its first cell the seller's name: the amber edge goes on the row itself. */
-  .receipts tr[data-open] { box-shadow: inset 3px 0 0 var(--accent); }
-  .receipts tr[data-open] > td:first-child { box-shadow: none; }
+  .receipts > tbody > tr[data-open] { box-shadow: inset 3px 0 0 var(--accent); }
+  .receipts > tbody > tr[data-open] > td:first-child { box-shadow: none; }
   /* The code field keeps a whole code (191.03.20) in the narrower box under a row. */
   .row-detail .journal tr { grid-template-columns: 8.5rem minmax(0, 1fr) auto; padding: var(--s3); }
   .row-detail .action-bar { position: sticky; bottom: calc(57px + max(var(--s1), env(safe-area-inset-bottom))); z-index: 3; border-width: 1px; border-radius: var(--radius-card); }
@@ -577,7 +577,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 }
 @media (max-width: 360px) {
   /* 320px: the three fixed columns and the pill do not fit; the meta line packs to its contents, still right-aligned. */
-  .receipts tr { grid-template-columns: auto auto minmax(0, 1fr) 0 auto; column-gap: 6px; }
+  .receipts > tbody > tr { grid-template-columns: auto auto minmax(0, 1fr) 0 auto; column-gap: 6px; }
   /* 320px: the code column gives up 12px so the amount shows whole beside the switch. */
   .journal tr { grid-template-columns: 6.5rem minmax(0, 1fr) auto; }
   .journal tr:not(:has(.col-del)) td.col-amount { grid-template-columns: 6.5rem minmax(0, 1fr); }
@@ -600,7 +600,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   @keyframes done-pulse { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.08); } }
   .balance-check { transition: clip-path 200ms var(--ease-out); }
   /* A downloaded receipt that stays in view (Tümü) changes its pill by a short tone step, not a jump. */
-  .receipts .status { transition: background-color 180ms ease, color 180ms ease; }
+  .receipts > tbody > tr > .r-status .status { transition: background-color 180ms ease, color 180ms ease; }
   /* Onaylandı: the pill's words roll to the new status (Roll) while its tone steps over, no stamp. */
   .title-line > .status { transition: background-color 180ms ease, color 180ms ease; }
   /* Reading a receipt: the photo settles in once; the dots beside the stage are the only loop, opacity alone. */

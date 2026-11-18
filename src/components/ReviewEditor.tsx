@@ -227,9 +227,19 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     if (!editable) return;
     const opened = performance.now();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Enter" || !(e.ctrlKey || e.metaKey)) return;
-      e.preventDefault();
-      if (!e.repeat && performance.now() - opened > 600) document.getElementById("onayla")?.click();
+      const settled = !e.repeat && performance.now() - opened > 600;
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        if (settled) document.getElementById("onayla")?.click();
+        return;
+      }
+      // Single keys only off the fields, so typing a code or an amount never triggers them.
+      if (e.ctrlKey || e.metaKey || (e.target instanceof Element && e.target.closest("input, textarea, select, [contenteditable]"))) return;
+      const k = e.key.toLocaleLowerCase("tr");
+      const press = (el: Element | null | undefined) => { if (el instanceof HTMLElement && !(el as HTMLButtonElement).disabled) { e.preventDefault(); el.click(); } };
+      if (!e.altKey && k === "t") press(document.getElementById("arac-ticari"));
+      else if (!e.altKey && k === "b") press(document.getElementById("arac-binek"));
+      else if (settled && ((!e.altKey && k === "j") || (e.altKey && e.key === "ArrowRight"))) press(document.querySelector(".action-bar .bar-skip"));
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -406,6 +416,9 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     : problem ?? `Borç ${formatTrAmount(debit)}, alacak ${formatTrAmount(credit)}. Onaya hazır.`;
   const findingOff = invalid || (editable && !!problem);
   const target = editable && problem ? problemTarget(problem, parsed, receipt.totalKurus) : null;
+  // The vehicle choice is checked first; what the lines still lack behind it is named at once, so it is not found one press later.
+  const laterProblem = editable && vehicleOpen && !invalid && !noFiscalValue ? approvalProblem(parsed, planIndex(plan)) : null;
+  const laterTarget = laterProblem ? problemTarget(laterProblem, parsed, receipt.totalKurus) : null;
   // With an invalid amount the first flagged field is the one to fix, wherever it is.
   // The bar keeps its sentence while the field it pointed to has focus: the reason must stay in view as the keyboard opens.
   const [pointed, setPointed] = useState(false);
@@ -518,8 +531,8 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
               <div className="inline-field vehicle-field">
                 <span id="arac-turu">{vehicleCost ? "Araç binek mi, ticari mi?" : "Araç bakımıysa: binek mi, ticari mi? (isteğe bağlı)"} {checkNote(vehicleOpen)}</span>
                 <span className="seg" role="group" aria-labelledby="arac-turu" aria-describedby={binek ? "binek-not" : undefined} {...flag(vehicleOpen)}>
-                  <button id="arac-ticari" className="side-opt" type="button" aria-pressed={!binek && vehicleChosen} disabled={invalid || working} onClick={() => setBinek(false)}>Ticari</button>
-                  <button className="side-opt" type="button" aria-pressed={binek} disabled={invalid || working || !kkeg}
+                  <button id="arac-ticari" className="side-opt" type="button" aria-keyshortcuts="T" title="Ticari (T)" aria-pressed={!binek && vehicleChosen} disabled={invalid || working} onClick={() => setBinek(false)}>Ticari</button>
+                  <button id="arac-binek" className="side-opt" type="button" aria-pressed={binek} aria-keyshortcuts="B" title="Binek (B)" disabled={invalid || working || !kkeg}
                     aria-describedby={kkeg ? undefined : "binek-yok"} onClick={() => setBinek(true)}>Binek</button>
                 </span>
               </div>
@@ -707,7 +720,8 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
             {error ? error
               : receipt.status === "approved" ? "Onaylandı. Chrome eklentisi Luca Fiş Detayına yazar."
               : receipt.status === "exported" ? "Luca'ya aktarıldı."
-              : target ? <><span id="onay-engeli">{problem}</span> <button className="link-button" type="button" onClick={fix}>{target.action}</button></>
+              : target ? <><span id="onay-engeli">{problem}{laterProblem ? ` ${laterProblem}` : ""}</span> <button className="link-button" type="button" onClick={fix}>{target.action}</button>
+                {laterTarget ? <>{" "}<span className="muted">ve</span>{" "}<button className="link-button" type="button" onClick={() => goTo(document.getElementById(laterTarget.id))}>{laterTarget.action.charAt(0).toLocaleLowerCase("tr") + laterTarget.action.slice(1)}</button></> : null}</>
               : dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır."}
           </p>
           {/* The way back sits under the thumb on the phone, where this screen hides the bottom bar. */}
@@ -717,13 +731,13 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           {/* After approval the phone user goes on with the bag of receipts: the next draft, or the camera when none is left. */}
           {!editable && !inList ? <div className="bar-next phone-only"><CaptureButton pickers={["camera"]} variant="bar" primary={!next} base={base} /></div> : null}
           {/* Under its row a draft can be left for later: the next one down the list opens, this one stays a draft. */}
-          {inList && editable && next ? <Link className="btn btn-lg bar-skip" href={openHref(next.id)} scroll={false} replace>Atla</Link> : null}
+          {inList && editable && next ? <Link className="btn btn-lg bar-skip" href={openHref(next.id)} scroll={false} replace aria-keyshortcuts="J" title="Atla (J)">Atla</Link> : null}
           {!editable && next ? (
             <Link className="btn btn-lg bar-next-draft" href={openHref(next.id)} scroll={!inList} replace={!!inList}>Sıradaki taslak ({next.left})</Link>
           ) : null}
           {editable ? (
             // aria-disabled keeps the button in the Tab order; pressing it while blocked goes to the field that fixes it.
-            <button id="onayla" className="btn btn-primary btn-lg" type="button" disabled={working || approved} data-busy={working || approved || undefined} data-done={approved || undefined} aria-disabled={target ? true : undefined}
+            <button id="onayla" className="btn btn-primary btn-lg" type="button" aria-keyshortcuts="Control+Enter" title="Onayla (Ctrl+Enter)" disabled={working || approved} data-busy={working || approved || undefined} data-done={approved || undefined} aria-disabled={target ? true : undefined}
               aria-describedby={target ? "onay-engeli" : undefined}
               onClick={() => (target ? fix() : run(async () => { await vehicleSaving.current; if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) { setApproved(true); measureLock(); afterApprove(); } }))}>
               {approved ? "Onaylandı" : busy ? "Kaydediliyor…" : "Onayla"}
