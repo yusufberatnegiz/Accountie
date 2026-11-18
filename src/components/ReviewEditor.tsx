@@ -90,9 +90,12 @@ export type NextDraft = { id: string; left: number } | null;
 
 /**
  * `plan`: the firm's Luca chart of accounts (names taken from it); `postable`: its accounts that can be posted to, offered while
- * typing a code. `mismatched`: codes on this draft that mean another account in it.
+ * typing a code. `mismatched`: codes on this draft that mean another account in it. `drawer`: opened over the list (ReceiptDrawer):
+ * its way back is the list with the same tab and month, `drawer.open` + id opens another receipt in it.
  */
-export function ReviewEditor({ receipt, rules, next = null, learned = null, base = "/panel", plan = [], postable = [], mismatched = [] }: { receipt: ReceiptDetail; rules: Rules; next?: NextDraft; learned?: VendorRule | null; base?: string; plan?: { code: string; name: string }[]; postable?: { code: string; name: string }[]; mismatched?: string[] }) {
+export function ReviewEditor({ receipt, rules, next = null, learned = null, base = "/panel", plan = [], postable = [], mismatched = [], drawer }: { receipt: ReceiptDetail; rules: Rules; next?: NextDraft; learned?: VendorRule | null; base?: string; plan?: { code: string; name: string }[]; postable?: { code: string; name: string }[]; mismatched?: string[]; drawer?: { list: string; open: string } }) {
+  const listHref = drawer?.list ?? base;
+  const openHref = (id: string) => (drawer ? drawer.open + id : `${base}/fis/${id}`);
   const router = useRouter();
   const editable = receipt.status === "draft";
   const [lines, setLines] = useState(() => receipt.lines.map(toEdit));
@@ -403,12 +406,14 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
     <>
       <div className="title-row">
         <div className="title-text">
-          <p className="crumb"><Link href={base}>Fişler</Link><span aria-hidden="true"> / </span><span translate="no">{docWord} {receipt.receiptNo ?? "numarasız"}</span></p>
+          <p className="crumb"><Link href={listHref} scroll={!drawer}>Fişler</Link><span aria-hidden="true"> / </span><span translate="no">{docWord} {receipt.receiptNo ?? "numarasız"}</span></p>
           <div className="title-line">
-            {/* The list row's vendor name morphs into this title (ReceiptListView). */}
-            <ViewTransition name={`fis-${receipt.id}`} share="title-morph" default="none" onShare={(i) => moveOnly(i)}>
-              <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
-            </ViewTransition>
+            {/* The list row's vendor name morphs into this title (ReceiptListView). In the drawer the row stays on the page, so no shared name. */}
+            {drawer ? <h1 id="cekmece-baslik" title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1> : (
+              <ViewTransition name={`fis-${receipt.id}`} share="title-morph" default="none" onShare={(i) => moveOnly(i)}>
+                <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
+              </ViewTransition>
+            )}
             <span className={`status status-${receipt.status}`}><Roll value={STATUS_LABELS[receipt.status]} /></span>
             {DOC_KIND_LABEL[kind] ? <span className="kind-tag">{DOC_KIND_LABEL[kind]}</span> : null}
           </div>
@@ -657,11 +662,11 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
               : dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır."}
           </p>
           {/* The way back sits under the thumb on the phone, where this screen hides the bottom bar. */}
-          <Link className="btn btn-lg bar-back" href={base}>Fişler</Link>
+          <Link className="btn btn-lg bar-back" href={listHref} scroll={!drawer}>Fişler</Link>
           {/* After approval the phone user goes on with the bag of receipts: the next draft, or the camera when none is left. */}
           {!editable ? <div className="bar-next phone-only"><CaptureButton pickers={["camera"]} variant="bar" primary={!next} base={base} /></div> : null}
           {!editable && next ? (
-            <Link className="btn btn-lg bar-next-draft" href={`${base}/fis/${next.id}`}>Sıradaki taslak ({next.left})</Link>
+            <Link className="btn btn-lg bar-next-draft" href={openHref(next.id)} scroll={!drawer}>Sıradaki taslak ({next.left})</Link>
           ) : null}
           {editable ? (
             // aria-disabled keeps the button in the Tab order; pressing it while blocked goes to the field that fixes it.
@@ -683,7 +688,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
               <p className="muted small">Taslak ve satırları kalıcı olarak silinir.</p>
             </div>
             <button id="fis-sil" className="btn btn-danger" type="button" disabled={working}
-              onClick={() => confirm(deleteQuestion) && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) router.push(base); })}>
+              onClick={() => confirm(deleteQuestion) && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) router.push(listHref, { scroll: !drawer }); })}>
               {kind === "z_report" ? "Z raporunu sil" : isInvoice ? "Faturayı sil" : "Fişi sil"}
             </button>
           </section>

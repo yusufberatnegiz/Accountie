@@ -54,6 +54,22 @@
   @media (max-width: 720px) { .account-sheet[open] { animation-name: sheet-up; animation-duration: var(--t-ui); } }
   @keyframes sheet-up { from { opacity: 0; transform: translateY(24px); } }
 }
+/* Fiş çekmecesi (ReceiptDrawer): a receipt opened from the list slides in from the right over it; the full review screen inside. */
+.drawer {
+  position: fixed; inset: 0 0 0 auto; margin: 0; padding: 0; width: min(1280px, calc(100vw - 96px)); max-width: none; height: 100dvh; max-height: none;
+  border: 0; border-left: 1px solid var(--border); background: var(--ground); color: var(--ink); overflow-y: auto; overscroll-behavior: contain;
+  box-shadow: var(--shadow-lift);
+}
+.drawer::backdrop { background: var(--scrim); }
+.drawer-sheet { position: relative; min-height: 100%; }
+.drawer .canvas { max-width: none; padding-top: var(--s5); }
+.drawer-close { position: absolute; top: var(--s4); right: var(--s5); z-index: 3; }
+/* The title row's own actions keep clear of the close button. */
+.drawer .title-row { padding-right: calc(var(--s8) + var(--s4)); }
+@media (prefers-reduced-motion: no-preference) {
+  .drawer[open] { animation: drawer-in 220ms var(--ease-out); }
+  @keyframes drawer-in { from { transform: translateX(32px); opacity: 0; } }
+}
 /* A text button inside a sentence: the problem line goes to the field that fixes it. */
 .link-button { display: inline; padding: 12px 0; margin-block: -12px; -webkit-box-decoration-break: clone; box-decoration-break: clone; border: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; border-radius: var(--radius-chip); }
 @media (hover: hover) and (pointer: fine) { .link-button:hover { text-decoration-thickness: 2px; } }
@@ -477,7 +493,10 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .balance-answer dd { font-size: 24px; }
   /* Fixed, not sticky: a sticky bar cannot rise above the top of its column, so on a short phone Onayla sat below the fold on load. */
   .action-bar { position: fixed; inset: auto 0 0 0; flex-wrap: wrap; margin: 0; border-radius: 0; border-width: 1px 0 0; }
-  .app[data-screen="fis"] .canvas { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
+  .app[data-screen="fis"] .canvas, .drawer .canvas { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
+  .drawer { width: 100vw; border-left: 0; }
+  .drawer-close { right: var(--s4); top: var(--s3); }
+  .drawer .title-row { padding-right: calc(var(--s8) + var(--s2)); }
   html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 148px; }
   .action-bar .balance { flex-basis: 100%; font-size: var(--fs-body); }
   .notes[data-folded] > li:nth-child(n + 3) { display: none; }
@@ -494,7 +513,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .action-bar:not(:has(.bar-next-draft)) .bar-next .btn { width: 100%; }
   .capture-bar .reading, .capture-bar .alert { position: fixed; left: var(--s4); right: var(--s4); bottom: calc(128px + env(safe-area-inset-bottom)); z-index: 4; }
   /* While the keyboard is up the bar drops its sentence and keeps one row of buttons. */
-  .app[data-screen="fis"]:has(.review :is(input, select):focus) .action-bar:not([data-pointed]) .balance { display: none; }
+  :is(.app[data-screen="fis"], .drawer):has(.review :is(input, select):focus) .action-bar:not([data-pointed]) .balance { display: none; }
   /* A locked amount reads under its label, on the label's edge, not floating at the right of its half. */
   .journal .field.num:disabled { text-align: left; }
   /* Locked lines are text, not fields: no 44px box around each value. */
@@ -631,16 +650,6 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 ::view-transition-group(.title-morph) { animation-duration: 240ms; }
 ::view-transition-old(.title-morph) { display: none; }
 ::view-transition-new(.title-morph) { animation: none; object-fit: none; object-position: left top; }
-/* Row into review (Link transitionTypes "fis-ac"). React cancels the root cross-fade here, so the old list is gone on the first
-   frame and only the live new screen shows: a delay would leave a blank screen. The body rises in at once (160ms); the fixed
-   bottom bar and the rail are chrome and never fade (YON 23.10). The title's own neighbours (crumb, pill, sentence) wait until it
-   lands (200ms, the morph is 240ms on ease-out), so the travelling title is the only thing moving in the header (YON 23.13). */
-@media (prefers-reduced-motion: no-preference) {
-  :root:active-view-transition-type(fis-ac) .app[data-screen="fis"] .review > :not(.action-bar, .trace-link) { animation: vt-enter 160ms 200ms var(--ease-out) both; }
-  :root:active-view-transition-type(fis-ac) .app[data-screen="fis"] :is(.crumb, .title-line > .status, .finding) { animation: vt-fade-in 120ms 200ms var(--ease-out) both; }
-}
-@keyframes vt-enter { from { opacity: 0; transform: translateY(6px); } }
-@media (max-width: 720px) { :root:active-view-transition-type(fis-ac)::view-transition-old(panel-rail) { animation: none; opacity: 0; } }
 ::view-transition-group(.tab-slide) { animation-duration: 200ms; }
 /* Groups whose resize runs as a scale (moveOnly with the new element) scale from their top-left corner. */
 ::view-transition-group(.tab-slide), ::view-transition-group(.photo-morph) { transform-origin: 0 0; }

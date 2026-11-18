@@ -24,12 +24,24 @@ export const TABS: { slug: string; label: string; status?: ReceiptStatus }[] = [
 
 type Row = Awaited<ReturnType<typeof listReceipts>>[number];
 
+/** The list's own address for this tab and month; with `fis=` + an id after it, that receipt opens in the drawer. */
+export function listHref(base: string, slug: string, month: string) {
+  const p = new URLSearchParams();
+  if (slug) p.set("durum", slug);
+  if (month) p.set("ay", month);
+  const s = p.toString();
+  return s ? `${base}?${s}` : base;
+}
+export const drawerHref = (base: string, slug: string, month: string) => { const l = listHref(base, slug, month); return `${l}${l.includes("?") ? "&" : "?"}fis=`; };
+
 const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : null);
 
 /** Receipt list screen; the page and the dev preview both render it. Rows hold every status, the table shows `tab`. */
 export function ReceiptListView({ receipts: all, tab, firm, month = "", months, base = "/panel", setup = false }: { receipts: Row[]; tab: (typeof TABS)[number]; firm?: { name: string }; month?: string; months?: string[]; base?: string; setup?: boolean }) {
   // The tabs keep the chosen month, and the month picker keeps the tab.
   const withMonth = (q: string) => { const p = new URLSearchParams(q); if (month) p.set("ay", month); const s = p.toString(); return s ? `${base}?${s}` : base; };
+  // A row opens its receipt in the drawer over this list (ReceiptDrawer), keeping the tab and the month.
+  const open = drawerHref(base, tab.slug, month);
   const count = (s?: ReceiptStatus) => (s ? all.filter((r) => r.status === s).length : all.length);
   const receipts = tab.status ? all.filter((r) => r.status === tab.status) : all;
   const ready = all.filter((r) => r.status === "approved");
@@ -107,7 +119,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                     update={{ "fis-eklendi": "row-move", aktarim: "row-move", sekme: "row-shift", default: "none" }} default="none">
                   <tr>
                     <td className="r-vendor">
-                      <Link className="row-link" href={`${base}/fis/${r.id}`} title={r.vendorName ?? undefined} transitionTypes={["fis-ac"]}>
+                      <Link className="row-link" href={open + r.id} title={r.vendorName ?? undefined} scroll={false}>
                         {/* The vendor name becomes the review screen's title (ReviewEditor). */}
                         <MoveTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{r.vendorName ?? "Okunamayan fiş"}</span></MoveTransition>
                         <RowPending />
