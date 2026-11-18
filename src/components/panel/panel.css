@@ -68,7 +68,8 @@
 .drawer .title-row { padding-right: calc(var(--s8) + var(--s4)); }
 @media (prefers-reduced-motion: no-preference) {
   .drawer[open] { animation: drawer-in 220ms var(--ease-out); }
-  @keyframes drawer-in { from { transform: translateX(32px); opacity: 0; } }
+  /* Movement only: a stalled animation (a background tab) never leaves the receipt see-through. */
+  @keyframes drawer-in { from { transform: translateX(32px); } }
 }
 /* A text button inside a sentence: the problem line goes to the field that fixes it. */
 .link-button { display: inline; padding: 12px 0; margin-block: -12px; -webkit-box-decoration-break: clone; box-decoration-break: clone; border: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; border-radius: var(--radius-chip); }
