@@ -147,6 +147,15 @@
 .receipts > thead > tr > th:first-child, .receipts > tbody > tr > td:first-child { padding-left: var(--s5); }
 .receipts > thead > tr > th:last-child, .receipts > tbody > tr > td:last-child { padding-right: var(--s5); }
 .receipts > thead .col-check { width: 52px; }
+/* Until "Seç" the checkbox column stays, at no width: the open receipt's cell still spans all seven. */
+.list-select:not([data-on]) .receipts > thead .col-check { width: 0; }
+.list-select:not([data-on]) .receipts > * > tr > :is(.col-check, .r-check) { padding: 0; overflow: hidden; visibility: hidden; }
+.select-toggle { display: flex; justify-content: flex-end; padding: var(--s2) var(--s5) 0; }
+@media (min-width: 901px) {
+  .list-select:not([data-on]) .receipts > * > tr > :is(.col-vendor, .r-vendor) { padding-left: var(--s5); }
+  /* The amber edge of the open row moves to the first visible cell. */
+  .list-select:not([data-on]) .receipts > tbody > tr[data-open] > .r-vendor { box-shadow: inset 3px 0 0 var(--accent); }
+}
 /* The checkbox sits over the row link (which covers the whole row) so a tick never opens the receipt; 44px to touch. */
 .receipts > * > tr > :is(.col-check, .r-check) { padding-right: 0; }
 .row-check { position: relative; z-index: 1; width: 20px; height: 20px; margin: 0; accent-color: var(--primary); cursor: pointer; }
@@ -433,6 +442,8 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .receipts > tbody > tr:last-child { border-bottom: 0; }
   .receipts > tbody > tr > td, .receipts > tbody > tr > td:first-child, .receipts > tbody > tr > td:last-child { height: auto; padding: 0; border: 0; }
   .receipts > tbody > tr > .r-check { grid-column: 1; grid-row: 1 / span 2; align-self: center; padding-right: var(--s1); }
+  .list-select:not([data-on]) .receipts > tbody > tr > .r-check { display: none; }
+  .select-toggle { padding: var(--s2) var(--s4) 0; }
   .receipts > tbody > tr > .r-vendor { grid-column: 2 / 6; }
   .receipts > tbody > tr > .r-total { grid-column: 6; grid-row: 1; font-weight: var(--w-strong); white-space: nowrap; }
   .receipts > tbody > tr > .r-no, .receipts > tbody > tr > .r-date, .receipts > tbody > tr > .r-code { grid-row: 2; font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }

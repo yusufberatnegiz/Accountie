@@ -12,12 +12,24 @@ const Selection = createContext<Ctx | null>(null);
  * to draft. `statuses`: every row the list shows, so the bar can say how many of the picked ones each step reaches.
  */
 export function ListSelection({ statuses, children }: { statuses: Record<string, Status>; children: ReactNode }) {
+  // The checkboxes show only after "Seç": a row is opened by a press, never ticked by a stray one.
+  const [on, setOn] = useState(false);
   const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set());
   const toggle = (id: string) => setChosen((s) => { const n = new Set(s); if (!n.delete(id)) n.add(id); return n; });
   const setAll = (on: boolean) => setChosen(on ? new Set(Object.keys(statuses)) : new Set());
   // A row that left the list (deleted, another tab or month) is never acted on unseen.
   const shown = new Set([...chosen].filter((id) => id in statuses));
-  return <Selection.Provider value={{ chosen: shown, toggle, setAll, statuses }}>{children}<SelectionBar /></Selection.Provider>;
+  return (
+    <Selection.Provider value={{ chosen: shown, toggle, setAll, statuses }}>
+      <div className="list-select" data-on={on || undefined}>
+        <div className="select-toggle">
+          <button className="btn btn-sm" type="button" aria-pressed={on} onClick={() => { if (on) setChosen(new Set()); setOn(!on); }}>{on ? "Bitti" : "Seç"}</button>
+        </div>
+        {children}
+      </div>
+      <SelectionBar />
+    </Selection.Provider>
+  );
 }
 
 export function RowCheck({ id, label }: { id: string; label: string }) {

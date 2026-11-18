@@ -105,7 +105,9 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const openHref = (id: string) => (inList ? inList.open + id : `${base}/fis/${id}`);
   const router = useRouter();
   const editable = receipt.status === "draft";
-  const [lines, setLines] = useState(() => receipt.lines.map(toEdit));
+  // A Z report draft saved with the till's cash and card first (before 2026-11-18) opens with its sales lines (600, 391) on top too.
+  const [lines, setLines] = useState(() => (docKind(receipt.category) === "z_report" && receipt.status === "draft"
+    ? [...receipt.lines.filter((l) => l.creditKurus > 0), ...receipt.lines.filter((l) => !(l.creditKurus > 0))] : receipt.lines).map(toEdit));
   const nextKey = useRef(receipt.lines.length);
   const [savedSignature, setSavedSignature] = useState(() => signature(lines));
   const dirty = editable && signature(lines) !== savedSignature;

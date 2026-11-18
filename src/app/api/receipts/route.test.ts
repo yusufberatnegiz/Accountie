@@ -205,7 +205,7 @@ describe("POST /api/receipts", () => {
     vi.mocked(readDepartments).mockResolvedValueOnce({ departments: [{ name: "ALKOLLÜ İÇECE", rate: 20, amount: "130,00" }, { name: "TEMİZLİK MALZ", rate: 20, amount: "120,00" }], inputTokens: 5, outputTokens: 5 });
     expect((await POST(jpeg())).status).toBe(201);
     const [, , receipt, lines] = vi.mocked(createReceipt).mock.calls[0];
-    expect(lines.map((l) => [l.accountCode, l.creditKurus])).toEqual([["108.01", 0], ["600.20.03", 10833], ["600.20.02", 10000], ["600.20", 4167], ["391.20", 5000]]);
+    expect(lines.map((l) => [l.accountCode, l.creditKurus])).toEqual([["600.20.03", 10833], ["600.20.02", 10000], ["600.20", 4167], ["391.20", 5000], ["108.01", 0]]);
     expect((receipt.extraction as { departments: unknown[] }).departments).toHaveLength(2);
     expect(receipt.inputTokens).toBe(6);
   });
@@ -217,7 +217,7 @@ describe("POST /api/receipts", () => {
     vi.mocked(extractReceipt).mockResolvedValue(read({ documentKind: "z_report", vendorName: "ÖRNEK MARKET", zNo: "0417", total: "300,00", vatLines: [{ rate: 20, gross: "300,00", vat: "50,00" }], cashTotal: "0,00", cardTotal: "300,00" }));
     vi.mocked(readDepartments).mockRejectedValueOnce(new Error("boom"));
     expect((await POST(jpeg())).status).toBe(201);
-    expect(vi.mocked(createReceipt).mock.calls[0][3].map((l) => l.accountCode)).toEqual(["108.01", "600.20", "391.20"]);
+    expect(vi.mocked(createReceipt).mock.calls[0][3].map((l) => l.accountCode)).toEqual(["600.20", "391.20", "108.01"]);
     vi.mocked(readDepartments).mockClear();
     vi.mocked(extractReceipt).mockResolvedValue(read({ vatLines: [{ rate: 20, gross: "100,00", vat: "16,67" }] }));
     await POST(jpeg());
@@ -235,7 +235,7 @@ describe("POST /api/receipts", () => {
     const [, , receipt, lines] = vi.mocked(createReceipt).mock.calls[0];
     expect(receipt).toMatchObject({ category: "z_report", receiptNo: "0128", totalKurus: 120000 });
     expect(receipt.warnings.map((w) => w.code)).toContain("duplicate");
-    expect(lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus])).toEqual([["100.01", 20000, 0], ["108.01", 100000, 0], ["600.20", 0, 100000], ["391.20", 0, 20000]]);
+    expect(lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus])).toEqual([["600.20", 0, 100000], ["391.20", 0, 20000], ["100.01", 20000, 0], ["108.01", 100000, 0]]);
   });
 
   it("kayıt hatasında Türkçe 500 döner", async () => {

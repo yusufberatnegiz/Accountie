@@ -63,7 +63,7 @@ const z: SalesData = {
 describe("Z raporu gelir fişi", () => {
   it("nakit ve kart borç; oran başına 600 satış ve 391 KDV alacak; dengeli", () => {
     const r = buildSalesLines(z, DEFAULT_RULES);
-    expect(lines(r)).toEqual([["100.01", 150000, 0], ["108.01", 300000, 0], ["600.10", 0, 300000], ["391.10", 0, 30000], ["600.20", 0, 100000], ["391.20", 0, 20000]]);
+    expect(lines(r)).toEqual([["600.10", 0, 300000], ["391.10", 0, 30000], ["600.20", 0, 100000], ["391.20", 0, 20000], ["100.01", 150000, 0], ["108.01", 300000, 0]]);
     expect(r.balanced).toBe(true);
     expect(r.warnings).toEqual([]);
     expect(r.lines[0]).toMatchObject({ documentNo: "0128", documentType: "ZR", description: "Z RAPORU 0128" });
@@ -77,10 +77,10 @@ describe("Z raporu gelir fişi", () => {
 
   it("tahsilat okunamazsa hepsi nakit yazılır ve uyarılır; yalnız kart okunduysa kalanı nakit olur", () => {
     const none = buildSalesLines({ ...z, cashKurus: null, cardKurus: null }, DEFAULT_RULES);
-    expect(lines(none).slice(0, 1)).toEqual([["100.01", 450000, 0]]);
+    expect(lines(none).slice(-1)).toEqual([["100.01", 450000, 0]]);
     expect(codes(none)).toContain("z_payment_split");
     const cardOnly = buildSalesLines({ ...z, cashKurus: null }, DEFAULT_RULES);
-    expect(lines(cardOnly).slice(0, 2)).toEqual([["100.01", 150000, 0], ["108.01", 300000, 0]]);
+    expect(lines(cardOnly).slice(-2)).toEqual([["100.01", 150000, 0], ["108.01", 300000, 0]]);
     expect(codes(cardOnly)).not.toContain("z_payment_split");
     const allCash = buildSalesLines({ ...z, cashKurus: 450000, cardKurus: null }, DEFAULT_RULES);
     expect(codes(allCash)).not.toContain("z_payment_split");
@@ -88,7 +88,7 @@ describe("Z raporu gelir fişi", () => {
 
   it("KDV'siz satış yalnız 600 satırı açar; bilinmeyen oran boş kodla uyarılır", () => {
     const r = buildSalesLines({ ...z, vatLines: [{ rate: 0, grossKurus: 450000, vatKurus: 0 }] }, DEFAULT_RULES);
-    expect(lines(r).slice(2)).toEqual([["600.00", 0, 450000]]);
+    expect(lines(r).slice(0, 1)).toEqual([["600.00", 0, 450000]]);
     const odd = buildSalesLines({ ...z, vatLines: [{ rate: 8, grossKurus: 450000, vatKurus: 33333 }] }, DEFAULT_RULES);
     expect(codes(odd)).toContain("z_unknown_rate");
     expect(linesProblem(odd.lines)).toMatch(/hesap kodu yok/);
@@ -191,12 +191,12 @@ describe("Z raporu departmanları", () => {
       vatLines: [{ rate: 20, grossKurus: 30000, vatKurus: 5000 }],
       departments: [{ name: "ALKOLLÜ İÇECE", rate: 20, grossKurus: 13000 }, { name: "TEMİZLİK MALZ", rate: 20, grossKurus: 12000 }, { name: "GIDA", rate: 20, grossKurus: 5000 }] };
     const r = buildSalesLines(data, rules, departmentAccounts(plan));
-    expect(lines(r)).toEqual([["108.01", 30000, 0], ["600.20.03", 0, 10833], ["600.20.02", 0, 10000], ["600.20.01", 0, 4167], ["391.20", 0, 5000]]);
+    expect(lines(r)).toEqual([["600.20.03", 0, 10833], ["600.20.02", 0, 10000], ["600.20.01", 0, 4167], ["391.20", 0, 5000], ["108.01", 30000, 0]]);
     expect(r.balanced).toBe(true);
     // Without departments (older reads) the rate stays one line.
-    expect(lines(buildSalesLines({ ...data, departments: [] }, rules, departmentAccounts(plan)))).toEqual([["108.01", 30000, 0], ["600.20.01", 0, 25000], ["391.20", 0, 5000]]);
+    expect(lines(buildSalesLines({ ...data, departments: [] }, rules, departmentAccounts(plan)))).toEqual([["600.20.01", 0, 25000], ["391.20", 0, 5000], ["108.01", 30000, 0]]);
     // Departments adding up to more than the rate's sales were misread: the rate stays whole.
-    expect(lines(buildSalesLines({ ...data, departments: [{ name: "ALKOLLÜ İÇECE", rate: 20, grossKurus: 40000 }] }, rules, departmentAccounts(plan)))[1]).toEqual(["600.20.01", 0, 25000]);
+    expect(lines(buildSalesLines({ ...data, departments: [{ name: "ALKOLLÜ İÇECE", rate: 20, grossKurus: 40000 }] }, rules, departmentAccounts(plan)))[0]).toEqual(["600.20.01", 0, 25000]);
   });
 });
 
@@ -210,7 +210,7 @@ describe("Z raporu: aynı oran iki satır okunursa", () => {
       vatLines: [{ rate: 1, grossKurus: 244500, vatKurus: null }, { rate: 1, grossKurus: 1794500, vatKurus: null }],
       departments: [{ name: "BAKLİYAT", rate: 1, grossKurus: 244500 }, { name: "UN", rate: 1, grossKurus: 1794500 }] };
     const r = buildSalesLines(data, rules, departmentAccounts(plan));
-    expect(lines(r)).toEqual([["108.01", 2039000, 0], ["600.01.02", 0, 242079], ["600.01.01", 0, 1776733], ["391.01", 0, 20188]]);
+    expect(lines(r)).toEqual([["600.01.02", 0, 242079], ["600.01.01", 0, 1776733], ["391.01", 0, 20188], ["108.01", 2039000, 0]]);
     expect(r.balanced).toBe(true);
   });
   it("iki harfli UN, Un Satışları ile eşleşir; Unlu Mamuller ile eşleşmez", async () => {
@@ -234,9 +234,9 @@ describe("Kurallar'da seçilen departman hesabı", () => {
     const data: SalesData = { vendorName: "ÖRNEK", zNo: "1", date: "2026-10-01", totalKurus: 120000, cashKurus: 0, cardKurus: 120000, invoicedKurus: null,
       vatLines: [{ rate: 20, grossKurus: 120000, vatKurus: 20000 }], departments: [{ name: "Hizmet", rate: 20, grossKurus: 120000 }] };
     // No name match in the plan for HİZMET: the saved rule decides.
-    expect(lines(buildSalesLines(data, rules, () => undefined))).toEqual([["108.01", 120000, 0], ["600.20.04", 0, 100000], ["391.20", 0, 20000]]);
+    expect(lines(buildSalesLines(data, rules, () => undefined))).toEqual([["600.20.04", 0, 100000], ["391.20", 0, 20000], ["108.01", 120000, 0]]);
     // The saved rule wins over a plan match too.
-    expect(lines(buildSalesLines(data, rules, () => ({ code: "600.20.09", name: "x" })))[1][0]).toBe("600.20.04");
+    expect(lines(buildSalesLines(data, rules, () => ({ code: "600.20.09", name: "x" })))[0][0]).toBe("600.20.04");
   });
   it("kural kaydı departman anahtarını kabul eder, etiketi sunucu koyar; uydurma anahtar reddedilir", async () => {
     const { RulesPutSchema } = await import("./api-schemas");

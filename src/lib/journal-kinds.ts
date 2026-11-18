@@ -149,7 +149,8 @@ export function buildSalesLines(data: SalesData, rules: Rules, department: (name
   const debits = [cash > 0 ? line(s.cash, cash, 0) : null, card > 0 ? line(s.card, card, 0) : null].filter((l): l is JournalLine => l !== null);
   if (data.invoicedKurus) warnings.push({ code: "z_invoiced", message: `Z raporunda ${formatTrAmount(data.invoicedKurus)} TL faturalı satış var. Bu faturalar e-Arşiv ya da e-Fatura olarak Luca'ya ayrıca geliyorsa bu tutarı satış satırlarından düşün; yoksa hasılat iki kez yazılır.` });
 
-  const lines = [...debits, ...credits];
+  // The sales (600) and their KDV (391) first, then the till's cash and card: the day's sales are what a Z report is checked by.
+  const lines = [...credits, ...debits];
   const unique = warnings.filter((w, i) => warnings.findIndex((x) => x.code === w.code) === i);
   return { lines, warnings: unique, balanced: isBalanced(lines) };
 }
