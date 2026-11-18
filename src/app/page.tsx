@@ -18,7 +18,7 @@ const OTOPARK_LINES = journalFor(OTOPARK, "partner").lines;
 
 export const metadata: Metadata = {
   title: { absolute: "Accountie: yazar kasa fişinden Luca yevmiye kaydı" },
-  description: "Yazar kasa fişini telefonla çekin, Luca Fiş Detayı satırları hesap planınıza göre hazırlansın. Kontrol edip onaylayın, Excel ile Luca'ya aktarın.",
+  description: "Yazar kasa fişini telefonla çekin, Luca Fiş Detayı satırları hesap planınıza göre hazırlansın. Kontrol edip onaylayın, Chrome eklentisi Luca'ya yazsın.",
 };
 
 // The hero's receipt and the lines the product makes from it with the default rules (partner card).
@@ -42,7 +42,7 @@ function roll(text: string) {
 
 const FAQ: Qa[] = [
   { q: "Fiş fotoğrafı nereye gidiyor?", a: "Okunmak için yapay zeka hizmetine (Anthropic, ABD) gönderilir. Accountie fotoğrafı sunucuda saklamaz; kontrol ekranındaki görüntü yalnız sizin cihazınızda durur." },
-  { q: "Luca’ya kendisi mi kaydediyor?", a: "Hayır. Excel dosyasını Luca’ya siz yüklersiniz; eklenti satırları doldurur, Kaydet’e basmaz. Onayınız olmadan kayıt oluşmaz." },
+  { q: "Luca’ya kendisi mi kaydediyor?", a: "Hayır. Eklenti onaylı fişin satırlarını Luca Fiş Detayına yazar, Kaydet’e basmaz. Kaydet’e siz basmadan kayıt oluşmaz." },
   { q: "Hangi belgeler okunuyor?", a: "Yazar kasa (ÖKC) fişi ve Z raporu fotoğrafı; yurt içi faturalar (bilet, otel, e-Arşiv PDF ya da kâğıt) ve Google, Meta gibi yurt dışı faturalar. Gider pusulası şimdilik okunmuyor." },
   { q: "KDV’yi yeniden hesaplıyor mu?", a: "Hayır. Matrah, toplamdan fişte yazan KDV düşülerek bulunur. KDV okunamazsa orandan hesaplanır ve satıra not düşülür." },
   { q: "Okuma yanlış çıkarsa?", a: "Okunamayan alan boş kalır ve işaretlenir. Toplam ile KDV tutmazsa fiş bir kez daha okunur, yine tutmazsa uyarıyla size gelir." },
@@ -112,7 +112,7 @@ export default function LandingPage() {
             <ul className="l-nodes">
               <li className="l-node l-src"><b>Yazar kasa fişi</b><span>Telefonla fotoğraf</span></li>
               <li className="l-node l-hub"><b>Accountie</b><span>Okur, kurala göre satır kurar, dengeyi denetler</span></li>
-              <li className="l-node l-out"><b>Luca</b><span>Excel dosyası ya da eklentiyle Fiş Detayı</span></li>
+              <li className="l-node l-out"><b>Luca</b><span>Eklenti Fiş Detayına yazar</span></li>
             </ul>
           </div>
         </section>
@@ -151,7 +151,7 @@ export default function LandingPage() {
                 <span><span>TOPLAM</span><span className="to-luca">{LINES[2]?.accountCode}</span><span className="num">{formatTrAmount(LINES[2]?.creditKurus ?? 0)}</span></span>
                 <span><span>Fark</span><span><span className="status status-approved">Dengede</span></span><span className="num">0,00</span></span>
               </span></li>
-            <li><span className="l-n">03</span><h3>Luca’ya yükleyin</h3><p>Onaylı fişler tek Excel dosyasında: Muhasebe, Fiş İşlemleri, Excel veri aktarımı.</p>
+            <li><span className="l-n">03</span><h3>Luca’ya yazdırın</h3><p>Chrome eklentisi onaylı fişleri Luca Fiş Detayına alt alta yazar; Kaydet’e siz basarsınız.</p>
               <span className="l-mini l-xl" translate="no">{LINES.map((l) => (
                 <span key={l.accountCode}><span className="to-luca">{l.accountCode}</span><span>{SAMPLE.receipt.receiptNo}</span><span className="num">{formatTrAmount(l.debitKurus || l.creditKurus)}</span></span>
               ))}</span></li>
