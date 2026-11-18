@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useOptimistic, useTransition } from "react";
 import { monthLabel } from "@/lib/month";
+import { LEAVE_MESSAGE } from "@/components/useLeaveGuard";
 
 /** The month a screen shows (?ay=2026-09); "Bütün aylar" drops it. Keeps the screen's other query values (the tab). */
 export function MonthPicker({ months, value, path, allLabel = "Bütün aylar" }: { months: string[]; value: string; path: string; allLabel?: string | null }) {
@@ -15,6 +16,8 @@ export function MonthPicker({ months, value, path, allLabel = "Bütün aylar" }:
     <label className="month-picker" aria-busy={pending || undefined}>
       <span>Ay</span>
       <select className="field" value={shown} onChange={(e) => {
+        // A receipt edited under its row is not left without asking (the select stays on its month).
+        if ("unsaved" in document.documentElement.dataset && !confirm(LEAVE_MESSAGE)) return;
         const next = new URLSearchParams(params.toString());
         if (e.target.value) next.set("ay", e.target.value); else next.delete("ay");
         const q = next.toString();

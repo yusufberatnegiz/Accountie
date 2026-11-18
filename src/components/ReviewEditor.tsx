@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition, ViewTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition, ViewTransition, type ReactNode } from "react";
 import type { ReceiptDetail, VendorRule } from "@/db/queries";
 import { ACCOUNT_CODE_PATTERN, CATEGORIES, KKEG_KEY, PAYMENT_ALTERNATIVES, PAYMENT_LABELS, type Account, type PaymentMethod, type Rules } from "@/lib/default-rules";
 import { fromPassengerCar, isKkegLine, isPassengerCar, PASSENGER_CAR_KKEG_PERCENT, toPassengerCar } from "@/lib/vehicle";
@@ -79,10 +79,17 @@ const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 /** Scrolls the field into view, clear of the sticky bar, focuses it and gives it one small pulse once the scroll lands. */
 function goTo(el: HTMLElement | null) {
+  // A field inside a folded part (the list's shorter screen) is unfolded first.
+  for (let d = el?.closest("details"); d; d = d.parentElement?.closest("details")) d.open = true;
   const reduced = still();
   el?.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
   el?.focus({ preventScroll: true });
   if (!reduced) el?.animate([{ transform: "none" }, { transform: "scale(1.04)" }, { transform: "none" }], { duration: 280, delay: 200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+}
+
+/** Folded behind a summary line when `on` (the list's shorter screen), plain otherwise. */
+function Fold({ on, className, label, children }: { on: boolean; className: string; label: string; children: ReactNode }) {
+  return on ? <details className={className}><summary>{label}</summary>{children}</details> : <>{children}</>;
 }
 
 /** The other draft to open once this one is done, and how many drafts wait besides this one. */
@@ -214,6 +221,13 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const thumbRef = useRef<HTMLImageElement>(null);
 
   useLeaveGuard(dirty);
+  // Ctrl+Enter (Cmd+Enter) approves, as the button would: blocked, it goes to the field that fixes it.
+  useEffect(() => {
+    if (!editable) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); document.getElementById("onayla")?.click(); } };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [editable]);
 
   const parsed = lines.map(toLine);
   const invalid = parsed.some((l) => Number.isNaN(l.debitKurus) || Number.isNaN(l.creditKurus));
@@ -401,19 +415,34 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const traced = (s: Source) => (trace === s ? { "data-traced": "" } : {});
   const deleteQuestion = receipt.receiptNo ? `${receipt.receiptNo} numaralı fişi silmek istiyor musunuz?` : "Bu taslak fişi silmek istiyor musunuz?";
   const read = (v: string | null | undefined) => v ?? <span className="dash">Okunamadı</span>;
+  // Under its row an approval goes straight on to the next draft (the approved row stays in the list); on its own page it stays.
+  const afterApprove = () => (inList && next ? router.replace(openHref(next.id), { scroll: false }) : refresh());
+  const deleteWord = kind === "z_report" ? "Z raporunu sil" : isInvoice ? "Faturayı sil" : "Fişi sil";
+  const deleteZone = (
+    <section className="danger-zone" aria-labelledby="sil-baslik">
+      <div>
+        <h2 id="sil-baslik">{deleteWord}</h2>
+        <p className="muted small">Taslak ve satırları kalıcı olarak silinir.</p>
+      </div>
+      <button id="fis-sil" className="btn btn-danger" type="button" disabled={working}
+        onClick={() => confirm(deleteQuestion) && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) { if (inList) router.replace(listHref, { scroll: false }); else router.push(listHref); } })}>
+        {deleteWord}
+      </button>
+    </section>
+  );
 
   return (
     <>
+      {/* Under its row the row already names the seller, the number and the status, and the bar below says what blocks approval. */}
+      {inList ? <h3 className="visually-hidden">{docWord} {receipt.receiptNo ?? "numarasız"}, {receipt.vendorName ?? "okunamayan fiş"}</h3> : (
       <div className="title-row">
         <div className="title-text">
-          <p className="crumb"><Link href={listHref} scroll={!inList}>Fişler</Link><span aria-hidden="true"> / </span><span translate="no">{docWord} {receipt.receiptNo ?? "numarasız"}</span></p>
+          <p className="crumb"><Link href={listHref}>Fişler</Link><span aria-hidden="true"> / </span><span translate="no">{docWord} {receipt.receiptNo ?? "numarasız"}</span></p>
           <div className="title-line">
-            {/* The list row's vendor name morphs into this title (ReceiptListView). Under its row the row stays on the page, so no shared name. */}
-            {inList ? <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1> : (
-              <ViewTransition name={`fis-${receipt.id}`} share="title-morph" default="none" onShare={(i) => moveOnly(i)}>
-                <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
-              </ViewTransition>
-            )}
+            {/* The list row's vendor name morphs into this title (ReceiptListView). */}
+            <ViewTransition name={`fis-${receipt.id}`} share="title-morph" default="none" onShare={(i) => moveOnly(i)}>
+              <h1 title={receipt.vendorName ?? undefined}>{receipt.vendorName ?? "Okunamayan fiş"}</h1>
+            </ViewTransition>
             <span className={`status status-${receipt.status}`}><Roll value={STATUS_LABELS[receipt.status]} /></span>
             {DOC_KIND_LABEL[kind] ? <span className="kind-tag">{DOC_KIND_LABEL[kind]}</span> : null}
           </div>
@@ -422,6 +451,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           </p>
         </div>
       </div>
+      )}
 
       <div className="review" ref={reviewRef}>
         {link ? (
@@ -447,7 +477,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           <div data-src="total" {...traced("total")}><dt>{kind === "foreign" ? "Toplam (TL)" : "Toplam"}</dt><dd className="num">{readTotal !== null ? formatTrAmount(readTotal) : <span className="dash">-</span>}</dd></div>
           </dl>
           {/* With a photo the thumbnail takes this slot; the read fields follow the lines anyway. */}
-          {photo ? null : <a href="#fis-kaynak">Tüm alanlar</a>}
+          {photo ? null : <a href="#fis-kaynak" onClick={(e) => { e.preventDefault(); goTo(document.getElementById("okunan-baslik")); }}>Tüm alanlar</a>}
         </div>
         {photo && photoOpen ? (
           <figure className="brief-photo" id="fis-onizleme">
@@ -552,6 +582,9 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
         </section>
 
 
+        {/* Under its row the read fields fold: seller, number, date and total are on the row, the sums in the brief. A Z report's cash and card,
+            a foreign invoice's rate and a seller's learned account show nowhere else, so those stay open. */}
+        <Fold on={!!inList && kind === "receipt" && !learned} className="source-fold" label={`${docWord}${kind === "z_report" ? "ndan" : isInvoice ? "dan" : "ten"} okunan tüm alanlar`}>
         <div className="source">
           {photo ? (
             <figure className="photo">
@@ -593,12 +626,13 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
             <p className="muted small">{invoice ? "Faturanın XML'inden alındı; satırları faturayla karşılaştırın." : kind !== "receipt" && !photo ? "Belge sunucuda saklanmaz. Satırları belgeyle karşılaştırın." : photo ? "Fotoğraf yalnızca bu cihazda, bu oturumda görünür." : "Fotoğraf bu cihazda değil; sunucu fotoğrafı saklamaz. Satırları kâğıt fişle karşılaştırın."}</p>
           </section>
         </div>
+        </Fold>
 
         {/* Header fields that every line carries: under the lines and before the actions, so Tab and the eye run the same way (YON 23.16). Locked, they sit atop the lines instead. */}
         {editable ? (
         <section className="panel panel-pad info" aria-labelledby="bilgi-baslik">
           <h2 id="bilgi-baslik">{kind === "z_report" ? "Z raporu bilgileri" : isInvoice ? "Fatura bilgileri" : "Fiş bilgileri"}</h2>
-          <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>
+          {inList ? null : <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>}
           <div className="form-grid">
             <label>
               <span>Evrak No</span>
@@ -612,6 +646,9 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
                 {...flag(headFlags.documentDate)}
                 onChange={(e) => updateAll("documentDate", e.target.value || null)} />{checkNote(headFlags.documentDate)}
             </label>
+            {/* Under its row the two fields that are almost never changed fold, unless one is flagged. */}
+            <Fold on={!!inList && !headFlags.description} className="span-all info-more" label={`Belge türü ve açıklama: ${head?.documentType || "-"} · ${head?.description || "-"}`}>
+            <div className="form-grid">
             <label className="bt-field">
               <span>Belge türü</span>
               <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} autoComplete="off" onChange={(e) => updateAll("documentType", e.target.value)} />
@@ -622,10 +659,14 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
                 {...flag(headFlags.description)}
                 onChange={(e) => updateAll("description", e.target.value)} />{checkNote(headFlags.description)}
             </label>
+            </div>
+            </Fold>
           </div>
         </section>
         ) : null}
 
+        {/* Under its row the rare steps (save half-way, copy, undo, delete) fold, so the next receipt is not under a big red button. */}
+        <Fold on={!!inList} className="more-actions" label="Diğer işlemler">
         <div className="actions">
           {editable ? (
             <button className="btn" type="button" disabled={working} onClick={() => run(async () => { if (await save()) { setInfo("Kaydedildi."); refresh(); } })}>Taslağı kaydet</button>
@@ -651,6 +692,8 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           <button className="btn" type="button" disabled={invalid} onClick={copy}><Roll value={copied ? "Kopyalandı" : "Satırları kopyala"} /></button>
           <p role="status" className="muted small">{info}</p>
         </div>
+        {inList && editable ? deleteZone : null}
+        </Fold>
 
         <div className="action-bar" data-pointed={pointed || undefined}>
           {/* Errors show here, next to the button that caused them; a box higher up is off screen on the phone. */}
@@ -662,17 +705,19 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
               : dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır."}
           </p>
           {/* The way back sits under the thumb on the phone, where this screen hides the bottom bar. */}
-          <Link className="btn btn-lg bar-back" href={listHref} scroll={!inList}>Fişler</Link>
+          {inList ? (
+            <Link className="btn btn-lg bar-back" href={listHref} scroll={false} replace aria-label={`${docWord} ${receipt.receiptNo ?? "numarasız"} kapat`}>Kapat</Link>
+          ) : <Link className="btn btn-lg bar-back" href={listHref}>Fişler</Link>}
           {/* After approval the phone user goes on with the bag of receipts: the next draft, or the camera when none is left. */}
-          {!editable ? <div className="bar-next phone-only"><CaptureButton pickers={["camera"]} variant="bar" primary={!next} base={base} /></div> : null}
+          {!editable && !inList ? <div className="bar-next phone-only"><CaptureButton pickers={["camera"]} variant="bar" primary={!next} base={base} /></div> : null}
           {!editable && next ? (
-            <Link className="btn btn-lg bar-next-draft" href={openHref(next.id)} scroll={!inList}>Sıradaki taslak ({next.left})</Link>
+            <Link className="btn btn-lg bar-next-draft" href={openHref(next.id)} scroll={!inList} replace={!!inList}>Sıradaki taslak ({next.left})</Link>
           ) : null}
           {editable ? (
             // aria-disabled keeps the button in the Tab order; pressing it while blocked goes to the field that fixes it.
-            <button className="btn btn-primary btn-lg" type="button" disabled={working || approved} data-busy={working || approved || undefined} data-done={approved || undefined} aria-disabled={target ? true : undefined}
+            <button id="onayla" className="btn btn-primary btn-lg" type="button" disabled={working || approved} data-busy={working || approved || undefined} data-done={approved || undefined} aria-disabled={target ? true : undefined}
               aria-describedby={target ? "onay-engeli" : undefined}
-              onClick={() => (target ? fix() : run(async () => { await vehicleSaving.current; if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) { setApproved(true); measureLock(); refresh(); } }))}>
+              onClick={() => (target ? fix() : run(async () => { await vehicleSaving.current; if ((await save()) && (await call(`/api/receipts/${receipt.id}/approve`, { method: "POST" }))) { setApproved(true); measureLock(); afterApprove(); } }))}>
               {approved ? "Onaylandı" : busy ? "Kaydediliyor…" : "Onayla"}
             </button>
           ) : (
@@ -681,18 +726,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           )}
         </div>
 
-        {editable ? (
-          <section className="danger-zone" aria-labelledby="sil-baslik">
-            <div>
-              <h2 id="sil-baslik">{kind === "z_report" ? "Z raporunu sil" : isInvoice ? "Faturayı sil" : "Fişi sil"}</h2>
-              <p className="muted small">Taslak ve satırları kalıcı olarak silinir.</p>
-            </div>
-            <button id="fis-sil" className="btn btn-danger" type="button" disabled={working}
-              onClick={() => confirm(deleteQuestion) && run(async () => { if (await call(`/api/receipts/${receipt.id}`, { method: "DELETE" })) router.push(listHref, { scroll: !inList }); })}>
-              {kind === "z_report" ? "Z raporunu sil" : isInvoice ? "Faturayı sil" : "Fişi sil"}
-            </button>
-          </section>
-        ) : null}
+        {editable && !inList ? deleteZone : null}
       </div>
     </>
   );

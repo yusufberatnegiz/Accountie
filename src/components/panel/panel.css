@@ -54,15 +54,41 @@
   @media (max-width: 720px) { .account-sheet[open] { animation-name: sheet-up; animation-duration: var(--t-ui); } }
   @keyframes sheet-up { from { opacity: 0; transform: translateY(24px); } }
 }
-/* A receipt opened under its row (ReceiptListView ?fis=): the full review screen inside the list, on the page's ground. */
+/* A receipt opened under its row (ReceiptListView ?fis=): the review screen inside the list, on the page's ground. One amber edge runs
+   down the open row and its screen, so the two read as one piece; a heavier rule closes it before the next row. */
 .receipts tr.row-detail, .row-detail-loose { background: var(--ground); }
-.receipts .row-detail > td { height: auto; padding: var(--s5); border-bottom: 1px solid var(--border); }
-.row-detail-loose { padding: var(--s5); border-bottom: 1px solid var(--border); }
+.receipts .row-detail > td { height: auto; padding: var(--s4) var(--s5) var(--s5); border-bottom: 2px solid var(--rule); }
+.row-detail-loose { padding: var(--s4) var(--s5) var(--s5); border-bottom: 2px solid var(--rule); }
+.receipts tr[data-open] > td:first-child, .receipts .row-detail > td, .row-detail-loose { box-shadow: inset 3px 0 0 var(--accent); }
 .row-detail-body { display: grid; gap: var(--s4); min-width: 0; }
 @media (hover: hover) and (pointer: fine) { .receipts tbody tr.row-detail:hover { background: var(--ground); } }
-/* The open row reads as open: its chevron points down. */
 .receipts tr[data-open] { background: var(--active); }
+/* The status chip's own ground is --active, the open row's too: it gets the surface step and an edge so it still reads as a chip. */
+.receipts tr[data-open] .status { background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); }
 @media (hover: hover) and (pointer: fine) and (min-width: 901px) { .receipts tr[data-open] .r-status::after { transform: rotate(135deg); border-color: var(--ink); } }
+/* Under its row the screen is one column at every width: the read panel is folded, so a second column would stand empty. */
+.row-detail .review { display: flex; flex-direction: column; align-items: stretch; }
+.row-detail .review > * { margin-top: 0 !important; }
+.row-detail .review > .read-brief { display: flex; }
+.row-detail .review > .actions { padding: 0; background: none; border: 0; }
+.row-detail .review > .action-bar { border-radius: var(--radius-card); border-top-color: var(--border); }
+/* The folded parts: one quiet line that opens in place. */
+:is(.source-fold, .info-more, .more-actions) > summary {
+  display: flex; align-items: center; gap: var(--s2); min-height: var(--touch); width: fit-content; max-width: 100%; cursor: pointer; list-style: none;
+  color: var(--muted); font-size: var(--fs-body); font-weight: var(--w-medium); border-radius: var(--radius-chip);
+}
+:is(.source-fold, .info-more, .more-actions) > summary::-webkit-details-marker { display: none; }
+:is(.source-fold, .info-more, .more-actions) > summary::before {
+  content: ""; flex: none; width: 6px; height: 6px; margin: 0 4px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg);
+  transition: transform var(--t-hover) var(--ease-out);
+}
+:is(.source-fold, .info-more, .more-actions)[open] > summary::before { transform: rotate(45deg); }
+@media (hover: hover) and (pointer: fine) { :is(.source-fold, .info-more, .more-actions) > summary:hover { color: var(--ink); } }
+:is(.source-fold, .info-more, .more-actions) > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.info-more > summary { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; padding-left: 18px; position: relative; line-height: var(--touch); }
+.info-more > summary::before { position: absolute; left: 0; top: 50%; margin-top: -5px; }
+.source-fold[open] > .source, .more-actions[open] > .actions { margin-top: var(--s3); }
+.more-actions .danger-zone { margin-top: var(--s4); }
 /* A text button inside a sentence: the problem line goes to the field that fixes it. */
 .link-button { display: inline; padding: 12px 0; margin-block: -12px; -webkit-box-decoration-break: clone; box-decoration-break: clone; border: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; border-radius: var(--radius-chip); }
 @media (hover: hover) and (pointer: fine) { .link-button:hover { text-decoration-thickness: 2px; } }
@@ -144,6 +170,8 @@
 .r-kind { display: block; font-size: var(--fs-small); color: var(--muted); } /* Z raporu, yurt dışı fatura */
 .r-code { color: var(--ink); }
 .list-foot { padding: var(--s4) var(--s5); border-top: 1px solid var(--rule); }
+/* Under the tabs the bulk buttons open the list, so the rule sits under them. */
+.tabs + .list-foot-actions.list-foot { border-top: 0; border-bottom: 1px solid var(--rule); }
 .list-foot-actions { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s3); }
 .list-foot-actions .bulk-delete { margin-left: auto; }
 .list-foot-actions .bulk-status { flex-basis: 100%; margin: 0; }
@@ -488,11 +516,15 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   /* Fixed, not sticky: a sticky bar cannot rise above the top of its column, so on a short phone Onayla sat below the fold on load. */
   .action-bar { position: fixed; inset: auto 0 0 0; flex-wrap: wrap; margin: 0; border-radius: 0; border-width: 1px 0 0; }
   .app[data-screen="fis"] .canvas { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
-  /* Under its row the list's bottom bar stays: the receipt's own bar is the last thing in it, not fixed over the bar. */
+  /* Under its row the list's bottom menu stays; the receipt's own bar sticks just above it while its screen is on view, and lets go after. */
   .receipts tr.row-detail { display: block; padding: 0; }
-  .receipts .row-detail > td { display: block; padding: var(--s4) 0; }
-  .row-detail-loose { padding: var(--s4) 0; }
-  .row-detail .action-bar { position: static; border-width: 1px; border-radius: var(--radius-card); }
+  .receipts .row-detail > td { display: block; padding: var(--s3) var(--s3) var(--s4); }
+  .row-detail-loose { padding: var(--s3) var(--s3) var(--s4); }
+  .row-detail .action-bar { position: sticky; bottom: calc(57px + max(var(--s1), env(safe-area-inset-bottom))); z-index: 3; border-width: 1px; border-radius: var(--radius-card); }
+  html:has(.row-detail) { scroll-padding-bottom: 200px; }
+  /* Balanced, the strip says only that: the two totals and the KDV are the lines' own sums, shown again when they differ. */
+  .row-detail .balance-strip[data-balanced] { grid-template-columns: 1fr; }
+  .row-detail .balance-strip[data-balanced] > div:not(.balance-answer) { display: none; }
   html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 148px; }
   .action-bar .balance { flex-basis: 100%; font-size: var(--fs-body); }
   .notes[data-folded] > li:nth-child(n + 3) { display: none; }

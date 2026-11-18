@@ -97,6 +97,9 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
         <h2 id="liste-baslik" className="visually-hidden">Fiş listesi</h2>
         {loose ? <div className="row-detail row-detail-loose"><RowDetail id={loose.id}>{loose.detail}</RowDetail></div> : null}
         <ListTabs active={tab.slug} tabs={TABS.map((t) => ({ slug: t.slug, label: t.label, href: withMonth(t.slug ? `durum=${t.slug}` : ""), count: count(t.status) }))} />
+        {/* The drafts this list shows (this month, this tab): misread ones are cleared in one go; approved ones are never touched.
+            Under the tabs, the first thing to do on a full tab; it stays while the tab can hold drafts, so its status line outlives its buttons. */}
+        {tab.status === "draft" || !tab.status ? <BulkActions approveIds={clean.map((r) => r.id)} deleteIds={shownDrafts.map((r) => r.id)} /> : null}
         {receipts.length === 0 ? (
           <div className="empty-row">
             {month && !all.length ? <p>{monthLabel(month)} için fiş yok.</p> : all.length ? <p>{tab.label} durumunda fiş yok.</p> : (
@@ -131,7 +134,7 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                     update={{ "fis-eklendi": "row-move", aktarim: "row-move", sekme: "row-shift", default: "none" }} default="none">
                   <tr data-open={isOpen || undefined}>
                     <td className="r-vendor">
-                      <Link className="row-link" href={isOpen ? close : open + r.id} title={r.vendorName ?? undefined} scroll={false} aria-expanded={isOpen}>
+                      <Link className="row-link" href={isOpen ? close : open + r.id} title={r.vendorName ?? undefined} scroll={false} replace aria-expanded={isOpen} aria-controls={isOpen ? `fis-detay-${r.id}` : undefined}>
                         {/* The vendor name becomes the review screen's title (ReviewEditor). */}
                         <MoveTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{r.vendorName ?? "Okunamayan fiş"}</span></MoveTransition>
                         <RowPending />
@@ -154,9 +157,6 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
           </table>
         )}
         <p className="side-links small list-links"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
-        {/* The drafts this list shows (this month, this tab): misread ones are cleared in one go; approved ones are never touched. */}
-        {/* Stays while the tab can hold drafts, so its status line outlives the buttons it reports on. */}
-        {tab.status === "draft" || !tab.status ? <BulkActions approveIds={clean.map((r) => r.id)} deleteIds={shownDrafts.map((r) => r.id)} /> : null}
         {tab.status === "exported" && receipts.length > 0 ? (
           <div className="list-foot desktop-only">
             {/* shortcut: re-downloads only the newest 50 (one Luca file); older ones are re-downloaded one by one from the receipt page. */}
