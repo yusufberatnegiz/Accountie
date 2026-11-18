@@ -65,7 +65,7 @@ export async function POST(request: Request) {
   const { rules, plan } = await getRules(userId, firm.id);
   // Every code comes from the firm's Luca plan: without one nothing is read, no credit is taken, no default code is guessed.
   if (plan.length === 0) return NextResponse.json({ error: NO_PLAN, plan: false }, { status: 409 });
-  const ctx: Ctx = { userId, firmId: firm.id, rules, plan, planned: true, until };
+  const ctx: Ctx = { userId, firmId: firm.id, firmName: firm.name, rules, plan, planned: true, until };
 
   // Kontör: a new upload needs at least one credit; inside it the balance may go down to MIN_BALANCE (reserveCredit).
   if (metered && (await getBalance(userId)) < 1) return NextResponse.json({ error: "Kontörünüz bitti. Belge okumak için kontör yükleyin.", kontor: true }, { status: 402 });
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ id: ids[0], ids, readable: saved.every((r) => r?.readable), skipped, limited, uncut, failed, unlocated }, { status: 201 });
 }
 
-type Ctx = { userId: string; firmId: string; rules: Rules; plan: readonly Account[]; planned: boolean; until: number };
+type Ctx = { userId: string; firmId: string; firmName: string; rules: Rules; plan: readonly Account[]; planned: boolean; until: number };
 
 // billable: something was read (a seller or a total); an empty record costs no credit (Koşullar md. 6).
 type Saved = { id: string; readable: boolean; billable: boolean; kind: string } | null;
@@ -223,7 +223,8 @@ async function saveOther(ctx: Ctx, result: Extract<ExtractResult, { ok: true }>,
     // The VKN on a Z report is the firm's own: kept to find the same report uploaded twice, never to learn a seller.
     const taxNumber = x.taxNumber && isValidTaxNumber(x.taxNumber) ? x.taxNumber : null;
     if (taxNumber && data.zNo && data.date && (await hasDuplicateReceipt(userId, firmId, taxNumber, data.zNo, data.date, data.totalKurus).catch(() => false))) extra.unshift(warn("duplicate"));
-    receipt = { vendorName: data.vendorName, taxNumber, receiptNo: data.zNo, receiptDate: data.date, totalKurus: data.totalKurus, paymentMethod: "other", category: "z_report", extraction: { ...x, fallback: result.fallback }, warnings: [], ...meta };
+    // A Z report is the firm's own till: named by the firm, as the list shows it, not by the shop name read off the slip.
+    receipt = { vendorName: ctx.firmName, taxNumber, receiptNo: data.zNo, receiptDate: data.date, totalKurus: data.totalKurus, paymentMethod: "other", category: "z_report", extraction: { ...x, fallback: result.fallback }, warnings: [], ...meta };
   } else {
     const data = toForeignData(x);
     const fx = data.currency !== "TRY" && data.date ? await tcmbRate(data.currency, data.date).catch(() => null) : null;

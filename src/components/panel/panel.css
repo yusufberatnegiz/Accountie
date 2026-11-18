@@ -70,6 +70,8 @@
 .row-detail .review { display: flex; flex-direction: column; align-items: stretch; gap: var(--s4); }
 .row-detail .review > * { margin-top: 0 !important; }
 .row-detail .review > .read-brief { display: flex; }
+/* Under its row the journal lines come first (the figures going to Luca), then the brief and the warnings that explain them. */
+.row-detail .review > section.panel:not(.info) { order: -1; }
 .row-detail .review > .actions { padding: 0; background: none; border: 0; }
 .row-detail .review > .action-bar { border-radius: var(--radius-card); border-top-color: var(--border); }
 /* The folded parts: one quiet line that opens in place. */
@@ -144,6 +146,11 @@
 .receipts > thead > tr > th { height: 40px; }
 .receipts > thead > tr > th:first-child, .receipts > tbody > tr > td:first-child { padding-left: var(--s5); }
 .receipts > thead > tr > th:last-child, .receipts > tbody > tr > td:last-child { padding-right: var(--s5); }
+.receipts > thead .col-check { width: 52px; }
+/* The checkbox sits over the row link (which covers the whole row) so a tick never opens the receipt; 44px to touch. */
+.receipts > * > tr > :is(.col-check, .r-check) { padding-right: 0; }
+.row-check { position: relative; z-index: 1; width: 20px; height: 20px; margin: 0; accent-color: var(--primary); cursor: pointer; }
+.r-check { position: relative; }
 .receipts > thead .col-no { width: 88px; }
 .receipts > thead .col-date { width: 112px; }
 .receipts > thead .col-code { width: 120px; }
@@ -172,6 +179,12 @@
 .r-kind { display: block; font-size: var(--fs-small); color: var(--muted); } /* Z raporu, yurt dışı fatura */
 .r-code { color: var(--ink); }
 .list-foot { padding: var(--s4) var(--s5); border-top: 1px solid var(--rule); }
+/* Ticked receipts: what can be done to them at once, held at the foot of the screen while any is ticked. */
+.select-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+.select-bar-on { position: sticky; bottom: var(--s4); z-index: 4; margin: var(--s3) var(--s4); padding: var(--s3) var(--s4); background: var(--stage); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-float); }
+.select-count { margin: 0 var(--s2) 0 0; }
+.select-status { flex-basis: 100%; margin: 0; }
+.select-status:empty { display: none; }
 /* Under the tabs the bulk buttons open the list, so the rule sits under them. */
 .tabs + .list-foot-actions.list-foot { border-top: 0; border-bottom: 1px solid var(--rule); }
 .list-foot-actions { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s3); }
@@ -416,16 +429,17 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .receipts > thead { display: none; }
   .receipts, .receipts > tbody { display: block; }
   /* Number, date and code sit in fixed columns so their digits line up from row to row; the spacer takes the rest. */
-  .receipts > tbody > tr { display: grid; grid-template-columns: minmax(0, 3rem) 4.5rem minmax(4rem, max-content) minmax(0, 1fr) auto; gap: 2px var(--s2); align-items: baseline; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
+  .receipts > tbody > tr { display: grid; grid-template-columns: auto minmax(0, 3rem) 4.5rem minmax(4rem, max-content) minmax(0, 1fr) auto; gap: 2px var(--s2); align-items: baseline; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); }
   .receipts > tbody > tr:last-child { border-bottom: 0; }
   .receipts > tbody > tr > td, .receipts > tbody > tr > td:first-child, .receipts > tbody > tr > td:last-child { height: auto; padding: 0; border: 0; }
-  .receipts > tbody > tr > .r-vendor { grid-column: 1 / 5; }
-  .receipts > tbody > tr > .r-total { grid-column: 5; grid-row: 1; font-weight: var(--w-strong); white-space: nowrap; }
+  .receipts > tbody > tr > .r-check { grid-column: 1; grid-row: 1 / span 2; align-self: center; padding-right: var(--s1); }
+  .receipts > tbody > tr > .r-vendor { grid-column: 2 / 6; }
+  .receipts > tbody > tr > .r-total { grid-column: 6; grid-row: 1; font-weight: var(--w-strong); white-space: nowrap; }
   .receipts > tbody > tr > .r-no, .receipts > tbody > tr > .r-date, .receipts > tbody > tr > .r-code { grid-row: 2; font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
   /* The evrak number starts at the vendor's edge; date and code, the figures compared down the list, are right-aligned. */
   .receipts > tbody > tr > .r-no { overflow: hidden; text-overflow: ellipsis; text-align: left; }
   .receipts > tbody > tr > .r-code { color: var(--ink); }
-  .receipts > tbody > tr > .r-status { grid-column: 5; grid-row: 2; text-align: right; }
+  .receipts > tbody > tr > .r-status { grid-column: 6; grid-row: 2; text-align: right; }
   :is(.r-notes, .r-kind) { display: block; margin: 0; }
   .side { grid-template-columns: minmax(0, 1fr); }
   /* The tablet keeps the journal a table (one line per row), so the balance strip is on the first screen above the tray. */
@@ -530,6 +544,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .row-detail .journal tr { grid-template-columns: 8.5rem minmax(0, 1fr) auto; padding: var(--s3); }
   .row-detail .action-bar { position: sticky; bottom: calc(57px + max(var(--s1), env(safe-area-inset-bottom))); z-index: 3; border-width: 1px; border-radius: var(--radius-card); }
   html:has(.row-detail) { scroll-padding-bottom: 200px; }
+  .select-bar-on { bottom: calc(57px + max(var(--s1), env(safe-area-inset-bottom)) + var(--s2)); margin: var(--s2) var(--s3); }
   /* Balanced, the strip says only that: the two totals and the KDV are the lines' own sums, shown again when they differ. */
   .row-detail .balance-strip[data-balanced] { grid-template-columns: 1fr; }
   .row-detail .balance-strip[data-balanced] > div:not(.balance-answer) { display: none; }
@@ -577,7 +592,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 }
 @media (max-width: 360px) {
   /* 320px: the three fixed columns and the pill do not fit; the meta line packs to its contents, still right-aligned. */
-  .receipts > tbody > tr { grid-template-columns: auto auto minmax(0, 1fr) 0 auto; column-gap: 6px; }
+  .receipts > tbody > tr { grid-template-columns: auto auto auto minmax(0, 1fr) 0 auto; column-gap: 6px; }
   /* 320px: the code column gives up 12px so the amount shows whole beside the switch. */
   .journal tr { grid-template-columns: 6.5rem minmax(0, 1fr) auto; }
   .journal tr:not(:has(.col-del)) td.col-amount { grid-template-columns: 6.5rem minmax(0, 1fr); }

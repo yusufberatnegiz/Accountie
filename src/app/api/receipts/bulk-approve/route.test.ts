@@ -35,6 +35,19 @@ describe("POST /api/receipts/bulk-approve", () => {
     expect(transitionReceipt).toHaveBeenCalledWith("user-1", id(1), "draft", "approved");
   });
 
+  it("seçilen fişlerde uyarılı taslağı onaylar, araç türü seçilmemiş ya da mali değeri olmayanı onaylamaz", async () => {
+    const rows: Record<string, unknown> = {
+      [id(1)]: draft(1, { warnings: [{ code: "tax_number_invalid" }] }),
+      [id(2)]: draft(2, { warnings: [{ code: "vehicle_choice" }] }),
+      [id(3)]: draft(3, { warnings: [{ code: "no_fiscal_value" }] }),
+      [id(4)]: draft(4, { warnings: [{ code: "total_mismatch" }], lines: [line(100, 0), line(0, 90)] }),
+    };
+    vi.mocked(getReceipt).mockImplementation(async (_u, i) => rows[i] as never);
+    const res = await POST(new Request("http://test/api/receipts/bulk-approve", { method: "POST", body: JSON.stringify({ ids: [id(1), id(2), id(3), id(4)], selected: true }) }));
+    expect(await res.json()).toEqual({ approved: 1, skipped: 3, stopped: false });
+    expect(transitionReceipt).toHaveBeenCalledWith("user-1", id(1), "draft", "approved");
+  });
+
   it("tek onay gibi satıcıya hesabını öğretir, firmanın kurallarını bir kez okur", async () => {
     const rows: Record<string, unknown> = {
       [id(1)]: draft(1, { firmId: "firm-1", taxNumber: "1111111114", vendorName: "BİM", category: "other" }),

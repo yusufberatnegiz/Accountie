@@ -9,6 +9,7 @@ import { SetupBanner } from "@/components/SetupBanner";
 import { ListTabs } from "@/components/ListTabs";
 import { RowPending } from "@/components/RowPending";
 import { RowDetail } from "@/components/RowDetail";
+import { AllCheck, ListSelection, RowCheck } from "@/components/ListSelection";
 import { MoveTransition } from "@/components/MoveTransition";
 import { MonthPicker } from "@/components/MonthPicker";
 import { DOC_KIND_LABEL, docKind } from "@/lib/doc-kind";
@@ -129,14 +130,17 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
             )}
           </div>
         ) : (
+          <ListSelection statuses={Object.fromEntries(receipts.map((r) => [r.id, r.status]))}>
           <table className="receipts">
             <thead>
-              <tr><th className="col-vendor">Satıcı</th><th className="num col-no">Evrak No</th><th className="num col-date">Tarih</th><th className="num col-code">Gider hesabı</th><th className="num col-total">Toplam</th><th className="col-status">Durum</th></tr>
+              <tr><th className="col-check"><AllCheck /></th><th className="col-vendor">Satıcı</th><th className="num col-no">Evrak No</th><th className="num col-date">Tarih</th><th className="num col-code">Gider hesabı</th><th className="num col-total">Toplam</th><th className="col-status">Durum</th></tr>
             </thead>
             <tbody>
               {receipts.map((r) => {
                 const notes = r.status === "draft" ? r.warnings.length : 0;
                 const isOpen = opened?.id === r.id;
+                // A Z report is the firm's own till: it carries the firm's name (older ones were saved with the shop name read off the slip).
+                const name = docKind(r.category) === "z_report" && firm ? firm.name : r.vendorName ?? "Okunamayan fiş";
                 return (
                   // A new receipt rises in at the top; a downloaded one slides out toward the Aktarıldı tab. A tab change uses the same
                   // two moves, in order: rows leaving the filter go out first, then the rest slide to their place and rows joining it rise in.
@@ -144,10 +148,11 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                   <MoveTransition enter={{ "fis-eklendi": "row-rise", sekme: "row-join", default: "none" }} exit={{ aktarim: "row-out", sekme: "row-leave", default: "none" }}
                     update={{ "fis-eklendi": "row-move", aktarim: "row-move", sekme: "row-shift", default: "none" }} default="none">
                   <tr data-open={isOpen || undefined}>
+                    <td className="r-check"><RowCheck id={r.id} label={name} /></td>
                     <td className="r-vendor">
-                      <Link className="row-link" href={isOpen ? close : open + r.id} title={r.vendorName ?? undefined} scroll={false} replace aria-expanded={isOpen} aria-controls={isOpen ? `fis-detay-${r.id}` : undefined}>
+                      <Link className="row-link" href={isOpen ? close : open + r.id} title={name} scroll={false} replace aria-expanded={isOpen} aria-controls={isOpen ? `fis-detay-${r.id}` : undefined}>
                         {/* The vendor name becomes the review screen's title (ReviewEditor). */}
-                        <MoveTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{r.vendorName ?? "Okunamayan fiş"}</span></MoveTransition>
+                        <MoveTransition name={`fis-${r.id}`} share="title-morph" default="none"><span>{name}</span></MoveTransition>
                         <RowPending />
                       </Link>
                       {r.invoice || DOC_KIND_LABEL[docKind(r.category)] ? <span className="r-kind">{r.invoice ? "Fatura" : DOC_KIND_LABEL[docKind(r.category)]}</span> : null}
@@ -160,12 +165,13 @@ export function ReceiptListView({ receipts: all, tab, firm, month = "", months, 
                     <td className="r-status"><span className={`status status-${r.status}`}>{STATUS_LABELS[r.status]}</span></td>
                   </tr>
                   </MoveTransition>
-                  {isOpen ? <tr className="row-detail"><td colSpan={6}><RowDetail id={r.id}>{opened.detail}</RowDetail></td></tr> : null}
+                  {isOpen ? <tr className="row-detail"><td colSpan={7}><RowDetail id={r.id}>{opened.detail}</RowDetail></td></tr> : null}
                   </Fragment>
                 );
               })}
             </tbody>
           </table>
+          </ListSelection>
         )}
         <p className="side-links small list-links"><Link href={`${base}/mutabakat${month ? `?ay=${month}` : ""}`}>Muavinle karşılaştır</Link></p>
         {tab.status === "exported" && receipts.length > 0 ? (

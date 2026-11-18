@@ -10,9 +10,13 @@ import { learnedAccount } from "@/lib/vendor-rule";
 export const runtime = "nodejs";
 
 // The ids the list showed: a receipt that arrived since is never approved unseen.
-const BulkApproveSchema = z.object({ ids: z.array(z.uuid()).min(1).max(200) });
+const BulkApproveSchema = z.object({ ids: z.array(z.uuid()).min(1).max(200), selected: z.boolean().optional() });
 
-/** Approves the given drafts that have no warning and balanced lines; the rest stay drafts for review. */
+/**
+ * Approves the given drafts whose lines pass; the rest stay drafts for review. Without `selected` (the list's "Uyarısız N fişi onayla")
+ * only drafts with no warning; with it (receipts the user ticked) warnings are the user's call, as on one receipt's own screen, but an
+ * undecided vehicle or a document with no fiscal value still waits.
+ */
 export async function POST(request: Request) {
   const userId = await getUserId();
   if (!userId) return unauthorized();
@@ -30,7 +34,8 @@ export async function POST(request: Request) {
   for (const id of new Set(body.data.ids)) {
     try {
       const receipt = await getReceipt(userId, id);
-      if (!receipt || receipt.status !== "draft" || receipt.warnings.length > 0) continue;
+      if (!receipt || receipt.status !== "draft") continue;
+      if (body.data.selected ? receipt.warnings.some((w) => w.code === "vehicle_choice" || w.code === "no_fiscal_value") : receipt.warnings.length > 0) continue;
       if (!receipt.firmId) continue;
       if (!firms.has(receipt.firmId)) firms.set(receipt.firmId, await firmOf(receipt.firmId));
       const firm = firms.get(receipt.firmId)!;
