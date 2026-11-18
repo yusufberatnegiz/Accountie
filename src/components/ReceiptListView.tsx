@@ -34,6 +34,17 @@ export function listHref(base: string, slug: string, month: string) {
   const s = p.toString();
   return s ? `${base}?${s}` : base;
 }
+/**
+ * The draft to open after `id` under its row: the next draft down this list (its tab, month and order), from the top again at the end,
+ * and how many other drafts the list holds. Null when it holds no other.
+ */
+export function nextInList(all: Row[], tab: (typeof TABS)[number], id: string): { id: string; left: number } | null {
+  const shown = tab.status ? all.filter((r) => r.status === tab.status || r.id === id) : all;
+  const at = shown.findIndex((r) => r.id === id);
+  const drafts = [...shown.slice(at + 1), ...shown.slice(0, Math.max(at, 0))].filter((r) => r.status === "draft" && r.id !== id);
+  return drafts.length ? { id: drafts[0].id, left: drafts.length } : null;
+}
+
 export const openHref = (base: string, slug: string, month: string) => { const l = listHref(base, slug, month); return `${l}${l.includes("?") ? "&" : "?"}fis=`; };
 
 const trDate = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : null);

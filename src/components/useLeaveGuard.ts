@@ -22,11 +22,12 @@ export function useLeaveGuard(dirty: boolean) {
     };
     // Back (the phone's swipe) is no link: one more entry of this same page sits on top, and going back past it asks first.
     let leaving = false;
-    history.pushState(history.state, "", location.href);
+    const mark = `guard-${Math.random()}`;
+    history.pushState({ ...history.state, accountieGuard: mark }, "", location.href);
     const onPop = () => {
       if (leaving) return;
       if (confirm(LEAVE_MESSAGE)) { leaving = true; history.back(); }
-      else history.pushState(history.state, "", location.href);
+      else history.pushState({ ...history.state, accountieGuard: mark }, "", location.href);
     };
     window.addEventListener("beforeunload", onUnload);
     window.addEventListener("popstate", onPop);
@@ -36,6 +37,8 @@ export function useLeaveGuard(dirty: boolean) {
       window.removeEventListener("beforeunload", onUnload);
       window.removeEventListener("popstate", onPop);
       document.removeEventListener("click", onClick, true);
+      // Saved or undone on the same page: the extra entry goes, so Back is not spent on it. A navigation (the next draft) replaced it already.
+      if (!leaving) setTimeout(() => { if (history.state?.accountieGuard === mark) history.back(); }, 0);
     };
   }, [dirty]);
 }

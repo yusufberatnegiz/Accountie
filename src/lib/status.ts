@@ -7,6 +7,6 @@ export function listFinding(drafts: number, ready: number): string {
   if (drafts === 0 && ready === 0) return "Bekleyen fiş yok. Yeni fişleri çektikçe burada kontrol edersiniz.";
   const parts = [];
   if (drafts) parts.push(`${drafts} taslak kontrol bekliyor.`);
-  if (ready) parts.push(`${ready} onaylı fiş Luca dosyasına hazır.`);
+  if (ready) parts.push(`${ready} onaylı fiş Luca'ya aktarılmaya hazır.`);
   return parts.join(" ");
 }

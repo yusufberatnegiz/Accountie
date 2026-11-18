@@ -221,10 +221,16 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const thumbRef = useRef<HTMLImageElement>(null);
 
   useLeaveGuard(dirty);
-  // Ctrl+Enter (Cmd+Enter) approves, as the button would: blocked, it goes to the field that fixes it.
+  // Ctrl+Enter (Cmd+Enter) approves, as the button would: blocked, it goes to the field that fixes it. A held key, or a press in the
+  // first 600ms after this receipt opened (the next draft after an approval), approves nothing: no receipt is approved unseen.
   useEffect(() => {
     if (!editable) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); document.getElementById("onayla")?.click(); } };
+    const opened = performance.now();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || !(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      if (!e.repeat && performance.now() - opened > 600) document.getElementById("onayla")?.click();
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [editable]);
@@ -699,7 +705,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           {/* Errors show here, next to the button that caused them; a box higher up is off screen on the phone. */}
           <p ref={statusLine} tabIndex={-1} className={error || (editable && problem) ? "balance balance-off" : "balance balance-ok"} aria-live="polite">
             {error ? error
-              : receipt.status === "approved" ? <><span className="phone-only">{"Onaylandı. Luca'ya aktarmak için Excel'i bilgisayarda indirin."}</span><span className="desktop-only">{"Onaylandı. Excel'i indirip Luca'nın Excel veri aktarımı ekranına yükleyin."}</span></>
+              : receipt.status === "approved" ? "Onaylandı. Chrome eklentisi Luca Fiş Detayına yazar."
               : receipt.status === "exported" ? "Luca'ya aktarıldı."
               : target ? <><span id="onay-engeli">{problem}</span> <button className="link-button" type="button" onClick={fix}>{target.action}</button></>
               : dirty ? "Borç ve alacak eşit. Değişiklikler henüz kaydedilmedi." : "Borç ve alacak eşit, onaya hazır."}
@@ -710,6 +716,8 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           ) : <Link className="btn btn-lg bar-back" href={listHref}>Fişler</Link>}
           {/* After approval the phone user goes on with the bag of receipts: the next draft, or the camera when none is left. */}
           {!editable && !inList ? <div className="bar-next phone-only"><CaptureButton pickers={["camera"]} variant="bar" primary={!next} base={base} /></div> : null}
+          {/* Under its row a draft can be left for later: the next one down the list opens, this one stays a draft. */}
+          {inList && editable && next ? <Link className="btn btn-lg bar-skip" href={openHref(next.id)} scroll={false} replace>Atla</Link> : null}
           {!editable && next ? (
             <Link className="btn btn-lg bar-next-draft" href={openHref(next.id)} scroll={!inList} replace={!!inList}>Sıradaki taslak ({next.left})</Link>
           ) : null}
@@ -722,7 +730,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
             </button>
           ) : (
             // Luca runs on the computer; downloading on the phone would mark the receipt exported for nothing.
-            <div className="desktop-only"><ExportButton receiptIds={[receipt.id]} label="Luca için Excel indir" primary /></div>
+            <div className="desktop-only"><ExportButton receiptIds={[receipt.id]} label="Excel indir" /></div>
           )}
         </div>
 

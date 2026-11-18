@@ -67,7 +67,7 @@
 .receipts tr[data-open] .status { background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); }
 @media (hover: hover) and (pointer: fine) and (min-width: 901px) { .receipts tr[data-open] .r-status::after { transform: rotate(135deg); border-color: var(--ink); } }
 /* Under its row the screen is one column at every width: the read panel is folded, so a second column would stand empty. */
-.row-detail .review { display: flex; flex-direction: column; align-items: stretch; }
+.row-detail .review { display: flex; flex-direction: column; align-items: stretch; gap: var(--s4); }
 .row-detail .review > * { margin-top: 0 !important; }
 .row-detail .review > .read-brief { display: flex; }
 .row-detail .review > .actions { padding: 0; background: none; border: 0; }
@@ -89,6 +89,8 @@
 .info-more > summary::before { position: absolute; left: 0; top: 50%; margin-top: -5px; }
 .source-fold[open] > .source, .more-actions[open] > .actions { margin-top: var(--s3); }
 .more-actions .danger-zone { margin-top: var(--s4); }
+/* A Z report's read panel stays open under its row: its labels and figures stay within reach of each other. */
+.row-detail .read-values { max-width: 32rem; }
 /* A text button inside a sentence: the problem line goes to the field that fixes it. */
 .link-button { display: inline; padding: 12px 0; margin-block: -12px; -webkit-box-decoration-break: clone; box-decoration-break: clone; border: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; border-radius: var(--radius-chip); }
 @media (hover: hover) and (pointer: fine) { .link-button:hover { text-decoration-thickness: 2px; } }
@@ -330,6 +332,7 @@
 .action-bar .bar-back { display: none; }
 /* On the tray's --stage ground the secondary fill vanishes; the next draft reads as a button on a surface step. */
 .action-bar .bar-next-draft { background: var(--surface); border-color: var(--border); }
+.action-bar .bar-skip { margin-left: auto; }
 /* Saving or approved-and-refreshing: the primary keeps its fill and its label reads at full contrast; only the cursor says wait. */
 .action-bar .btn-primary[data-busy]:disabled { background: var(--primary); color: var(--on-primary); cursor: progress; }
 /* A focused field is never under the sticky bar. */
@@ -520,6 +523,11 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .receipts tr.row-detail { display: block; padding: 0; }
   .receipts .row-detail > td { display: block; padding: var(--s3) var(--s3) var(--s4); }
   .row-detail-loose { padding: var(--s3) var(--s3) var(--s4); }
+  /* On the phone the row is a grid, its first cell the seller's name: the amber edge goes on the row itself. */
+  .receipts tr[data-open] { box-shadow: inset 3px 0 0 var(--accent); }
+  .receipts tr[data-open] > td:first-child { box-shadow: none; }
+  /* The code field keeps a whole code (191.03.20) in the narrower box under a row. */
+  .row-detail .journal tr { grid-template-columns: 8.5rem minmax(0, 1fr) auto; padding: var(--s3); }
   .row-detail .action-bar { position: sticky; bottom: calc(57px + max(var(--s1), env(safe-area-inset-bottom))); z-index: 3; border-width: 1px; border-radius: var(--radius-card); }
   html:has(.row-detail) { scroll-padding-bottom: 200px; }
   /* Balanced, the strip says only that: the two totals and the KDV are the lines' own sums, shown again when they differ. */
@@ -541,7 +549,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .action-bar:not(:has(.bar-next-draft)) .bar-next .btn { width: 100%; }
   .capture-bar .reading, .capture-bar .alert { position: fixed; left: var(--s4); right: var(--s4); bottom: calc(128px + env(safe-area-inset-bottom)); z-index: 4; }
   /* While the keyboard is up the bar drops its sentence and keeps one row of buttons. */
-  .app[data-screen="fis"]:has(.review :is(input, select):focus) .action-bar:not([data-pointed]) .balance { display: none; }
+  :is(.app[data-screen="fis"], .row-detail):has(.review :is(input, select, textarea):focus) .action-bar:not([data-pointed]) .balance { display: none; }
+  /* The bar names the problem once, as its link; the sentence stays for screen readers (aria-describedby). */
+  .action-bar #onay-engeli { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   /* A locked amount reads under its label, on the label's edge, not floating at the right of its half. */
   .journal .field.num:disabled { text-align: left; }
   /* Locked lines are text, not fields: no 44px box around each value. */

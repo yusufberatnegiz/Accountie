@@ -5,8 +5,8 @@ import { PREVIEW_LIST, PREVIEW_RECEIPTS } from "./preview-fixtures";
 
 describe("panel list", () => {
   it("states what waits, from the counts", () => {
-    expect(listFinding(2, 1)).toBe("2 taslak kontrol bekliyor. 1 onaylı fiş Luca dosyasına hazır.");
-    expect(listFinding(0, 3)).toBe("3 onaylı fiş Luca dosyasına hazır.");
+    expect(listFinding(2, 1)).toBe("2 taslak kontrol bekliyor. 1 onaylı fiş Luca'ya aktarılmaya hazır.");
+    expect(listFinding(0, 3)).toBe("3 onaylı fiş Luca'ya aktarılmaya hazır.");
     expect(listFinding(0, 0)).toMatch(/^Bekleyen fiş yok/);
   });
 
