@@ -135,16 +135,55 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const tbody = useRef<HTMLTableSectionElement>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
   const flip = useRef<Map<string, number> | null>(null);
+  // Dragging a line by its handle (as a playlist is reordered): the row follows the pointer, the others step aside as it passes their middle.
+  const drag = useRef<{ row: HTMLTableRowElement; key: number; y0: number; top0: number; y: number } | null>(null);
+  const [dragging, setDragging] = useState<number | null>(null);
+  // The row's layout top (offsetTop ignores the transform) against where the pointer has taken it.
+  const follow = (y: number) => { const d = drag.current; if (d) d.row.style.transform = `translateY(${y - d.y0 - (d.row.offsetTop - d.top0)}px)`; };
   // After a line is removed, the ones below slide up from where they were (FLIP), transform only.
   useLayoutEffect(() => {
     const before = flip.current;
     flip.current = null;
     if (!before || !tbody.current) return;
+    if (drag.current) follow(drag.current.y);
     for (const row of tbody.current.rows) {
+      if (row === drag.current?.row) continue;
       const dy = (before.get(row.dataset.key ?? "") ?? 0) - row.getBoundingClientRect().top;
       if (dy) row.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 180, easing: EASE_OUT });
     }
   }, [lines]);
+  const moveLine = (key: number, to: number) => {
+    flip.current = new Map([...(tbody.current?.rows ?? [])].map((r) => [r.dataset.key ?? "", r.getBoundingClientRect().top]));
+    setLines((ls) => { const from = ls.findIndex((l) => l.key === key); if (from < 0 || from === to) return ls; const n = [...ls]; n.splice(to, 0, ...n.splice(from, 1)); return n; });
+  };
+  const gripDown = (e: React.PointerEvent<HTMLButtonElement>, key: number) => {
+    const row = e.currentTarget.closest("tr");
+    if (!row || e.button !== 0) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { row, key, y0: e.clientY, top0: row.offsetTop, y: e.clientY };
+    setDragging(key);
+  };
+  const gripMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    if (!d || !tbody.current) return;
+    d.y = e.clientY;
+    follow(e.clientY);
+    // The dragged row's middle, where the pointer has taken it, against the other rows' middles.
+    const mid = d.top0 + (e.clientY - d.y0) + d.row.offsetHeight / 2;
+    const others = [...tbody.current.rows].filter((r) => r !== d.row);
+    const to = others.filter((r) => r.offsetTop + r.offsetHeight / 2 < mid).length;
+    if (others.indexOf(d.row.previousElementSibling as HTMLTableRowElement) + 1 !== to) moveLine(d.key, to);
+  };
+  const gripUp = () => {
+    const d = drag.current;
+    if (!d) return;
+    drag.current = null;
+    setDragging(null);
+    const from = d.row.style.transform;
+    d.row.style.transform = "";
+    if (from && !still()) d.row.animate([{ transform: from }, { transform: "none" }], { duration: 160, easing: EASE_OUT });
+  };
   const removeLine = (key: number) => {
     const rows = [...(tbody.current?.rows ?? [])];
     let gone = false;
@@ -611,7 +650,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
                 const src = sourceFor(l);
                 const side = sideOf(l);
                 return (
-                <tr key={l.key} data-key={l.key} data-side={side} data-new={firstKeys.has(l.key) ? undefined : ""} {...traced(src)} onMouseEnter={(e) => traceOn(src, e.currentTarget)} onMouseLeave={traceOff} onFocus={(e) => traceOn(src, e.currentTarget)} onBlur={traceOff}>
+                <tr key={l.key} data-key={l.key} data-side={side} data-new={firstKeys.has(l.key) ? undefined : ""} data-dragging={dragging === l.key ? "" : undefined} {...traced(src)} onMouseEnter={(e) => traceOn(src, e.currentTarget)} onMouseLeave={traceOff} onFocus={(e) => traceOn(src, e.currentTarget)} onBlur={traceOff}>
                   {/* No inputMode: the iOS Turkish decimal pad has a comma but no dot, and codes need dots (191.03.10). */}
                   <td data-label="Hesap kodu"><input id={`satir-${i + 1}-kod`} autoComplete="off" className="field tnum" aria-label={`Satır ${i + 1} hesap kodu${unsure(codeFlag)}`} value={l.accountCode} disabled={!editable}
                     autoCapitalize="off" autoCorrect="off" spellCheck={false} translate="no" placeholder={postable.length ? "Plandan seçin…" : "770.08…"} list={postable.length ? "plan-kodlari" : undefined} aria-invalid={!!l.accountCode.trim() && (!ACCOUNT_CODE_PATTERN.test(l.accountCode.trim()) || (editable && !!postableCodes && !postableCodes.has(l.accountCode.trim())))}
@@ -627,7 +666,20 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
                     <span className="side-switch" role="group" aria-label={`Satır ${i + 1} tarafı`}>
                       {(["debit", "credit"] as const).map((s) => <button key={s} className="side-opt" type="button" aria-pressed={side === s} onClick={() => setSide(l, s)}>{s === "debit" ? "Borç" : "Alacak"}</button>)}
                     </span>
-                    <button className="btn btn-quiet btn-sm" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => ((!l.debit && !l.credit) || confirm(`Satır ${i + 1} (${l.accountCode || "hesap kodu yok"}) silinsin mi?`)) && removeLine(l.key)}>Sil</button></td> : null}
+                    <button className="btn btn-quiet btn-sm" type="button" aria-label={`Satır ${i + 1} sil`} disabled={lines.length <= 1} onClick={() => ((!l.debit && !l.credit) || confirm(`Satır ${i + 1} (${l.accountCode || "hesap kodu yok"}) silinsin mi?`)) && removeLine(l.key)}>Sil</button>
+                    {/* Pressed and dragged up or down; the arrow keys move it one place. */}
+                    <button className="row-grip" type="button" aria-label={`Satır ${i + 1} taşı (yukarı, aşağı ok)`} title="Basılı tutup sürükleyin" disabled={lines.length <= 1}
+                      onPointerDown={(e) => gripDown(e, l.key)} onPointerMove={gripMove} onPointerUp={gripUp} onPointerCancel={gripUp} onLostPointerCapture={gripUp}
+                      onKeyDown={(e) => {
+                        const to = e.key === "ArrowUp" ? i - 1 : e.key === "ArrowDown" ? i + 1 : -1;
+                        if (to < 0 || to >= lines.length) return;
+                        e.preventDefault();
+                        const self = e.currentTarget;
+                        moveLine(l.key, to);
+                        requestAnimationFrame(() => self.focus());
+                      }}>
+                      <svg viewBox="0 0 10 16" width="10" height="16" aria-hidden="true" focusable="false"><g fill="currentColor"><circle cx="2" cy="3" r="1.4" /><circle cx="8" cy="3" r="1.4" /><circle cx="2" cy="8" r="1.4" /><circle cx="8" cy="8" r="1.4" /><circle cx="2" cy="13" r="1.4" /><circle cx="8" cy="13" r="1.4" /></g></svg>
+                    </button></td> : null}
                 </tr>
                 );
               })}

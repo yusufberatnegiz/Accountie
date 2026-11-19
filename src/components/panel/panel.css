@@ -320,9 +320,18 @@ body:has(.select-bar[data-chosen]) .list-foot-actions.list-foot::before {
 .journal tbody tr[data-traced] { background: var(--raised); }
 .journal .col-code { width: 150px; }
 .journal .col-amount { width: 150px; }
-.journal .col-del { width: 64px; }
+.journal .col-del { width: 104px; white-space: nowrap; }
 .journal .col-del .btn { min-height: var(--control); }
-@media (pointer: coarse) { .journal .col-del .btn { min-height: var(--touch); min-width: var(--touch); } }
+/* The handle a line is dragged by (ReviewEditor gripDown); touch-action none, so on the phone the drag never scrolls the page. */
+.row-grip { display: inline-grid; place-items: center; width: 32px; min-height: var(--control); margin-left: var(--s1); padding: 0; vertical-align: top; border: 0; border-radius: var(--radius-control); background: none; color: var(--faint); cursor: grab; touch-action: none; }
+.row-grip:disabled { visibility: hidden; }
+@media (hover: hover) and (pointer: fine) { .row-grip:hover { color: var(--ink); background: var(--active); } }
+.row-grip:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; color: var(--ink); }
+/* No position here: a positioned row would change its offsetParent, which the drag measures from; its transform lifts it over the others. */
+.journal tbody tr[data-dragging] { background: var(--raised); box-shadow: var(--shadow-float); }
+.journal tbody tr[data-dragging] .row-grip { cursor: grabbing; color: var(--ink); }
+body:has(tr[data-dragging]) { cursor: grabbing; user-select: none; }
+@media (pointer: coarse) { .journal .col-del .btn { min-height: var(--touch); min-width: var(--touch); } .row-grip { width: var(--touch); min-height: var(--touch); } }
 .journal .field.to-luca { color: var(--accent); }
 .journal .field.num { text-align: right; }
 /* Account name: a one-line value in a textarea, so a long name wraps (two lines on the phone) instead of being cut. */
@@ -471,7 +480,7 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   /* The tablet keeps the journal a table (one line per row), so the balance strip is on the first screen above the tray. */
   .journal .col-code { width: 8rem; }
   .journal .col-amount { width: 7rem; }
-  .journal .col-del { width: 56px; }
+  .journal .col-del { width: 104px; }
 }
 @media (max-width: 900px) { .setting-row { grid-template-columns: minmax(0, 1fr); gap: var(--s4); } .setting-label { position: static; } .jump { display: none; } .canvas { padding: var(--s5) var(--s5) var(--s8); } }
 
@@ -491,6 +500,9 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
   .journal tr[data-side="both"] td:nth-child(4) { grid-row: 3; }
   .journal td.col-del { display: contents; }
   .journal td.col-del > .btn { grid-column: 3; grid-row: 2; min-width: var(--touch); padding: 0 var(--s1); }
+  /* The handle starts the card's second line, the Borc/Alacak switch beside it: name and amount keep their width. */
+  .journal td.col-del > .row-grip { grid-column: 1; grid-row: 2; justify-self: start; width: 32px; margin: 0; }
+  .journal tr:has(.row-grip) .side-switch { margin-left: 36px; }
   .journal .side-switch { grid-column: 1; grid-row: 2; display: flex; border-radius: var(--radius-control); background: var(--active); }
   .journal tr[data-side="both"] .side-switch { display: none; }
   /* Locked lines have no switch: the side's name stands under the code, the amount under the account name. */
