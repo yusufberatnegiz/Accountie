@@ -444,6 +444,44 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   // Under its row an approval goes straight on to the next draft (the approved row stays in the list); on its own page it stays.
   const afterApprove = () => (inList && next ? router.replace(openHref(next.id), { scroll: false }) : refresh());
   const deleteWord = kind === "z_report" ? "Z raporunu sil" : isInvoice ? "Faturayı sil" : "Fişi sil";
+  // Header fields that every line carries. On the full page under the lines and before the actions, so Tab and the eye run the same way
+  // (YON 23.16); under its row first, above the lines (the user's choice). Locked, they sit atop the lines as a strip instead.
+  const infoPanel = editable ? (
+        <section className="panel panel-pad info" aria-labelledby="bilgi-baslik">
+          <h2 id="bilgi-baslik">{kind === "z_report" ? "Z raporu bilgileri" : isInvoice ? "Fatura bilgileri" : "Fiş bilgileri"}</h2>
+          {inList ? null : <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>}
+          <div className="form-grid">
+            <label>
+              <span>Evrak No</span>
+              <input id="evrak-no" className="field tnum" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40} required autoComplete="off" spellCheck={false}
+                {...flag(headFlags.documentNo)}
+                onChange={(e) => updateAll("documentNo", e.target.value)} />{checkNote(headFlags.documentNo)}
+            </label>
+            <label>
+              <span>Evrak tarihi</span>
+              <input id="evrak-tarihi" className="field tnum" type="date" value={head?.documentDate ?? ""} disabled={!editable} required
+                {...flag(headFlags.documentDate)}
+                onChange={(e) => updateAll("documentDate", e.target.value || null)} />{checkNote(headFlags.documentDate)}
+            </label>
+            {/* Under its row the two fields that are almost never changed fold, unless one is flagged. */}
+            <Fold on={!!inList && !headFlags.description} className="span-all info-more" label={`Belge türü ve açıklama: ${head?.documentType || "-"} · ${head?.description || "-"}`}>
+            <div className="form-grid">
+            <label className="bt-field">
+              <span>Belge türü</span>
+              <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} autoComplete="off" onChange={(e) => updateAll("documentType", e.target.value)} />
+            </label>
+            <label className="span-all">
+              <span>Açıklama</span>
+              <input className="field" value={head?.description ?? ""} disabled={!editable} maxLength={200} autoComplete="off"
+                {...flag(headFlags.description)}
+                onChange={(e) => updateAll("description", e.target.value)} />{checkNote(headFlags.description)}
+            </label>
+            </div>
+            </Fold>
+          </div>
+        </section>
+  ) : null;
+
   const deleteZone = (
     <section className="danger-zone" aria-labelledby="sil-baslik">
       <div>
@@ -520,6 +558,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
           </div>
         ) : null}
 
+        {inList ? infoPanel : null}
         <section className="panel" aria-labelledby="satir-baslik">
           <div className="panel-head">
             <h2 id="satir-baslik">Yevmiye satırları</h2>
@@ -608,9 +647,9 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
         </section>
 
 
-        {/* Under its row the read fields fold: seller, number, date and total are on the row, the sums in the brief. A Z report's cash and card,
-            a foreign invoice's rate and a seller's learned account show nowhere else, so those stay open. */}
-        <Fold on={!!inList && kind === "receipt" && !learned} className="source-fold" label={`${docWord}${kind === "z_report" ? "ndan" : isInvoice ? "dan" : "ten"} okunan tüm alanlar`}>
+        {/* Under its row the read fields fold: seller, number, date and total are on the row, the sums in the brief, a Z report's cash and card
+            in its lines. A foreign invoice's rate and a seller's learned account show nowhere else, so those stay open. */}
+        <Fold on={!!inList && (kind === "z_report" || (kind === "receipt" && !learned))} className="source-fold" label={`${docWord}${kind === "z_report" ? "ndan" : isInvoice ? "dan" : "ten"} okunan tüm alanlar`}>
         <div className="source">
           {photo ? (
             <figure className="photo">
@@ -654,42 +693,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
         </div>
         </Fold>
 
-        {/* Header fields that every line carries: under the lines and before the actions, so Tab and the eye run the same way (YON 23.16). Locked, they sit atop the lines instead. */}
-        {editable ? (
-        <section className="panel panel-pad info" aria-labelledby="bilgi-baslik">
-          <h2 id="bilgi-baslik">{kind === "z_report" ? "Z raporu bilgileri" : isInvoice ? "Fatura bilgileri" : "Fiş bilgileri"}</h2>
-          {inList ? null : <p className="muted small">Bu alanlar bütün satırlara yazılır.</p>}
-          <div className="form-grid">
-            <label>
-              <span>Evrak No</span>
-              <input id="evrak-no" className="field tnum" value={head?.documentNo ?? ""} disabled={!editable} maxLength={40} required autoComplete="off" spellCheck={false}
-                {...flag(headFlags.documentNo)}
-                onChange={(e) => updateAll("documentNo", e.target.value)} />{checkNote(headFlags.documentNo)}
-            </label>
-            <label>
-              <span>Evrak tarihi</span>
-              <input id="evrak-tarihi" className="field tnum" type="date" value={head?.documentDate ?? ""} disabled={!editable} required
-                {...flag(headFlags.documentDate)}
-                onChange={(e) => updateAll("documentDate", e.target.value || null)} />{checkNote(headFlags.documentDate)}
-            </label>
-            {/* Under its row the two fields that are almost never changed fold, unless one is flagged. */}
-            <Fold on={!!inList && !headFlags.description} className="span-all info-more" label={`Belge türü ve açıklama: ${head?.documentType || "-"} · ${head?.description || "-"}`}>
-            <div className="form-grid">
-            <label className="bt-field">
-              <span>Belge türü</span>
-              <input className="field" value={head?.documentType ?? ""} disabled={!editable} maxLength={10} autoComplete="off" onChange={(e) => updateAll("documentType", e.target.value)} />
-            </label>
-            <label className="span-all">
-              <span>Açıklama</span>
-              <input className="field" value={head?.description ?? ""} disabled={!editable} maxLength={200} autoComplete="off"
-                {...flag(headFlags.description)}
-                onChange={(e) => updateAll("description", e.target.value)} />{checkNote(headFlags.description)}
-            </label>
-            </div>
-            </Fold>
-          </div>
-        </section>
-        ) : null}
+        {inList ? null : infoPanel}
 
         <div className="actions">
           {editable ? (

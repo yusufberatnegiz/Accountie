@@ -202,6 +202,8 @@ const listColumns = {
   // Subqueries name the outer table in full ("receipts"."id"): Drizzle writes a column of a one-table select without its table, and
   // journal_lines and firm_accounts have their own id, user_id and firm_id, which a bare "id" would silently (or ambiguously) mean.
   ...summaryColumns,
+  // The Evrak No going to Luca (the user may have corrected it under the row), else the number as read.
+  receiptNo: sql<string | null>`coalesce((select nullif(jl.document_no, '') from journal_lines jl where jl.receipt_id = "receipts"."id" and jl.user_id = "receipts"."user_id" order by jl.line_no limit 1), ${receipts.receiptNo})`,
   category: receipts.category,
   warnings: receipts.warnings,
   // A draft split to a 689 KKEG line before the choice was stored: its vehicle is chosen (src/lib/vehicle.ts isKkegLine without the
