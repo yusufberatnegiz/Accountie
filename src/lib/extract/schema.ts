@@ -279,5 +279,6 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
   const paid = (x.payments ?? []).map((p) => amountOrNull(p.amount));
   if (paid.length > 1 && (paid.some((k) => k === null) || paid.reduce<number>((s, k) => s + (k ?? 0), 0) !== data.totalKurus)) add("payment_unsure");
   if (!z && unsure("receiptNo")) add("receipt_no_unsure");
+  if (z && unsure("zNo")) add("z_no_unsure");
   return problems;
 }

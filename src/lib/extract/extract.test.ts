@@ -217,10 +217,14 @@ describe("belge türüne göre kontrol", () => {
     expect(checkExtraction({ ...foreign, currency: null })).toEqual(["currency_unsure"]);
   });
   it("Z raporunda nakit ve kart toplamı tutmazsa ya da hiç okunamazsa sorun", () => {
-    const z = { ...goodOutput, documentKind: "z_report" as const, cashTotal: "725,00", cardTotal: "8.000,00" };
+    const z = { ...goodOutput, documentKind: "z_report" as const, zNo: "0042", unreadableFields: [], cashTotal: "725,00", cardTotal: "8.000,00" };
     expect(checkExtraction(z)).toEqual([]);
     expect(checkExtraction({ ...z, cardTotal: "7.000,00" })).toEqual(["z_payment_split"]);
     expect(checkExtraction({ ...z, cashTotal: null, cardTotal: null })).toEqual(["z_payment_split"]);
+  });
+  it("Z numarası okunamadıysa sorun (güçlü modelle yeniden okunur, Evrak No işaretlenir)", () => {
+    const z = { ...goodOutput, documentKind: "z_report" as const, zNo: null, cashTotal: "725,00", cardTotal: "8.000,00" };
+    expect(checkExtraction({ ...z, unreadableFields: ["zNo"] })).toEqual(["z_no_unsure"]);
   });
 });
 

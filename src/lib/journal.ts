@@ -48,6 +48,8 @@ export const WARNING_MESSAGES: Record<string, string> = {
   date_unusual: "Fiş tarihi ileri bir tarih ya da bir yıldan eski. Yıl yanlış okunmuş olabilir, Evrak Tarihini kontrol edin.",
   payment_unsure: "Ödeme şekli fişten okunamadı. Alacak hesabını kontrol edin.",
   receipt_no_unsure: "Fiş no okunamadı. Evrak No'yu kontrol edin.",
+  z_no_unsure: "Z numarası okunamadı. Evrak No'yu Z raporundaki Z NO ile karşılaştırın.",
+  z_no_sequence: "Z numarası firmanın önceki Z raporlarının sırasına uymuyor; başka bir sayı okunmuş olabilir. Evrak No'yu Z raporundaki Z NO ile karşılaştırın.",
   duplicate: "Bu VKN, fiş no ve tarihle kayıtlı başka bir fiş var. Aynı fiş iki kez aktarılmasın.",
   extraction_failed: "Fiş okunamadı, tekrar deneyin veya elle girin.",
   currency_unsure: "Faturanın para birimi okunamadı; tutarlar boş bırakıldı. TL tutarlarını faturadan girin.",

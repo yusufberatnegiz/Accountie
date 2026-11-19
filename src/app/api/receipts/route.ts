@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createReceipt, getBalance, getRules, getVendorRule, hasDuplicateReceipt, listReceipts, reserveCredit, settleCredit, type NewReceipt } from "@/db/queries";
+import { createReceipt, getBalance, getRules, getVendorRule, hasDuplicateReceipt, listReceipts, listZNumbers, reserveCredit, settleCredit, type NewReceipt } from "@/db/queries";
 import { creditCost, creditsRequired, MIN_BALANCE } from "@/lib/credits";
 import { isValidTaxNumber } from "@/lib/checks";
 import { linesFor } from "@/lib/rebuild";
@@ -10,6 +10,7 @@ import { kindOf, toForeignData, toReceiptData, toSalesData, withholdingGap } fro
 import { formatTrAmount } from "@/lib/money";
 import { foreignTotalTl } from "@/lib/journal-kinds";
 import { tcmbRate } from "@/lib/tcmb";
+import { zNoFits } from "@/lib/z-sequence";
 import { NO_STORE, fail, unauthorized } from "@/lib/http";
 import { ALLOWED_IMAGE_TYPES, cropReceipt, isPdf, MAX_PDF_PAGES, MAX_UPLOAD_BYTES, normalizeImage, pdfPageCount, sniffImageType } from "@/lib/image";
 import { allow, clientIp } from "@/lib/rate-limit";
@@ -223,6 +224,8 @@ async function saveOther(ctx: Ctx, result: Extract<ExtractResult, { ok: true }>,
     // The VKN on a Z report is the firm's own: kept to find the same report uploaded twice, never to learn a seller.
     const taxNumber = x.taxNumber && isValidTaxNumber(x.taxNumber) ? x.taxNumber : null;
     if (taxNumber && data.zNo && data.date && (await hasDuplicateReceipt(userId, firmId, taxNumber, data.zNo, data.date, data.totalKurus).catch(() => false))) extra.unshift(warn("duplicate"));
+    // A number off the firm's run of Z numbers is most likely another figure on the slip; a failed lookup only skips the check.
+    else if (data.zNo && data.date && !zNoFits(data.zNo, data.date, await listZNumbers(userId, firmId).catch(() => []))) extra.unshift(warn("z_no_sequence"));
     // A Z report is the firm's own till: named by the firm, as the list shows it, not by the shop name read off the slip.
     receipt = { vendorName: ctx.firmName, taxNumber, receiptNo: data.zNo, receiptDate: data.date, totalKurus: data.totalKurus, paymentMethod: "other", category: "z_report", extraction: { ...x, fallback: result.fallback }, warnings: [], ...meta };
   } else {

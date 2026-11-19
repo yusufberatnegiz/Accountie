@@ -197,6 +197,17 @@ export async function hasDuplicateReceipt(userId: string, firmId: string, taxNum
   return rows.length > 0;
 }
 
+/** The firm's Z reports, newest 400 by date: each one's Evrak No as kept (a corrected number), else as read, for src/lib/z-sequence.ts. */
+export async function listZNumbers(userId: string, firmId: string): Promise<{ no: string; date: string }[]> {
+  const rows = await getDb().select({
+    no: sql<string | null>`coalesce((select nullif(jl.document_no, '') from journal_lines jl where jl.receipt_id = "receipts"."id" and jl.user_id = "receipts"."user_id" order by jl.line_no limit 1), ${receipts.receiptNo})`,
+    date: receipts.receiptDate,
+  }).from(receipts)
+    .where(and(eq(receipts.userId, userId), eq(receipts.firmId, firmId), eq(receipts.category, "z_report"), isNotNull(receipts.receiptDate)))
+    .orderBy(desc(receipts.receiptDate)).limit(400);
+  return rows.flatMap((r) => (r.no && r.date ? [{ no: r.no, date: r.date }] : []));
+}
+
 // The list shows each receipt's expense account (first debit line that is not VAT) and its line count (for Luca's 400-line file limit).
 const listColumns = {
   // Subqueries name the outer table in full ("receipts"."id"): Drizzle writes a column of a one-table select without its table, and

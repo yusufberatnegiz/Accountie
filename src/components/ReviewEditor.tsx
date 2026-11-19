@@ -46,7 +46,7 @@ const toLine = ({ key, debit, credit, ...rest }: EditLine): JournalLine => ({ ..
 // Warning codes that mean "the reader was unsure about this field".
 const AMOUNT_WARNINGS = ["amount_unreadable", "total_mismatch", "vat_mismatch", "vat_computed", "vat_missing", "rounding_adjusted", "extraction_failed", "currency_unsure", "domestic_currency"];
 // Warnings about one header field; they clear once that field is edited.
-const WARNING_FIELD: Record<string, string> = { date_invalid: "documentDate", date_unusual: "documentDate", receipt_no_unsure: "documentNo", payment_unsure: "credit", payment_other: "credit", vehicle_choice: "vehicle" };
+const WARNING_FIELD: Record<string, string> = { date_invalid: "documentDate", date_unusual: "documentDate", receipt_no_unsure: "documentNo", z_no_unsure: "documentNo", z_no_sequence: "documentNo", payment_unsure: "credit", payment_other: "credit", vehicle_choice: "vehicle" };
 
 type Source = "base" | "vat" | "total";
 /** Where a journal line's figure was read on the receipt: the fiş izi (docs/design/YON.md 5.3). */
@@ -343,7 +343,7 @@ export function ReviewEditor({ receipt, rules, next = null, learned = null, base
   const flag = (on: boolean) => (on ? { "data-check": "", ...(warnings.length ? { "aria-describedby": "uyarilar" } : {}) } : {});
   const checkNote = (on: boolean) => (on ? <span className="check-note">Kontrol edin</span> : null);
   const headFlags = {
-    documentNo: flagged("documentNo", codes.includes("extraction_failed") || codes.includes("receipt_no_unsure") || !head?.documentNo),
+    documentNo: flagged("documentNo", codes.includes("extraction_failed") || codes.includes("receipt_no_unsure") || codes.includes("z_no_unsure") || codes.includes("z_no_sequence") || !head?.documentNo),
     documentDate: flagged("documentDate", codes.includes("date_invalid") || codes.includes("date_unusual") || !head?.documentDate),
     credit: flagged("credit", codes.includes("payment_unsure") || codes.includes("payment_other")),
     description: flagged("description", codes.includes("extraction_failed") || !head?.description),

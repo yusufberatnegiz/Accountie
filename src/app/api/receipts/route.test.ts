@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(), getRules: vi.fn(), listReceipts: vi.fn(), getVendorRule: vi.fn(async () => null), getBalance: vi.fn(async () => 0), reserveCredit: vi.fn(), settleCredit: vi.fn(async () => {}) }));
+vi.mock("@/db/queries", () => ({ hitRateLimit: vi.fn(), createReceipt: vi.fn(), hasDuplicateReceipt: vi.fn(), listZNumbers: vi.fn(async () => []), getRules: vi.fn(), listReceipts: vi.fn(), getVendorRule: vi.fn(async () => null), getBalance: vi.fn(async () => 0), reserveCredit: vi.fn(), settleCredit: vi.fn(async () => {}) }));
 const session = vi.hoisted(() => ({ createdAt: new Date(0) }));
 vi.mock("@/lib/auth/session", () => ({ getUserId: async () => "user-1", getSessionUser: async () => ({ id: "user-1", createdAt: session.createdAt }) }));
 vi.mock("@/lib/firm", () => ({ activeFirm: async () => ({ firms: [{ id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null }], firm: { id: "firm-1", name: "ÖRNEK FİRMA", taxNumber: null } }) }));
@@ -8,7 +8,7 @@ vi.mock("@/lib/extract/extract", () => ({ extractReceipt: vi.fn(), locateReceipt
 vi.mock("@/lib/tcmb", () => ({ tcmbRate: vi.fn(async () => ({ rate: 50, bulletinDate: "2026-10-30" })) }));
 vi.mock("@/lib/image", async (orig) => ({ ...(await orig<typeof import("@/lib/image")>()), normalizeImage: async (b: Buffer) => b, cropReceipt: vi.fn(async () => Buffer.from("crop")) }));
 
-const { hitRateLimit, createReceipt, getRules, hasDuplicateReceipt, getBalance, reserveCredit, settleCredit } = await import("@/db/queries");
+const { hitRateLimit, createReceipt, getRules, hasDuplicateReceipt, listZNumbers, getBalance, reserveCredit, settleCredit } = await import("@/db/queries");
 const { DEFAULT_PLAN, DEFAULT_RULES } = await import("@/lib/default-rules");
 const { extractReceipt, locateReceipts, readDepartments } = await import("@/lib/extract/extract");
 const { POST } = await import("./route");
@@ -236,6 +236,22 @@ describe("POST /api/receipts", () => {
     expect(receipt).toMatchObject({ category: "z_report", receiptNo: "0128", totalKurus: 120000 });
     expect(receipt.warnings.map((w) => w.code)).toContain("duplicate");
     expect(lines.map((l) => [l.accountCode, l.debitKurus, l.creditKurus])).toEqual([["600.20", 0, 100000], ["391.20", 0, 20000], ["100.01", 20000, 0], ["108.01", 100000, 0]]);
+  });
+
+  it("Z numarası firmanın önceki Z raporlarının sırasına uymuyorsa uyarır, uyuyorsa uyarmaz", async () => {
+    vi.mocked(hitRateLimit).mockResolvedValue(true);
+    vi.mocked(createReceipt).mockResolvedValue("r-z");
+    vi.mocked(hasDuplicateReceipt).mockResolvedValue(false);
+    vi.mocked(listZNumbers).mockResolvedValue([{ no: "0027", date: "2026-10-30" }]);
+    const z = (zNo: string) => read({ documentKind: "z_report", vendorName: "ÖRNEK KAFE", taxNumber: "1111111114", zNo, total: "1.200,00", vatLines: [{ rate: 20, gross: "1.200,00", vat: "200,00" }], cashTotal: "200,00", cardTotal: "1.000,00" });
+    vi.mocked(extractReceipt).mockResolvedValue(z("0042"));
+    await POST(jpeg());
+    vi.mocked(extractReceipt).mockResolvedValue(z("0028"));
+    await POST(jpeg());
+    const [wrong, right] = vi.mocked(createReceipt).mock.calls.map((c) => c[2].warnings.map((w) => w.code));
+    expect(listZNumbers).toHaveBeenCalledWith("user-1", "firm-1");
+    expect(wrong).toContain("z_no_sequence");
+    expect(right).not.toContain("z_no_sequence");
   });
 
   it("kayıt hatasında Türkçe 500 döner", async () => {
