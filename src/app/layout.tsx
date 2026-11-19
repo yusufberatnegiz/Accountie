@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Stack_Sans_Headline, Stack_Sans_Text } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { HEAD_SCRIPT, SW_REGISTER } from "@/lib/csp";
 import "./globals.css";
 
@@ -31,7 +32,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <head>
         <script dangerouslySetInnerHTML={{ __html: HEAD_SCRIPT }} />
       </head>
-      <body><a className="skip-link" href="#icerik">İçeriğe atla</a>{children}{process.env.NODE_ENV === "production" ? <script dangerouslySetInnerHTML={{ __html: SW_REGISTER }} /> : null}</body>
+      <body><a className="skip-link" href="#icerik">İçeriğe atla</a>{children}<Analytics />{process.env.NODE_ENV === "production" ? <script dangerouslySetInnerHTML={{ __html: SW_REGISTER }} /> : null}</body>
     </html>
   );
 }

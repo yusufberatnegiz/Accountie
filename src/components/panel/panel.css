@@ -61,6 +61,9 @@
 /* The padding is inside the rolling box, so shut it is truly 0 high (no empty band before it opens or after it closes). */
 .row-detail-roll > * { padding: var(--s4) var(--s5) var(--s5); }
 .row-detail-loose > .row-detail-roll > * { padding: 0; }
+/* The skeleton in the drawer opened at the press (RowPending), until the receipt arrives. */
+.row-ghost-body { display: grid; gap: var(--s3); align-content: start; }
+.row-ghost-body > .sk { border-radius: var(--radius-control); }
 .row-detail-loose { padding: var(--s4) var(--s5) var(--s5); border-bottom: 2px solid var(--rule); }
 .receipts > tbody > tr[data-open] > td:first-child, .receipts > tbody > .row-detail > td, .row-detail-loose { box-shadow: inset 3px 0 0 var(--accent); }
 .row-detail-body { display: grid; gap: var(--s4); min-width: 0; }

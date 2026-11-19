@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { takeOpening } from "@/components/RowPending";
 
 // A drawer's curve: it leaves the row at once but keeps moving long enough for the eye to see the rows below being pushed down.
 const DRAWER = "cubic-bezier(0.2, 0, 0, 1)";
@@ -18,6 +19,8 @@ export function RowDetail({ id, children }: { id: string; children: ReactNode })
   // Before the first paint, so the screen never shows at full height for a frame first.
   useLayoutEffect(() => {
     const el = ref.current;
+    // The drawer already opened at the press (RowPending): the receipt carries on from its height.
+    const from = takeOpening(el?.closest("tr")?.previousElementSibling)?.height ?? 0;
     // A hidden tab holds animations still: there the screen just opens.
     if (!el || still() || document.hidden) return;
     const top = el.getBoundingClientRect().top;
@@ -26,6 +29,11 @@ export function RowDetail({ id, children }: { id: string; children: ReactNode })
     const target = Math.min(el.scrollHeight, Math.max(0, shown));
     const duration = Math.min(360, 240 + target / 6);
     // No fill: once it ends the height is the content's own again; the rest of the way is off screen.
+    if (from) {
+      if (Math.abs(target - from) > 1) el.animate([{ height: `${from}px`, overflow: "hidden" }, { height: `${target}px`, overflow: "hidden" }], { duration: 200, easing: DRAWER });
+      el.firstElementChild?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: DRAWER });
+      return;
+    }
     el.animate([{ height: "0px", overflow: "hidden" }, { height: `${target}px`, overflow: "hidden" }], { duration, easing: DRAWER });
     el.firstElementChild?.animate([{ opacity: 0, transform: "translateY(-24px)" }, { opacity: 1, transform: "none" }], { duration: duration * 0.7, easing: DRAWER });
   }, [id]);
