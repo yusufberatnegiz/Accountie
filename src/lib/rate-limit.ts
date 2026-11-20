@@ -24,6 +24,14 @@ export const LIMITS = {
   payment: [[10, 10 * MIN], [50, 24 * 60 * MIN]],
   // e-Tebligat lists from the extension: one per firm a müşavir opens in GİB; each may upsert up to 2000 rows.
   notices: [[30, MIN], [1500, 24 * 60 * MIN]],
+  // GİB logins for the e-Tebligat scan. Saving: a firm import sends them in batches. Unsealing: one per firm login, which waits on
+  // a human typing a captcha (15 s or more), so a steady stream faster than that, or a day's total above a large office's firms,
+  // is someone draining the logins; the bucket stops it long before all are out.
+  gibSave: [[20, MIN], [200, 24 * 60 * MIN]],
+  gibRead: [[8, MIN], [40, 10 * MIN], [800, 24 * 60 * MIN]],
+  gibReadIp: [[40, 10 * MIN], [1000, 24 * 60 * MIN]],
+  // Approving a scan or deleting the logins, from the signed-in site.
+  gibGrant: [[10, 60 * MIN]],
   // iyzico's callback, per network: a buyer comes back once per checkout.
   paymentCallbackIp: [[30, 10 * MIN]],
 } as const;

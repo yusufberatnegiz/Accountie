@@ -127,12 +127,17 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
   const textOf = (n: Node): string => [n.textContent, ...n.children.map(textOf)].join(" ");
 
   /** The scan page in a sandbox with a fake Chrome: Luca gives one firm, GİB answers `login` while waiting for the user. */
-  function setup(login: string, ids = ["1234567890"]) {
+  function setup(login: string, ids = ["1234567890"], saved: null | { scanUntil: string | null; read?: number } = null) {
     const els = new Map<string, Node>();
     const get = (id: string) => { if (!els.has(id)) els.set(id, new Node()); return els.get(id)!; };
     const stored: { tebligatScan: unknown }[] = [];
     const fillArgs: unknown[][] = [];
     const fetch = vi.fn(async (url: string) => {
+      if (url.endsWith("/api/extension/gib-logins")) return { ok: true, status: 200, json: async () => (saved ? { enabled: true, firms: [{ lucaId: "7", name: "ÖRNEK", taxNumber: "1234567890" }], scanUntil: saved.scanUntil } : { enabled: true, firms: [], scanUntil: null }) };
+      if (url.endsWith("/api/extension/gib-logins/read")) {
+        const status = saved?.read ?? 200;
+        return { ok: status === 200, status, json: async () => (status === 200 ? { username: "12345678", password: PASS } : { error: "Tarama onaylı değil." }) };
+      }
       if (url.endsWith("/api/extension/firms")) return { ok: true, status: 200, json: async () => ({ firms: [{ lucaId: "7", taxNumber: "1234567890" }] }) };
       return { ok: true, status: 200, json: async () => ({ firm: "ÖRNEK LTD", fresh: 2, total: 5 }) };
     });
@@ -177,7 +182,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
   it("başka firmanın oturumu açılırsa hiçbir şey gönderilmez", async () => {
     const t = setup("in", ["9999999999"]);
     await t.get("start").click?.();
-    expect(t.fetch.mock.calls.map((c) => c[0])).toEqual(["https://accountie.app/api/extension/firms"]);
+    expect(t.fetch.mock.calls.map((c) => c[0])).toEqual(["https://accountie.app/api/extension/gib-logins", "https://accountie.app/api/extension/firms"]);
     expect(textOf(t.get("log"))).toContain("Girilen hesap bu firmanın değil");
   });
 
@@ -194,5 +199,29 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
     await t.get("start").click?.();
     expect(textOf(t.get("status"))).toContain("Tarama durduruldu");
     expect(t.get("start").textContent).toBe("Taramayı sürdür");
+  });
+
+  it("kayıtlı girişler: Luca açık olmadan firma firma Accountie'den alınır; şifre depoya ve ekrana gitmez", async () => {
+    const t = setup("in", ["1234567890"], { scanUntil: new Date(Date.now() + 3600_000).toISOString() });
+    await t.get("start").click?.();
+    expect(t.fetch.mock.calls.map((c) => c[0])).toContain("https://accountie.app/api/extension/gib-logins/read");
+    expect(t.fetch.mock.calls.map((c) => c[0])).not.toContain("https://accountie.app/api/extension/firms");
+    expect(t.fillArgs.map((a) => a.slice(0, 2))).toEqual([["12345678", PASS]]);
+    expect(JSON.stringify(t.stored)).not.toContain(PASS);
+    for (const id of ["status", "log", "fresh", "failed"]) expect(textOf(t.get(id))).not.toContain(PASS);
+    // The notices POST carries the list only.
+    const posted = t.fetch.mock.calls.find((c) => String(c[0]).endsWith("/api/extension/notices"));
+    expect(JSON.stringify(posted)).not.toContain(PASS);
+  });
+
+  it("onay yoksa tarama başlamaz; onay biterse tarama durur", async () => {
+    const none = setup("in", ["1234567890"], { scanUntil: null });
+    await none.get("start").click?.();
+    expect(textOf(none.get("status"))).toContain("Taramayı onayla");
+    expect(none.fillArgs).toEqual([]);
+    const ended = setup("in", ["1234567890"], { scanUntil: new Date(Date.now() + 3600_000).toISOString(), read: 403 });
+    await ended.get("start").click?.();
+    expect(textOf(ended.get("status"))).toContain("Tarama onaylı değil");
+    expect(ended.fillArgs).toEqual([]);
   });
 });

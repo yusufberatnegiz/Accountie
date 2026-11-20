@@ -15,7 +15,7 @@ const readText = (r: FirmRead) => (r.scannedAt === null ? "Hiç okunmadı" : `${
  * e-Tebligat: what the extension read from each firm's Dijital Vergi Dairesi list, new ones (not yet marked seen here) first, and
  * when each firm was last read. Accountie never opens an envelope; the document is read in GİB.
  */
-export function NoticesView({ notices, firmReads, newCount, truncated }: { notices: NoticeRow[]; firmReads: FirmRead[]; newCount: number; truncated: boolean }) {
+export function NoticesView({ notices, firmReads, newCount, truncated, children }: { notices: NoticeRow[]; firmReads: FirmRead[]; newCount: number; truncated: boolean; children?: React.ReactNode }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,9 +88,11 @@ export function NoticesView({ notices, firmReads, newCount, truncated }: { notic
         </ul>
       </section>
 
+      {children}
+
       <section className="panel firms-add" aria-labelledby="tebligat-nasil">
         <h2 id="tebligat-nasil">Nasıl okunur</h2>
-        <p>Bilgisayarda Dijital Vergi Dairesi&apos;ne firmanın hesabıyla girin veya yetkiniz varsa <strong>Geçiş Yap</strong> ile firmaya geçin. GİB sekmesinde Accountie eklentisini açıp <strong>Tebligatları getir</strong> düğmesine basın. Eklenti listeyi tarar. Accountie şifre saklamaz, zarf açmaz: GİB&apos;de okundu kaydı düşmez, belgeyi GİB&apos;de siz açarsınız.</p>
+        <p>Bütün firmalar için: eklentide <strong>e-Tebligat taraması</strong>&apos;nı açın. Eklenti her firmanın giriş formunu doldurur, doğrulama kodunu siz yazarsınız. Tek firma için: Dijital Vergi Dairesi&apos;ne firmanın hesabıyla girip eklentide <strong>Tebligatları getir</strong>&apos;e basın. Zarf açılmaz: GİB&apos;de okundu kaydı düşmez, belgeyi GİB&apos;de siz açarsınız.</p>
         <p>Tebligat, e-Tebligat adresine ulaştığı günü izleyen 5. günün sonunda tebliğ edilmiş sayılır; süreler o günden başlar. Her firmayı en az 5 günde bir okuyun.</p>
         {firmReads.length ? (
           <>

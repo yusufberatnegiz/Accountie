@@ -109,10 +109,27 @@ async function loginForm(tabId) {
   return false;
 }
 
-const fill = (tabId, f, text) => tryGib(tabId, "gib-login.js", (u, p, t) => globalThis.AccountieGibLogin.fillLogin(u, p, t), false, [f.user, f.pass, text]);
+const fill = (tabId, login, text) => tryGib(tabId, "gib-login.js", (u, p, t) => globalThis.AccountieGibLogin.fillLogin(u, p, t), false, [login.user, login.pass, text]);
+
+/**
+ * One firm's stored login, unsealed by Accountie for this firm only (it needs the user's approval from the site and is logged
+ * there). Kept by the caller for this firm's form and dropped after. A refusal that stops every firm (no approval, too fast,
+ * switched off) ends the run.
+ */
+async function storedLogin(token, lucaId) {
+  const res = await fetch(`${APP_ORIGIN}/api/extension/gib-logins/read`, {
+    method: "POST", credentials: "omit", cache: "no-store",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ lucaId }),
+  });
+  const body = await res.json().catch(() => null);
+  if (res.ok && typeof body?.username === "string" && typeof body?.password === "string") return { user: body.username, pass: body.password };
+  const said = typeof body?.error === "string" ? body.error : "Accountie'den GİB girişi alınamadı.";
+  if (res.status === 404 || res.status === 409) return { problem: said };
+  throw Object.assign(new Error(said), { fatal: true, said: true });
+}
 
 /** Waits for the user to log in ("in"), skip ("skip") or stop; GİB clearing the form is filled again, a few times at most. */
-async function waitForLogin(tabId, f, text, head) {
+async function waitForLogin(tabId, login, text, head) {
   const until = Date.now() + WAIT_MS;
   let refills = 0;
   while (Date.now() < until) {
@@ -123,7 +140,7 @@ async function waitForLogin(tabId, f, text, head) {
     if (state === "refill") {
       if (refills >= MAX_REFILLS) return "refused";
       refills++;
-      await fill(tabId, f, `Accountie · ${head}: Kod ya da şifre hatalı, form yeniden dolduruldu (kalan deneme ${MAX_REFILLS - refills + 1}). Yeni kodu yazıp Giriş Yap'a basın.`);
+      await fill(tabId, login, `Accountie · ${head}: Kod ya da şifre hatalı, form yeniden dolduruldu (kalan deneme ${MAX_REFILLS - refills + 1}). Yeni kodu yazıp Giriş Yap'a basın.`);
     }
     await pause(POLL_MS);
   }
@@ -150,10 +167,14 @@ async function scanFirm(tabId, f, token, head) {
   if (stopped) return { line: "Durduruldu.", stopped: true };
   if (!(await loginForm(tabId))) return stopped ? { line: "Durduruldu.", stopped: true } : { line: "Dijital Vergi Dairesi giriş sayfası açılmadı; yeniden başlatınca tekrar denenir." };
   const text = `Accountie · ${head}: Doğrulama kodunu yazıp Giriş Yap'a basın. GİB şifre hatalı derse "Bu firmayı atla"ya basın. Chrome şifreyi kaydetmeyi sorarsa "Hiçbir zaman" deyin.`;
-  if (!(await fill(tabId, f, text))) return { line: "Giriş formu bulunamadı; GİB sayfası değişmiş olabilir." };
+  // Stored logins come from Accountie one firm at a time, just before the form; Luca's own screen gives them otherwise.
+  const login = f.stored ? await storedLogin(token, f.lucaId) : { user: f.user, pass: f.pass };
+  if (login.problem) return { line: login.problem, failed: true };
+  if (!(await fill(tabId, login, text))) return { line: "Giriş formu bulunamadı; GİB sayfası değişmiş olabilir." };
   await chrome.tabs.update(tabId, { active: true });
   status(`${head}: GİB sekmesinde doğrulama kodunu yazıp Giriş Yap'a basın.`);
-  const state = await waitForLogin(tabId, f, text, head);
+  const state = await waitForLogin(tabId, login, text, head);
+  login.user = login.pass = "";
   if (state === "stopped") return { line: "Durduruldu.", stopped: true };
   if (state === "skip") return { line: "Atlandı; bugün yeniden sorulmaz.", failed: true };
   if (state === "refused") return { line: `${MAX_REFILLS + 1} denemede giriş olmadı; bugün yeniden sorulmaz. Kod doğruysa Luca'da şifreyi kontrol edin.`, failed: true };
@@ -205,12 +226,20 @@ function progress(i, n, name) {
 async function run() {
   const { token } = await chrome.storage.local.get("token");
   if (!token) return status("Önce eklenti penceresini açıp Accountie anahtarını girin.", true);
-  status("Luca'daki GİB giriş bilgileri okunuyor.");
-  const rows = await lucaRows();
-  if (!rows) return status("Luca'da GİB Şirket ekranı açık değil. Ser.Mes.Defteri → Beyannameler → Toplu Beyanname → GİB Şirket'i açıp yeniden başlatın.", true);
-  const { firms } = await accountie("/api/extension/firms", token);
   const before = await scanned();
-  const p = AccountieGibLogin.plan(rows, firms ?? [], before.ids, before.failed.map((x) => x.id));
+  // Logins stored on a firm import (sealed in Accountie) first; without them, Luca's GİB Şirket screen, read now.
+  const stored = await accountie("/api/extension/gib-logins", token);
+  let p;
+  if (stored.enabled && stored.firms?.length) {
+    if (!stored.scanUntil) return status("Tarama onaylı değil. Accountie'de e-Tebligatlar sayfasında Taramayı onayla'ya basın (8 saat geçerli), sonra yeniden başlatın.", true);
+    p = AccountieGibLogin.plan(stored.firms.map((f) => ({ lucaId: f.lucaId, name: f.name, stored: true })), stored.firms, before.ids, before.failed.map((x) => x.id));
+  } else {
+    status("Luca'daki GİB giriş bilgileri okunuyor.");
+    const rows = await lucaRows();
+    if (!rows) return status("Kayıtlı GİB girişi yok ve Luca'da GİB Şirket ekranı açık değil. Firmaları Luca'dan çekin ya da GİB Şirket'i açıp yeniden başlatın.", true);
+    const { firms } = await accountie("/api/extension/firms", token);
+    p = AccountieGibLogin.plan(rows, firms ?? [], before.ids, before.failed.map((x) => x.id));
+  }
   const names = (list) => `${list.slice(0, 10).join(", ")}${list.length > 10 ? "…" : ""}`;
   if (p.noCredentials.length) log(`${p.noCredentials.length} firma`, `Luca'da GİB kullanıcı kodu ya da şifresi boş: ${names(p.noCredentials)}`);
   if (p.notInAccountie.length) log(`${p.notInAccountie.length} firma`, "Accountie'de yok ya da vergi numarası bilinmiyor; önce Luca'dan firmaları çekin.");

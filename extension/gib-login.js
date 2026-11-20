@@ -23,6 +23,20 @@
   }
 
   /**
+   * Firma çekme sırasında (import.js): GİB Şirket ekranını açmadan, Luca oturumundan sayfasını okur. Luca sayfaları çoğunlukla
+   * windows-1254. Satırlar yalnız Accountie'ye şifrelenmek üzere gider; bu sayfada saklanmaz.
+   */
+  async function fetchLucaRows(fetcher = root.fetch) {
+    const res = await fetcher(LUCA_PAGE, { credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(60_000) });
+    if (!res.ok) return null;
+    const bytes = await res.arrayBuffer();
+    const named = /charset=["']?([\w-]+)/i.exec(res.headers.get("content-type") ?? "")?.[1];
+    let text;
+    try { text = new TextDecoder(named ?? "windows-1254").decode(bytes); } catch { text = new TextDecoder("windows-1254").decode(bytes); }
+    return lucaRows(new root.DOMParser().parseFromString(text, "text/html"), LUCA_PAGE);
+  }
+
+  /**
    * Taranacak firmalar: Luca'da kullanıcı kodu ve şifresi dolu, Accountie'de VKN'si bilinen. Bugün taranmışlar ve bugün girişi
    * olmamışlar atlanır (yarıda kalan tarama baştan başlamaz; eski bir şifre aynı gün yeniden yazılıp hesabı kilitlemez). Aynı
    * firma ya da aynı VKN iki kez sorulmaz. Şifresi eksik ya da Accountie'de olmayanlar adlarıyla sayılır.
@@ -39,10 +53,11 @@
       // One login per VKN: Accountie keeps one firm per number, a second login would only read the same list again.
       if (seenTax.has(taxNumber)) { out.sameTax.push(r.name || r.lucaId); continue; }
       seenTax.add(taxNumber);
-      if (!r.user.trim() || !r.pass) { out.noCredentials.push(r.name || r.lucaId); continue; }
+      if (!r.stored && (!r.user.trim() || !r.pass)) { out.noCredentials.push(r.name || r.lucaId); continue; }
       if (doneToday.includes(r.lucaId)) { out.done++; continue; }
       if (failedToday.includes(r.lucaId)) { out.failed++; continue; }
-      out.todo.push({ lucaId: r.lucaId, name: r.name || r.lucaId, user: r.user.trim(), pass: r.pass, taxNumber });
+      // A stored login (sealed in Accountie) is asked for just before its form; a row read from Luca carries its own.
+      out.todo.push(r.stored ? { lucaId: r.lucaId, name: r.name || r.lucaId, stored: true, taxNumber } : { lucaId: r.lucaId, name: r.name || r.lucaId, user: r.user.trim(), pass: r.pass, taxNumber });
     }
     return out;
   }
@@ -133,5 +148,5 @@
   /** Açılan oturum o firmanın mı: user-info'nun VKN/TCKN'si Luca'daki firmanın Accountie'deki numarasıyla aynı olmalı. */
   const sameFirm = (idNumbers, taxNumber) => Array.isArray(idNumbers) && idNumbers.includes(String(taxNumber));
 
-  root.AccountieGibLogin = { LUCA_PAGE, LOGIN_PATH, lucaRows, plan, goToLogin, loginReady, showNote, fillLogin, loginState, sameFirm };
+  root.AccountieGibLogin = { LUCA_PAGE, LOGIN_PATH, lucaRows, fetchLucaRows, plan, goToLogin, loginReady, showNote, fillLogin, loginState, sameFirm };
 })(globalThis);

@@ -72,6 +72,31 @@ async function imported(token) {
   return new Set((await res.json()).lucaIds.map(String));
 }
 
+/**
+ * Every firm's Dijital Vergi Dairesi login from Luca's GİB Şirket screen, read once here so the e-Tebligat scan does not need
+ * Luca open: sent to Accountie, which seals each before storing it. Kept in no variable past this function; never logged.
+ * The result line for the log, or null when Accountie does not store logins.
+ */
+async function sendGibLogins(token, target) {
+  const [r] = await chrome.scripting.executeScript({ target, files: ["gib-login.js"] })
+    .then(() => chrome.scripting.executeScript({ target, func: () => globalThis.AccountieGibLogin.fetchLucaRows().catch(() => null) }))
+    .catch(() => [null]);
+  const rows = (r?.result ?? []).filter((x) => x.user?.trim() && x.pass).map((x) => ({ lucaId: x.lucaId, username: x.user.trim(), password: x.pass }));
+  if (!r?.result) return "Luca'nın GİB Şirket ekranı okunamadı; GİB girişleri kaydedilmedi.";
+  let saved = 0;
+  for (let i = 0; i < rows.length; i += 200) {
+    const res = await fetch(`${APP_ORIGIN}/api/extension/gib-logins`, {
+      method: "PUT", credentials: "omit", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ logins: rows.slice(i, i + 200) }),
+    });
+    if (res.status === 503) return null;
+    if (!res.ok) return `GİB girişleri kaydedilemedi: ${(await res.json().catch(() => null))?.error ?? "Accountie yanıt vermedi."}`;
+    saved += (await res.json()).saved;
+  }
+  rows.length = 0;
+  return `${saved} firmanın GİB girişi şifreli kaydedildi (e-Tebligat taraması için).`;
+}
+
 /** `mode`: "new" reads only the firms Luca has and Accountie lacks, "one" only the firm open in Luca, "all" every firm again. */
 async function run(mode) {
   const { token } = await chrome.storage.local.get("token");
@@ -160,6 +185,12 @@ async function run(mode) {
         }
       }
       await pause(250);
+    }
+    // After the firms, so each login finds its firm in Accountie. A failure here never undoes the firms read.
+    if (!stopped && done > 0) {
+      status("GİB girişleri kaydediliyor.");
+      const said = await sendGibLogins(token, luca.target).catch(() => "GİB girişleri kaydedilemedi.");
+      if (said) log("GİB girişleri", said);
     }
   } finally {
     // Luca'nın kendi seçicisinin yaptığı gibi: çerçeveyi ilk firmaya götür ki oturum ve ekran aynı firmayı göstersin.

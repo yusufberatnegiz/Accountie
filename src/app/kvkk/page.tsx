@@ -24,6 +24,7 @@ const SECTIONS: LegalSection[] = [
       "İletişim: e-posta adresi.",
       "Müşteri işlem: hesabınıza bağlı firmalar (unvan, vergi numarası, hesap planı), fişlerden okunan alanlar, yevmiye kayıtları ve hesap kurallarınız; Kullanım Koşullarını kabul ettiğiniz tarih.",
       "Fatura ve ödeme: kontör satın alırken girdiğiniz ad soyad ya da unvan, VKN ya da TCKN, vergi dairesi, cep telefonu ve fatura adresi; satın alınan paket, tutar, tarih ve kontör hareketleri; ödeme başlatılırken IP adresi (yalnız iyzico'ya iletilir, saklanmaz). Kart bilgileri Accountie'ye gelmez.",
+      "e-Tebligat: eklentinin Luca'daki GİB Şirket ekranından okuduğu firmalarınızın Dijital Vergi Dairesi kullanıcı kodu ve şifresi, AES-256-GCM ile şifrelenmiş olarak (anahtar yalnız sunucuda); her şifre açılışının firması, zamanı ve tek yönlü özetlenmiş ağ adresi; firmalarınızın e-Tebligat listesinin üst bilgileri (kurum, belge türü ve numarası, tarihler). Tebligatın kendisi okunmaz. Kayıtlı şifreleri e-Tebligatlar sayfasından istediğiniz an silebilirsiniz.",
       "İşlem güvenliği: oturum çerezi, şifrenin özeti (Accountie şifrenizi görmez), eklenti anahtarının özeti, giriş, kayıt ve ödeme dönüşü denemelerinin sayımı için tek yönlü özetlenmiş IP adresi ve e-posta.",
     ],
   },

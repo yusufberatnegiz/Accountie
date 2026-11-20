@@ -5,7 +5,7 @@ import { mergeRules, planIndex, planMismatches, planMismatchWarning } from "@/li
 import { isKkegLine } from "@/lib/vehicle";
 import { approvalProblem, RETIRED_WARNINGS, warn, type JournalLine, type Warning } from "@/lib/journal";
 import { getDb } from "./index";
-import { accountRules, billingProfiles, creditBalances, creditLedger, extensionTokens, firmAccounts, firmRules, firms, journalLines, noticeScans, payments, rateLimitHits, receipts, taxNotices, vendorRules } from "./schema";
+import { accountRules, billingProfiles, creditBalances, creditLedger, extensionTokens, firmAccounts, firmRules, firms, gibLoginReads, gibLogins, gibScanGrants, journalLines, noticeScans, payments, rateLimitHits, receipts, taxNotices, vendorRules } from "./schema";
 
 export type ReceiptStatus = "draft" | "approved" | "exported";
 
@@ -408,7 +408,7 @@ export async function createExtensionToken(userId: string, tokenHash: string, ex
  * Every table holding a user's rows, children before parents (foreign keys). A test checks no user_id table is missing.
  * payments stays (KEPT_TABLES): a sale's record and the invoice details on it are kept by law after the account goes.
  */
-export const USER_TABLES = [taxNotices, noticeScans, journalLines, receipts, vendorRules, firmRules, firmAccounts, accountRules, extensionTokens, creditLedger, creditBalances, billingProfiles, firms] as const;
+export const USER_TABLES = [gibLoginReads, gibLogins, gibScanGrants, taxNotices, noticeScans, journalLines, receipts, vendorRules, firmRules, firmAccounts, accountRules, extensionTokens, creditLedger, creditBalances, billingProfiles, firms] as const;
 export const KEPT_TABLES = [payments] as const;
 
 /**
@@ -716,4 +716,77 @@ export async function markNoticesSeen(userId: string, ids: readonly string[]): P
   const rows = await getDb().update(taxNotices).set({ seenAt: new Date() })
     .where(and(eq(taxNotices.userId, userId), isNull(taxNotices.seenAt), inArray(taxNotices.id, [...ids]))).returning({ id: taxNotices.id });
   return rows.length;
+}
+
+// ---- GİB logins for the e-Tebligat scan (sealed; src/lib/gib/secret.ts). Nothing here ever holds a login in clear. ----
+
+/** The user's firms by Luca id, for matching logins read from Luca: only firms imported from Luca. */
+export async function firmsByLucaId(userId: string, lucaIds: readonly string[]): Promise<Map<string, string>> {
+  if (!lucaIds.length) return new Map();
+  const rows = await getDb().select({ id: firms.id, lucaId: firms.lucaSirketId }).from(firms)
+    .where(and(eq(firms.userId, userId), inArray(firms.lucaSirketId, [...lucaIds])));
+  return new Map(rows.flatMap((r) => (r.lucaId ? [[r.lucaId, r.id] as const] : [])));
+}
+
+/** Stores sealed logins, replacing a firm's earlier one. Every firm id was matched to this user before sealing. */
+export async function saveGibLogins(userId: string, rows: readonly { firmId: string; usernameSealed: string; passwordSealed: string }[]): Promise<void> {
+  if (!rows.length) return;
+  const now = new Date();
+  await getDb().insert(gibLogins).values(rows.map((r) => ({ ...r, userId, updatedAt: now })))
+    .onConflictDoUpdate({ target: gibLogins.firmId, set: { usernameSealed: sql`excluded.username_sealed`, passwordSealed: sql`excluded.password_sealed`, updatedAt: now }, setWhere: eq(gibLogins.userId, userId) });
+}
+
+/** Firms with a stored login (Luca id, name, VKN): what the scan may ask for. Never the login itself. */
+export async function listGibLoginFirms(userId: string): Promise<{ lucaId: string; name: string; taxNumber: string; updatedAt: Date }[]> {
+  const rows = await getDb().select({ lucaId: firms.lucaSirketId, name: firms.name, taxNumber: firms.taxNumber, updatedAt: gibLogins.updatedAt })
+    .from(gibLogins).innerJoin(firms, eq(firms.id, gibLogins.firmId))
+    .where(and(eq(gibLogins.userId, userId), eq(firms.userId, userId))).orderBy(asc(firms.name));
+  return rows.flatMap((r) => (r.lucaId && r.taxNumber ? [{ lucaId: r.lucaId, name: r.name, taxNumber: r.taxNumber, updatedAt: r.updatedAt }] : []));
+}
+
+/**
+ * One firm's sealed login by Luca id, and the read written to the log in the same transaction: no unsealing goes unrecorded.
+ * null when the firm has no stored login.
+ */
+export async function takeGibLogin(userId: string, lucaId: string, network: string): Promise<{ firmId: string; usernameSealed: string; passwordSealed: string } | null> {
+  return getDb().transaction(async (tx) => {
+    const [row] = await tx.select({ firmId: gibLogins.firmId, usernameSealed: gibLogins.usernameSealed, passwordSealed: gibLogins.passwordSealed })
+      .from(gibLogins).innerJoin(firms, eq(firms.id, gibLogins.firmId))
+      .where(and(eq(gibLogins.userId, userId), eq(firms.userId, userId), eq(firms.lucaSirketId, lucaId))).limit(1);
+    if (!row) return null;
+    await tx.insert(gibLoginReads).values({ userId, firmId: row.firmId, network });
+    return row;
+  });
+}
+
+/** Until when the user allowed the scan, or null. */
+export async function gibScanUntil(userId: string): Promise<Date | null> {
+  const [row] = await getDb().select({ until: gibScanGrants.until }).from(gibScanGrants).where(eq(gibScanGrants.userId, userId));
+  return row?.until ?? null;
+}
+
+export async function setGibScanUntil(userId: string, until: Date): Promise<void> {
+  await getDb().insert(gibScanGrants).values({ userId, until, grantedAt: new Date() })
+    .onConflictDoUpdate({ target: gibScanGrants.userId, set: { until, grantedAt: new Date() }, setWhere: eq(gibScanGrants.userId, userId) });
+}
+
+/** The panel's view: how many logins are stored, the approval, and the last unsealings (firm and time). */
+export async function gibLoginStatus(userId: string): Promise<{ stored: number; until: Date | null; reads: { firmName: string; readAt: Date }[] }> {
+  const db = getDb();
+  const [[{ n }], until, reads] = await Promise.all([
+    db.select({ n: count() }).from(gibLogins).where(eq(gibLogins.userId, userId)),
+    gibScanUntil(userId),
+    db.select({ firmName: firms.name, readAt: gibLoginReads.readAt }).from(gibLoginReads).innerJoin(firms, eq(firms.id, gibLoginReads.firmId))
+      .where(eq(gibLoginReads.userId, userId)).orderBy(desc(gibLoginReads.readAt)).limit(20),
+  ]);
+  return { stored: Number(n), until, reads };
+}
+
+/** Deletes every stored login and ends the approval; the read log stays (it holds no login). */
+export async function deleteGibLogins(userId: string): Promise<number> {
+  return getDb().transaction(async (tx) => {
+    const gone = await tx.delete(gibLogins).where(eq(gibLogins.userId, userId)).returning({ firmId: gibLogins.firmId });
+    await tx.delete(gibScanGrants).where(eq(gibScanGrants.userId, userId));
+    return gone.length;
+  });
 }

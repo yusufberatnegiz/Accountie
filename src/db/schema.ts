@@ -245,3 +245,37 @@ export const noticeScans = pgTable("notice_scans", {
   index("notice_scans_user_idx").on(t.userId),
   ownerPolicy("notice_scans_owner"),
 ]);
+
+// A firm's Dijital Vergi Dairesi login (kullanıcı kodu, şifre), read once from the müşavir's Luca when firms are imported, for the
+// e-Tebligat scan. Sealed with AES-256-GCM (src/lib/gib/secret.ts); the key lives only in the server's environment. Each value is
+// bound to its user, firm and field, so a row copied elsewhere does not open. Unsealed one firm at a time, only while the user's
+// own approval (gib_scan_grants) runs, and every unsealing is written to gib_login_reads.
+export const gibLogins = pgTable("gib_logins", {
+  firmId: uuid("firm_id").primaryKey().references(() => firms.id),
+  userId: text("user_id").notNull(),
+  usernameSealed: text("username_sealed").notNull(),
+  passwordSealed: text("password_sealed").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("gib_logins_user_idx").on(t.userId),
+  ownerPolicy("gib_logins_owner"),
+]);
+
+// Until when the user allowed the extension to unseal GİB logins: given from the signed-in site (fresh sign-in), a few hours.
+export const gibScanGrants = pgTable("gib_scan_grants", {
+  userId: text("user_id").primaryKey(),
+  until: timestamp("until", { withTimezone: true }).notNull(),
+  grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow(),
+}, () => [ownerPolicy("gib_scan_grants_owner")]);
+
+// Every unsealing of a GİB login: which firm, when, from which network (hashed). Shown to the user; never holds the login.
+export const gibLoginReads = pgTable("gib_login_reads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id),
+  readAt: timestamp("read_at", { withTimezone: true }).notNull().defaultNow(),
+  network: text("network"),
+}, (t) => [
+  index("gib_login_reads_user_idx").on(t.userId, t.readAt),
+  ownerPolicy("gib_login_reads_owner"),
+]);

@@ -27,3 +27,17 @@ export async function inRecovery(now = Date.now()): Promise<boolean> {
     && typeof (e as { timestamp?: unknown }).timestamp === "number" && now - (e as { timestamp: number }).timestamp * 1000 < RECOVERY_MS);
 }
 
+/** Approving an e-Tebligat scan (it unseals clients' GİB logins for the extension) asks for a sign-in within this window. */
+export const FRESH_SIGN_IN_MS = 30 * 60_000;
+export const SIGN_IN_AGAIN = "Güvenlik için yeniden giriş yapın: Hesap menüsünden çıkış yapıp tekrar girin, sonra bu işlemi yineleyin.";
+
+/**
+ * Whether the user signed in (password, e-mailed link) within `maxMs`: refreshing a session keeps its sign-in times, so a
+ * cookie stolen weeks ago is not enough for actions on a client's GİB login.
+ */
+export async function signedInWithin(maxMs: number, now = Date.now()): Promise<boolean> {
+  const { data } = await (await getAuth()).getClaims();
+  const amr = (data?.claims as { amr?: unknown } | undefined)?.amr;
+  return Array.isArray(amr) && amr.some((e) => e && typeof e === "object" && typeof (e as { timestamp?: unknown }).timestamp === "number"
+    && now - (e as { timestamp: number }).timestamp * 1000 < maxMs);
+}

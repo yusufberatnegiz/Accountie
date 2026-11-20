@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
+import { GibScanPanel } from "@/components/GibScanPanel";
 import { NoticesView } from "@/components/NoticesView";
-import { listNotices, NOTICE_LIST_LIMIT } from "@/db/queries";
+import { gibLoginStatus, listNotices, NOTICE_LIST_LIMIT } from "@/db/queries";
+import { secretKey } from "@/lib/gib/secret";
 import { getSessionUser } from "@/lib/auth/session";
 import { activeFirm } from "@/lib/firm";
 import { daysSince, servedState } from "@/lib/notices";
@@ -17,7 +19,7 @@ const when = new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium", timeStyle: 
 export default async function NoticesPage() {
   const user = await getSessionUser();
   if (!user) redirect("/giris");
-  const [{ firms, firm }, { notices, scans, newCount }] = await Promise.all([activeFirm(user.id), listNotices(user.id)]);
+  const [{ firms, firm }, { notices, scans, newCount }, gib] = await Promise.all([activeFirm(user.id), listNotices(user.id), gibLoginStatus(user.id)]);
   const now = new Date();
   const read = new Map(scans.map((s) => [s.firmId, s.scannedAt]));
   // Every firm, never read ones first, then the oldest reads: the risk is the firm nobody looked at.
@@ -28,7 +30,13 @@ export default async function NoticesPage() {
   }).sort((a, b) => (b.days ?? Infinity) - (a.days ?? Infinity) || a.firmName.localeCompare(b.firmName, "tr"));
   return (
     <AppShell current="tebligatlar" email={user.email} firmId={firm.id} setup={!firms.some((f) => f.fromLuca)}>
-      <NoticesView notices={notices.map((n) => ({ ...n, served: servedState(n.servedAt, now) }))} firmReads={firmReads} newCount={newCount} truncated={notices.length >= NOTICE_LIST_LIMIT} />
+      <NoticesView notices={notices.map((n) => ({ ...n, served: servedState(n.servedAt, now) }))} firmReads={firmReads} newCount={newCount} truncated={notices.length >= NOTICE_LIST_LIMIT}>
+        <GibScanPanel state={{
+          enabled: !!secretKey(), stored: gib.stored,
+          until: gib.until && gib.until > now ? when.format(gib.until) : null,
+          reads: gib.reads.map((r) => ({ firmName: r.firmName, readAt: when.format(r.readAt) })),
+        }} />
+      </NoticesView>
     </AppShell>
   );
 }
