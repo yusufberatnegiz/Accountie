@@ -56,7 +56,7 @@
     const user = await call("user-info", `${API}/auth/tdvd/user-info`);
     if (user.error) return user;
     const ids = idNumbers(user.json);
-    if (!ids.length) return { error: "shape", step: "user-info", keys: keys(user.json) };
+    if (!ids.length) return user.json.gecisYapildiMi === true ? { error: "switch-no-vkn" } : { error: "shape", step: "user-info", keys: keys(user.json) };
     const rows = [];
     for (const archived of ["0", "1"]) {
       let fetched = 0;
@@ -90,6 +90,7 @@
   function problem(r) {
     if (r.error === "login") return "Dijital Vergi Dairesi'nde açık oturum yok. Önce firmanın hesabıyla giriş yapın (ya da Geçiş Yap ile firmaya geçin), sonra yeniden basın.";
     if (r.error === "http" && (r.status === 401 || r.status === 403)) return "Dijital Vergi Dairesi oturumu kapanmış ya da bu hesabın e-Tebligat yetkisi yok. Yeniden giriş yapıp tekrar deneyin.";
+    if (r.error === "switch-no-vkn") return "Geçiş Yap ile geçilen firmanın vergi kimlik numarası okunamadı (şahıs firması olabilir). Bu firmayı kendi hesabıyla girerek okuyun.";
     if (r.error === "too-many") return "Bu firmada 2.000'den çok tebligat var; liste eksik kalacağı için hiçbir şey kaydedilmedi. destek@accountie.app'e yazın.";
     if (r.error === "http" && r.status >= 500) return "Dijital Vergi Dairesi şu an yanıt vermiyor. Biraz sonra tekrar deneyin.";
     if (r.error === "network") return "Dijital Vergi Dairesi'ne ulaşılamadı. Sayfayı yenileyip tekrar deneyin.";

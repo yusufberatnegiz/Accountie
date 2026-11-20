@@ -84,6 +84,14 @@ describe("eklenti: Dijital Vergi Dairesi e-Tebligat okuma", () => {
     expect((await gib.readNotices(store("gib-token"), fetcher)).notices).toHaveLength(2000);
   });
 
+  it("Geçiş Yap'la VKN'siz firmaya geçilince ayrı ve açık hata, GİB listesi istenmez", async () => {
+    const { fetcher, urls } = fakeGib({}, { tckn: "12345678901", gecisYapildiMi: true });
+    const r = await gib.readNotices(store("gib-token"), fetcher);
+    expect(r).toEqual({ error: "switch-no-vkn" });
+    expect(gib.problem(r)).toMatch(/kendi hesabıyla/);
+    expect(urls.some((u) => u.includes("tebligat-listele"))).toBe(false);
+  });
+
   it("GİB 5xx: geçici kesinti denir", () => {
     expect(gib.problem({ error: "http", step: "user-info", status: 503 })).toMatch(/şu an yanıt vermiyor/);
   });

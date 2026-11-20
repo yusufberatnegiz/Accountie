@@ -74,7 +74,7 @@ export function NoticesView({ notices, firmReads, newCount, truncated }: { notic
                 <span className="firms-vkn">{[n.institution, n.subUnit].filter(Boolean).join(" · ")}</span>
               </span>
               <span className="firms-month notice-dates">
-                {n.servedAt ? <span className="notice-served">{n.served === "future" ? `Tebliğ edilmiş sayılacağı gün: ${n.servedAt}` : n.served === "today" ? `Bugün tebliğ edilmiş sayılır (${n.servedAt})` : `Tebliğ edildi: ${n.servedAt}`}</span> : null}
+                {n.servedAt ? <span className="notice-served">{n.served === "future" ? `Tebliğ edilmiş sayılacağı gün: ${n.servedAt}` : n.served === "today" ? `Bugün tebliğ edilmiş sayılır (${n.servedAt})` : n.served === "past" ? `Tebliğ edildi: ${n.servedAt}` : `Tebliğ: ${n.servedAt}`}</span> : null}
                 {n.sentAt ? <span>Gönderim {n.sentAt}</span> : null}
                 <span data-state={n.readOnGib ? undefined : "bekleyen"}>{n.readOnGib ? "GİB'de okunmuş" : "GİB'de okunmamış"}</span>
               </span>
@@ -93,15 +93,19 @@ export function NoticesView({ notices, firmReads, newCount, truncated }: { notic
         <p>Tebligat, e-Tebligat adresine ulaştığı günü izleyen 5. günün sonunda tebliğ edilmiş sayılır; süreler o günden başlar. Her firmayı en az 5 günde bir okuyun.</p>
         {firmReads.length ? (
           <>
-            <h3 id="son-okuma">Firmaların son okuması</h3>
-            <ul className="firms-list notice-scans" aria-labelledby="son-okuma">
-              {firmReads.filter((r) => r.scannedAt !== null).map((r) => (
-                <li key={r.firmId} className="firms-row">
-                  <span className="firms-name">{r.firmName}</span>
-                  <span className="firms-month" data-state={r.stale ? "bekleyen" : undefined}>{readText(r)}</span>
-                </li>
-              ))}
-            </ul>
+            {read ? (
+              <>
+                <h3 id="son-okuma">Firmaların son okuması</h3>
+                <ul className="firms-list notice-scans" aria-labelledby="son-okuma">
+                  {firmReads.filter((r) => r.scannedAt !== null).map((r) => (
+                    <li key={r.firmId} className="firms-row">
+                      <span className="firms-name">{r.firmName}</span>
+                      <span className="firms-month" data-state={r.stale ? "bekleyen" : undefined}>{readText(r)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
             {/* Hundreds of never-read firms would bury the reads: one line, opened on demand. */}
             {never ? (
               <details className="notice-never">
