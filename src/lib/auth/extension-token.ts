@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { upgradeTokenHash, userIdForTokenHash } from "@/db/queries";
+import { userIdForTokenHash } from "@/db/queries";
 import { mac, secretKey } from "@/lib/gib/secret";
 
 /** Sliding: every accepted request moves the expiry this far ahead, so a key in daily use never runs out and a forgotten one dies. */
@@ -10,7 +10,7 @@ const TOKEN_PATTERN = /^Bearer (acx_[A-Za-z0-9_-]{43})$/;
 /** 256-bit random token; shown to the user once, only its hash is stored. */
 export const newExtensionToken = () => `acx_${randomBytes(32).toString("base64url")}`;
 
-/** The key's plain hash, as stored before keyed hashes: still found, and moved to the keyed one on first use. */
+/** The key's plain hash, as stored before keyed hashes: still signs the extension in, never earns an e-Tebligat approval. */
 export const legacyHash = (token: string) => createHash("sha256").update(token).digest("hex");
 
 /**
@@ -38,6 +38,7 @@ export async function extensionUserId(request: Request): Promise<string | null> 
   const hash = hashToken(token);
   const userId = await userIdForTokenHash(hash, EXTENSION_TOKEN_TTL_MS);
   if (userId || !keyedHash(hash)) return userId;
-  // A key paired before keyed hashes: found by its plain hash and moved to the keyed one in place, so no extension is re-paired.
-  return upgradeTokenHash(legacyHash(token), hash, EXTENSION_TOKEN_TTL_MS);
+  // A key paired before keyed hashes still works for receipts and firms. It is never rewritten to the keyed form: a plain hash
+  // anyone could have written into the database must not turn into one the e-Tebligat approval trusts (re-pairing does that).
+  return userIdForTokenHash(legacyHash(token), EXTENSION_TOKEN_TTL_MS);
 }

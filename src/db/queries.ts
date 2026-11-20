@@ -438,14 +438,6 @@ export async function userIdForTokenHash(tokenHash: string, extendMs: number): P
   return row?.userId ?? null;
 }
 
-/** A live key still stored by its plain hash: its row takes the keyed hash (and a longer life), and its user is returned. */
-export async function upgradeTokenHash(legacy: string, keyed: string, extendMs: number): Promise<string | null> {
-  const now = new Date();
-  const [row] = await getDb().update(extensionTokens).set({ tokenHash: keyed, expiresAt: new Date(now.getTime() + extendMs) })
-    .where(and(eq(extensionTokens.tokenHash, legacy), gt(extensionTokens.expiresAt, now))).returning({ userId: extensionTokens.userId });
-  return row?.userId ?? null;
-}
-
 export type VendorRule = { id: string; taxNumber: string; vendorName: string | null; accountCode: string; accountName: string };
 const vendorRuleColumns = { id: vendorRules.id, taxNumber: vendorRules.taxNumber, vendorName: vendorRules.vendorName, accountCode: vendorRules.accountCode, accountName: vendorRules.accountName };
 

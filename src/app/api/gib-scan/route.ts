@@ -28,8 +28,8 @@ export async function POST(request: Request) {
   // added outside Accountie, and nothing is approved for either.
   const tokens = await liveTokenHashes(userId);
   if (tokens.length !== 1) return fail(tokens.length ? "Eklenti anahtarında beklenmeyen bir durum var. Kurulum sayfasından eklentiyi yeniden bağlayın, sonra taramayı onaylayın." : "Önce eklentiyi bağlayın (Kurulum sayfası), sonra taramayı onaylayın.", 409);
-  // Only a key stored with the server's key: an older one is moved on the extension's next request (open its window once).
-  if (!keyedHash(tokens[0])) return fail("Eklenti bağlantısı güncellenmeli: eklenti penceresini bir kez açın, sonra taramayı onaylayın.", 409);
+  // Only a key paired since keyed hashes: an older one (or a plain hash written into the database) is re-paired first.
+  if (!keyedHash(tokens[0])) return fail("e-Tebligat için eklentiyi bir kez yeniden bağlayın: Kurulum sayfasında Eklentiye bağla'ya basın, sonra taramayı onaylayın.", 409);
   const grantedAt = new Date();
   const until = new Date(grantedAt.getTime() + SCAN_GRANT_MS);
   const network = mac(key, "network", ipBucket(clientIp(request.headers)));

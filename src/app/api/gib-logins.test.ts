@@ -6,7 +6,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn(), signedInWithin: vi.fn(), FRESH_SIGN_IN_MS: 1800000, SIGN_IN_AGAIN: "yeniden giriş" }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(async () => true), clientIp: () => "203.0.113.7", ipBucket: (ip: string) => ip }));
 vi.mock("@/db/queries", () => ({
-  userIdForTokenHash: vi.fn(), upgradeTokenHash: vi.fn(async () => null), firmsByLucaId: vi.fn(), saveGibLogins: vi.fn(), listGibLoginFirms: vi.fn(), gibScanUntil: vi.fn(),
+  userIdForTokenHash: vi.fn(), firmsByLucaId: vi.fn(), saveGibLogins: vi.fn(), listGibLoginFirms: vi.fn(), gibScanUntil: vi.fn(),
   takeGibLogin: vi.fn(), gibScanGrant: vi.fn(), setGibScanGrant: vi.fn(), endGibScan: vi.fn(), liveTokenHashes: vi.fn(async () => [hashToken(`acx_${"a".repeat(43)}`)]), deleteGibLogins: vi.fn(), accountEmail: vi.fn(async () => "a@example.com"),
 }));
 
@@ -170,14 +170,14 @@ describe("Accountie'den tarama onayı ve girişleri silme", () => {
 });
 
 describe("eklenti anahtarının özeti sunucu anahtarıyla", () => {
-  it("anahtar h1: biçiminde saklanır; eski düz özetli anahtar ilk istekte yerinde taşınır, yeniden bağlamak gerekmez", async () => {
+  it("anahtar h1: biçiminde saklanır; eski düz özetli anahtar yine giriş yapar ama hiç yeniden yazılmaz (onay alamaz)", async () => {
     const { extensionUserId } = await import("@/lib/auth/extension-token");
     expect(hashToken(TOKEN)).toMatch(/^h1:/);
     expect(hashToken(TOKEN)).not.toBe(legacyHash(TOKEN));
-    vi.mocked(q.userIdForTokenHash).mockResolvedValueOnce(null);
-    vi.mocked(q.upgradeTokenHash).mockResolvedValueOnce(USER);
+    vi.mocked(q.userIdForTokenHash).mockImplementation(async (h) => (h === legacyHash(TOKEN) ? USER : null));
     expect(await extensionUserId(req("GET"))).toBe(USER);
-    expect(q.upgradeTokenHash).toHaveBeenCalledWith(legacyHash(TOKEN), hashToken(TOKEN), expect.any(Number));
+    expect(vi.mocked(q.userIdForTokenHash).mock.calls.map((c) => c[0])).toEqual([hashToken(TOKEN), legacyHash(TOKEN)]);
+    expect(Object.keys(q)).not.toContain("upgradeTokenHash");
   });
 });
 
