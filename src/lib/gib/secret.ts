@@ -63,12 +63,12 @@ export function open(key: Buffer, sealed: string, context: string): string {
  * A MAC under a subkey of the server's key, by purpose: a database row holding one (the scan approval) was written by this server,
  * and a network hash made with it cannot be reversed by trying every IPv4 address without the key.
  */
-export function mac(key: Buffer, purpose: "grant" | "network", text: string): string {
+export function mac(key: Buffer, purpose: "grant" | "network" | "token", text: string): string {
   const sub = createHmac("sha256", key).update(`accountie:${purpose}`).digest();
   return createHmac("sha256", sub).update(text).digest("base64url");
 }
 
-export function macOk(key: Buffer, purpose: "grant" | "network", text: string, given: string): boolean {
+export function macOk(key: Buffer, purpose: "grant" | "network" | "token", text: string, given: string): boolean {
   const want = Buffer.from(mac(key, purpose, text)), got = Buffer.from(given);
   return want.length === got.length && timingSafeEqual(want, got);
 }

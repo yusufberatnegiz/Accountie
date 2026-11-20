@@ -1,12 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { hashToken } from "@/lib/auth/extension-token";
+import { hashToken, legacyHash } from "@/lib/auth/extension-token";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn(), signedInWithin: vi.fn(), FRESH_SIGN_IN_MS: 1800000, SIGN_IN_AGAIN: "yeniden giriş" }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(async () => true), clientIp: () => "203.0.113.7", ipBucket: (ip: string) => ip }));
 vi.mock("@/db/queries", () => ({
-  userIdForTokenHash: vi.fn(), firmsByLucaId: vi.fn(), saveGibLogins: vi.fn(), listGibLoginFirms: vi.fn(), gibScanUntil: vi.fn(),
+  userIdForTokenHash: vi.fn(), upgradeTokenHash: vi.fn(async () => null), firmsByLucaId: vi.fn(), saveGibLogins: vi.fn(), listGibLoginFirms: vi.fn(), gibScanUntil: vi.fn(),
   takeGibLogin: vi.fn(), gibScanGrant: vi.fn(), setGibScanGrant: vi.fn(), endGibScan: vi.fn(), liveTokenHashes: vi.fn(async () => [hashToken(`acx_${"a".repeat(43)}`)]), deleteGibLogins: vi.fn(), accountEmail: vi.fn(async () => "a@example.com"),
 }));
 
@@ -149,6 +149,9 @@ describe("Accountie'den tarama onayı ve girişleri silme", () => {
     expect((await grant.POST(web())).status).toBe(409);
     vi.mocked(q.liveTokenHashes).mockResolvedValueOnce(["a", "b"]);
     expect((await grant.POST(web())).status).toBe(409);
+    // A key still stored by its plain hash (or written into the database by hand) is never bound to an approval.
+    vi.mocked(q.liveTokenHashes).mockResolvedValueOnce([legacyHash(TOKEN)]);
+    expect((await grant.POST(web())).status).toBe(409);
     expect((await grant.DELETE()).status).toBe(204);
     expect(q.endGibScan).toHaveBeenCalledWith(USER);
     vi.mocked(q.deleteGibLogins).mockResolvedValue(3);
@@ -165,3 +168,16 @@ describe("Accountie'den tarama onayı ve girişleri silme", () => {
     expect(Object.keys(end)).not.toContain("POST");
   });
 });
+
+describe("eklenti anahtarının özeti sunucu anahtarıyla", () => {
+  it("anahtar h1: biçiminde saklanır; eski düz özetli anahtar ilk istekte yerinde taşınır, yeniden bağlamak gerekmez", async () => {
+    const { extensionUserId } = await import("@/lib/auth/extension-token");
+    expect(hashToken(TOKEN)).toMatch(/^h1:/);
+    expect(hashToken(TOKEN)).not.toBe(legacyHash(TOKEN));
+    vi.mocked(q.userIdForTokenHash).mockResolvedValueOnce(null);
+    vi.mocked(q.upgradeTokenHash).mockResolvedValueOnce(USER);
+    expect(await extensionUserId(req("GET"))).toBe(USER);
+    expect(q.upgradeTokenHash).toHaveBeenCalledWith(legacyHash(TOKEN), hashToken(TOKEN), expect.any(Number));
+  });
+});
+

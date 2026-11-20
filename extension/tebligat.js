@@ -189,7 +189,8 @@ async function scanFirm(tabId, f, token, head) {
   if (state === "skip") return { line: "Atlandı; bugün yeniden sorulmaz.", failed: true };
   if (state === "refused") return { line: `${MAX_REFILLS + 1} denemede giriş olmadı; bugün yeniden sorulmaz. Kod doğruysa Luca'da şifreyi kontrol edin.`, failed: true };
   if (state === "timeout") { stopped = true; return { line: "5 dakika giriş yapılmadı; tarama durduruldu.", stopped: true }; }
-  await tryGib(tabId, "gib-login.js", (t) => globalThis.AccountieGibLogin.showNote(t), null, [`Accountie · ${head}: okunuyor, birazdan sıradaki firma gelecek.`]);
+  // Logged in: the left-behind clean-up of this page must not cut the read short.
+  await tryGib(tabId, "gib-login.js", (t) => { clearTimeout(globalThis.accountieClear); return globalThis.AccountieGibLogin.showNote(t); }, null, [`Accountie · ${head}: okunuyor, birazdan sıradaki firma gelecek.`]);
   status(`${head}: tebligat listesi okunuyor.`);
   // Right after the login the portal may load its own page: the read waits for it and is tried once more if it was cut off.
   let r;

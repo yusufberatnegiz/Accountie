@@ -1,6 +1,7 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { endGibScan, liveTokenHashes, setGibScanGrant } from "@/db/queries";
+import { keyedHash } from "@/lib/auth/extension-token";
 import { FRESH_SIGN_IN_MS, getUserId, SIGN_IN_AGAIN, signedInWithin } from "@/lib/auth/session";
 import { grantText, mac, secretKey } from "@/lib/gib/secret";
 import { fail, NO_STORE, unauthorized } from "@/lib/http";
@@ -27,6 +28,8 @@ export async function POST(request: Request) {
   // added outside Accountie, and nothing is approved for either.
   const tokens = await liveTokenHashes(userId);
   if (tokens.length !== 1) return fail(tokens.length ? "Eklenti anahtarında beklenmeyen bir durum var. Kurulum sayfasından eklentiyi yeniden bağlayın, sonra taramayı onaylayın." : "Önce eklentiyi bağlayın (Kurulum sayfası), sonra taramayı onaylayın.", 409);
+  // Only a key stored with the server's key: an older one is moved on the extension's next request (open its window once).
+  if (!keyedHash(tokens[0])) return fail("Eklenti bağlantısı güncellenmeli: eklenti penceresini bir kez açın, sonra taramayı onaylayın.", 409);
   const grantedAt = new Date();
   const until = new Date(grantedAt.getTime() + SCAN_GRANT_MS);
   const network = mac(key, "network", ipBucket(clientIp(request.headers)));
