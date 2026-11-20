@@ -57,7 +57,7 @@ export const WARNING_MESSAGES: Record<string, string> = {
   foreign_vat_charged: "Faturada KDV görünüyor; sorumlu sıfatıyla KDV hesaplanmadı. Satırları faturayla karşılaştırın.",
   foreign_withholding: "Yurt dışından alınan hizmette gelir veya kurumlar vergisi stopajı gerekebilir; muhtasarı kontrol edin.",
   z_payment_split: "Nakit ve kartlı tahsilat Z raporundan tam okunamadı ya da toplamı tutmuyor. Tahsilat satırlarını kontrol edin.",
-  domestic_currency: "Belge TL dışında bir para biriminde. Tutarlar TL değildir; TL karşılıklarını belgeden girin.",
+  domestic_currency: "Belgedeki TL tutarı okunamadı; döviz (EUR, USD) tutarı alınmadı. TL tutarlarını belgeden girin.",
   no_fiscal_value: "Belgede “MALİ DEĞERİ YOKTUR” yazıyor: gider ve KDV belgesi değildir. Bu taslağı silin, asıl fişi ya da faturayı yükleyin.",
   vehicle_choice: "Araç binek mi ticari mi? Yevmiye satırlarının üstündeki Araç seçiminden seçin; seçilmeden onaylanmaz.",
   payment_other: "Ödemenin tamamı ya da bir kısmı puan, hediye çeki, yemek kartı ya da açık hesapla. O alacak satırının hesabını kontrol edin.",

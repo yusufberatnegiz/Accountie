@@ -367,3 +367,28 @@ describe("KDV oranı yazmayan bilet", () => {
     expect(toReceiptData({ ...ticket, documentKind: "receipt" }).vatLines[0].rate).toBe(10);
   });
 });
+
+describe("bilette EUR tutarı alınmaz", () => {
+  const tl = { ...goodOutput, documentKind: "domestic_invoice" as const, category: "transport" as const, ekuNo: null, unreadableFields: [], zNo: "39.99 EUR",
+    total: "2.214,25", totalVat: "0,00", vatLines: [{ rate: 0, gross: "2.214,25", vat: "0,00", net: null }] };
+  const eur = { ...tl, total: "39,99", vatLines: [{ rate: 0, gross: "39,99", vat: "0,00", net: null }] };
+
+  it("TRY yazılmış EUR tutarı yakalanır, TL tutarı geçer", () => {
+    expect(checkExtraction(eur)).toContain("domestic_currency");
+    expect(checkExtraction(tl)).not.toContain("domestic_currency");
+    expect(checkExtraction({ ...eur, zNo: null })).not.toContain("domestic_currency");
+    expect(checkExtraction({ ...tl, zNo: "1.234,50 EUR", total: "1.234,50" })).toContain("domestic_currency");
+  });
+
+  it("EUR okuyan Haiku'dan sonra Sonnet'in TL okuması kazanır", async () => {
+    const { client } = mockClient(response(eur), response({ ...tl, unreadableFields: ["receiptNo"] }));
+    const r = await extractReceipt(Buffer.from("x"), client);
+    expect(r.ok && r.extraction.total).toBe("2.214,25");
+  });
+
+  it("iki model de TL bulamazsa hiçbir tutar alınmaz", async () => {
+    const { client } = mockClient(response(eur), response(eur));
+    const r = await extractReceipt(Buffer.from("x"), client);
+    expect(r.ok && [r.extraction.total, r.extraction.vatLines.length, r.problems.includes("domestic_currency")]).toEqual([null, 0, true]);
+  });
+});

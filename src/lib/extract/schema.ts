@@ -234,6 +234,24 @@ function isPlausibleDate(isoDate: string, today: Date): boolean {
   return t <= today.getTime() + DAY_MS && t >= today.getTime() - 366 * DAY_MS;
 }
 
+/**
+ * The EUR or USD total a domestic invoice or ticket prints beside its TL figure, as the reading notes it in zNo ("39.99 EUR",
+ * a ticket has no Z number), in cents; null when none. Foreign figures use a dot or a comma for the decimals.
+ */
+export function foreignTotalOf(x: ReceiptExtraction): number | null {
+  if (kindOf(x) !== "domestic_invoice" || !x.zNo) return null;
+  const s = x.zNo.replace(/[^\d.,]/g, "");
+  const m = /^(.*?)[.,](\d{1,2})$/.exec(s);
+  const whole = (m ? m[1] : s).replace(/[.,]/g, "");
+  if (!/^\d+$/.test(whole)) return null;
+  const cents = Number(whole) * 100 + Number((m?.[2] ?? "0").padEnd(2, "0"));
+  return cents > 0 ? cents : null;
+}
+
+/** A read with no amount in it: a document whose TL figures could not be read keeps none, so no EUR or USD figure is booked as TL. */
+export const withoutAmounts = (x: ReceiptExtraction): ReceiptExtraction =>
+  ({ ...x, total: null, totalVat: null, vatLines: [], lineItems: [], discounts: [], payments: [] });
+
 /** Arithmetic and format checks; any problem triggers one retry with the stronger model. */
 export function checkExtraction(x: ReceiptExtraction, today = new Date()): string[] {
   const data = toReceiptData(x);
@@ -264,6 +282,9 @@ export function checkExtraction(x: ReceiptExtraction, today = new Date()): strin
   if ((kind === "receipt" || kind === "domestic_invoice") && totalVat !== null && data.vatLines.length && Math.abs(vatSum - totalVat) > vatTolerance(x, data.vatLines.length) && !problems.includes("vat_mismatch")) problems.push("vat_mismatch");
   // A Turkish seller's invoice in euros or dollars would otherwise be booked as if the figures were lira.
   if ((kind === "receipt" || kind === "domestic_invoice") && x.currency && /^[A-Z]{3}$/.test(x.currency) && x.currency !== "TRY") problems.push("domestic_currency");
+  // A ticket's EUR/USD total, noted in zNo (SYSTEM in extract.ts): a TL total that is not far above it is the foreign figure labelled TRY.
+  const foreign = kind === "domestic_invoice" ? foreignTotalOf(x) : null;
+  if (foreign && data.totalKurus !== null && data.totalKurus < foreign * 10 && !problems.includes("domestic_currency")) problems.push("domestic_currency");
   if (kind !== "foreign_invoice" && x.taxNumber !== null && !isValidTaxNumber(x.taxNumber)) problems.push("tax_number_invalid");
   if (data.date === null) problems.push("date_invalid");
   else if (!isPlausibleDate(data.date, today)) problems.push("date_unusual");
