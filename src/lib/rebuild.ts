@@ -19,12 +19,33 @@ export function linesFor(x: StoredExtraction, rules: Rules, learned: Account | n
   if (kind === "z_report") return buildSalesLines(toSalesData(x), rules, departmentAccounts(plan));
   if (kind === "foreign_invoice") return buildForeignLines(toForeignData(x), rules, x.fx ?? null);
   const data = toReceiptData(x);
-  const cari = kind === "domestic_invoice" && data.category === "transport" ? ticketAccount(plan) : undefined;
+  const ticket = kind === "domestic_invoice" && data.category === "transport";
+  const cari = ticket ? ticketAccount(plan) : undefined;
+  const refund = ticket && isRefund(x) ? refundAccounts(plan, data.vatLines.some((v) => v.rate > 0 && (v.vatKurus ?? 1) > 0)) : undefined;
+  const base = withVendorAccount(rules, data.category, refund?.expense ? null : learned);
   return buildJournalLines(data, {
-    ...withVendorAccount(rules, data.category, learned),
+    ...base,
     ...(kind === "domestic_invoice" && { documentType: rules.foreign.documentType }),
     ...(cari && { payment: { cash: cari, card: cari, other: cari } }),
+    ...(refund?.expense && { expense: { ...base.expense, transport: refund.expense } }),
+    ...(refund?.vat && { vat: { ...base.vat, ...Object.fromEntries(data.vatLines.map((v) => [v.rate, refund.vat])) } }),
   });
+}
+
+/** A refund ticket: the reading marks it with ekuNo "IADE" (a ticket has no EKÜ number), see the SYSTEM prompt in extract.ts. */
+export const isRefund = (x: ReceiptExtraction) => kindOf(x) === "domestic_invoice" && /^[iİı]ade$/i.test(x.ekuNo?.trim() ?? "");
+
+/**
+ * The firm's own refund accounts in its Luca plan: the expense "Bilet İade Kdv Li" or "Kdv Siz" (by whether the ticket has KDV)
+ * and, with KDV, "Satışlardan İade Kdv" (191). Each is used only when the plan has exactly one.
+ */
+export function refundAccounts(plan: readonly Account[], withVat: boolean): { expense?: Account; vat?: Account } {
+  const one = (pick: (name: string, code: string) => boolean) => {
+    const hits = plan.filter((a) => pick(a.name.toLocaleLowerCase("tr").replace(/\s+/g, " "), a.code));
+    return hits.length === 1 ? { code: hits[0].code, name: hits[0].name } : undefined;
+  };
+  const expense = one((n, c) => c.startsWith("7") && /bilet iade/.test(n) && (withVat ? /kdv ?li\b/.test(n) : /kdv ?siz/.test(n)));
+  return { expense, vat: withVat ? one((n, c) => c.startsWith("191") && /satışlardan iade/.test(n)) : undefined };
 }
 
 /** A ticket is owed to the firm's own "Bilet Cari" account (a 3xx account in its Luca plan) when the plan has exactly one. */

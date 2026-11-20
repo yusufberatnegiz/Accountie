@@ -9,7 +9,8 @@ type Line = Pick<JournalLine, "accountCode" | "accountName" | "debitKurus">;
  */
 export function learnedAccount(lines: readonly Line[], categoryAccount: Account): Account | null | undefined {
   const expense = lines.find((l) => l.debitKurus > 0 && !l.accountCode.startsWith("191"));
-  if (!expense) return undefined;
+  // A refund ticket books to the firm's "Bilet İade" account; that never becomes the seller's account for its ordinary tickets.
+  if (!expense || /iade/.test(expense.accountName.toLocaleLowerCase("tr"))) return undefined;
   return expense.accountCode === categoryAccount.code ? null : { code: expense.accountCode, name: expense.accountName };
 }
 
