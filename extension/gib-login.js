@@ -37,7 +37,10 @@
     const named = /charset=["']?([\w-]+)/i.exec(res.headers.get("content-type") ?? "")?.[1];
     let text;
     try { text = new TextDecoder(named ?? "windows-1254").decode(bytes); } catch { text = new TextDecoder("windows-1254").decode(bytes); }
-    return lucaRows(new root.DOMParser().parseFromString(text, "text/html"), LUCA_PAGE);
+    const doc = new root.DOMParser().parseFromString(text, "text/html");
+    // A closed Luca session answers 200 with a redirect to its login page: that is "not read", never "no firms".
+    if (!doc.querySelector("form[name='gibDosyaForm']")) return null;
+    return lucaRows(doc, LUCA_PAGE);
   }
 
   /**

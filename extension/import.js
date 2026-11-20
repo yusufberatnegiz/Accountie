@@ -96,7 +96,7 @@ async function sendGibLogins(token, target, only) {
   const [r] = await chrome.scripting.executeScript({ target, files: ["gib-login.js"] })
     .then(() => chrome.scripting.executeScript({ target, func: () => globalThis.AccountieGibLogin.fetchLucaRows().catch(() => null) }))
     .catch(() => [null]);
-  if (!r?.result) return "Luca'nın GİB Şirket ekranı okunamadı; GİB girişleri kaydedilmedi.";
+  if (!r?.result) return "Luca'nın GİB Şirket bilgileri okunamadı (Luca oturumu kapanmış olabilir); GİB girişleri kaydedilmedi.";
   // Only the firms this import is about and Accountie has: no login leaves for a firm it would only drop.
   const rows = r.result.filter((x) => only.has(String(x.lucaId)) && x.user?.trim() && x.pass).map((x) => ({ lucaId: x.lucaId, username: x.user.trim(), password: x.pass }));
   r.result = null;
