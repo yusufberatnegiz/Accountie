@@ -15,8 +15,8 @@
   function idNumbers(user) {
     const vkn = text(user?.vkn);
     const tckn = text(user?.tckn);
-    // After a switch, the firm's TCKN only when it has no VKN (a sole trader); otherwise the TCKN may be the müşavir's.
-    const ids = user?.gecisYapildiMi === true ? [vkn || tckn] : [vkn, tckn];
+    // After a switch only the firm's VKN: the TCKN there may be the müşavir's own, and a wrong firm is worse than a clear error.
+    const ids = user?.gecisYapildiMi === true ? [vkn] : [vkn, tckn];
     return [...new Set(ids.filter((v) => v && ID.test(v)))];
   }
 
@@ -62,7 +62,6 @@
       let fetched = 0;
       // Pages from 1, as the portal's own list asks (pageNo: pageIndex + 1).
       for (let page = 1; page <= MAX; page++) {
-        if (rows.length >= MAX) return { error: "too-many" };
         const body = { meta: { pagination: { pageNo: page, pageSize: PAGE_SIZE }, filters: [{ fieldName: "arsivDurum", values: [archived] }] } };
         const list = await call("tebligat-listele", `${API}/etebligat/etebligat/tebligat-listele`, body);
         if (list.error) return list;
@@ -78,6 +77,7 @@
         if (!got.length) { if (total > fetched) return shape(); break; }
         rows.push(...got);
         fetched += got.length;
+        if (rows.length > MAX) return { error: "too-many" };
         // By GİB's total when it gives one: GİB may send pages smaller than asked.
         if (total > 0 ? fetched >= total : got.length < PAGE_SIZE) break;
       }

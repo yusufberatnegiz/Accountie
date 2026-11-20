@@ -6,7 +6,7 @@ import { PREVIEW_EMAIL } from "@/lib/preview-fixtures";
 
 const NOTICES: NoticeRow[] = [
   { id: "n1", firmName: "ÖRNEK GIDA SANAYİ VE TİCARET LİMİTED ŞİRKETİ", institution: "Gelir İdaresi Başkanlığı", subUnit: "Kadıköy Vergi Dairesi Müdürlüğü", docType: "Vergi/Ceza İhbarnamesi", docNo: "2026-000123", sentAt: "18/11/2026", servedAt: "23/11/2026", served: "future", readOnGib: false, isNew: true },
-  { id: "n2", firmName: "DENEME İNŞAAT A.Ş.", institution: "Gelir İdaresi Başkanlığı", subUnit: "Büyük Mükellefler VD", docType: "Karşıt İnceleme Tutanağı", docNo: "KI-55", sentAt: "17/11/2026", servedAt: "22/11/2026", served: "future", readOnGib: false, isNew: true },
+  { id: "n2", firmName: "DENEME İNŞAAT A.Ş.", institution: "Gelir İdaresi Başkanlığı", subUnit: "Büyük Mükellefler VD", docType: "Karşıt İnceleme Tutanağı", docNo: "KI-55", sentAt: "17/11/2026", servedAt: "20/11/2026", served: "today", readOnGib: false, isNew: true },
   { id: "n3", firmName: "ÖRNEK GIDA SANAYİ VE TİCARET LİMİTED ŞİRKETİ", institution: "Sosyal Güvenlik Kurumu", subUnit: null, docType: "Yazı", docNo: null, sentAt: "02/10/2026", servedAt: "07/10/2026", served: "past", readOnGib: true, isNew: false },
 ];
 

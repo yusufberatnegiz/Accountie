@@ -1013,4 +1013,5 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 .notice-served { color: var(--ink); font-weight: var(--w-medium); }
 .notice-dates [data-state="bekleyen"] { color: var(--warn-ink); font-weight: var(--w-medium); }
 .notice-scans { max-height: 40vh; }
+.notice-never > summary { cursor: pointer; padding: var(--s2) 0; color: var(--warn-ink); font-weight: var(--w-medium); }
 @media (max-width: 640px) { .notice-dates { text-align: left; } }

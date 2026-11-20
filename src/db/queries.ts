@@ -655,7 +655,8 @@ export type NoticeInput = { gibId: string; institution: string; subUnit: string 
 /**
  * One firm's e-Tebligat list as read from its Dijital Vergi Dairesi session, matched by the session's VKN or TCKN. New rows are
  * new to the user, except on the firm's first read: then only the ones not yet read on GİB are, so a first read of hundreds of
- * firms does not flag years of old notices. Rows seen again only update whether GİB shows them read. Null when no firm matches.
+ * firms does not flag years of old notices. Rows seen again only update whether GİB shows them read: one opened in GİB by someone
+ * else (the taxpayer) stays new here until the müşavir marks it, since its deadlines may already run. Null when no firm matches.
  */
 export async function saveNotices(userId: string, idNumbers: readonly string[], items: readonly NoticeInput[]): Promise<{ firm: { id: string; name: string }; fresh: number; total: number } | null> {
   return getDb().transaction(async (tx) => {
@@ -672,11 +673,7 @@ export async function saveNotices(userId: string, idNumbers: readonly string[], 
     for (let i = 0; i < unique.length; i += 500) {
       const rows = await tx.insert(taxNotices)
         .values(unique.slice(i, i + 500).map((n) => ({ ...n, userId, firmId: firm.id, seenAt: !scanned && n.readOnGib ? now : null })))
-        .onConflictDoUpdate({ target: [taxNotices.firmId, taxNotices.gibId], set: {
-          readOnGib: sql`excluded.read_on_gib`,
-          // Opened in GİB since: someone has it, so it stops being new here too.
-          seenAt: sql`coalesce(${taxNotices.seenAt}, case when excluded.read_on_gib then now() end)`,
-        }, setWhere: eq(taxNotices.userId, userId) })
+        .onConflictDoUpdate({ target: [taxNotices.firmId, taxNotices.gibId], set: { readOnGib: sql`excluded.read_on_gib` }, setWhere: eq(taxNotices.userId, userId) })
         // xmax = 0 only on a row this statement inserted.
         .returning({ inserted: sql<boolean>`(xmax = 0)`, seenAt: taxNotices.seenAt });
       fresh += rows.filter((r) => r.inserted && !r.seenAt).length;

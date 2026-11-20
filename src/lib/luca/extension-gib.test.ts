@@ -78,6 +78,12 @@ describe("eklenti: Dijital Vergi Dairesi e-Tebligat okuma", () => {
     expect(gib.problem(r)).toMatch(/hiçbir şey kaydedilmedi/);
   });
 
+  it("tam 2000 tebligat eksiksiz okunur (sınır aşılmadıkça hata yok)", async () => {
+    const pages = Array.from({ length: 20 }, (_, p) => Array.from({ length: 100 }, (_, i) => row(p * 100 + i + 1)));
+    const { fetcher } = fakeGib({ "0": pages, "1": [] });
+    expect((await gib.readNotices(store("gib-token"), fetcher)).notices).toHaveLength(2000);
+  });
+
   it("GİB 5xx: geçici kesinti denir", () => {
     expect(gib.problem({ error: "http", step: "user-info", status: 503 })).toMatch(/şu an yanıt vermiyor/);
   });
@@ -101,8 +107,8 @@ describe("eklenti: Dijital Vergi Dairesi e-Tebligat okuma", () => {
     expect(gib.idNumbers({ vkn: "1234567890", tckn: "12345678901" })).toEqual(["1234567890", "12345678901"]);
     expect(gib.idNumbers({ vkn: "1234567890", tckn: "12345678901", gecisYapildiMi: true })).toEqual(["1234567890"]);
     expect(gib.idNumbers({ tckn: "12345678901" })).toEqual(["12345678901"]);
-    // A switch into a sole trader with no VKN: its TCKN. A "false" string is not a switch.
-    expect(gib.idNumbers({ tckn: "12345678901", gecisYapildiMi: true })).toEqual(["12345678901"]);
+    // After a switch a lone TCKN is not used (it may be the müşavir's); a "false" string is not a switch.
+    expect(gib.idNumbers({ tckn: "12345678901", gecisYapildiMi: true })).toEqual([]);
     expect(gib.idNumbers({ vkn: "1234567890", tckn: "12345678901", gecisYapildiMi: "false" })).toEqual(["1234567890", "12345678901"]);
     expect(gib.idNumbers({ vkn: "12'; x", tckn: null })).toEqual([]);
   });

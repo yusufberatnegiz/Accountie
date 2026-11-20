@@ -7,10 +7,12 @@ export function gibDay(s: string | null): string | null {
 /** Today in Turkey as yyyy-mm-dd. */
 export const turkeyDay = (now: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(now);
 
-/** Whether the tebliğ day has come: "past" from that day on, "future" before it, null when GİB gave no date. */
-export function servedState(servedAt: string | null, now: Date): "past" | "future" | null {
+/** Where the tebliğ day stands (tebliğ is made at that day's end): "past" after it, "today", "future" before it, null without a date. */
+export function servedState(servedAt: string | null, now: Date): "past" | "today" | "future" | null {
   const day = gibDay(servedAt);
-  return day ? (day <= turkeyDay(now) ? "past" : "future") : null;
+  if (!day) return null;
+  const today = turkeyDay(now);
+  return day < today ? "past" : day === today ? "today" : "future";
 }
 
 /** Whole days between a read and now. */

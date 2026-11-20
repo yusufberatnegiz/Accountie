@@ -10,7 +10,8 @@ describe("e-Tebligat tarihleri", () => {
   });
   it("tebliğ günü Türkiye saatiyle: o gün ve sonrası geçmiş, öncesi ileri", () => {
     const now = new Date("2026-11-22T22:30:00Z"); // Türkiye'de 23 Kasım 01:30
-    expect(servedState("23/11/2026", now)).toBe("past");
+    expect(servedState("22/11/2026", now)).toBe("past");
+    expect(servedState("23/11/2026", now)).toBe("today");
     expect(servedState("24/11/2026", now)).toBe("future");
     expect(servedState(null, now)).toBeNull();
   });

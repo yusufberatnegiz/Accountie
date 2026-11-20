@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 
 export type NoticeRow = {
   id: string; firmName: string; institution: string; subUnit: string | null; docType: string | null; docNo: string | null;
-  sentAt: string | null; servedAt: string | null; served: "past" | "future" | null; readOnGib: boolean; isNew: boolean;
+  sentAt: string | null; servedAt: string | null; served: "past" | "today" | "future" | null; readOnGib: boolean; isNew: boolean;
 };
 export type FirmRead = { firmId: string; firmName: string; scannedAt: string | null; days: number | null; stale: boolean };
 
@@ -30,6 +30,7 @@ export function NoticesView({ notices, firmReads, newCount, truncated }: { notic
     if (busy) return;
     setBusy(true);
     setError(null);
+    setSaid(""); // a repeated sentence is read again only after the region was emptied
     const res = await fetch("/api/notices/seen", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ids }) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) return setError("Kaydedilemedi. Tekrar deneyin.");
@@ -45,14 +46,16 @@ export function NoticesView({ notices, firmReads, newCount, truncated }: { notic
         <div className="title-text">
           <h1 ref={heading} tabIndex={-1}>e-Tebligat</h1>
           <p className="finding">
-            {newCount ? `${newCount} yeni tebligat` : "Yeni tebligat yok"} · {firmReads.length} firmadan {read} firma okundu
-            {never ? <>, <strong className="finding-off">{never} firma hiç okunmadı</strong></> : null}
-            {old ? <>, <strong className="finding-off">{old} firmanın son okuması 5 günden eski</strong></> : null}.
+            {read === 0 ? "Henüz hiçbir firma okunmadı." : <>
+              {newCount ? `${newCount} yeni tebligat` : "Yeni tebligat yok"} · {read}/{firmReads.length} firma okundu
+              {never ? <>, <strong className="finding-off">{never} hiç okunmadı</strong></> : null}
+              {old ? <>, <strong className="finding-off">{old} firmanın son okuması 5 günden eski</strong></> : null}.
+            </>}
           </p>
         </div>
         {fresh.length ? (
           <div className="title-actions">
-            <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => confirm(`${fresh.length} yeni tebligat görüldü olarak işaretlensin mi?`) && seen(fresh.map((n) => n.id))}>Hepsini gördüm</button>
+            <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => !busy && confirm(`${fresh.length} yeni tebligat görüldü olarak işaretlensin mi?`) && seen(fresh.map((n) => n.id))}>Hepsini gördüm</button>
           </div>
         ) : null}
       </div>
@@ -71,7 +74,7 @@ export function NoticesView({ notices, firmReads, newCount, truncated }: { notic
                 <span className="firms-vkn">{[n.institution, n.subUnit].filter(Boolean).join(" · ")}</span>
               </span>
               <span className="firms-month notice-dates">
-                {n.servedAt ? <span className="notice-served">{n.served === "future" ? `Tebliğ sayılacağı gün ${n.servedAt}` : `Tebliğ edildi ${n.servedAt}`}</span> : null}
+                {n.servedAt ? <span className="notice-served">{n.served === "future" ? `Tebliğ edilmiş sayılacağı gün: ${n.servedAt}` : n.served === "today" ? `Bugün tebliğ edilmiş sayılır (${n.servedAt})` : `Tebliğ edildi: ${n.servedAt}`}</span> : null}
                 {n.sentAt ? <span>Gönderim {n.sentAt}</span> : null}
                 <span data-state={n.readOnGib ? undefined : "bekleyen"}>{n.readOnGib ? "GİB'de okunmuş" : "GİB'de okunmamış"}</span>
               </span>
@@ -80,7 +83,7 @@ export function NoticesView({ notices, firmReads, newCount, truncated }: { notic
               ) : null}
             </li>
           ))}
-          {notices.length === 0 ? <li className="firms-row"><span className="firms-name">{read ? "Okunan firmalarda tebligat yok." : "Henüz okuma yok. Sağdaki adımlarla ilk firmayı okuyun."}</span></li> : null}
+          {notices.length === 0 ? <li className="firms-row"><span className="firms-name">{read ? "Okunan firmalarda tebligat yok." : "Henüz okuma yok. Nasıl okunur bölümündeki adımlarla ilk firmayı okuyun."}</span></li> : null}
         </ul>
       </section>
 
@@ -92,13 +95,22 @@ export function NoticesView({ notices, firmReads, newCount, truncated }: { notic
           <>
             <h3 id="son-okuma">Firmaların son okuması</h3>
             <ul className="firms-list notice-scans" aria-labelledby="son-okuma">
-              {firmReads.map((r) => (
+              {firmReads.filter((r) => r.scannedAt !== null).map((r) => (
                 <li key={r.firmId} className="firms-row">
                   <span className="firms-name">{r.firmName}</span>
                   <span className="firms-month" data-state={r.stale ? "bekleyen" : undefined}>{readText(r)}</span>
                 </li>
               ))}
             </ul>
+            {/* Hundreds of never-read firms would bury the reads: one line, opened on demand. */}
+            {never ? (
+              <details className="notice-never">
+                <summary>Hiç okunmadı ({never} firma)</summary>
+                <ul className="firms-list notice-scans">
+                  {firmReads.filter((r) => r.scannedAt === null).map((r) => <li key={r.firmId} className="firms-row"><span className="firms-name">{r.firmName}</span></li>)}
+                </ul>
+              </details>
+            ) : null}
           </>
         ) : null}
       </section>

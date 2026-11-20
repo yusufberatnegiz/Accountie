@@ -25,7 +25,7 @@ export default async function NoticesPage() {
     const at = read.get(f.id);
     const days = at ? daysSince(at, now) : null;
     return { firmId: f.id, firmName: f.name, scannedAt: at ? when.format(at) : null, days, stale: days === null || days >= STALE_DAYS };
-  }).sort((a, b) => (b.days ?? Infinity) - (a.days ?? Infinity));
+  }).sort((a, b) => (b.days ?? Infinity) - (a.days ?? Infinity) || a.firmName.localeCompare(b.firmName, "tr"));
   return (
     <AppShell current="tebligatlar" email={user.email} firmId={firm.id} setup={!firms.some((f) => f.fromLuca)}>
       <NoticesView notices={notices.map((n) => ({ ...n, served: servedState(n.servedAt, now) }))} firmReads={firmReads} newCount={newCount} truncated={notices.length >= NOTICE_LIST_LIMIT} />
