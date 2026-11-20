@@ -97,7 +97,9 @@ async function loaded(tabId, ms = 30_000) {
 
 /** The GİB tab on an empty login form: the previous firm's session key removed and the login page loaded once, from scratch. */
 async function loginForm(tabId) {
-  await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.goToLogin(), null);
+  const left = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.goToLogin(), null);
+  // "Taramayı durdur" pressed on the note while the last firm's list was read.
+  if (left?.stop) { stopped = true; return false; }
   const until = Date.now() + 30_000;
   while (Date.now() < until && !stopped) {
     await pause(500);
@@ -110,7 +112,7 @@ async function loginForm(tabId) {
 const fill = (tabId, f, text) => tryGib(tabId, "gib-login.js", (u, p, t) => globalThis.AccountieGibLogin.fillLogin(u, p, t), false, [f.user, f.pass, text]);
 
 /** Waits for the user to log in ("in"), skip ("skip") or stop; GİB clearing the form is filled again, a few times at most. */
-async function waitForLogin(tabId, f, text) {
+async function waitForLogin(tabId, f, text, head) {
   const until = Date.now() + WAIT_MS;
   let refills = 0;
   while (Date.now() < until) {
@@ -121,35 +123,40 @@ async function waitForLogin(tabId, f, text) {
     if (state === "refill") {
       if (refills >= MAX_REFILLS) return "refused";
       refills++;
-      await fill(tabId, f, text);
+      await fill(tabId, f, `Accountie · ${head}: Kod ya da şifre hatalı, form yeniden dolduruldu (kalan deneme ${MAX_REFILLS - refills + 1}). Yeni kodu yazıp Giriş Yap'a basın.`);
     }
     await pause(POLL_MS);
   }
   return "timeout";
 }
 
-/** Today's scan as kept on this computer: firms read, firms that did not log in, and the new notices found (no passwords). */
+/**
+ * Today's scan as kept on this computer: firms read, firms skipped or not logged in (with the reason, said in the summary), and
+ * the new notices found. Firm names and counts only; never a password.
+ */
 async function scanned() {
   const { tebligatScan: s } = await chrome.storage.local.get("tebligatScan");
-  return s?.day === today() ? { ids: s.ids ?? [], failed: s.failed ?? [], fresh: s.fresh ?? [] } : { ids: [], failed: [], fresh: [] };
+  if (s?.day !== today()) return { ids: [], failed: [], fresh: [] };
+  return { ids: s.ids ?? [], failed: (s.failed ?? []).filter((x) => x && typeof x === "object"), fresh: s.fresh ?? [] };
 }
 async function remember(change) {
   const s = await scanned();
-  await chrome.storage.local.set({ tebligatScan: { day: today(), ids: [...new Set([...s.ids, ...(change.id ? [change.id] : [])])], failed: [...new Set([...s.failed, ...(change.failed ? [change.failed] : [])])], fresh: [...s.fresh, ...(change.fresh ? [change.fresh] : [])] } });
+  const failed = change.failed ? [...s.failed.filter((x) => x.id !== change.failed.id), change.failed] : s.failed;
+  await chrome.storage.local.set({ tebligatScan: { day: today(), ids: [...new Set([...s.ids, ...(change.id ? [change.id] : [])])], failed, fresh: [...s.fresh, ...(change.fresh ? [change.fresh] : [])] } });
 }
 
 /** One firm: fill, wait for the user's login, read the list, check it is that firm's, send. */
 async function scanFirm(tabId, f, token, head) {
   if (stopped) return { line: "Durduruldu.", stopped: true };
   if (!(await loginForm(tabId))) return stopped ? { line: "Durduruldu.", stopped: true } : { line: "Dijital Vergi Dairesi giriş sayfası açılmadı; yeniden başlatınca tekrar denenir." };
-  const text = `Accountie · ${head}: Doğrulama kodunu yazıp Giriş Yap'a basın. GİB şifre hatalı derse "Bu firmayı atla"ya basın.`;
+  const text = `Accountie · ${head}: Doğrulama kodunu yazıp Giriş Yap'a basın. GİB şifre hatalı derse "Bu firmayı atla"ya basın. Chrome şifreyi kaydetmeyi sorarsa "Hiçbir zaman" deyin.`;
   if (!(await fill(tabId, f, text))) return { line: "Giriş formu bulunamadı; GİB sayfası değişmiş olabilir." };
   await chrome.tabs.update(tabId, { active: true });
   status(`${head}: GİB sekmesinde doğrulama kodunu yazıp Giriş Yap'a basın.`);
-  const state = await waitForLogin(tabId, f, text);
+  const state = await waitForLogin(tabId, f, text, head);
   if (state === "stopped") return { line: "Durduruldu.", stopped: true };
   if (state === "skip") return { line: "Atlandı; bugün yeniden sorulmaz.", failed: true };
-  if (state === "refused") return { line: "Giriş olmadı (şifre ya da doğrulama kodu); bugün yeniden denenmez. Luca'da şifreyi kontrol edin.", failed: true };
+  if (state === "refused") return { line: `${MAX_REFILLS + 1} denemede giriş olmadı; bugün yeniden sorulmaz. Kod doğruysa Luca'da şifreyi kontrol edin.`, failed: true };
   if (state === "timeout") { stopped = true; return { line: "5 dakika giriş yapılmadı; tarama durduruldu.", stopped: true }; }
   await tryGib(tabId, "gib-login.js", (t) => globalThis.AccountieGibLogin.showNote(t), null, [`Accountie · ${head}: okunuyor, birazdan sıradaki firma gelecek.`]);
   status(`${head}: tebligat listesi okunuyor.`);
@@ -170,12 +177,29 @@ async function scanFirm(tabId, f, token, head) {
   return { line: saved.fresh ? `${saved.fresh} yeni tebligat` : "Yeni tebligat yok", ok: true, fresh: saved.fresh ?? 0 };
 }
 
-function summary(fresh, failed) {
+/** The day's result: three counts, the new notices and the firms not read, with why. All of today, not only this run. */
+function summary(day, scannedToday) {
   const list = (items, empty) => (items.length ? items : [empty]).map((t) => Object.assign(document.createElement("li"), { textContent: t }));
-  $("fresh").replaceChildren(...list(fresh, "Yeni tebligat yok."));
-  $("failed-title").textContent = `Taranamayan firmalar (${failed.length})`;
-  $("failed").replaceChildren(...list(failed, "Yok."));
+  const freshTotal = day.fresh.reduce((n, t) => n + (Number(/: (\d+) yeni/.exec(t)?.[1]) || 0), 0);
+  $("n-scanned").textContent = String(scannedToday);
+  $("n-fresh").textContent = String(freshTotal);
+  $("n-failed").textContent = String(day.failed.length);
+  $("fresh").replaceChildren(...list(day.fresh, "Yeni tebligat yok."));
+  $("failed-title").textContent = `Bugün taranamayan firmalar (${day.failed.length})`;
+  $("failed").replaceChildren(...list(day.failed.map((x) => `${x.name}: ${x.line}`), "Yok."));
+  $("retry").hidden = !day.failed.length;
   $("summary").hidden = false;
+  return { freshTotal };
+}
+
+/** The bar over the log while a run goes: which firm, how many of how many. */
+function progress(i, n, name) {
+  $("progress").hidden = false;
+  $("progress-firm").textContent = name;
+  $("progress-count").textContent = `${i}/${n}`;
+  $("progress-bar").max = n;
+  $("progress-bar").value = i - 1;
+  document.title = `${i}/${n} · e-Tebligat taraması`;
 }
 
 async function run() {
@@ -186,58 +210,94 @@ async function run() {
   if (!rows) return status("Luca'da GİB Şirket ekranı açık değil. Ser.Mes.Defteri → Beyannameler → Toplu Beyanname → GİB Şirket'i açıp yeniden başlatın.", true);
   const { firms } = await accountie("/api/extension/firms", token);
   const before = await scanned();
-  const p = AccountieGibLogin.plan(rows, firms ?? [], before.ids, before.failed);
-  if (p.noCredentials.length) log(`${p.noCredentials.length} firma`, `Luca'da GİB kullanıcı kodu ya da şifresi boş: ${p.noCredentials.slice(0, 10).join(", ")}${p.noCredentials.length > 10 ? "…" : ""}`);
+  const p = AccountieGibLogin.plan(rows, firms ?? [], before.ids, before.failed.map((x) => x.id));
+  const names = (list) => `${list.slice(0, 10).join(", ")}${list.length > 10 ? "…" : ""}`;
+  if (p.noCredentials.length) log(`${p.noCredentials.length} firma`, `Luca'da GİB kullanıcı kodu ya da şifresi boş: ${names(p.noCredentials)}`);
   if (p.notInAccountie.length) log(`${p.notInAccountie.length} firma`, "Accountie'de yok ya da vergi numarası bilinmiyor; önce Luca'dan firmaları çekin.");
-  if (!p.todo.length) { summary(before.fresh, []); return status(p.done ? `Bugün bütün firmalar tarandı (${p.done}).` : "Taranacak firma yok.", !p.done); }
-  if (p.done || p.failed) log("Bugün", `${p.done} firma taranmıştı, ${p.failed} firmada giriş olmamıştı; bunlar atlandı. ${p.todo.length} firma kaldı.`);
+  if (p.sameTax.length) log(`${p.sameTax.length} firma`, `Vergi numarası başka bir firmayla aynı; bir kez taranır: ${names(p.sameTax)}`);
+  const earlier = [p.done && `${p.done} firma tarandı`, p.failed && `${p.failed} firmada giriş olmadı`].filter(Boolean).join(", ");
+  if (!p.todo.length) { summary(before, before.ids.length); return status(earlier ? `Bugün taranacak firma kalmadı: ${earlier}.` : "Taranacak firma yok.", !earlier); }
+  if (earlier) log("Bugün", `Daha önce ${earlier}; bunlar atlandı. ${p.todo.length} firma kaldı.`);
 
   const tab = (await chrome.tabs.query({ url: `${GIB_ORIGIN}/*` }))[0] ?? (await chrome.tabs.create({ url: LOGIN_URL, active: false }));
-  const failed = [];
-  let ok = 0, freshCount = 0;
+  let ok = 0, notRead = 0;
   for (const [i, f] of p.todo.entries()) {
     if (stopped) break;
     const head = `${i + 1}/${p.todo.length} · ${f.name}`;
-    document.title = `${i + 1}/${p.todo.length} · e-Tebligat taraması`;
-    status(head);
+    progress(i + 1, p.todo.length, f.name);
+    status("");
     let result;
     try { result = await scanFirm(tab.id, f, token, head); } catch (e) {
       if (e.fatal) { status(e.message, true); break; }
       result = { line: e.said ? e.message : turkish(String(e?.message ?? "")) };
     }
     log(f.name, result.line);
-    if (result.ok) { ok++; freshCount += result.fresh; continue; }
-    if (result.failed) await remember({ failed: f.lucaId });
-    if (!result.stopped) failed.push(`${f.name}: ${result.line}`);
+    if (result.ok) { ok++; continue; }
+    if (result.stopped) continue;
+    notRead++;
+    // A skip, a refused login or another firm's account is not asked again today; a passing error (GİB down) is.
+    if (result.failed) await remember({ failed: { id: f.lucaId, name: f.name, line: result.line } });
   }
+  $("progress-bar").value = ok + notRead;
   // The last firm's session key, password and note leave the tab: the login page is loaded again, empty.
   await tryGib(tab.id, "gib-login.js", () => globalThis.AccountieGibLogin.goToLogin(), null).catch(() => {});
   document.title = "e-Tebligat taraması";
   const me = await chrome.tabs.getCurrent();
   if (me?.id) await chrome.tabs.update(me.id, { active: true }).catch(() => {});
-  const fresh = (await scanned()).fresh;
-  summary(fresh, failed);
-  const tally = `${ok} firma tarandı, bu turda ${freshCount} yeni tebligat, ${failed.length} firma taranamadı.`;
-  if ($("status").className === "error") status(`${$("status").textContent} ${tally}`, true);
-  else status(stopped ? `Tarama durduruldu: ${tally} Kaldığı yerden sürdürmek için Taramayı sürdür'e basın.` : `Tarama bitti: ${tally} Ayrıntılar Accountie'de e-Tebligat sayfasında.`);
+  const day = await scanned();
+  const { freshTotal } = summary(day, day.ids.length);
+  const tally = `bu turda ${ok} firma tarandı${notRead ? `, ${notRead} firma taranamadı` : ""}; bugün toplam ${freshTotal} yeni tebligat.`;
+  if ($("status").className === "error") status(`${$("status").textContent} Durum: ${tally}`, true);
+  else status(stopped ? `Tarama durduruldu: ${tally} Kaldığı yerden devam etmek için Taramayı sürdür'e basın.` : `Tarama bitti: ${tally} Ayrıntılar Accountie'de e-Tebligat sayfasında.`);
 }
+
+// One run at a time: a second scan page would drive the same GİB tab against this one.
+const channel = typeof BroadcastChannel === "function" ? new BroadcastChannel("accountie-tebligat") : null;
+let elsewhere = false;
+if (channel) {
+  channel.onmessage = (e) => {
+    if (e.data === "ping" && running) channel.postMessage("busy");
+    if (e.data === "busy") elsewhere = true;
+  };
+}
+const busyElsewhere = async () => {
+  if (!channel) return false;
+  elsewhere = false;
+  channel.postMessage("ping");
+  await pause(300);
+  return elsewhere;
+};
 
 $("start").addEventListener("click", async () => {
   if (running) return;
   // Asked at the click (Chrome needs the user's gesture): the extension may only touch Dijital Vergi Dairesi once allowed here.
   const allowed = await chrome.permissions.request({ origins: [`${GIB_ORIGIN}/*`] }).catch(() => false);
   if (!allowed) return status("Dijital Vergi Dairesi izni verilmedi; tarama başlatılmadı.", true);
+  if (await busyElsewhere()) return status("Tarama başka bir sekmede sürüyor; o sekmeyi kullanın.", true);
   running = true;
   stopped = false;
   $("start").disabled = true;
+  $("retry").hidden = true;
   $("stop").hidden = false;
   $("log").replaceChildren();
+  $("log-table").hidden = true;
   $("summary").hidden = true;
   await run().catch((e) => status(e?.said ? e.message : turkish(String(e?.message ?? "")), true));
   running = false;
+  $("progress").hidden = true;
   $("start").disabled = false;
-  $("start").textContent = "Taramayı sürdür";
+  $("start").textContent = stopped ? "Taramayı sürdür" : "Taramayı başlat";
   $("stop").hidden = true;
+  $("start").focus?.();
+});
+$("retry").addEventListener("click", async () => {
+  const s = await scanned();
+  await chrome.storage.local.set({ tebligatScan: { day: today(), ids: s.ids, failed: [], fresh: s.fresh } });
+  $("retry").hidden = true;
+  $("failed-title").textContent = "Bugün taranamayan firmalar (0)";
+  $("failed").replaceChildren();
+  $("n-failed").textContent = "0";
+  status("Bugün atlanan firmalar bir sonraki taramada yeniden sorulacak. Taramayı başlat'a basın.");
 });
 $("stop").addEventListener("click", () => { stopped = true; status("Durduruluyor."); });
 window.addEventListener("beforeunload", (e) => { if (running) e.preventDefault(); });

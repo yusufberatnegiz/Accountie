@@ -29,18 +29,19 @@
    */
   function plan(rows, firms, doneToday = [], failedToday = []) {
     const tax = new Map(firms.filter((f) => ID.test(String(f.taxNumber))).map((f) => [String(f.lucaId), String(f.taxNumber)]));
-    const out = { todo: [], noCredentials: [], notInAccountie: [], done: 0, failed: 0 };
+    const out = { todo: [], noCredentials: [], notInAccountie: [], sameTax: [], done: 0, failed: 0 };
     const seen = new Set(), seenTax = new Set();
     for (const r of rows) {
       if (!/^\d{1,12}$/.test(r.lucaId) || seen.has(r.lucaId)) continue;
       seen.add(r.lucaId);
       if (!tax.has(r.lucaId)) { out.notInAccountie.push(r.name || r.lucaId); continue; }
+      const taxNumber = tax.get(r.lucaId);
+      // One login per VKN: Accountie keeps one firm per number, a second login would only read the same list again.
+      if (seenTax.has(taxNumber)) { out.sameTax.push(r.name || r.lucaId); continue; }
+      seenTax.add(taxNumber);
       if (!r.user.trim() || !r.pass) { out.noCredentials.push(r.name || r.lucaId); continue; }
       if (doneToday.includes(r.lucaId)) { out.done++; continue; }
       if (failedToday.includes(r.lucaId)) { out.failed++; continue; }
-      const taxNumber = tax.get(r.lucaId);
-      if (seenTax.has(taxNumber)) continue;
-      seenTax.add(taxNumber);
       out.todo.push({ lucaId: r.lucaId, name: r.name || r.lucaId, user: r.user.trim(), pass: r.pass, taxNumber });
     }
     return out;
@@ -51,10 +52,13 @@
    * girişi de, formda kalan şifreyi ve notu da siler.
    */
   function goToLogin(storage = root.sessionStorage, loc = root.location) {
+    // A stop pressed on the note while the list was being read is passed on, not wiped with the old page.
+    const stop = !!storage.getItem(STOP_KEY);
     for (const k of ["token", SKIP_KEY, STOP_KEY]) storage.removeItem(k);
     // Marks this page as the old one: until the new one loads, loginReady must not take it for the fresh form.
     root.accountieLeaving = true;
     loc.replace(LOGIN_PATH);
+    return { stop };
   }
 
   /** Giriş formu açık ve oturum boş mu (goToLogin'den sonra yeni sayfa geldi mi). */
@@ -84,8 +88,12 @@
       };
       note.append(msg, button("Bu firmayı atla", SKIP_KEY, "Accountie: atlanıyor."), button("Taramayı durdur", STOP_KEY, "Accountie: tarama durduruluyor."));
       doc.body.append(note);
+      // The note sits over the page's foot: room is kept so it never covers the form's Giriş Yap.
+      if (doc.body.style) doc.body.style.paddingBottom = `${(note.offsetHeight || 72) + 16}px`;
     }
-    doc.getElementById("accountie-note-text").textContent = text;
+    // Set a frame later: a live region announces a change, not the text it was created with.
+    const msg = doc.getElementById("accountie-note-text");
+    (root.requestAnimationFrame ?? ((f) => f()))(() => { msg.textContent = text; });
     return true;
   }
 

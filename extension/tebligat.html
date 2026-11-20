@@ -2,37 +2,67 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <title>Accountie: e-Tebligat taraması</title>
+  <title>e-Tebligat taraması</title>
   <link rel="stylesheet" href="popup.css">
   <script src="theme.js"></script>
 </head>
-<body class="wide">
+<body class="wide scan">
   <h1>e-Tebligat taraması</h1>
-  <p class="muted">Eklenti her firma için Dijital Vergi Dairesi giriş formunu Luca'daki kullanıcı kodu ve şifreyle doldurur. <strong>Doğrulama kodunu siz yazıp Giriş Yap'a basarsınız.</strong> Liste okunur, Accountie'ye gönderilir, sıradaki firma açılır.</p>
-  <ul class="muted">
-    <li>Önce Luca'da <strong>Ser.Mes.Defteri → Beyannameler → Toplu Beyanname → GİB Şirket</strong> ekranını açın; şifreler oradan okunur.</li>
-    <li>Şifreler bu sayfa açıkken yalnız bellekte durur: kaydedilmez, Accountie'ye gönderilmez. Chrome şifreyi kaydetmeyi sorarsa <strong>Hiçbir zaman</strong> deyin.</li>
-    <li>Zarflar açılmaz, belge indirilmez: GİB'de okundu kaydı düşmez, tebliğ tarihi değişmez.</li>
-    <li>Şifre hatalıysa GİB sekmesindeki <strong>Bu firmayı atla</strong>'ya basın; o firma bugün yeniden sorulmaz, Luca'da şifreyi düzeltince yarın denenir. Bugün taranan firmalar da atlanır.</li>
-    <li>Taramayı GİB sekmesinin altındaki <strong>Taramayı durdur</strong> ile de durdurabilirsiniz. 5 dakika giriş yapılmazsa tarama kendiliğinden durur.</li>
-    <li>Açık bir Dijital Vergi Dairesi oturumunuz varsa tarama başlayınca kapanır.</li>
-  </ul>
-  <div>
+  <p class="lead">Luca'daki her firmanın tebligatlarına sırayla bakar. Doğrulama kodunu siz yazarsınız, gerisini eklenti yapar.</p>
+
+  <ol class="steps">
+    <li><strong>Luca'da GİB Şirket ekranını açın</strong><span>Ser.Mes.Defteri → Beyannameler → Toplu Beyanname → GİB Şirket. Şifreler her taramada oradan okunur.</span></li>
+    <li><strong>Taramayı başlatın</strong><span>Dijital Vergi Dairesi açılır, ilk firmanın kullanıcı kodu ve şifresi yazılır.</span></li>
+    <li><strong>Doğrulama kodunu yazıp Giriş Yap'a basın</strong><span>Liste okunur, sıradaki firma kendiliğinden gelir.</span></li>
+  </ol>
+
+  <div class="actions">
     <button id="start" type="button" class="primary">Taramayı başlat</button>
-    <button id="stop" type="button" hidden>Durdur</button>
+    <button id="stop" type="button" hidden>Taramayı durdur</button>
+    <button id="retry" type="button" class="link" hidden>Bugün atlananları yeniden sor</button>
   </div>
-  <p id="status" role="status" aria-live="polite"></p>
-  <section id="summary" hidden aria-labelledby="summary-title">
-    <h2 id="summary-title">Yeni tebligatlar</h2>
-    <ul id="fresh"></ul>
-    <h2 id="failed-title">Taranamayan firmalar</h2>
-    <ul id="failed"></ul>
+
+  <section id="progress" class="progress" hidden aria-labelledby="progress-firm">
+    <div class="progress-head"><span id="progress-firm"></span><span id="progress-count" class="count"></span></div>
+    <progress id="progress-bar" max="1" value="0" aria-labelledby="progress-count"></progress>
   </section>
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <section id="summary" hidden aria-labelledby="summary-title">
+    <h2 id="summary-title" class="visually-hidden">Bugünkü sonuç</h2>
+    <div class="tally">
+      <div class="tile"><b id="n-scanned">0</b><span>firma tarandı</span></div>
+      <div class="tile accent"><b id="n-fresh">0</b><span>yeni tebligat</span></div>
+      <div class="tile"><b id="n-failed">0</b><span>firma taranamadı</span></div>
+    </div>
+    <h3>Bugün bulunan yeni tebligatlar</h3>
+    <ul id="fresh" class="plain"></ul>
+    <h3 id="failed-title">Bugün taranamayan firmalar</h3>
+    <ul id="failed" class="plain"></ul>
+  </section>
+
   <table id="log-table" hidden>
     <caption>Firma firma sonuçlar (en yeni üstte)</caption>
     <thead><tr><th scope="col">Firma</th><th scope="col">Sonuç</th></tr></thead>
     <tbody id="log"></tbody>
   </table>
+
+  <aside class="note" aria-labelledby="note-title">
+    <h2 id="note-title">Güvenlik</h2>
+    <ul>
+      <li>Şifreler kaydedilmez ve Accountie'ye gönderilmez; yalnız bu sayfa açıkken bellekte durur.</li>
+      <li>Chrome şifreyi kaydetmeyi sorarsa <strong>Hiçbir zaman</strong> deyin.</li>
+      <li>Zarflar açılmaz, belge indirilmez: GİB'de okundu kaydı düşmez, tebliğ tarihi değişmez.</li>
+    </ul>
+  </aside>
+  <details class="more">
+    <summary>Şifre hatalıysa, durdurmak, sürdürmek</summary>
+    <ul>
+      <li>GİB şifre hatalı derse GİB sekmesinin altındaki <strong>Bu firmayı atla</strong>'ya basın. O firma bugün yeniden sorulmaz; Luca'da şifreyi düzeltip <strong>Bugün atlananları yeniden sor</strong>'a basabilirsiniz.</li>
+      <li>Taramayı GİB sekmesinin altındaki <strong>Taramayı durdur</strong> ile de durdurabilirsiniz. 5 dakika giriş yapılmazsa tarama kendiliğinden durur; <strong>Taramayı sürdür</strong> kaldığı yerden devam eder.</li>
+      <li>Açık bir Dijital Vergi Dairesi oturumunuz varsa tarama başlayınca kapanır.</li>
+    </ul>
+  </details>
   <script src="gib-login.js"></script>
   <script src="gib-notices.js"></script>
   <script src="tebligat.js"></script>

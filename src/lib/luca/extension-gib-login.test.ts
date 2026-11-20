@@ -74,6 +74,7 @@ describe("eklenti: Luca GİB Şirket ekranı ve GİB girişi", () => {
     expect(p.todo.map((f) => [f.lucaId, f.taxNumber])).toEqual([["1", "1234567890"]]);
     expect(p.noCredentials).toEqual(["B"]);
     expect(p.notInAccountie).toEqual(["C"]);
+    expect((p as unknown as { sameTax: string[] }).sameTax).toEqual(["F"]);
     expect([p.done, p.failed]).toEqual([1, 1]);
   });
 
@@ -184,7 +185,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
     const t = setup("skip");
     await t.get("start").click?.();
     expect(textOf(t.get("log"))).toContain("Atlandı");
-    expect(t.stored.at(-1)?.tebligatScan).toEqual(expect.objectContaining({ ids: [], failed: ["7"] }));
+    expect(t.stored.at(-1)?.tebligatScan).toEqual(expect.objectContaining({ ids: [], failed: [{ id: "7", name: "ÖRNEK", line: expect.stringContaining("Atlandı") }] }));
     expect(textOf(t.get("failed"))).toContain("ÖRNEK");
   });
 

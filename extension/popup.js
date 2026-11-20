@@ -339,7 +339,8 @@ async function clearFilled() {
 async function forget() {
   token = "";
   receipts = [];
-  await chrome.storage.local.remove("token");
+  // The day's scan record (firm names, counts) belongs to this key's account: the next one on this computer starts clean.
+  await chrome.storage.local.remove(["token", "tebligatScan"]);
   $("list-view").hidden = true;
   $("notices-view").hidden = true;
   $("token-form").hidden = false;

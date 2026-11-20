@@ -107,4 +107,37 @@ body.wide { width: auto; max-width: 720px; margin: 0 auto; padding: 32px 16px; }
 .wide p, .wide .muted { font-size: 15px; }
 .wide .muted { color: var(--ink); }
 .wide td, .wide th { text-align: left; }
+/* e-Tebligat taraması: adımlar, ilerleme, sonuç kutuları. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.scan { gap: 20px; }
+.scan .lead { font-size: 17px; margin: 0; color: var(--ink); }
+.scan h2 { font-size: 15px; margin: 0; }
+.scan h3 { font-size: 14px; margin: 8px 0 0; }
+.steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 8px; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 32px 1fr; gap: 2px 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; }
+.steps li::before { content: counter(step); grid-row: span 2; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.steps strong { font-size: 15px; }
+.steps span { color: var(--muted); font-size: 14px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.progress { padding: 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; gap: 8px; }
+.progress-head { display: flex; justify-content: space-between; gap: 12px; font-weight: 600; }
+.progress-head .count { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+progress { width: 100%; height: 8px; appearance: none; border: 0; border-radius: 999px; background: var(--stage); overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--stage); }
+progress::-webkit-progress-value { background: var(--accent); border-radius: 999px; transition: width 300ms; }
+.tally { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tile { display: grid; gap: 2px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; }
+.tile b { font-size: 26px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tile span { color: var(--muted); font-size: 13px; }
+.tile.accent { background: var(--accent-soft); border-color: transparent; }
+.plain { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.scan table { font-size: 13px; }
+.scan caption { text-align: left; font-weight: 600; padding-bottom: 6px; }
+.scan td, .scan th { padding: 6px 4px; }
+.note { padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--raised); border-radius: 0 10px 10px 0; display: grid; gap: 6px; }
+.note ul, .more ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.more summary { cursor: pointer; font-weight: 600; }
+.more summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.more ul { margin-top: 8px; }
+@media (max-width: 480px) { .tally { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } button:active:not(:disabled), .card input:not(:disabled):active + label { transform: none; } }
