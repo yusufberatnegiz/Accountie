@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>Accountie: e-Tebligat taraması</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="theme.js"></script>
+</head>
+<body class="wide">
+  <h1>Bütün firmaların e-Tebligatlarını tara</h1>
+  <p class="muted">Eklenti, Luca'daki her firmanın GİB kullanıcı kodu ve şifresiyle Dijital Vergi Dairesi giriş formunu doldurur. <strong>Doğrulama kodunu siz yazıp Giriş Yap'a basarsınız.</strong> Girişten sonra o firmanın tebligat listesi okunur ve Accountie'ye gönderilir, sonra sıradaki firmaya geçilir.</p>
+  <ul class="muted">
+    <li>Önce Luca'da <strong>Ser.Mes.Defteri → Beyannameler → Toplu Beyanname → GİB Şirket</strong> ekranını açın; şifreler oradan okunur.</li>
+    <li>Şifreler bu sayfa açıkken yalnız bellekte durur: kaydedilmez, Accountie'ye gönderilmez.</li>
+    <li>Zarflar açılmaz, belge indirilmez: GİB'de okundu kaydı düşmez, tebliğ tarihi değişmez.</li>
+    <li>Giriş olmazsa (şifre yanlış) o firma tekrar denenmez; GİB sekmesindeki <strong>Bu firmayı atla</strong> ile geçin. Bugün taranan firmalar yeniden başlatınca atlanır.</li>
+  </ul>
+  <div>
+    <button id="start" type="button" class="primary">Taramayı başlat</button>
+    <button id="stop" type="button" hidden>Durdur</button>
+  </div>
+  <p id="status" role="status" aria-live="polite"></p>
+  <section id="summary" hidden aria-labelledby="summary-title">
+    <h2 id="summary-title">Önceki taramada olmayan tebligatlar</h2>
+    <ul id="fresh"></ul>
+  </section>
+  <table id="log-table" hidden>
+    <thead><tr><th>Firma</th><th>Sonuç</th></tr></thead>
+    <tbody id="log"></tbody>
+  </table>
+  <script src="gib-login.js"></script>
+  <script src="gib-notices.js"></script>
+  <script src="tebligat.js"></script>
+</body>
+</html>

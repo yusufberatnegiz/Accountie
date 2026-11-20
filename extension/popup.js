@@ -402,6 +402,7 @@ $("clear-filled").addEventListener("click", guard(clearFilled, "clear-filled"));
 $("notices").addEventListener("click", guard(sendNotices, "notices"));
 // Kendi sekmesinde: açılır pencere odağı kaybedince kapanır, içe aktarma dakikalar sürer.
 $("import").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("import.html") }));
+for (const id of ["notices-all", "notices-all-luca"]) $(id).addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("tebligat.html") }));
 $("forget").addEventListener("click", guard(async () => { await forget(); status("Anahtar silindi."); }));
 $("forget-gib").addEventListener("click", guard(async () => { await forget(); status("Anahtar silindi."); }));
 

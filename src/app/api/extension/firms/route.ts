@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { importLucaFirm, listImportedLucaIds } from "@/db/queries";
+import { importLucaFirm, listImportedLucaIds, listLucaFirmTaxNumbers } from "@/db/queries";
 import { LucaFirmSchema, MAX_PLAN_ACCOUNTS } from "@/lib/api-schemas";
 import { extensionUserId } from "@/lib/auth/extension-token";
 import { fail, readJson } from "@/lib/http";
@@ -9,11 +9,15 @@ export const runtime = "nodejs";
 // A müşavir keeps a few hundred; the cap only stops a runaway client.
 const MAX_FIRMS = 2000;
 
-/** Luca ids of the firms whose plan Accountie has: "Yeni firmaları çek" reads only the others. */
+/**
+ * Luca ids of the firms whose plan Accountie has ("Yeni firmaları çek" reads only the others), and each Luca firm's VKN/TCKN for the
+ * e-Tebligat scan (tebligat.js), which checks a GİB login opened that firm.
+ */
 export async function GET(request: Request) {
   const userId = await extensionUserId(request);
   if (!userId) return fail("Eklenti anahtarı geçersiz veya süresi dolmuş.", 401);
-  return NextResponse.json({ lucaIds: await listImportedLucaIds(userId) }, { headers: { "Cache-Control": "no-store" } });
+  const [lucaIds, firms] = await Promise.all([listImportedLucaIds(userId), listLucaFirmTaxNumbers(userId)]);
+  return NextResponse.json({ lucaIds, firms }, { headers: { "Cache-Control": "no-store" } });
 }
 
 /** One firm the extension read in Luca: its full name, VKN and chart of accounts. Safe to send again; the plan is replaced. */

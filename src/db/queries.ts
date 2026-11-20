@@ -95,6 +95,13 @@ export async function listImportedLucaIds(userId: string): Promise<string[]> {
   return rows.flatMap((r) => (r.id ? [r.id] : []));
 }
 
+/** Each Luca firm's VKN/TCKN in Accountie: the e-Tebligat scan checks the GİB login opened that very firm. */
+export async function listLucaFirmTaxNumbers(userId: string): Promise<{ lucaId: string; taxNumber: string }[]> {
+  const rows = await getDb().select({ lucaId: firms.lucaSirketId, taxNumber: firms.taxNumber }).from(firms)
+    .where(and(eq(firms.userId, userId), isNotNull(firms.lucaSirketId), isNotNull(firms.taxNumber)));
+  return rows.flatMap((r) => (r.lucaId && r.taxNumber ? [{ lucaId: r.lucaId, taxNumber: r.taxNumber }] : []));
+}
+
 /** The firm's Luca chart of accounts by code; empty until the extension has imported it. */
 export async function listFirmAccounts(userId: string, firmId: string): Promise<{ code: string; name: string }[]> {
   return getDb().select({ code: firmAccounts.code, name: firmAccounts.name }).from(firmAccounts)

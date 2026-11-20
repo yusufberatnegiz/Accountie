@@ -6,7 +6,7 @@ import { EXTENSION_TOKEN_TTL_MS, extensionUserId, hashToken } from "@/lib/auth/e
 vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
 vi.mock("@/db/queries", () => ({
   createExtensionToken: vi.fn(), revokeExtensionTokens: vi.fn(), userIdForTokenHash: vi.fn(), listForExport: vi.fn(), markExported: vi.fn(), importLucaFirm: vi.fn(),
-  listFirmAccounts: vi.fn(), listImportedLucaIds: vi.fn(),
+  listFirmAccounts: vi.fn(), listImportedLucaIds: vi.fn(), listLucaFirmTaxNumbers: vi.fn(),
 }));
 
 const session = await import("@/lib/auth/session");
@@ -171,5 +171,16 @@ describe("POST /api/extension/firms", () => {
   it("firma sınırında 409", async () => {
     vi.mocked(q.importLucaFirm).mockResolvedValueOnce(null);
     expect((await firmsRoute.POST(post(FIRM))).status).toBe(409);
+  });
+});
+
+describe("GET /api/extension/firms", () => {
+  it("çekilmiş Luca firmaları ve e-Tebligat taraması için her Luca firmasının vergi numarası", async () => {
+    vi.mocked(q.listImportedLucaIds).mockResolvedValue(["7"]);
+    vi.mocked(q.listLucaFirmTaxNumbers).mockResolvedValue([{ lucaId: "7", taxNumber: "1111111114" }]);
+    const res = await firmsRoute.GET(bearer());
+    expect(await res.json()).toEqual({ lucaIds: ["7"], firms: [{ lucaId: "7", taxNumber: "1111111114" }] });
+    expect(q.listLucaFirmTaxNumbers).toHaveBeenCalledWith(USER);
+    expect((await firmsRoute.GET(bearer("acx_bad"))).status).toBe(401);
   });
 });
