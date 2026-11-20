@@ -354,3 +354,16 @@ describe("locateReceipts", () => {
     log.mockRestore();
   });
 });
+
+describe("KDV oranı yazmayan bilet", () => {
+  // SunExpress e-bileti: Ücret 1.951,27 + Hizmet Bedeli 33,33 KDV dahil, Alan Yolcu Vergisi 80,40, KDV 330,76, oran yazmıyor.
+  const ticket = { ...goodOutput, documentKind: "domestic_invoice" as const, total: "2.065,00", totalVat: "330,76", lineItems: [], discounts: [],
+    vatLines: [{ rate: 10, gross: "1.984,60", vat: "330,76", net: null }, { rate: 0, gross: "80,40", vat: null, net: null }] };
+  it("modelin tahmin ettiği %10, okunan KDV tutarına göre %20 olur", () => {
+    expect(toReceiptData(ticket).vatLines.map((v) => v.rate)).toEqual([20, 0]);
+    expect(checkExtraction(ticket)).not.toContain("vat_mismatch");
+  });
+  it("fişte oran düzeltilmez", () => {
+    expect(toReceiptData({ ...ticket, documentKind: "receipt" }).vatLines[0].rate).toBe(10);
+  });
+});

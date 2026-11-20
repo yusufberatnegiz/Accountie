@@ -143,12 +143,24 @@ function lessDiscounts(gross: Map<number, number>, discounts: Map<number | null,
  * (a receipt that prints only TOPKDV), or the breakdown less the discounts (one printed before them). The model only copies figures;
  * the sums are made here.
  */
+/**
+ * An invoice or ticket that prints the KDV amount but not its rate (a SunExpress e-ticket): the model guesses the rate. When the
+ * read KDV does not fit that rate but fits exactly one other current rate, the KDV decides.
+ */
+function rateOf(x: ReceiptExtraction, rate: number, grossKurus: number, vatKurus: number | null): number {
+  if (kindOf(x) !== "domestic_invoice" || vatKurus === null || vatKurus <= 0) return rate;
+  const fits = (r: number) => { const e = vatFromGross(grossKurus, r); return Math.abs(vatKurus - e) <= perItemVatTolerance(e); };
+  if (fits(rate)) return rate;
+  const others = [1, 10, 20].filter(fits);
+  return others.length === 1 ? others[0] : rate;
+}
+
 function vatLinesOf(x: ReceiptExtraction): VatLine[] {
   const read = x.vatLines.flatMap((v) => {
     // An e-fatura prints per rate the matrah and the KDV, not their sum: the sum is made here (the KDV worked out if not read).
     const net = amountOrNull(v.net ?? null), vat = amountOrNull(v.vat);
     const grossKurus = amountOrNull(v.gross) ?? (net !== null ? net + (vat ?? Math.round((net * v.rate) / 100)) : null);
-    return grossKurus === null ? [] : [{ rate: v.rate, grossKurus, vatKurus: vat }];
+    return grossKurus === null ? [] : [{ rate: rateOf(x, v.rate, grossKurus, vat), grossKurus, vatKurus: vat }];
   });
   // A rate printed with 0,00 (a Z report's unused groups) is no line to book.
   const printed = read.filter((v) => v.grossKurus !== 0);
