@@ -164,7 +164,7 @@ async function readAndSave(ctx: Ctx, jpeg: Buffer, mediaType: "image/jpeg" | "ap
   const taxNumber = result.ok ? result.extraction.taxNumber : null;
   // A seller this firm has corrected before gets its learned expense account (src/lib/vendor-rule.ts); a failed lookup falls back.
   const learned = taxNumber && isValidTaxNumber(taxNumber) ? await getVendorRule(userId, firmId, taxNumber).catch(() => null) : null;
-  const { lines, warnings } = result.ok ? linesFor(result.extraction, rules, learned && { code: learned.accountCode, name: learned.accountName }) : buildJournalLines(data, rules);
+  const { lines, warnings } = result.ok ? linesFor(result.extraction, rules, learned && { code: learned.accountCode, name: learned.accountName }, ctx.plan) : buildJournalLines(data, rules);
   const extra = result.ok ? result.problems : ["extraction_failed"];
   // Nothing was read of how it was paid (an empty read, or the method flagged unsure): no claim it was paid with points or a card.
   const paidUnknown = !result.ok || extra.includes("payment_unsure");
