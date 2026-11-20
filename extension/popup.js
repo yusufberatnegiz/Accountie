@@ -105,8 +105,11 @@ async function sendNotices() {
   if (!tab) return status("Önce Dijital Vergi Dairesi'nde firmanın hesabıyla giriş yapın, eklentiyi o sekmede açın.", true);
   status("e-Tebligat listesi okunuyor.");
   const target = { tabId: tab.id };
+  // A script that throws or cannot be injected is a failed read, said in Turkish, never Chrome's own English message.
+  const failed = { result: { error: "shape", step: "betik" } };
   const [read] = await chrome.scripting.executeScript({ target, files: ["gib-notices.js"] })
-    .then(() => chrome.scripting.executeScript({ target, func: () => globalThis.AccountieGib.readNotices() }));
+    .then(() => chrome.scripting.executeScript({ target, func: () => globalThis.AccountieGib.readNotices().catch(() => ({ error: "shape", step: "betik" })) }))
+    .catch(() => [failed]);
   const r = read?.result;
   if (!r || r.error) return status(AccountieGib.problem(r ?? { error: "network" }), true);
   const res = await fetch(APP_ORIGIN + "/api/extension/notices", {
@@ -117,7 +120,7 @@ async function sendNotices() {
   if (res.status === 401) { await forget(); throw new Error("Anahtar geçersiz veya süresi dolmuş. Accountie'den yeni anahtar alın."); }
   const body = await res.json().catch(() => null);
   if (!res.ok) throw new Error(body?.error || "Accountie'ye ulaşılamadı. Tekrar deneyin.");
-  status(`${body.firm}: ${body.total} tebligat okundu, ${body.fresh ? `${body.fresh} yeni` : "yeni yok"}. Accountie'de Tebligatlar sayfasında.`);
+  status(`${body.firm}: ${body.total} tebligat okundu, ${body.fresh ? `${body.fresh} yeni` : "yeni yok"}. Accountie'de e-Tebligat sayfasından bakabilirsiniz.`);
 }
 
 async function load() {

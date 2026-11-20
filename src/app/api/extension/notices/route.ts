@@ -3,6 +3,7 @@ import { saveNotices } from "@/db/queries";
 import { NoticesSchema } from "@/lib/api-schemas";
 import { extensionUserId } from "@/lib/auth/extension-token";
 import { fail, NO_STORE, readJson } from "@/lib/http";
+import { allow } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   const userId = await extensionUserId(request);
   if (!userId) return fail("Eklenti anahtarı geçersiz veya süresi dolmuş.", 401);
+  if (!(await allow("notices", userId))) return fail("Çok sık gönderildi. Biraz bekleyip tekrar deneyin.", 429);
   const body = NoticesSchema.safeParse(await readJson(request));
   if (!body.success) return fail("Tebligat listesi okunamadı.", 400);
   const saved = await saveNotices(userId, body.data.idNumbers, body.data.notices);

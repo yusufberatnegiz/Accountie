@@ -6,7 +6,7 @@ import { fail, NO_STORE, readJson, unauthorized } from "@/lib/http";
 
 export const runtime = "nodejs";
 
-/** "Gördüm": the given new notices, or all of them (ids null), stop showing as new. */
+/** "Gördüm": the given new notices stop showing as new. */
 export async function POST(request: Request) {
   const userId = await getUserId();
   if (!userId) return unauthorized();

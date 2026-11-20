@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hashToken } from "@/lib/auth/extension-token";
 
 vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
-vi.mock("@/db/queries", () => ({ userIdForTokenHash: vi.fn(), saveNotices: vi.fn(), markNoticesSeen: vi.fn() }));
+vi.mock("@/db/queries", () => ({ userIdForTokenHash: vi.fn(), saveNotices: vi.fn(), markNoticesSeen: vi.fn(), hitRateLimit: vi.fn() }));
 
 const session = await import("@/lib/auth/session");
 const q = await import("@/db/queries");
@@ -10,6 +10,7 @@ const noticesRoute = await import("./extension/notices/route");
 const seenRoute = await import("./notices/seen/route");
 
 const USER = "user-a";
+const ID = "8b0f6c1e-1b7a-4c1e-9d55-0d6f1d7a2c11";
 const TOKEN = `acx_${"a".repeat(43)}`;
 const NOTICE = { gibId: "123456", institution: "Gelir İdaresi Başkanlığı", subUnit: "Kadıköy VD", docType: "Vergi/Ceza İhbarnamesi", docNo: "2026-1", sentAt: "15/11/2026", servedAt: "20/11/2026", readOnGib: false };
 const BODY = { idNumbers: ["1234567890"], notices: [NOTICE] };
@@ -21,6 +22,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(q.userIdForTokenHash).mockImplementation(async (h) => (h === hashToken(TOKEN) ? USER : null));
   vi.mocked(session.getUserId).mockResolvedValue(USER);
+  vi.mocked(q.hitRateLimit).mockResolvedValue(true);
 });
 
 describe("POST /api/extension/notices", () => {
@@ -52,6 +54,12 @@ describe("POST /api/extension/notices", () => {
     expect(saved[0].subUnit).toHaveLength(160);
   });
 
+  it("hız sınırı aşılınca 429, hiçbir şey yazılmaz", async () => {
+    vi.mocked(q.hitRateLimit).mockResolvedValueOnce(false);
+    expect((await noticesRoute.POST(post(BODY))).status).toBe(429);
+    expect(q.saveNotices).not.toHaveBeenCalled();
+  });
+
   it("firması olmayan VKN 404 ve numarayı söyler", async () => {
     vi.mocked(q.saveNotices).mockResolvedValueOnce(null);
     const res = await noticesRoute.POST(post(BODY));
@@ -69,13 +77,15 @@ describe("POST /api/notices/seen", () => {
   const seen = (body: unknown) => new Request("http://test", { method: "POST", body: JSON.stringify(body) });
   it("oturumsuz 401", async () => {
     vi.mocked(session.getUserId).mockResolvedValueOnce(null);
-    expect((await seenRoute.POST(seen({ ids: null }))).status).toBe(401);
+    expect((await seenRoute.POST(seen({ ids: [ID] }))).status).toBe(401);
     expect(q.markNoticesSeen).not.toHaveBeenCalled();
   });
-  it("hepsi (null) ya da seçilenler; uuid olmayan id 400", async () => {
-    vi.mocked(q.markNoticesSeen).mockResolvedValue(2);
-    expect(await (await seenRoute.POST(seen({ ids: null }))).json()).toEqual({ seen: 2 });
-    expect(q.markNoticesSeen).toHaveBeenCalledWith(USER, null);
+  it("yalnız ekranın gösterdiği id'ler; hepsi (null), boş liste ve uuid olmayan id 400", async () => {
+    vi.mocked(q.markNoticesSeen).mockResolvedValue(1);
+    expect(await (await seenRoute.POST(seen({ ids: [ID] }))).json()).toEqual({ seen: 1 });
+    expect(q.markNoticesSeen).toHaveBeenCalledWith(USER, [ID]);
+    expect((await seenRoute.POST(seen({ ids: null }))).status).toBe(400);
+    expect((await seenRoute.POST(seen({ ids: [] }))).status).toBe(400);
     expect((await seenRoute.POST(seen({ ids: ["1"] }))).status).toBe(400);
     expect((await seenRoute.POST(seen({}))).status).toBe(400);
   });

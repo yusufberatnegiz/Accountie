@@ -666,40 +666,50 @@ export async function saveNotices(userId: string, idNumbers: readonly string[], 
     if (!firm) return null;
     const [scanned] = await tx.select({ firmId: noticeScans.firmId }).from(noticeScans).where(and(eq(noticeScans.firmId, firm.id), eq(noticeScans.userId, userId)));
     const now = new Date();
+    // One row per GİB id: Postgres refuses an upsert that touches a row twice in one statement.
+    const unique = [...new Map(items.map((n) => [n.gibId, n])).values()];
     let fresh = 0;
-    for (let i = 0; i < items.length; i += 500) {
+    for (let i = 0; i < unique.length; i += 500) {
       const rows = await tx.insert(taxNotices)
-        .values(items.slice(i, i + 500).map((n) => ({ ...n, userId, firmId: firm.id, seenAt: !scanned && n.readOnGib ? now : null })))
-        .onConflictDoUpdate({ target: [taxNotices.firmId, taxNotices.gibId], set: { readOnGib: sql`excluded.read_on_gib` }, setWhere: eq(taxNotices.userId, userId) })
+        .values(unique.slice(i, i + 500).map((n) => ({ ...n, userId, firmId: firm.id, seenAt: !scanned && n.readOnGib ? now : null })))
+        .onConflictDoUpdate({ target: [taxNotices.firmId, taxNotices.gibId], set: {
+          readOnGib: sql`excluded.read_on_gib`,
+          // Opened in GİB since: someone has it, so it stops being new here too.
+          seenAt: sql`coalesce(${taxNotices.seenAt}, case when excluded.read_on_gib then now() end)`,
+        }, setWhere: eq(taxNotices.userId, userId) })
         // xmax = 0 only on a row this statement inserted.
         .returning({ inserted: sql<boolean>`(xmax = 0)`, seenAt: taxNotices.seenAt });
       fresh += rows.filter((r) => r.inserted && !r.seenAt).length;
     }
     await tx.insert(noticeScans).values({ firmId: firm.id, userId, scannedAt: now })
       .onConflictDoUpdate({ target: noticeScans.firmId, set: { scannedAt: now }, setWhere: eq(noticeScans.userId, userId) });
-    return { firm, fresh, total: items.length };
+    return { firm: { id: firm.id, name: firm.name }, fresh, total: unique.length };
   });
 }
+
+export const NOTICE_LIST_LIMIT = 500;
 
 /** The user's notices, new ones first, and when each firm was last read (firms never read are left out). */
 export async function listNotices(userId: string) {
   const db = getDb();
-  const [notices, scans] = await Promise.all([
+  const [notices, scans, newRows] = await Promise.all([
     db.select({
       id: taxNotices.id, firmId: taxNotices.firmId, firmName: firms.name, institution: taxNotices.institution, subUnit: taxNotices.subUnit,
       docType: taxNotices.docType, docNo: taxNotices.docNo, sentAt: taxNotices.sentAt, servedAt: taxNotices.servedAt,
       readOnGib: taxNotices.readOnGib, firstSeenAt: taxNotices.firstSeenAt, isNew: sql<boolean>`(${taxNotices.seenAt} is null)`,
     }).from(taxNotices).innerJoin(firms, eq(firms.id, taxNotices.firmId)).where(eq(taxNotices.userId, userId))
-      .orderBy(sql`${taxNotices.seenAt} is null desc`, desc(taxNotices.firstSeenAt)).limit(500),
+      .orderBy(sql`${taxNotices.seenAt} is null desc`, desc(taxNotices.firstSeenAt), asc(firms.name), desc(taxNotices.gibId)).limit(NOTICE_LIST_LIMIT),
     db.select({ firmId: noticeScans.firmId, firmName: firms.name, scannedAt: noticeScans.scannedAt }).from(noticeScans)
       .innerJoin(firms, eq(firms.id, noticeScans.firmId)).where(eq(noticeScans.userId, userId)).orderBy(asc(noticeScans.scannedAt)),
+    // New ones beyond the list's limit are still counted.
+    db.select({ n: count() }).from(taxNotices).where(and(eq(taxNotices.userId, userId), isNull(taxNotices.seenAt))),
   ]);
-  return { notices, scans };
+  return { notices, scans, newCount: newRows[0]?.n ?? 0 };
 }
 
-/** Marks the given new notices (all of them when `ids` is null) as seen by the user. */
-export async function markNoticesSeen(userId: string, ids: readonly string[] | null): Promise<number> {
+/** Marks the given new notices as seen by the user: only ids the screen showed, never ones that arrived since. */
+export async function markNoticesSeen(userId: string, ids: readonly string[]): Promise<number> {
   const rows = await getDb().update(taxNotices).set({ seenAt: new Date() })
-    .where(and(eq(taxNotices.userId, userId), isNull(taxNotices.seenAt), ids ? inArray(taxNotices.id, [...ids]) : undefined)).returning({ id: taxNotices.id });
+    .where(and(eq(taxNotices.userId, userId), isNull(taxNotices.seenAt), inArray(taxNotices.id, [...ids]))).returning({ id: taxNotices.id });
   return rows.length;
 }

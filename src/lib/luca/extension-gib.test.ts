@@ -60,6 +60,28 @@ describe("eklenti: Dijital Vergi Dairesi e-Tebligat okuma", () => {
     expect((await gib.readNotices(store("gib-token"), fetcher)).notices).toEqual([]);
   });
 
+  it("GİB'in 200 ile döndüğü hata (data null, messages) boş liste sayılmaz, hiçbir şey kaydedilmez", async () => {
+    const fetcher = vi.fn(async (url: string) => (url.endsWith("user-info") ? json({ vkn: "1234567890" }) : json({ data: null, messages: [{ type: "ERROR" }] }))) as unknown as typeof fetch;
+    expect((await gib.readNotices(store("gib-token"), fetcher)).error).toBe("shape");
+  });
+
+  it("GİB'in toplamından önce biten liste eksik okumadır, hata verir", async () => {
+    const { fetcher } = fakeGib({ "0": [[row(1), row(2)]], "1": [] }, undefined, { "0": 150 });
+    expect((await gib.readNotices(store("gib-token"), fetcher)).error).toBe("shape");
+  });
+
+  it("2000'den çok tebligat kırpılmaz, hiç kaydedilmez", async () => {
+    const pages = Array.from({ length: 21 }, (_, p) => Array.from({ length: 100 }, (_, i) => row(p * 100 + i + 1)));
+    const { fetcher } = fakeGib({ "0": pages, "1": [] });
+    const r = await gib.readNotices(store("gib-token"), fetcher);
+    expect(r.error).toBe("too-many");
+    expect(gib.problem(r)).toMatch(/hiçbir şey kaydedilmedi/);
+  });
+
+  it("GİB 5xx: geçici kesinti denir", () => {
+    expect(gib.problem({ error: "http", step: "user-info", status: 503 })).toMatch(/şu an yanıt vermiyor/);
+  });
+
   it("değişmiş yanıt: içerik değil yalnız alan adları ve adım bildirilir", async () => {
     const fetcher = vi.fn(async (url: string) => (url.endsWith("user-info") ? json({ vkn: "1234567890" }) : json({ data: { yeniListe: [{ gizli: "x" }] }, messages: [] }))) as unknown as typeof fetch;
     const r = await gib.readNotices(store("gib-token"), fetcher);
@@ -79,6 +101,9 @@ describe("eklenti: Dijital Vergi Dairesi e-Tebligat okuma", () => {
     expect(gib.idNumbers({ vkn: "1234567890", tckn: "12345678901" })).toEqual(["1234567890", "12345678901"]);
     expect(gib.idNumbers({ vkn: "1234567890", tckn: "12345678901", gecisYapildiMi: true })).toEqual(["1234567890"]);
     expect(gib.idNumbers({ tckn: "12345678901" })).toEqual(["12345678901"]);
+    // A switch into a sole trader with no VKN: its TCKN. A "false" string is not a switch.
+    expect(gib.idNumbers({ tckn: "12345678901", gecisYapildiMi: true })).toEqual(["12345678901"]);
+    expect(gib.idNumbers({ vkn: "1234567890", tckn: "12345678901", gecisYapildiMi: "false" })).toEqual(["1234567890", "12345678901"]);
     expect(gib.idNumbers({ vkn: "12'; x", tckn: null })).toEqual([]);
   });
 });

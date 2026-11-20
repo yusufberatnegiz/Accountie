@@ -1005,6 +1005,12 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 
 /* e-Tebligat: the Firmalar list's rows; dates stack beside the notice, the per-firm last reads sit in the side panel. */
 .notice-dates { display: grid; gap: 2px; text-align: right; }
+/* A new notice: its own warning tone and a written "Yeni", not the open firm's selection colour. */
+.notice-row[data-new] { background: var(--warn-bg); border-radius: var(--radius-control); border-top-color: transparent; }
+.notice-row[data-new] + .notice-row { border-top-color: transparent; }
+.notice-type { font-weight: var(--w-strong); }
+.notice-new { display: inline-block; margin-right: var(--s2); padding: 0 6px; border-radius: 4px; background: var(--warn-ink); color: var(--warn-bg); font-size: var(--fs-small); }
+.notice-served { color: var(--ink); font-weight: var(--w-medium); }
 .notice-dates [data-state="bekleyen"] { color: var(--warn-ink); font-weight: var(--w-medium); }
 .notice-scans { max-height: 40vh; }
 @media (max-width: 640px) { .notice-dates { text-align: left; } }

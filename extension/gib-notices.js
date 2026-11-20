@@ -15,7 +15,8 @@
   function idNumbers(user) {
     const vkn = text(user?.vkn);
     const tckn = text(user?.tckn);
-    const ids = user?.gecisYapildiMi ? [vkn] : [vkn, tckn];
+    // After a switch, the firm's TCKN only when it has no VKN (a sole trader); otherwise the TCKN may be the müşavir's.
+    const ids = user?.gecisYapildiMi === true ? [vkn || tckn] : [vkn, tckn];
     return [...new Set(ids.filter((v) => v && ID.test(v)))];
   }
 
@@ -59,21 +60,26 @@
     const rows = [];
     for (const archived of ["0", "1"]) {
       let fetched = 0;
-      for (let page = 1; rows.length < MAX && page <= MAX; page++) {
+      // Pages from 1, as the portal's own list asks (pageNo: pageIndex + 1).
+      for (let page = 1; page <= MAX; page++) {
+        if (rows.length >= MAX) return { error: "too-many" };
         const body = { meta: { pagination: { pageNo: page, pageSize: PAGE_SIZE }, filters: [{ fieldName: "arsivDurum", values: [archived] }] } };
         const list = await call("tebligat-listele", `${API}/etebligat/etebligat/tebligat-listele`, body);
         if (list.error) return list;
         const got = list.json.data?.tebligatDtoList;
-        // GİB answers an empty list with no array at all when there is nothing: count 0 is fine, anything else is a changed answer.
+        const total = Number(list.json.pageDetail?.total ?? list.json.data?.count);
+        const shape = () => ({ error: "shape", step: "tebligat-listele", keys: [...keys(list.json), ...keys(list.json.data).map((k) => `data.${k}`)] });
+        // "No notices" only on an explicit zero: an error GİB sends with HTTP 200 (data null, messages) must never pass for an empty list.
         if (!Array.isArray(got)) {
-          if (Number(list.json.data?.count ?? list.json.pageDetail?.total) === 0 || list.json.data === null) break;
-          return { error: "shape", step: "tebligat-listele", keys: [...keys(list.json), ...keys(list.json.data).map((k) => `data.${k}`)] };
+          if (total === 0 || (fetched > 0 && !(total > fetched))) break;
+          return shape();
         }
+        // A page that stops short of GİB's own total is a partial read, never saved as the whole list.
+        if (!got.length) { if (total > fetched) return shape(); break; }
         rows.push(...got);
         fetched += got.length;
         // By GİB's total when it gives one: GİB may send pages smaller than asked.
-        const total = Number(list.json.pageDetail?.total);
-        if (!got.length || (total > 0 ? fetched >= total : got.length < PAGE_SIZE)) break;
+        if (total > 0 ? fetched >= total : got.length < PAGE_SIZE) break;
       }
     }
     const notices = [...new Map(rows.map(toNotice).filter(Boolean).map((n) => [n.gibId, n])).values()].slice(0, MAX);
@@ -82,8 +88,10 @@
 
   /** The popup's sentence for a failed read. */
   function problem(r) {
-    if (r.error === "login") return "Dijital Vergi Dairesi'nde açık oturum yok. Önce firmanın hesabıyla giriş yapın, e-Tebligat sayfası açıkken yeniden basın.";
+    if (r.error === "login") return "Dijital Vergi Dairesi'nde açık oturum yok. Önce firmanın hesabıyla giriş yapın (ya da Geçiş Yap ile firmaya geçin), sonra yeniden basın.";
     if (r.error === "http" && (r.status === 401 || r.status === 403)) return "Dijital Vergi Dairesi oturumu kapanmış ya da bu hesabın e-Tebligat yetkisi yok. Yeniden giriş yapıp tekrar deneyin.";
+    if (r.error === "too-many") return "Bu firmada 2.000'den çok tebligat var; liste eksik kalacağı için hiçbir şey kaydedilmedi. destek@accountie.app'e yazın.";
+    if (r.error === "http" && r.status >= 500) return "Dijital Vergi Dairesi şu an yanıt vermiyor. Biraz sonra tekrar deneyin.";
     if (r.error === "network") return "Dijital Vergi Dairesi'ne ulaşılamadı. Sayfayı yenileyip tekrar deneyin.";
     const detail = [r.step && `adım ${r.step}`, r.status && `HTTP ${r.status}`, r.keys?.length && `alanlar ${r.keys.join(", ")}`].filter(Boolean).join("; ");
     return `GİB'in yanıtı beklenen biçimde değil, hiçbir şey kaydedilmedi. Bu satırı destek@accountie.app'e iletin: ${detail}.`;

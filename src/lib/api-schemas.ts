@@ -97,4 +97,4 @@ export const NoticesSchema = z.object({
     readOnGib: z.boolean(),
   })).max(MAX_NOTICES),
 });
-export const NoticesSeenSchema = z.object({ ids: z.array(z.uuid()).min(1).max(500).nullable() });
+export const NoticesSeenSchema = z.object({ ids: z.array(z.uuid()).min(1).max(500) });
