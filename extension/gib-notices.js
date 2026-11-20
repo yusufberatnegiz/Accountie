@@ -47,7 +47,7 @@
     if (!token) return { error: "login" };
     const headers = { authorization: `Bearer ${token}`, "content-type": "application/json", accept: "application/json" };
     const call = async (step, url, body) => {
-      const res = await fetcher(url, { method: body ? "POST" : "GET", headers, body: body ? JSON.stringify(body) : undefined, credentials: "omit" }).catch(() => null);
+      const res = await fetcher(url, { method: body ? "POST" : "GET", headers, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
       if (!res) return { error: "network", step };
       if (!res.ok) return { error: "http", step, status: res.status };
       const json = await res.json().catch(() => null);
