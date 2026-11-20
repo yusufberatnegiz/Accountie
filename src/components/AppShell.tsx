@@ -7,7 +7,7 @@ import { FirmShortcut } from "@/components/FirmShortcut";
 import { FoldButton } from "@/components/FoldButton";
 import "./panel/panel.css";
 
-type Current = "fisler" | "fis" | "kurallar" | "firmalar" | "kontor" | "kurulum" | "hesap";
+type Current = "fisler" | "fis" | "kurallar" | "firmalar" | "tebligatlar" | "kontor" | "kurulum" | "hesap";
 
 // Drawn icons, 16px outline at 1.5px (docs/design/YON.md 5.2).
 const ICONS = {
@@ -17,6 +17,8 @@ const ICONS = {
   // A list with two items ticked: the setup's steps.
   steps: <path d="M2.25 4.25l1.25 1.25 2.25-2.25M2.25 9.25l1.25 1.25 2.25-2.25M8.25 4.25h5.5M8.25 9.25h5.5M2.75 13.25h.01M8.25 13.25h5.5" />,
   // A stack of tokens: kontör, not money in any one currency.
+  // A closed envelope: e-Tebligat.
+  envelope: <><rect x="1.75" y="3.25" width="12.5" height="9.5" rx="1" /><path d="M2 4l6 4.75L14 4" /></>,
   coin: <><ellipse cx="8" cy="4.5" rx="5.25" ry="2" /><path d="M2.75 4.5v3.5c0 1.1 2.35 2 5.25 2s5.25-.9 5.25-2V4.5M2.75 8v3.5c0 1.1 2.35 2 5.25 2s5.25-.9 5.25-2V8" /></>,
 };
 const Icon = ({ name }: { name: keyof typeof ICONS }) => <svg className="rail-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">{ICONS[name]}</svg>;
@@ -46,6 +48,7 @@ export function AppShell({ current, base = "/panel", email, firmId, setup = fals
         <CaptureButton pickers={["camera"]} variant="rail" base={base} />
         {item(`${base}/kurallar`, "Kurallar", "table", current === "kurallar")}
         {item(`${base}/firmalar`, "Firmalar", "building", current === "firmalar")}
+        <span className="rail-desktop">{item(`${base}/tebligatlar`, "Tebligat", "envelope", current === "tebligatlar")}</span>
         <span className="rail-desktop">{item(`${base}/kontor`, "Kontör", "coin", current === "kontor")}</span>
         <div className="rail-end"><FoldButton /><AccountMenu email={email} here={current === "kontor" || current === "kurulum"} setup={showSetup && current !== "kurulum"} /></div>
       </nav>

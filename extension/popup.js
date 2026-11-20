@@ -1,4 +1,4 @@
-/* global chrome, AccountieFill, AccountieSelectors */
+/* global chrome, AccountieFill, AccountieSelectors, AccountieGib */
 // Change together with host_permissions in manifest.json (e.g. http://localhost:3000 for development).
 const APP_ORIGIN = "https://accountie.app";
 // Luca birden çok sunucuda çalışır (auygs, auygs16, ...).
@@ -91,6 +91,35 @@ async function activeLucaTab() {
   return tab?.url && LUCA_HOST.test(new URL(tab.url).hostname) ? tab : null;
 }
 
+async function activeGibTab() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tab?.url && new URL(tab.url).hostname === AccountieGib.GIB_HOST ? tab : null;
+}
+
+/**
+ * The open Dijital Vergi Dairesi session's e-Tebligat list to Accountie: read in that tab (gib-notices.js; only two read-only GİB
+ * calls, no envelope opened), then only the list's header fields are sent. GİB's session key never leaves the tab.
+ */
+async function sendNotices() {
+  const tab = await activeGibTab();
+  if (!tab) return status("Önce Dijital Vergi Dairesi'nde firmanın hesabıyla giriş yapın, eklentiyi o sekmede açın.", true);
+  status("e-Tebligat listesi okunuyor.");
+  const target = { tabId: tab.id };
+  const [read] = await chrome.scripting.executeScript({ target, files: ["gib-notices.js"] })
+    .then(() => chrome.scripting.executeScript({ target, func: () => globalThis.AccountieGib.readNotices() }));
+  const r = read?.result;
+  if (!r || r.error) return status(AccountieGib.problem(r ?? { error: "network" }), true);
+  const res = await fetch(APP_ORIGIN + "/api/extension/notices", {
+    method: "POST", credentials: "omit",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify({ idNumbers: r.idNumbers, notices: r.notices }),
+  });
+  if (res.status === 401) { await forget(); throw new Error("Anahtar geçersiz veya süresi dolmuş. Accountie'den yeni anahtar alın."); }
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(body?.error || "Accountie'ye ulaşılamadı. Tekrar deneyin.");
+  status(`${body.firm}: ${body.total} tebligat okundu, ${body.fresh ? `${body.fresh} yeni` : "yeni yok"}. Accountie'de Tebligatlar sayfasında.`);
+}
+
 async function load() {
   status("Fişler getiriliyor.");
   // With Luca open on a firm, that firm's receipts are listed (not the oldest 50 of all firms); written ones always come back.
@@ -121,6 +150,7 @@ async function load() {
   $("clear-filled").hidden = !filled.length;
   // Never while an entry waits for Kaydet: the run would write into it.
   $("auto").disabled = receipts.length < 2 || filled.length > 0;
+  $("notices").hidden = $("notices-note").hidden = !(await activeGibTab());
   $("done").after($("status"));
   $("done").hidden = !filled.length;
   if (filled.length) $("done").textContent = filled.length > 1 ? `Luca'da kaydettim (${filled.length} fiş)` : "Luca'da kaydettim";
@@ -306,7 +336,7 @@ async function forget() {
   $("token-form").after($("status"));
 }
 
-const ACTIONS = ["fill", "auto", "done", "import", "forget", "toggle-all", "clear-filled"];
+const ACTIONS = ["fill", "auto", "done", "import", "forget", "toggle-all", "clear-filled", "notices"];
 /** One action at a time: every action button is off while one runs, and the pressed one says it is busy. */
 let busy = false;
 const guard = (fn, id) => async () => {
@@ -359,6 +389,7 @@ $("fill").addEventListener("click", guard(fill, "fill"));
 $("auto").addEventListener("click", guard(autoAll, "auto"));
 $("done").addEventListener("click", guard(done, "done"));
 $("clear-filled").addEventListener("click", guard(clearFilled, "clear-filled"));
+$("notices").addEventListener("click", guard(sendNotices, "notices"));
 // Kendi sekmesinde: açılır pencere odağı kaybedince kapanır, içe aktarma dakikalar sürer.
 $("import").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("import.html") }));
 $("forget").addEventListener("click", guard(async () => { await forget(); status("Anahtar silindi."); }));

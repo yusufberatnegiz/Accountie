@@ -5,7 +5,7 @@ import { mergeRules, planIndex, planMismatches, planMismatchWarning } from "@/li
 import { isKkegLine } from "@/lib/vehicle";
 import { approvalProblem, RETIRED_WARNINGS, warn, type JournalLine, type Warning } from "@/lib/journal";
 import { getDb } from "./index";
-import { accountRules, billingProfiles, creditBalances, creditLedger, extensionTokens, firmAccounts, firmRules, firms, journalLines, payments, rateLimitHits, receipts, vendorRules } from "./schema";
+import { accountRules, billingProfiles, creditBalances, creditLedger, extensionTokens, firmAccounts, firmRules, firms, journalLines, noticeScans, payments, rateLimitHits, receipts, taxNotices, vendorRules } from "./schema";
 
 export type ReceiptStatus = "draft" | "approved" | "exported";
 
@@ -401,7 +401,7 @@ export async function createExtensionToken(userId: string, tokenHash: string, ex
  * Every table holding a user's rows, children before parents (foreign keys). A test checks no user_id table is missing.
  * payments stays (KEPT_TABLES): a sale's record and the invoice details on it are kept by law after the account goes.
  */
-export const USER_TABLES = [journalLines, receipts, vendorRules, firmRules, firmAccounts, accountRules, extensionTokens, creditLedger, creditBalances, billingProfiles, firms] as const;
+export const USER_TABLES = [taxNotices, noticeScans, journalLines, receipts, vendorRules, firmRules, firmAccounts, accountRules, extensionTokens, creditLedger, creditBalances, billingProfiles, firms] as const;
 export const KEPT_TABLES = [payments] as const;
 
 /**
@@ -648,4 +648,58 @@ export async function setupStatus(userId: string): Promise<{ connected: boolean;
     db.select({ n: count() }).from(firms).where(and(eq(firms.userId, userId), sql`${firms.lucaSirketId} is not null`)),
   ]);
   return { connected: (token?.n ?? 0) > 0, lucaFirms: luca?.n ?? 0 };
+}
+
+export type NoticeInput = { gibId: string; institution: string; subUnit: string | null; docType: string | null; docNo: string | null; sentAt: string | null; servedAt: string | null; readOnGib: boolean };
+
+/**
+ * One firm's e-Tebligat list as read from its Dijital Vergi Dairesi session, matched by the session's VKN or TCKN. New rows are
+ * new to the user, except on the firm's first read: then only the ones not yet read on GİB are, so a first read of hundreds of
+ * firms does not flag years of old notices. Rows seen again only update whether GİB shows them read. Null when no firm matches.
+ */
+export async function saveNotices(userId: string, idNumbers: readonly string[], items: readonly NoticeInput[]): Promise<{ firm: { id: string; name: string }; fresh: number; total: number } | null> {
+  return getDb().transaction(async (tx) => {
+    // The VKN first (idNumbers is in that order), then the TCKN. shortcut: two firms with one VKN get the older one's notices; split by Luca id if müşavirs report it.
+    const found = await tx.select({ id: firms.id, name: firms.name, taxNumber: firms.taxNumber }).from(firms)
+      .where(and(eq(firms.userId, userId), inArray(firms.taxNumber, [...idNumbers]))).orderBy(asc(firms.createdAt));
+    const firm = idNumbers.map((n) => found.find((f) => f.taxNumber === n)).find(Boolean);
+    if (!firm) return null;
+    const [scanned] = await tx.select({ firmId: noticeScans.firmId }).from(noticeScans).where(and(eq(noticeScans.firmId, firm.id), eq(noticeScans.userId, userId)));
+    const now = new Date();
+    let fresh = 0;
+    for (let i = 0; i < items.length; i += 500) {
+      const rows = await tx.insert(taxNotices)
+        .values(items.slice(i, i + 500).map((n) => ({ ...n, userId, firmId: firm.id, seenAt: !scanned && n.readOnGib ? now : null })))
+        .onConflictDoUpdate({ target: [taxNotices.firmId, taxNotices.gibId], set: { readOnGib: sql`excluded.read_on_gib` }, setWhere: eq(taxNotices.userId, userId) })
+        // xmax = 0 only on a row this statement inserted.
+        .returning({ inserted: sql<boolean>`(xmax = 0)`, seenAt: taxNotices.seenAt });
+      fresh += rows.filter((r) => r.inserted && !r.seenAt).length;
+    }
+    await tx.insert(noticeScans).values({ firmId: firm.id, userId, scannedAt: now })
+      .onConflictDoUpdate({ target: noticeScans.firmId, set: { scannedAt: now }, setWhere: eq(noticeScans.userId, userId) });
+    return { firm, fresh, total: items.length };
+  });
+}
+
+/** The user's notices, new ones first, and when each firm was last read (firms never read are left out). */
+export async function listNotices(userId: string) {
+  const db = getDb();
+  const [notices, scans] = await Promise.all([
+    db.select({
+      id: taxNotices.id, firmId: taxNotices.firmId, firmName: firms.name, institution: taxNotices.institution, subUnit: taxNotices.subUnit,
+      docType: taxNotices.docType, docNo: taxNotices.docNo, sentAt: taxNotices.sentAt, servedAt: taxNotices.servedAt,
+      readOnGib: taxNotices.readOnGib, firstSeenAt: taxNotices.firstSeenAt, isNew: sql<boolean>`(${taxNotices.seenAt} is null)`,
+    }).from(taxNotices).innerJoin(firms, eq(firms.id, taxNotices.firmId)).where(eq(taxNotices.userId, userId))
+      .orderBy(sql`${taxNotices.seenAt} is null desc`, desc(taxNotices.firstSeenAt)).limit(500),
+    db.select({ firmId: noticeScans.firmId, firmName: firms.name, scannedAt: noticeScans.scannedAt }).from(noticeScans)
+      .innerJoin(firms, eq(firms.id, noticeScans.firmId)).where(eq(noticeScans.userId, userId)).orderBy(asc(noticeScans.scannedAt)),
+  ]);
+  return { notices, scans };
+}
+
+/** Marks the given new notices (all of them when `ids` is null) as seen by the user. */
+export async function markNoticesSeen(userId: string, ids: readonly string[] | null): Promise<number> {
+  const rows = await getDb().update(taxNotices).set({ seenAt: new Date() })
+    .where(and(eq(taxNotices.userId, userId), isNull(taxNotices.seenAt), ids ? inArray(taxNotices.id, [...ids]) : undefined)).returning({ id: taxNotices.id });
+  return rows.length;
 }

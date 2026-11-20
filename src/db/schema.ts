@@ -211,3 +211,37 @@ export const payments = pgTable("payments", {
   index("payments_user_created_idx").on(t.userId, t.createdAt),
   ownerPolicy("payments_owner"),
 ]);
+
+// e-Tebligat list rows the extension read from the user's own Dijital Vergi Dairesi session (docs/e-tebligat-arastirma-plan.md).
+// Only the list's header fields: the envelope is never opened, nothing of the document is kept. seen_at null = new to the user.
+export const taxNotices = pgTable("tax_notices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id),
+  // GİB's tarafId: one notice to this taxpayer.
+  gibId: text("gib_id").notNull(),
+  institution: text("institution").notNull(),
+  subUnit: text("sub_unit"),
+  docType: text("doc_type"),
+  docNo: text("doc_no"),
+  // As GİB writes them (dd/mm/yyyy...), shown as they are.
+  sentAt: text("sent_at"),
+  servedAt: text("served_at"),
+  readOnGib: boolean("read_on_gib").notNull().default(false),
+  firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  seenAt: timestamp("seen_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("tax_notices_firm_gib_idx").on(t.firmId, t.gibId),
+  index("tax_notices_user_idx").on(t.userId, t.firstSeenAt),
+  ownerPolicy("tax_notices_owner"),
+]);
+
+// When a firm's e-Tebligat list was last read. A firm's first read is the baseline (only GİB-unread notices count as new).
+export const noticeScans = pgTable("notice_scans", {
+  firmId: uuid("firm_id").primaryKey().references(() => firms.id),
+  userId: text("user_id").notNull(),
+  scannedAt: timestamp("scanned_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("notice_scans_user_idx").on(t.userId),
+  ownerPolicy("notice_scans_owner"),
+]);

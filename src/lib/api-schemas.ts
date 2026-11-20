@@ -79,3 +79,22 @@ export const LucaFirmSchema = z.object({
   })).min(1).max(MAX_PLAN_ACCOUNTS),
 });
 export const FirmActiveSchema = z.object({ id: z.uuid() });
+
+// One firm's e-Tebligat list from the extension (extension/gib-notices.js). Text comes from GİB through the user's browser: capped, never trusted.
+const noticeText = (max: number) => z.string().trim().max(400).transform((s) => s.slice(0, max) || null).nullable();
+export const MAX_NOTICES = 2000;
+export const NoticesSchema = z.object({
+  // The session's VKN and/or TCKN (a sole trader's firm may be kept under either).
+  idNumbers: z.array(z.string().regex(/^\d{10,11}$/)).min(1).max(2),
+  notices: z.array(z.object({
+    gibId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
+    institution: z.string().trim().min(1).max(400).transform((s) => s.slice(0, 160)),
+    subUnit: noticeText(160),
+    docType: noticeText(160),
+    docNo: noticeText(80),
+    sentAt: noticeText(40),
+    servedAt: noticeText(40),
+    readOnGib: z.boolean(),
+  })).max(MAX_NOTICES),
+});
+export const NoticesSeenSchema = z.object({ ids: z.array(z.uuid()).min(1).max(500).nullable() });
