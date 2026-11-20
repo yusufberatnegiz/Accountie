@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { endGibScan, setGibScanGrant } from "@/db/queries";
+import { endGibScan, liveTokenHashes, setGibScanGrant } from "@/db/queries";
 import { FRESH_SIGN_IN_MS, getUserId, SIGN_IN_AGAIN, signedInWithin } from "@/lib/auth/session";
 import { grantText, mac, secretKey } from "@/lib/gib/secret";
 import { fail, NO_STORE, unauthorized } from "@/lib/http";
@@ -13,7 +13,7 @@ const SCAN_GRANT_MS = 4 * 60 * 60_000;
 
 /**
  * The user's own approval, from the signed-in site after a fresh sign-in, for the extension to unseal GİB logins for a while,
- * from this network only. Sealed with a MAC under the server's key: a row written straight into the database opens nothing.
+ * from this network and with the one extension key paired now only. Sealed with a MAC under the server's key: a row written straight into the database opens nothing.
  * The extension key alone never opens a login.
  */
 export async function POST(request: Request) {
@@ -23,10 +23,15 @@ export async function POST(request: Request) {
   const key = secretKey();
   if (!key) return fail("GİB girişlerini saklama bu sunucuda açık değil.", 503);
   if (!(await allow("gibGrant", userId))) return fail("Çok fazla işlem yapıldı. Bir süre bekleyin.", 429);
+  // Pairing keeps one key per user (createExtensionToken): none means the extension is not connected, more means a key was
+  // added outside Accountie, and nothing is approved for either.
+  const tokens = await liveTokenHashes(userId);
+  if (tokens.length !== 1) return fail(tokens.length ? "Eklenti anahtarında beklenmeyen bir durum var. Kurulum sayfasından eklentiyi yeniden bağlayın, sonra taramayı onaylayın." : "Önce eklentiyi bağlayın (Kurulum sayfası), sonra taramayı onaylayın.", 409);
   const grantedAt = new Date();
   const until = new Date(grantedAt.getTime() + SCAN_GRANT_MS);
   const network = mac(key, "network", ipBucket(clientIp(request.headers)));
-  await setGibScanGrant(userId, { until, grantedAt, network, mac: mac(key, "grant", grantText(userId, until, network)) });
+  const g = { userId, grantedAt, until, network, tokenHash: tokens[0] };
+  await setGibScanGrant(userId, { until, grantedAt, network, tokenHash: g.tokenHash, mac: mac(key, "grant", grantText(g)) });
   return NextResponse.json({ until: until.toISOString() }, { headers: NO_STORE });
 }
 

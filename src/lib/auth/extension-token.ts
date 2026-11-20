@@ -11,6 +11,12 @@ export const newExtensionToken = () => `acx_${randomBytes(32).toString("base64ur
 
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
+/** The hash of the request's extension key, or null: the e-Tebligat approval is bound to one key. */
+export function bearerHash(request: Request): string | null {
+  const token = TOKEN_PATTERN.exec(request.headers.get("authorization") ?? "")?.[1];
+  return token ? hashToken(token) : null;
+}
+
 /** User id for a valid `Authorization: Bearer acx_...` header. Cookies are ignored on purpose. */
 export async function extensionUserId(request: Request): Promise<string | null> {
   const token = TOKEN_PATTERN.exec(request.headers.get("authorization") ?? "")?.[1];

@@ -1,5 +1,5 @@
 {
-  "id": "411a6d85-9bb8-4a7f-a38f-cee5573be326",
+  "id": "d55a911c-7b6c-40af-ab84-8497e42cc764",
   "prevId": "c8200f54-3025-466e-8039-0982bb631b63",
   "version": "7",
   "dialect": "postgresql",
@@ -914,6 +914,12 @@
         },
         "network": {
           "name": "network",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
           "type": "text",
           "primaryKey": false,
           "notNull": true

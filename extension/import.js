@@ -83,11 +83,16 @@ async function sendGibLogins(token, target, only) {
   if (!info.ok) return info.status === 503 ? null : "Accountie'ye ulaşılamadı; GİB girişleri kaydedilmedi.";
   const { account, enabled } = await info.json();
   if (!enabled) return null;
-  if (!account || !confirm(`Luca'daki GİB girişleri şu Accountie hesabına şifreli kaydedilecek:
-
-${account}
-
-Bu sizin hesabınız mı?`)) return "GİB girişleri gönderilmedi (hesap onaylanmadı).";
+  if (!account) return "Accountie hesabı okunamadı; GİB girişleri gönderilmedi.";
+  // Asked when the account is new or changed, so the question is read, not clicked through out of habit.
+  const { gibAccount } = await chrome.storage.local.get("gibAccount");
+  if (gibAccount !== account) {
+    const ask = gibAccount
+      ? `DİKKAT: Bu, daha önce onayladığınız Accountie hesabı DEĞİL.\n\nÖnceki: ${gibAccount}\nŞimdiki: ${account}\n\nLuca'daki GİB girişleri şimdiki hesaba şifreli kaydedilecek. Bu hesap sizin mi?`
+      : `Luca'daki GİB girişleri şu Accountie hesabına şifreli kaydedilecek:\n\n${account}\n\nBu sizin hesabınız mı?`;
+    if (!confirm(ask)) return "GİB girişleri gönderilmedi (hesap onaylanmadı).";
+    await chrome.storage.local.set({ gibAccount: account });
+  }
   const [r] = await chrome.scripting.executeScript({ target, files: ["gib-login.js"] })
     .then(() => chrome.scripting.executeScript({ target, func: () => globalThis.AccountieGibLogin.fetchLucaRows().catch(() => null) }))
     .catch(() => [null]);

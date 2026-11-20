@@ -767,8 +767,8 @@ export async function takeGibLogin(userId: string, lucaId: string, network: stri
 }
 
 /** The user's scan approval as stored (its MAC and network are checked by the caller with the server's key), or null. */
-export async function gibScanGrant(userId: string): Promise<{ until: Date; grantedAt: Date; network: string; mac: string } | null> {
-  const [row] = await getDb().select({ until: gibScanGrants.until, grantedAt: gibScanGrants.grantedAt, network: gibScanGrants.network, mac: gibScanGrants.mac })
+export async function gibScanGrant(userId: string): Promise<{ until: Date; grantedAt: Date; network: string; tokenHash: string; mac: string } | null> {
+  const [row] = await getDb().select({ until: gibScanGrants.until, grantedAt: gibScanGrants.grantedAt, network: gibScanGrants.network, tokenHash: gibScanGrants.tokenHash, mac: gibScanGrants.mac })
     .from(gibScanGrants).where(eq(gibScanGrants.userId, userId));
   return row ?? null;
 }
@@ -778,7 +778,14 @@ export async function gibScanUntil(userId: string): Promise<Date | null> {
   return (await gibScanGrant(userId))?.until ?? null;
 }
 
-export async function setGibScanGrant(userId: string, grant: { until: Date; grantedAt: Date; network: string; mac: string }): Promise<void> {
+/** The user's live extension keys (hashes): the approval binds to the one there should be. */
+export async function liveTokenHashes(userId: string): Promise<string[]> {
+  const rows = await getDb().select({ tokenHash: extensionTokens.tokenHash }).from(extensionTokens)
+    .where(and(eq(extensionTokens.userId, userId), gt(extensionTokens.expiresAt, new Date())));
+  return rows.map((r) => r.tokenHash);
+}
+
+export async function setGibScanGrant(userId: string, grant: { until: Date; grantedAt: Date; network: string; tokenHash: string; mac: string }): Promise<void> {
   await getDb().insert(gibScanGrants).values({ userId, ...grant })
     .onConflictDoUpdate({ target: gibScanGrants.userId, set: grant, setWhere: eq(gibScanGrants.userId, userId) });
 }

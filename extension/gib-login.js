@@ -137,7 +137,8 @@
     code.focus();
     // Runs in this page even if the scan page is gone: no login stays in a form nobody is using.
     root.clearTimeout(root.accountieClear);
-    root.accountieClear = root.setTimeout(() => { if (!storage.getItem("token")) { set(passBox, ""); set(userBox, ""); doc.getElementById("accountie-note")?.remove(); } }, CLEAR_AFTER_MS);
+    // Never fires in a run that goes on (each firm reloads this page); only in one left behind, whose GİB session ends here too.
+    root.accountieClear = root.setTimeout(() => { set(passBox, ""); set(userBox, ""); goToLogin(storage, loc); }, CLEAR_AFTER_MS);
     return true;
   }
 

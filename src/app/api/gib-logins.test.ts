@@ -7,7 +7,7 @@ vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn(), signedInWithin: vi.fn
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(async () => true), clientIp: () => "203.0.113.7", ipBucket: (ip: string) => ip }));
 vi.mock("@/db/queries", () => ({
   userIdForTokenHash: vi.fn(), firmsByLucaId: vi.fn(), saveGibLogins: vi.fn(), listGibLoginFirms: vi.fn(), gibScanUntil: vi.fn(),
-  takeGibLogin: vi.fn(), gibScanGrant: vi.fn(), setGibScanGrant: vi.fn(), endGibScan: vi.fn(), deleteGibLogins: vi.fn(), accountEmail: vi.fn(async () => "a@example.com"),
+  takeGibLogin: vi.fn(), gibScanGrant: vi.fn(), setGibScanGrant: vi.fn(), endGibScan: vi.fn(), liveTokenHashes: vi.fn(async () => [hashToken(`acx_${"a".repeat(43)}`)]), deleteGibLogins: vi.fn(), accountEmail: vi.fn(async () => "a@example.com"),
 }));
 
 const q = await import("@/db/queries");
@@ -26,9 +26,10 @@ const PASS = "Gizli-Şifre1";
 const req = (method: string, body?: unknown, token = TOKEN) => new Request("http://test", { method, headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
 const later = () => new Date(Date.now() + 60 * 60_000);
 /** The approval as the site would store it: this network (the test's 203.0.113.7), sealed with the server's key. */
-const grantFor = (until = later(), ip = "203.0.113.7") => {
+const grantFor = (until = later(), ip = "203.0.113.7", tokenHash = hashToken(TOKEN)) => {
   const network = mac(KEY, "network", ip);
-  return { until, grantedAt: new Date(Date.now() - 60_000), network, mac: mac(KEY, "grant", grantText(USER, until, network)) };
+  const grantedAt = new Date(Date.now() - 60_000);
+  return { until, grantedAt, network, tokenHash, mac: mac(KEY, "grant", grantText({ userId: USER, grantedAt, until, network, tokenHash })) };
 };
 
 beforeEach(() => {
@@ -88,6 +89,12 @@ describe("POST /api/extension/gib-logins/read (taramada tek firmanın girişi)",
     // Given from another network: the stolen key used elsewhere opens nothing.
     vi.mocked(q.gibScanGrant).mockResolvedValue(grantFor(later(), "198.51.100.9"));
     expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(403);
+    // Given for another key: a second key of this user (one added to the database) opens nothing with the user's approval.
+    vi.mocked(q.gibScanGrant).mockResolvedValue(grantFor(later(), "203.0.113.7", hashToken(`acx_${"z".repeat(43)}`)));
+    expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(403);
+    // Its start moved later in the database (to reset the per-firm count): the MAC no longer fits.
+    vi.mocked(q.gibScanGrant).mockResolvedValue({ ...grantFor(), grantedAt: new Date() });
+    expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(403);
     expect(q.takeGibLogin).not.toHaveBeenCalled();
   });
 
@@ -135,7 +142,13 @@ describe("Accountie'den tarama onayı ve girişleri silme", () => {
     expect(userId).toBe(USER);
     expect(g.until.getTime() - before).toBeLessThanOrEqual(4 * 60 * 60_000 + 1000);
     expect(g.network).toBe(mac(KEY, "network", "203.0.113.7"));
-    expect(g.mac).toBe(mac(KEY, "grant", grantText(USER, g.until, g.network)));
+    expect(g.tokenHash).toBe(hashToken(TOKEN));
+    expect(g.mac).toBe(mac(KEY, "grant", grantText({ userId: USER, ...g })));
+    // No paired key, or a second one added outside Accountie: nothing is approved.
+    vi.mocked(q.liveTokenHashes).mockResolvedValueOnce([]);
+    expect((await grant.POST(web())).status).toBe(409);
+    vi.mocked(q.liveTokenHashes).mockResolvedValueOnce(["a", "b"]);
+    expect((await grant.POST(web())).status).toBe(409);
     expect((await grant.DELETE()).status).toBe(204);
     expect(q.endGibScan).toHaveBeenCalledWith(USER);
     vi.mocked(q.deleteGibLogins).mockResolvedValue(3);

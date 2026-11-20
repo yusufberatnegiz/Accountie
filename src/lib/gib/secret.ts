@@ -73,5 +73,6 @@ export function macOk(key: Buffer, purpose: "grant" | "network", text: string, g
   return want.length === got.length && timingSafeEqual(want, got);
 }
 
-/** The scan approval's MAC: user, end time and network, so none of them can be changed in the database. */
-export const grantText = (userId: string, until: Date, network: string) => `${userId}|${until.getTime()}|${network}`;
+/** The scan approval's MAC text: user, start and end, network and extension key, so none of them can be changed in the database. */
+export const grantText = (g: { userId: string; grantedAt: Date; until: Date; network: string; tokenHash: string }) =>
+  `${g.userId}|${g.grantedAt.getTime()}|${g.until.getTime()}|${g.network}|${g.tokenHash}`;

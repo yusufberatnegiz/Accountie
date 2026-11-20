@@ -15,7 +15,8 @@ export const sentryOptions = {
     userInfo: false, cookies: false, httpHeaders: false, httpBodies: [], urlQueryParams: false, databaseQueryData: false,
     stackFrameVariables: false, genAI: { inputs: false, outputs: false }, mcp: { inputs: false, outputs: false }, queues: false,
   },
-  // A second lock should an integration attach request data anyway: an event never leaves with a body, cookies or headers.
+  // A second lock should an integration attach request data to an error event anyway: it never leaves with a body, cookies or
+  // headers. (Traces stream as spans in @sentry/core 11, past beforeSendTransaction: for them the dataCollection above is the lock.)
   beforeSend<T extends { request?: { data?: unknown; cookies?: unknown; headers?: unknown; query_string?: unknown } }>(event: T): T {
     if (event.request) { delete event.request.data; delete event.request.cookies; delete event.request.headers; delete event.request.query_string; }
     return event;

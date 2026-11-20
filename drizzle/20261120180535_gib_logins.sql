@@ -21,6 +21,7 @@ CREATE TABLE "gib_scan_grants" (
 	"until" timestamp with time zone NOT NULL,
 	"granted_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"network" text NOT NULL,
+	"token_hash" text NOT NULL,
 	"mac" text NOT NULL
 );
 --> statement-breakpoint
@@ -32,4 +33,5 @@ CREATE INDEX "gib_logins_user_idx" ON "gib_logins" USING btree ("user_id");--> s
 CREATE POLICY "gib_login_reads_owner" ON "gib_login_reads" AS PERMISSIVE FOR ALL TO public USING (user_id = current_setting('app.user_id', true)) WITH CHECK (user_id = current_setting('app.user_id', true));--> statement-breakpoint
 CREATE POLICY "gib_logins_owner" ON "gib_logins" AS PERMISSIVE FOR ALL TO public USING (user_id = current_setting('app.user_id', true)) WITH CHECK (user_id = current_setting('app.user_id', true));--> statement-breakpoint
 CREATE POLICY "gib_scan_grants_owner" ON "gib_scan_grants" AS PERMISSIVE FOR ALL TO public USING (user_id = current_setting('app.user_id', true)) WITH CHECK (user_id = current_setting('app.user_id', true));--> statement-breakpoint
+-- Supabase Data API roles: no grants on new tables (default privileges already revoke them; explicit here too).
 REVOKE ALL ON TABLE "gib_logins", "gib_scan_grants", "gib_login_reads" FROM anon, authenticated;

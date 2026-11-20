@@ -18,6 +18,14 @@ const today = () => new Date().toLocaleDateString("sv-SE");
 let running = false;
 let stopped = false;
 let usedStored = false;
+let grantToken = "";
+
+/** Ends the approval in Accountie once the stored logins are no longer needed (done, stopped, failed, or this page closing). */
+async function endGrant(token = grantToken, keepalive = false) {
+  if (!usedStored || !token) return;
+  usedStored = false;
+  await fetch(`${APP_ORIGIN}/api/extension/gib-scan`, { method: "DELETE", credentials: "omit", keepalive, headers: { authorization: `Bearer ${token}` } }).catch(() => {});
+}
 
 function status(text, isError = false) {
   $("status").textContent = text;
@@ -235,6 +243,7 @@ async function run() {
   usedStored = false;
   if (stored.enabled && stored.firms?.length) {
     usedStored = true;
+    grantToken = token;
     if (!stored.scanUntil) return status("Tarama onaylı değil. Accountie'de e-Tebligatlar sayfasında Taramayı onayla'ya basın (bu bilgisayardan, 4 saat geçerli), sonra yeniden başlatın.", true);
     p = AccountieGibLogin.plan(stored.firms.map((f) => ({ lucaId: f.lucaId, name: f.name, stored: true })), stored.firms, before.ids, before.failed.map((x) => x.id));
   } else {
@@ -249,7 +258,7 @@ async function run() {
   if (p.notInAccountie.length) log(`${p.notInAccountie.length} firma`, "Accountie'de yok ya da vergi numarası bilinmiyor; önce Luca'dan firmaları çekin.");
   if (p.sameTax.length) log(`${p.sameTax.length} firma`, `Vergi numarası başka bir firmayla aynı; bir kez taranır: ${names(p.sameTax)}`);
   const earlier = [p.done && `${p.done} firma tarandı`, p.failed && `${p.failed} firmada giriş olmadı`].filter(Boolean).join(", ");
-  if (!p.todo.length) { summary(before, before.ids.length); return status(earlier ? `Bugün taranacak firma kalmadı: ${earlier}.` : "Taranacak firma yok.", !earlier); }
+  if (!p.todo.length) { await endGrant(token); summary(before, before.ids.length); return status(earlier ? `Bugün taranacak firma kalmadı: ${earlier}.` : "Taranacak firma yok.", !earlier); }
   if (earlier) log("Bugün", `Daha önce ${earlier}; bunlar atlandı. ${p.todo.length} firma kaldı.`);
 
   const tab = (await chrome.tabs.query({ url: `${GIB_ORIGIN}/*` }))[0] ?? (await chrome.tabs.create({ url: LOGIN_URL, active: false }));
@@ -275,7 +284,7 @@ async function run() {
   // The last firm's session key, password and note leave the tab: the login page is loaded again, empty.
   await tryGib(tab.id, "gib-login.js", () => globalThis.AccountieGibLogin.goToLogin(), null).catch(() => {});
   // The approval ends with the scan: no stored login can be opened in the hours it had left.
-  if (usedStored) await fetch(`${APP_ORIGIN}/api/extension/gib-scan`, { method: "DELETE", credentials: "omit", headers: { authorization: `Bearer ${token}` } }).catch(() => {});
+  await endGrant(token);
   document.title = "e-Tebligat taraması";
   const me = await chrome.tabs.getCurrent();
   if (me?.id) await chrome.tabs.update(me.id, { active: true }).catch(() => {});
@@ -318,6 +327,7 @@ $("start").addEventListener("click", async () => {
   $("log-table").hidden = true;
   $("summary").hidden = true;
   await run().catch((e) => status(e?.said ? e.message : turkish(String(e?.message ?? "")), true));
+  await endGrant();
   running = false;
   $("progress").hidden = true;
   $("start").disabled = false;
@@ -336,3 +346,5 @@ $("retry").addEventListener("click", async () => {
 });
 $("stop").addEventListener("click", () => { stopped = true; status("Durduruluyor."); });
 window.addEventListener("beforeunload", (e) => { if (running) e.preventDefault(); });
+// Closed or crashed mid-run: the approval does not stay open for the hours it had left.
+window.addEventListener("pagehide", () => { endGrant(grantToken, true); });
