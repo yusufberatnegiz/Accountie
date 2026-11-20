@@ -4,6 +4,7 @@ import "../../../extension/luca-import.js";
 type Period = { lucaId: string; shortName: string; donemId: string; start: string; end: string };
 type Luca = {
   firmsToImport(list: string[][], year: string): Period[];
+  activeIds(list: string[][], year: string): Set<string>;
   selected(list: string[][], sirketId: string, donemId: string): Period | null;
   switchUrl(f: Period): string;
   parseIdentity(text: string): { name: string; start: string; end: string; taxNumber: string | null } | null;
@@ -30,6 +31,12 @@ describe("Luca firma listesi", () => {
     // Last period ended in 2024: closed by 2026, not brought in; still current for 2025.
     expect(luca.firmsToImport(LIST, "2026").map((f) => f.lucaId)).toEqual(["11"]);
     expect(luca.firmsToImport([["14", "GEÇEN YIL", "", "", "", "701", "01/01/2025", "31/12/2025", "0"]], "2026").map((f) => f.donemId)).toEqual(["701"]);
+  });
+
+  it("e-Tebligat için yalnız bu yıl dönemi olan firmalar aktif sayılır", () => {
+    expect([...luca.activeIds(LIST, "2026")]).toEqual(["11"]);
+    expect([...luca.activeIds(LIST, "2024")]).toEqual(["12"]);
+    expect([...luca.activeIds(LIST, "2027")]).toEqual([]);
   });
 
   it("şu an seçili firma ve dönemi bulur; bulamazsa null", () => {

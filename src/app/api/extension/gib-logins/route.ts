@@ -1,7 +1,7 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { accountEmail, firmsByLucaId, gibScanUntil, listGibLoginFirms, saveGibLogins } from "@/db/queries";
+import { accountEmail, deleteGibLoginsFor, firmsByLucaId, gibScanUntil, listGibLoginFirms, saveGibLogins } from "@/db/queries";
 import { extensionUserId } from "@/lib/auth/extension-token";
 import { seal, secretContext, secretKey } from "@/lib/gib/secret";
 import { fail, NO_STORE, readJson } from "@/lib/http";
@@ -59,3 +59,16 @@ export async function PUT(request: Request) {
   }
   return NextResponse.json({ saved: sealed.length, skipped: body.data.logins.length - sealed.length }, { headers: NO_STORE });
 }
+
+const Retire = z.object({ lucaIds: z.array(z.string().regex(/^\d{1,12}$/)).max(500) });
+
+/** A firm import removes the logins of firms with no period this year: only active firms are scanned. Removing needs no approval. */
+export async function DELETE(request: Request) {
+  const userId = await extensionUserId(request);
+  if (!userId) return fail("Eklenti anahtarı geçersiz veya süresi dolmuş.", 401);
+  if (!(await allow("gibSave", userId))) return fail("Çok sık gönderildi. Biraz bekleyip tekrar deneyin.", 429);
+  const body = Retire.safeParse(await readJson(request));
+  if (!body.success) return fail("Firma listesi okunamadı.", 400);
+  return NextResponse.json({ deleted: await deleteGibLoginsFor(userId, body.data.lucaIds) }, { headers: NO_STORE });
+}
+

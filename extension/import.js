@@ -114,6 +114,16 @@ async function sendGibLogins(token, target, only) {
   return `${saved} firmanın GİB girişi şifreli kaydedildi (e-Tebligat taraması için).`;
 }
 
+/** Removes the stored GİB logins of firms with no period this year: the scan never asks for them again. */
+async function retireGibLogins(token, lucaIds) {
+  for (let i = 0; i < lucaIds.length; i += 500) {
+    await fetch(`${APP_ORIGIN}/api/extension/gib-logins`, {
+      method: "DELETE", credentials: "omit", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ lucaIds: lucaIds.slice(i, i + 500) }),
+    });
+  }
+}
+
 /** `mode`: "new" reads only the firms Luca has and Accountie lacks, "one" only the firm open in Luca, "all" every firm again. */
 async function run(mode) {
   const { token } = await chrome.storage.local.get("token");
@@ -206,8 +216,12 @@ async function run(mode) {
     // After the firms, so each login finds its firm in Accountie. A failure here never undoes the firms read.
     if (!stopped && done > 0) {
       status("GİB girişleri kaydediliyor.");
-      const only = mode === "one" ? new Set([String(original.lucaId)]) : await imported(token).catch(() => new Set());
+      // Only firms with a period in this year: a closed firm's login is neither sent nor kept.
+      const active = AccountieLuca.activeIds(luca.list, YEAR);
+      const wanted = mode === "one" ? new Set([String(original.lucaId)]) : await imported(token).catch(() => new Set());
+      const only = new Set([...wanted].filter((id) => active.has(id)));
       const said = await sendGibLogins(token, luca.target, only).catch(() => "GİB girişleri kaydedilemedi.");
+      if (mode !== "one") await retireGibLogins(token, luca.list.map((row) => String(row[0])).filter((id) => !active.has(id))).catch(() => {});
       if (said) log("GİB girişleri", said);
     }
   } finally {

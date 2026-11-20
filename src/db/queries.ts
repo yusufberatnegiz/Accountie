@@ -810,6 +810,14 @@ export async function gibLoginStatus(userId: string): Promise<{ stored: number; 
   return { stored: Number(n), until: grant?.until ?? null, day: { reads: Number(day?.reads ?? 0), networks: Number(day?.networks ?? 0) }, reads };
 }
 
+/** Deletes the stored logins of these Luca firms (closed ones: no period this year). Only this user's firms. */
+export async function deleteGibLoginsFor(userId: string, lucaIds: readonly string[]): Promise<number> {
+  if (!lucaIds.length) return 0;
+  const ids = getDb().select({ id: firms.id }).from(firms).where(and(eq(firms.userId, userId), inArray(firms.lucaSirketId, [...lucaIds])));
+  const gone = await getDb().delete(gibLogins).where(and(eq(gibLogins.userId, userId), inArray(gibLogins.firmId, ids))).returning({ firmId: gibLogins.firmId });
+  return gone.length;
+}
+
 /** Deletes every stored login and ends the approval; the read log stays (it holds no login). */
 export async function deleteGibLogins(userId: string): Promise<number> {
   return getDb().transaction(async (tx) => {

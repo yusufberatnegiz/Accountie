@@ -1,4 +1,4 @@
-/* global chrome, AccountieGibLogin, AccountieGib */
+/* global chrome, AccountieGibLogin, AccountieGib, sirketDonem */
 // Bütün firmaların e-Tebligat taraması: her firmanın GİB girişi Accountie'den (firma çekilirken saklanan, kullanıcının onayıyla
 // firma firma açılan) ya da kayıtlı giriş yoksa Luca'nın açık GİB Şirket ekranından alınır (gib-login.js), Dijital Vergi Dairesi
 // giriş formu doldurulur, doğrulama kodunu kullanıcı yazar, giriş olunca liste okunur (gib-notices.js) ve Accountie'ye gönderilir.
@@ -63,7 +63,14 @@ async function lucaRows() {
       .then(() => chrome.scripting.executeScript({ target, func: () => globalThis.AccountieGibLogin.lucaRows() }))
       .catch(() => []);
     const hit = frames.find((f) => Array.isArray(f.result));
-    if (hit) return hit.result;
+    if (!hit) continue;
+    // Luca's firm list (sirketDonem, a page variable) says which firms have a period this year; without it nothing is left out.
+    const lists = await chrome.scripting.executeScript({ target, world: "MAIN", func: () => (typeof sirketDonem === "undefined" ? null : Array.from(sirketDonem, (row) => Array.from(row, String))) }).catch(() => []);
+    const list = lists.find((f) => Array.isArray(f.result))?.result;
+    if (!list) return hit.result;
+    const year = String(new Date().getFullYear());
+    const active = new Set(list.flatMap((row) => { const out = []; for (let i = 5; i + 2 < row.length; i += 4) if (String(row[i + 1]).endsWith(`/${year}`)) out.push(String(row[0])); return out; }));
+    return hit.result.filter((r) => active.has(r.lucaId));
   }
   return null;
 }

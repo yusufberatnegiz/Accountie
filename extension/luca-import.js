@@ -30,6 +30,11 @@
     });
   }
 
+  /** Bu yıl aktif firmalar: başlangıcı `year` yılında olan bir dönemi olanlar (e-Tebligat taraması yalnız bunları tarar). */
+  function activeIds(sirketDonem, year) {
+    return new Set(sirketDonem.flatMap(periods).filter((p) => p.start.endsWith(`/${year}`)).map((p) => p.lucaId));
+  }
+
   /** Luca'da şu an seçili firma ve dönem; bulunamazsa null (o zaman hiçbir şeye başlanmaz). */
   function selected(sirketDonem, sirketId, donemId) {
     return sirketDonem.flatMap(periods).find((p) => p.lucaId === String(sirketId) && p.donemId === String(donemId)) ?? null;
@@ -137,5 +142,5 @@
     return !!sw.ok && same;
   }
 
-  root.AccountieLuca = { firmsToImport, selected, switchUrl, parseIdentity, parsePlan, sessionIds, probe, readFirm, switchBack };
+  root.AccountieLuca = { firmsToImport, activeIds, selected, switchUrl, parseIdentity, parsePlan, sessionIds, probe, readFirm, switchBack };
 })(globalThis);

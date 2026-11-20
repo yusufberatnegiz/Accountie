@@ -134,7 +134,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
   const textOf = (n: Node): string => [n.textContent, ...n.children.map(textOf)].join(" ");
 
   /** The scan page in a sandbox with a fake Chrome: Luca gives one firm, GİB answers `login` while waiting for the user. */
-  function setup(login: string, ids = ["1234567890"], saved: null | { scanUntil: string | null; read?: number } = null) {
+  function setup(login: string, ids = ["1234567890"], saved: null | { scanUntil: string | null; read?: number } = null, lucaList: string[][] | null = null) {
     const els = new Map<string, Node>();
     const get = (id: string) => { if (!els.has(id)) els.set(id, new Node()); return els.get(id)!; };
     const stored: { tebligatScan: unknown }[] = [];
@@ -152,6 +152,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
       if (!o.func) return [];
       const src = String(o.func);
       if (src.includes("lucaRows")) return [{ frameId: 3, result: [{ lucaId: "7", name: "ÖRNEK", user: "12345678", pass: PASS }] }];
+      if (src.includes("sirketDonem")) return [{ frameId: 4, result: lucaList }];
       if (src.includes("fillLogin")) { fillArgs.push(o.args ?? []); return [{ result: true }]; }
       if (src.includes("loginReady")) return [{ result: true }];
       if (src.includes("loginState")) return [{ result: login }];
@@ -231,4 +232,15 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
     expect(textOf(ended.get("status"))).toContain("Tarama onaylı değil");
     expect(ended.fillArgs).toEqual([]);
   });
+
+  it("Luca ekranından taramada yalnız bu yıl dönemi olan firmalar taranır", async () => {
+    const year = String(new Date().getFullYear());
+    const closed = setup("in", ["1234567890"], null, [["7", "ÖRNEK", "", "", "", "1", "01/01/2020", "31/12/2020", "0"]]);
+    await closed.get("start").click?.();
+    expect(closed.fillArgs).toEqual([]);
+    const open = setup("in", ["1234567890"], null, [["7", "ÖRNEK", "", "", "", "1", `01/01/${year}`, `31/12/${year}`, "1"]]);
+    await open.get("start").click?.();
+    expect(open.fillArgs).toHaveLength(1);
+  });
 });
+

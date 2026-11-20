@@ -7,7 +7,7 @@ vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn(), signedInWithin: vi.fn
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(async () => true), clientIp: () => "203.0.113.7", ipBucket: (ip: string) => ip }));
 vi.mock("@/db/queries", () => ({
   userIdForTokenHash: vi.fn(), firmsByLucaId: vi.fn(), saveGibLogins: vi.fn(), listGibLoginFirms: vi.fn(), gibScanUntil: vi.fn(),
-  takeGibLogin: vi.fn(), gibScanGrant: vi.fn(), setGibScanGrant: vi.fn(), endGibScan: vi.fn(), liveTokenHashes: vi.fn(async () => [hashToken(`acx_${"a".repeat(43)}`)]), deleteGibLogins: vi.fn(), accountEmail: vi.fn(async () => "a@example.com"),
+  takeGibLogin: vi.fn(), deleteGibLoginsFor: vi.fn(async () => 2), gibScanGrant: vi.fn(), setGibScanGrant: vi.fn(), endGibScan: vi.fn(), liveTokenHashes: vi.fn(async () => [hashToken(`acx_${"a".repeat(43)}`)]), deleteGibLogins: vi.fn(), accountEmail: vi.fn(async () => "a@example.com"),
 }));
 
 const q = await import("@/db/queries");
@@ -178,6 +178,15 @@ describe("eklenti anahtarının özeti sunucu anahtarıyla", () => {
     expect(await extensionUserId(req("GET"))).toBe(USER);
     expect(vi.mocked(q.userIdForTokenHash).mock.calls.map((c) => c[0])).toEqual([hashToken(TOKEN), legacyHash(TOKEN)]);
     expect(Object.keys(q)).not.toContain("upgradeTokenHash");
+  });
+});
+
+describe("DELETE /api/extension/gib-logins (bu yıl dönemi olmayan firmalar)", () => {
+  it("yalnız bu kullanıcının verilen Luca firmalarının girişlerini siler; kötü listeyi almaz", async () => {
+    expect(await (await store.DELETE(req("DELETE", { lucaIds: ["7", "8"] }))).json()).toEqual({ deleted: 2 });
+    expect(q.deleteGibLoginsFor).toHaveBeenCalledWith(USER, ["7", "8"]);
+    expect((await store.DELETE(req("DELETE", { lucaIds: ["x;drop"] }))).status).toBe(400);
+    expect((await store.DELETE(req("DELETE", { lucaIds: [] }, `acx_${"b".repeat(43)}`))).status).toBe(401);
   });
 });
 
