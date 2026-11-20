@@ -1,5 +1,5 @@
 import "server-only";
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 /**
  * Seals a firm's GİB login (Dijital Vergi Dairesi kullanıcı kodu and şifre, read from the müşavir's Luca for the e-Tebligat scan) with AES-256-GCM. The 32-byte key is the server's GIB_SECRET_KEY (base64), read at run time and
@@ -58,3 +58,20 @@ export function open(key: Buffer, sealed: string, context: string): string {
   if (length < 0 || length > PADDED - 2) throw new SecretError("open");
   return padded.subarray(2, 2 + length).toString("utf8");
 }
+
+/**
+ * A MAC under a subkey of the server's key, by purpose: a database row holding one (the scan approval) was written by this server,
+ * and a network hash made with it cannot be reversed by trying every IPv4 address without the key.
+ */
+export function mac(key: Buffer, purpose: "grant" | "network", text: string): string {
+  const sub = createHmac("sha256", key).update(`accountie:${purpose}`).digest();
+  return createHmac("sha256", sub).update(text).digest("base64url");
+}
+
+export function macOk(key: Buffer, purpose: "grant" | "network", text: string, given: string): boolean {
+  const want = Buffer.from(mac(key, purpose, text)), got = Buffer.from(given);
+  return want.length === got.length && timingSafeEqual(want, got);
+}
+
+/** The scan approval's MAC: user, end time and network, so none of them can be changed in the database. */
+export const grantText = (userId: string, until: Date, network: string) => `${userId}|${until.getTime()}|${network}`;

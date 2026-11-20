@@ -9,12 +9,13 @@ const { AccountieGibLogin: g } = globalThis as unknown as { AccountieGibLogin: {
   lucaRows(doc: unknown, path: string): Row[] | null;
   plan(rows: Row[], firms: { lucaId: string; taxNumber: string }[], doneToday?: string[], failedToday?: string[]): { todo: (Row & { taxNumber: string })[]; noCredentials: string[]; notInAccountie: string[]; done: number; failed: number };
   goToLogin(storage: Storage, loc: { replace(p: string): void }): void;
-  fillLogin(user: string, pass: string, text: string, doc: unknown, storage: Storage): boolean;
+  fillLogin(user: string, pass: string, text: string, doc: unknown, storage: Storage, loc?: { origin: string; pathname: string }): boolean;
   loginState(doc: unknown, storage: Storage, loc: { pathname: string }): string;
   sameFirm(ids: string[], tax: string): boolean;
 } };
 
 const PASS = "S3cr3t!pw";
+const GIB = { origin: "https://dijital.gib.gov.tr", pathname: "/portal/login" };
 
 function storage(init: Record<string, string> = {}) {
   const m = new Map(Object.entries(init));
@@ -80,7 +81,7 @@ describe("eklenti: Luca GİB Şirket ekranı ve GİB girişi", () => {
 
   it("formu doldurur, doğrulama koduna dokunmaz, imleci ona koyar; notta şifre yok", () => {
     const { doc, boxes, body } = gibDoc();
-    expect(g.fillLogin("12345678", PASS, "Accountie · 1/3 · ÖRNEK LTD", doc, storage())).toBe(true);
+    expect(g.fillLogin("12345678", PASS, "Accountie · 1/3 · ÖRNEK LTD", doc, storage(), GIB)).toBe(true);
     expect([boxes.userid.value, boxes.sifre.value, boxes.dk.value]).toEqual(["12345678", PASS, ""]);
     expect(boxes.userid.events).toEqual(["input", "change"]);
     expect(boxes.dk.focus).toHaveBeenCalled();
@@ -90,10 +91,15 @@ describe("eklenti: Luca GİB Şirket ekranı ve GİB girişi", () => {
     expect(noteText).toContain("Taramayı durdur");
     expect(noteText).not.toContain(PASS);
     // The note is made once and its text replaced on the next firm.
-    g.fillLogin("x", "y", "Accountie · 2/3 · BAŞKA", doc, storage());
+    g.fillLogin("x", "y", "Accountie · 2/3 · BAŞKA", doc, storage(), GIB);
     expect(body).toHaveLength(1);
     expect(JSON.stringify(body)).toContain("BAŞKA");
-    expect(g.fillLogin("x", "y", "z", { getElementById: () => null }, storage())).toBe(false);
+    expect(g.fillLogin("x", "y", "z", { getElementById: () => null }, storage(), GIB)).toBe(false);
+    // A tab that went to another site, or another GİB page, gets no login even with boxes of the same ids.
+    const other = gibDoc();
+    expect(g.fillLogin("12345678", PASS, "x", other.doc, storage(), { origin: "https://evil.example", pathname: "/portal/login" })).toBe(false);
+    expect(g.fillLogin("12345678", PASS, "x", other.doc, storage(), { origin: GIB.origin, pathname: "/portal" })).toBe(false);
+    expect(other.boxes.sifre.value).toBe("");
   });
 
   it("yeni firmadan önce eski oturum anahtarı silinir ve giriş sayfası baştan yüklenir; durumlar ayrılır", () => {
@@ -110,6 +116,7 @@ describe("eklenti: Luca GİB Şirket ekranı ve GİB girişi", () => {
     expect(g.loginState(doc("x"), storage({ token: "t" }), { pathname: "/portal" })).toBe("in");
     expect(g.loginState(doc("x"), storage({ "accountie-skip": "1", token: "t" }), login)).toBe("skip");
     expect(g.loginState(doc("x"), storage({ "accountie-stop": "1" }), login)).toBe("stop");
+    expect(g.loginState(doc("x"), storage({ token: "t" }), { pathname: "/portal/login", origin: "https://evil.example" } as { pathname: string })).toBe("elsewhere");
     expect(g.sameFirm(["1234567890"], "1234567890")).toBe(true);
     expect(g.sameFirm(["9999999999"], "1234567890")).toBe(false);
   });

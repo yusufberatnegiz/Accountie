@@ -1,26 +1,32 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { setGibScanUntil } from "@/db/queries";
+import { endGibScan, setGibScanGrant } from "@/db/queries";
 import { FRESH_SIGN_IN_MS, getUserId, SIGN_IN_AGAIN, signedInWithin } from "@/lib/auth/session";
+import { grantText, mac, secretKey } from "@/lib/gib/secret";
 import { fail, NO_STORE, unauthorized } from "@/lib/http";
-import { allow } from "@/lib/rate-limit";
+import { allow, clientIp, ipBucket } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
-/** How long one approval lets the extension unseal GİB logins: a working day's scan, not more. */
-const SCAN_GRANT_MS = 8 * 60 * 60_000;
+/** How long one approval lets the extension unseal GİB logins: a scan's length, not a day. The extension ends it when it is done. */
+const SCAN_GRANT_MS = 4 * 60 * 60_000;
 
 /**
- * The user's own approval, from the signed-in site after a fresh sign-in, for the extension to unseal GİB logins for a while.
- * The extension key alone never opens a login: a stolen key without this approval opens nothing.
+ * The user's own approval, from the signed-in site after a fresh sign-in, for the extension to unseal GİB logins for a while,
+ * from this network only. Sealed with a MAC under the server's key: a row written straight into the database opens nothing.
+ * The extension key alone never opens a login.
  */
-export async function POST() {
+export async function POST(request: Request) {
   const userId = await getUserId();
   if (!userId) return unauthorized();
   if (!(await signedInWithin(FRESH_SIGN_IN_MS))) return fail(SIGN_IN_AGAIN, 403);
+  const key = secretKey();
+  if (!key) return fail("GİB girişlerini saklama bu sunucuda açık değil.", 503);
   if (!(await allow("gibGrant", userId))) return fail("Çok fazla işlem yapıldı. Bir süre bekleyin.", 429);
-  const until = new Date(Date.now() + SCAN_GRANT_MS);
-  await setGibScanUntil(userId, until);
+  const grantedAt = new Date();
+  const until = new Date(grantedAt.getTime() + SCAN_GRANT_MS);
+  const network = mac(key, "network", ipBucket(clientIp(request.headers)));
+  await setGibScanGrant(userId, { until, grantedAt, network, mac: mac(key, "grant", grantText(userId, until, network)) });
   return NextResponse.json({ until: until.toISOString() }, { headers: NO_STORE });
 }
 
@@ -28,6 +34,6 @@ export async function POST() {
 export async function DELETE() {
   const userId = await getUserId();
   if (!userId) return unauthorized();
-  await setGibScanUntil(userId, new Date(0));
+  await endGibScan(userId);
   return new NextResponse(null, { status: 204 });
 }

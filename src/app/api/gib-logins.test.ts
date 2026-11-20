@@ -7,13 +7,13 @@ vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn(), signedInWithin: vi.fn
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(async () => true), clientIp: () => "203.0.113.7", ipBucket: (ip: string) => ip }));
 vi.mock("@/db/queries", () => ({
   userIdForTokenHash: vi.fn(), firmsByLucaId: vi.fn(), saveGibLogins: vi.fn(), listGibLoginFirms: vi.fn(), gibScanUntil: vi.fn(),
-  takeGibLogin: vi.fn(), setGibScanUntil: vi.fn(), deleteGibLogins: vi.fn(),
+  takeGibLogin: vi.fn(), gibScanGrant: vi.fn(), setGibScanGrant: vi.fn(), endGibScan: vi.fn(), deleteGibLogins: vi.fn(), accountEmail: vi.fn(async () => "a@example.com"),
 }));
 
 const q = await import("@/db/queries");
 const session = await import("@/lib/auth/session");
 const limits = await import("@/lib/rate-limit");
-const { open, seal, secretContext } = await import("@/lib/gib/secret");
+const { grantText, mac, open, seal, secretContext } = await import("@/lib/gib/secret");
 const store = await import("./extension/gib-logins/route");
 const read = await import("./extension/gib-logins/read/route");
 const grant = await import("./gib-scan/route");
@@ -25,6 +25,11 @@ const KEY = randomBytes(32);
 const PASS = "Gizli-Şifre1";
 const req = (method: string, body?: unknown, token = TOKEN) => new Request("http://test", { method, headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
 const later = () => new Date(Date.now() + 60 * 60_000);
+/** The approval as the site would store it: this network (the test's 203.0.113.7), sealed with the server's key. */
+const grantFor = (until = later(), ip = "203.0.113.7") => {
+  const network = mac(KEY, "network", ip);
+  return { until, grantedAt: new Date(Date.now() - 60_000), network, mac: mac(KEY, "grant", grantText(USER, until, network)) };
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -62,32 +67,45 @@ describe("PUT /api/extension/gib-logins (firma çekmede Luca'dan okunan girişle
     vi.mocked(q.listGibLoginFirms).mockResolvedValue([{ lucaId: "7", name: "ÖRNEK", taxNumber: "1234567890", updatedAt: new Date() }]);
     vi.mocked(q.gibScanUntil).mockResolvedValue(new Date(Date.now() - 1000));
     const body = await (await store.GET(req("GET"))).json();
-    expect(body).toEqual({ firms: [{ lucaId: "7", name: "ÖRNEK", taxNumber: "1234567890" }], scanUntil: null, enabled: true });
+    expect(body).toEqual({ account: "a@example.com", firms: [{ lucaId: "7", name: "ÖRNEK", taxNumber: "1234567890" }], scanUntil: null, enabled: true });
   });
 });
 
 describe("POST /api/extension/gib-logins/read (taramada tek firmanın girişi)", () => {
   const stored = () => ({ firmId: "firm-7", usernameSealed: seal(KEY, "12345678", secretContext(USER, "firm-7", "kullanici")), passwordSealed: seal(KEY, PASS, secretContext(USER, "firm-7", "sifre")) });
 
-  it("kullanıcının onayı yoksa ya da bitmişse hiçbir giriş açılmaz", async () => {
-    vi.mocked(q.gibScanUntil).mockResolvedValue(null);
+  it("onay yoksa, bitmişse, veritabanına elle yazılmışsa ya da başka ağdan verilmişse hiçbir giriş açılmaz", async () => {
+    vi.mocked(q.gibScanGrant).mockResolvedValue(null);
     expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(403);
-    vi.mocked(q.gibScanUntil).mockResolvedValue(new Date(Date.now() - 1));
+    vi.mocked(q.gibScanGrant).mockResolvedValue(grantFor(new Date(Date.now() - 1)));
+    expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(403);
+    // A row written straight into the database: no valid MAC without the server's key.
+    vi.mocked(q.gibScanGrant).mockResolvedValue({ ...grantFor(), mac: "forged" });
+    expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(403);
+    // Its end time moved later in the database: the MAC no longer fits.
+    vi.mocked(q.gibScanGrant).mockResolvedValue({ ...grantFor(), until: new Date(Date.now() + 99 * 24 * 3600_000) });
+    expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(403);
+    // Given from another network: the stolen key used elsewhere opens nothing.
+    vi.mocked(q.gibScanGrant).mockResolvedValue(grantFor(later(), "198.51.100.9"));
     expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(403);
     expect(q.takeGibLogin).not.toHaveBeenCalled();
   });
 
   it("onay içinde tek firmanın girişini açar, okumayı kaydettirir, önbelleğe aldırmaz", async () => {
-    vi.mocked(q.gibScanUntil).mockResolvedValue(later());
+    const g = grantFor();
+    vi.mocked(q.gibScanGrant).mockResolvedValue(g);
     vi.mocked(q.takeGibLogin).mockResolvedValue(stored());
     const res = await read.POST(req("POST", { lucaId: "7" }));
     expect(await res.json()).toEqual({ username: "12345678", password: PASS });
     expect(res.headers.get("cache-control")).toContain("no-store");
-    expect(q.takeGibLogin).toHaveBeenCalledWith(USER, "7", expect.stringMatching(/^[0-9a-f]{16}$/));
+    // Logged with the keyed network hash (not a plain hash an IPv4 sweep reverses), counted per firm since the approval.
+    expect(q.takeGibLogin).toHaveBeenCalledWith(USER, "7", g.network, g.grantedAt, 3);
+    vi.mocked(q.takeGibLogin).mockResolvedValueOnce("spent");
+    expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(409);
   });
 
   it("hız sınırı, başka kullanıcının mührü ve olmayan firma", async () => {
-    vi.mocked(q.gibScanUntil).mockResolvedValue(later());
+    vi.mocked(q.gibScanGrant).mockResolvedValue(grantFor());
     vi.mocked(limits.allow).mockResolvedValueOnce(false);
     expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(429);
     expect(q.takeGibLogin).not.toHaveBeenCalled();
@@ -104,22 +122,33 @@ describe("POST /api/extension/gib-logins/read (taramada tek firmanın girişi)",
 });
 
 describe("Accountie'den tarama onayı ve girişleri silme", () => {
-  it("onay yeni girişle (30 dk) ve en çok 8 saat; silme ve onayı bitirme yeni giriş istemez", async () => {
+  const web = () => new Request("http://test", { method: "POST", headers: { "x-real-ip": "203.0.113.7" } });
+  it("onay yeni girişle (30 dk), en çok 4 saat, bu ağa bağlı ve sunucu anahtarıyla mühürlü; bitirme ve silme yeni giriş istemez", async () => {
     vi.mocked(session.getUserId).mockResolvedValue(USER);
     vi.mocked(session.signedInWithin).mockResolvedValue(false);
-    expect((await grant.POST()).status).toBe(403);
-    expect(q.setGibScanUntil).not.toHaveBeenCalled();
+    expect((await grant.POST(web())).status).toBe(403);
+    expect(q.setGibScanGrant).not.toHaveBeenCalled();
     vi.mocked(session.signedInWithin).mockResolvedValue(true);
     const before = Date.now();
-    expect((await grant.POST()).status).toBe(200);
-    const until = vi.mocked(q.setGibScanUntil).mock.calls[0][1] as Date;
-    expect(until.getTime() - before).toBeLessThanOrEqual(8 * 60 * 60_000 + 1000);
+    expect((await grant.POST(web())).status).toBe(200);
+    const [[userId, g]] = vi.mocked(q.setGibScanGrant).mock.calls;
+    expect(userId).toBe(USER);
+    expect(g.until.getTime() - before).toBeLessThanOrEqual(4 * 60 * 60_000 + 1000);
+    expect(g.network).toBe(mac(KEY, "network", "203.0.113.7"));
+    expect(g.mac).toBe(mac(KEY, "grant", grantText(USER, g.until, g.network)));
     expect((await grant.DELETE()).status).toBe(204);
-    expect((vi.mocked(q.setGibScanUntil).mock.calls[1][1] as Date).getTime()).toBe(0);
+    expect(q.endGibScan).toHaveBeenCalledWith(USER);
     vi.mocked(q.deleteGibLogins).mockResolvedValue(3);
     expect(await (await wipe.DELETE()).json()).toEqual({ deleted: 3 });
     vi.mocked(session.getUserId).mockResolvedValue(null);
-    expect((await grant.POST()).status).toBe(401);
+    expect((await grant.POST(web())).status).toBe(401);
     expect((await wipe.DELETE()).status).toBe(401);
+  });
+
+  it("eklenti taramanın sonunda onayı kapatabilir; açamaz", async () => {
+    const end = await import("./extension/gib-scan/route");
+    expect((await end.DELETE(req("DELETE"))).status).toBe(204);
+    expect(q.endGibScan).toHaveBeenCalledWith(USER);
+    expect(Object.keys(end)).not.toContain("POST");
   });
 });

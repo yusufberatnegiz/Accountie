@@ -1,9 +1,13 @@
 // e-Tebligat taraması (tebligat.js) için: Luca'nın GİB Şirket ekranındaki giriş bilgilerini okur, Dijital Vergi Dairesi giriş
 // formuna kullanıcı kodu ve şifreyi yazar. Doğrulama kodunu (captcha) hiçbir zaman okumaz, yazmaz, çözmez ve Giriş Yap'a basmaz:
-// kutuya imleci koyar, kodu kullanıcı yazar. Şifreler yalnız tarama sayfasının belleğinde durur; hiçbir yere kaydedilmez ve
-// Accountie'ye gönderilmez. src/lib/luca/extension-gib-login.test.ts sınar.
+// kutuya imleci koyar, kodu kullanıcı yazar. Girişler firma çekilirken Luca'dan bir kez okunup Accountie'de şifreli saklanır
+// (import.js); taramada firma firma, yalnız kullanıcının onayıyla açılır. Eklentide hiçbir yere kaydedilmez.
+// src/lib/luca/extension-gib-login.test.ts sınar.
 (function (root) {
   const LUCA_PAGE = "/Luca/editGibSirketGirisAction.do";
+  const GIB_ORIGIN = "https://dijital.gib.gov.tr";
+  // A filled form left behind (the scan page closed, the computer left) is emptied after this; longer than a firm's wait.
+  const CLEAR_AFTER_MS = 6 * 60_000;
   const LOGIN_PATH = "/portal/login";
   const SKIP_KEY = "accountie-skip";
   const STOP_KEY = "accountie-stop";
@@ -24,7 +28,7 @@
 
   /**
    * Firma çekme sırasında (import.js): GİB Şirket ekranını açmadan, Luca oturumundan sayfasını okur. Luca sayfaları çoğunlukla
-   * windows-1254. Satırlar yalnız Accountie'ye şifrelenmek üzere gider; bu sayfada saklanmaz.
+   * windows-1254. Satırlar yalnız Accountie'ye, şifrelenip saklanmak üzere gider; eklentide saklanmaz.
    */
   async function fetchLucaRows(fetcher = root.fetch) {
     const res = await fetcher(LUCA_PAGE, { credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(60_000) });
@@ -116,7 +120,9 @@
    * GİB giriş formuna kullanıcı kodu ve şifreyi yazar (React'in duyacağı biçimde), doğrulama kodu kutusuna imleci koyar ve notu
    * gösterir. Doğrulama koduna ve Giriş Yap'a dokunmaz. false: form yok.
    */
-  function fillLogin(user, pass, text, doc = root.document, storage = root.sessionStorage) {
+  function fillLogin(user, pass, text, doc = root.document, storage = root.sessionStorage, loc = root.location) {
+    // Only ever into Dijital Vergi Dairesi's own login page: a tab that went elsewhere meanwhile gets nothing.
+    if (loc.origin !== GIB_ORIGIN || loc.pathname !== LOGIN_PATH) return false;
     const userBox = doc.getElementById("userid"), passBox = doc.getElementById("sifre"), code = doc.getElementById("dk");
     if (!userBox || !passBox || !code) return false;
     const set = (box, value) => {
@@ -129,6 +135,9 @@
     set(passBox, pass);
     showNote(text, doc, storage);
     code.focus();
+    // Runs in this page even if the scan page is gone: no login stays in a form nobody is using.
+    root.clearTimeout(root.accountieClear);
+    root.accountieClear = root.setTimeout(() => { if (!storage.getItem("token")) { set(passBox, ""); set(userBox, ""); doc.getElementById("accountie-note")?.remove(); } }, CLEAR_AFTER_MS);
     return true;
   }
 
@@ -137,6 +146,7 @@
    * kodda formu ya da sayfayı yeniledi: şifre ya da not gitti) ya da hâlâ bekleniyor.
    */
   function loginState(doc = root.document, storage = root.sessionStorage, loc = root.location) {
+    if (loc.origin && loc.origin !== GIB_ORIGIN) return "elsewhere";
     if (storage.getItem(STOP_KEY)) return "stop";
     if (storage.getItem(SKIP_KEY)) return "skip";
     if (storage.getItem("token")) return "in";

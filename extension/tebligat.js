@@ -1,7 +1,8 @@
 /* global chrome, AccountieGibLogin, AccountieGib */
-// Bütün firmaların e-Tebligat taraması: Luca'nın GİB Şirket ekranından giriş bilgileri okunur (gib-login.js), her firma için
-// Dijital Vergi Dairesi giriş formu doldurulur, doğrulama kodunu kullanıcı yazar, giriş olunca liste okunur (gib-notices.js) ve
-// Accountie'ye gönderilir. Şifreler yalnız bu sayfanın belleğindedir: chrome.storage'a, durum metnine ve Accountie'ye gitmez.
+// Bütün firmaların e-Tebligat taraması: her firmanın GİB girişi Accountie'den (firma çekilirken saklanan, kullanıcının onayıyla
+// firma firma açılan) ya da kayıtlı giriş yoksa Luca'nın açık GİB Şirket ekranından alınır (gib-login.js), Dijital Vergi Dairesi
+// giriş formu doldurulur, doğrulama kodunu kullanıcı yazar, giriş olunca liste okunur (gib-notices.js) ve Accountie'ye gönderilir.
+// Bir giriş yalnız o firmanın formu için bellekte durur: chrome.storage'a, durum metnine ve tebligat isteğine hiç girmez.
 const APP_ORIGIN = "https://accountie.app"; // popup.js ile aynı
 const GIB_ORIGIN = `https://${AccountieGib.GIB_HOST}`;
 const LOGIN_URL = `${GIB_ORIGIN}${AccountieGibLogin.LOGIN_PATH}`;
@@ -16,6 +17,7 @@ const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const today = () => new Date().toLocaleDateString("sv-SE");
 let running = false;
 let stopped = false;
+let usedStored = false;
 
 function status(text, isError = false) {
   $("status").textContent = text;
@@ -174,7 +176,7 @@ async function scanFirm(tabId, f, token, head) {
   await chrome.tabs.update(tabId, { active: true });
   status(`${head}: GİB sekmesinde doğrulama kodunu yazıp Giriş Yap'a basın.`);
   const state = await waitForLogin(tabId, login, text, head);
-  login.user = login.pass = "";
+  login.user = login.pass = f.pass = "";
   if (state === "stopped") return { line: "Durduruldu.", stopped: true };
   if (state === "skip") return { line: "Atlandı; bugün yeniden sorulmaz.", failed: true };
   if (state === "refused") return { line: `${MAX_REFILLS + 1} denemede giriş olmadı; bugün yeniden sorulmaz. Kod doğruysa Luca'da şifreyi kontrol edin.`, failed: true };
@@ -230,8 +232,10 @@ async function run() {
   // Logins stored on a firm import (sealed in Accountie) first; without them, Luca's GİB Şirket screen, read now.
   const stored = await accountie("/api/extension/gib-logins", token);
   let p;
+  usedStored = false;
   if (stored.enabled && stored.firms?.length) {
-    if (!stored.scanUntil) return status("Tarama onaylı değil. Accountie'de e-Tebligatlar sayfasında Taramayı onayla'ya basın (8 saat geçerli), sonra yeniden başlatın.", true);
+    usedStored = true;
+    if (!stored.scanUntil) return status("Tarama onaylı değil. Accountie'de e-Tebligatlar sayfasında Taramayı onayla'ya basın (bu bilgisayardan, 4 saat geçerli), sonra yeniden başlatın.", true);
     p = AccountieGibLogin.plan(stored.firms.map((f) => ({ lucaId: f.lucaId, name: f.name, stored: true })), stored.firms, before.ids, before.failed.map((x) => x.id));
   } else {
     status("Luca'daki GİB giriş bilgileri okunuyor.");
@@ -270,6 +274,8 @@ async function run() {
   $("progress-bar").value = ok + notRead;
   // The last firm's session key, password and note leave the tab: the login page is loaded again, empty.
   await tryGib(tab.id, "gib-login.js", () => globalThis.AccountieGibLogin.goToLogin(), null).catch(() => {});
+  // The approval ends with the scan: no stored login can be opened in the hours it had left.
+  if (usedStored) await fetch(`${APP_ORIGIN}/api/extension/gib-scan`, { method: "DELETE", credentials: "omit", headers: { authorization: `Bearer ${token}` } }).catch(() => {});
   document.title = "e-Tebligat taraması";
   const me = await chrome.tabs.getCurrent();
   if (me?.id) await chrome.tabs.update(me.id, { active: true }).catch(() => {});
@@ -277,7 +283,7 @@ async function run() {
   const { freshTotal } = summary(day, day.ids.length);
   const tally = `bu turda ${ok} firma tarandı${notRead ? `, ${notRead} firma taranamadı` : ""}; bugün toplam ${freshTotal} yeni tebligat.`;
   if ($("status").className === "error") status(`${$("status").textContent} Durum: ${tally}`, true);
-  else status(stopped ? `Tarama durduruldu: ${tally} Kaldığı yerden devam etmek için Taramayı sürdür'e basın.` : `Tarama bitti: ${tally} Ayrıntılar Accountie'de e-Tebligat sayfasında.`);
+  else status(stopped ? `Tarama durduruldu: ${tally} Kaldığı yerden devam etmek için ${usedStored ? "Accountie'de taramayı yeniden onaylayıp " : ""}Taramayı sürdür'e basın.` : `Tarama bitti: ${tally} Ayrıntılar Accountie'de e-Tebligat sayfasında.`);
 }
 
 // One run at a time: a second scan page would drive the same GİB tab against this one.

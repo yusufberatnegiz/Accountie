@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export type GibScanState = { enabled: boolean; stored: number; until: string | null; reads: { firmName: string; readAt: string }[] };
+export type GibScanState = { enabled: boolean; stored: number; until: string | null; day: { reads: number; networks: number }; reads: { firmName: string; readAt: string }[] };
 
 /**
  * The e-Tebligat scan's GİB logins: how many are stored (sealed), the user's approval that lets the extension unseal them for a few
@@ -33,12 +33,13 @@ export function GibScanPanel({ state }: { state: GibScanState }) {
       <h2 id="gib-giris">GİB girişleri</h2>
       {state.stored ? (
         <>
-          <p>{state.stored} firmanın Dijital Vergi Dairesi girişi şifreli olarak saklanıyor; firmalar Luca&apos;dan çekilirken bir kez okundu. Eklenti bir şifreyi yalnız siz taramayı onayladıktan sonraki 8 saat içinde, firma firma açabilir; her açılış aşağıda kayıtlıdır.</p>
-          <p className="finding">{state.until ? `Tarama ${state.until} saatine kadar onaylı.` : "Tarama onaylı değil."}</p>
+          <p>{state.stored} firmanın Dijital Vergi Dairesi girişi şifreli olarak saklanıyor; firmalar Luca&apos;dan çekilirken bir kez okundu. Eklenti bir şifreyi yalnız siz bu bilgisayardan taramayı onayladıktan sonraki 4 saat içinde, firma firma açabilir; tarama bitince onay kendiliğinden kapanır. Her açılış aşağıda kayıtlıdır.</p>
+          <p className="finding">{state.until ? `Tarama ${state.until} saatine kadar onaylı.` : "Tarama onaylı değil."} · Son 24 saatte {state.day.reads} şifre açıldı{state.day.networks > 1 ? `, ${state.day.networks} farklı ağdan` : ""}.</p>
+          <p>Burada sizin açmadığınız bir giriş görürseniz hemen Kayıtlı girişleri sil&apos;e basın, Accountie şifrenizi değiştirin ve eklentiyi yeniden bağlayın.</p>
           <div className="title-actions">
             {state.until
               ? <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => act("/api/gib-scan", "DELETE", "Tarama onayı bitirildi.")}>Onayı bitir</button>
-              : <button type="button" className="btn btn-primary" aria-disabled={busy || undefined} onClick={() => act("/api/gib-scan", "POST", "Tarama 8 saat için onaylandı. Eklentide Taramayı başlat'a basın.")}>Taramayı onayla (8 saat)</button>}
+              : <button type="button" className="btn btn-primary" aria-disabled={busy || undefined} onClick={() => act("/api/gib-scan", "POST", "Tarama 4 saat için onaylandı. Eklentide Taramayı başlat'a basın.")}>Taramayı onayla (4 saat)</button>}
             <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => confirm(`${state.stored} firmanın kayıtlı GİB girişi silinsin mi? Yeniden taramak için firmaları Luca'dan yeniden çekmeniz gerekir.`) && act("/api/gib-logins", "DELETE", "Kayıtlı GİB girişleri silindi.")}>Kayıtlı girişleri sil</button>
           </div>
           {state.reads.length ? (

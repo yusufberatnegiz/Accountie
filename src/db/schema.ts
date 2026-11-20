@@ -262,10 +262,14 @@ export const gibLogins = pgTable("gib_logins", {
 ]);
 
 // Until when the user allowed the extension to unseal GİB logins: given from the signed-in site (fresh sign-in), a few hours.
+// Bound to the network it was given from (keyed hash) and sealed with a MAC under the server's key: a row written into the
+// database by anyone without that key, or used from another network, opens nothing.
 export const gibScanGrants = pgTable("gib_scan_grants", {
   userId: text("user_id").primaryKey(),
   until: timestamp("until", { withTimezone: true }).notNull(),
   grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow(),
+  network: text("network").notNull(),
+  mac: text("mac").notNull(),
 }, () => [ownerPolicy("gib_scan_grants_owner")]);
 
 // Every unsealing of a GİB login: which firm, when, from which network (hashed). Shown to the user; never holds the login.

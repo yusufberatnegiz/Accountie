@@ -33,7 +33,7 @@ export default async function NoticesPage() {
       <NoticesView notices={notices.map((n) => ({ ...n, served: servedState(n.servedAt, now) }))} firmReads={firmReads} newCount={newCount} truncated={notices.length >= NOTICE_LIST_LIMIT}>
         <GibScanPanel state={{
           enabled: !!secretKey(), stored: gib.stored,
-          until: gib.until && gib.until > now ? when.format(gib.until) : null,
+          until: gib.until && gib.until > now ? when.format(gib.until) : null, day: gib.day,
           reads: gib.reads.map((r) => ({ firmName: r.firmName, readAt: when.format(r.readAt) })),
         }} />
       </NoticesView>

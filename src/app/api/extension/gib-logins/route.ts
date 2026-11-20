@@ -1,7 +1,7 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { firmsByLucaId, gibScanUntil, listGibLoginFirms, saveGibLogins } from "@/db/queries";
+import { accountEmail, firmsByLucaId, gibScanUntil, listGibLoginFirms, saveGibLogins } from "@/db/queries";
 import { extensionUserId } from "@/lib/auth/extension-token";
 import { seal, secretContext, secretKey } from "@/lib/gib/secret";
 import { fail, NO_STORE, readJson } from "@/lib/http";
@@ -17,12 +17,14 @@ const GibLoginRow = z.object({
 });
 const Batch = z.object({ logins: z.array(z.unknown()).min(1).max(250) });
 
-/** Firms with a stored login (never the login) and until when the user allowed the scan: what the scan page plans with. */
+/** Firms with a stored login (never the login), until when the user allowed the scan, and the account's e-mail. */
 export async function GET(request: Request) {
   const userId = await extensionUserId(request);
   if (!userId) return fail("Eklenti anahtarı geçersiz veya süresi dolmuş.", 401);
-  const [firms, until] = await Promise.all([listGibLoginFirms(userId), gibScanUntil(userId)]);
+  const [firms, until, email] = await Promise.all([listGibLoginFirms(userId), gibScanUntil(userId), accountEmail(userId)]);
   return NextResponse.json({
+    // Whose account this key is: the import shows it before any login is sent.
+    account: email,
     firms: firms.map(({ lucaId, name, taxNumber }) => ({ lucaId, name, taxNumber })),
     scanUntil: until && until.getTime() > Date.now() ? until.toISOString() : null,
     enabled: !!secretKey(),

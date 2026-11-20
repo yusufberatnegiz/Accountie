@@ -1,5 +1,5 @@
 {
-  "id": "f5dd49de-f917-47c8-9967-0923a0117748",
+  "id": "411a6d85-9bb8-4a7f-a38f-cee5573be326",
   "prevId": "c8200f54-3025-466e-8039-0982bb631b63",
   "version": "7",
   "dialect": "postgresql",
@@ -911,6 +911,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "network": {
+          "name": "network",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mac": {
+          "name": "mac",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},

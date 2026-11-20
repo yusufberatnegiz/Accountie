@@ -401,6 +401,8 @@ export async function createExtensionToken(userId: string, tokenHash: string, ex
   await getDb().transaction(async (tx) => {
     await tx.delete(extensionTokens).where(eq(extensionTokens.userId, userId));
     await tx.insert(extensionTokens).values({ userId, tokenHash, expiresAt });
+    // A new key (perhaps minted with a stolen session) never inherits an open e-Tebligat approval: the scan is approved again.
+    await tx.delete(gibScanGrants).where(eq(gibScanGrants.userId, userId));
   });
 }
 
@@ -748,38 +750,57 @@ export async function listGibLoginFirms(userId: string): Promise<{ lucaId: strin
  * One firm's sealed login by Luca id, and the read written to the log in the same transaction: no unsealing goes unrecorded.
  * null when the firm has no stored login.
  */
-export async function takeGibLogin(userId: string, lucaId: string, network: string): Promise<{ firmId: string; usernameSealed: string; passwordSealed: string } | null> {
+export async function takeGibLogin(userId: string, lucaId: string, network: string, since: Date, maxPerFirm: number): Promise<{ firmId: string; usernameSealed: string; passwordSealed: string } | "spent" | null> {
   return getDb().transaction(async (tx) => {
     const [row] = await tx.select({ firmId: gibLogins.firmId, usernameSealed: gibLogins.usernameSealed, passwordSealed: gibLogins.passwordSealed })
       .from(gibLogins).innerJoin(firms, eq(firms.id, gibLogins.firmId))
       .where(and(eq(gibLogins.userId, userId), eq(firms.userId, userId), eq(firms.lucaSirketId, lucaId))).limit(1);
     if (!row) return null;
+    // A firm's login is opened a few times per approval at most (a stop and resume, a page that did not load): a run through every
+    // firm again and again is someone else's.
+    const [{ n }] = await tx.select({ n: count() }).from(gibLoginReads)
+      .where(and(eq(gibLoginReads.userId, userId), eq(gibLoginReads.firmId, row.firmId), gt(gibLoginReads.readAt, since)));
+    if (Number(n) >= maxPerFirm) return "spent";
     await tx.insert(gibLoginReads).values({ userId, firmId: row.firmId, network });
     return row;
   });
 }
 
-/** Until when the user allowed the scan, or null. */
-export async function gibScanUntil(userId: string): Promise<Date | null> {
-  const [row] = await getDb().select({ until: gibScanGrants.until }).from(gibScanGrants).where(eq(gibScanGrants.userId, userId));
-  return row?.until ?? null;
+/** The user's scan approval as stored (its MAC and network are checked by the caller with the server's key), or null. */
+export async function gibScanGrant(userId: string): Promise<{ until: Date; grantedAt: Date; network: string; mac: string } | null> {
+  const [row] = await getDb().select({ until: gibScanGrants.until, grantedAt: gibScanGrants.grantedAt, network: gibScanGrants.network, mac: gibScanGrants.mac })
+    .from(gibScanGrants).where(eq(gibScanGrants.userId, userId));
+  return row ?? null;
 }
 
-export async function setGibScanUntil(userId: string, until: Date): Promise<void> {
-  await getDb().insert(gibScanGrants).values({ userId, until, grantedAt: new Date() })
-    .onConflictDoUpdate({ target: gibScanGrants.userId, set: { until, grantedAt: new Date() }, setWhere: eq(gibScanGrants.userId, userId) });
+/** Until when the user allowed the scan, or null; for showing only (the read route checks the whole grant). */
+export async function gibScanUntil(userId: string): Promise<Date | null> {
+  return (await gibScanGrant(userId))?.until ?? null;
+}
+
+export async function setGibScanGrant(userId: string, grant: { until: Date; grantedAt: Date; network: string; mac: string }): Promise<void> {
+  await getDb().insert(gibScanGrants).values({ userId, ...grant })
+    .onConflictDoUpdate({ target: gibScanGrants.userId, set: grant, setWhere: eq(gibScanGrants.userId, userId) });
+}
+
+/** Ends the approval now (the site, the extension at the end of a scan, a new extension key). */
+export async function endGibScan(userId: string): Promise<void> {
+  await getDb().delete(gibScanGrants).where(eq(gibScanGrants.userId, userId));
 }
 
 /** The panel's view: how many logins are stored, the approval, and the last unsealings (firm and time). */
-export async function gibLoginStatus(userId: string): Promise<{ stored: number; until: Date | null; reads: { firmName: string; readAt: Date }[] }> {
+export async function gibLoginStatus(userId: string): Promise<{ stored: number; until: Date | null; day: { reads: number; networks: number }; reads: { firmName: string; readAt: Date }[] }> {
   const db = getDb();
-  const [[{ n }], until, reads] = await Promise.all([
+  const since = new Date(Date.now() - 24 * 60 * 60_000);
+  const [[{ n }], grant, reads, [day]] = await Promise.all([
     db.select({ n: count() }).from(gibLogins).where(eq(gibLogins.userId, userId)),
-    gibScanUntil(userId),
+    gibScanGrant(userId),
     db.select({ firmName: firms.name, readAt: gibLoginReads.readAt }).from(gibLoginReads).innerJoin(firms, eq(firms.id, gibLoginReads.firmId))
-      .where(eq(gibLoginReads.userId, userId)).orderBy(desc(gibLoginReads.readAt)).limit(20),
+      .where(eq(gibLoginReads.userId, userId)).orderBy(desc(gibLoginReads.readAt)).limit(50),
+    db.select({ reads: count(), networks: sql<number>`count(distinct ${gibLoginReads.network})` }).from(gibLoginReads)
+      .where(and(eq(gibLoginReads.userId, userId), gt(gibLoginReads.readAt, since))),
   ]);
-  return { stored: Number(n), until, reads };
+  return { stored: Number(n), until: grant?.until ?? null, day: { reads: Number(day?.reads ?? 0), networks: Number(day?.networks ?? 0) }, reads };
 }
 
 /** Deletes every stored login and ends the approval; the read log stays (it holds no login). */
@@ -789,4 +810,11 @@ export async function deleteGibLogins(userId: string): Promise<number> {
     await tx.delete(gibScanGrants).where(eq(gibScanGrants.userId, userId));
     return gone.length;
   });
+}
+
+/** The account's e-mail, shown by the extension so the user sees which Accountie account a key belongs to before logins go there. */
+export async function accountEmail(userId: string): Promise<string | null> {
+  const rows = await getDb().execute(sql`select email from auth.users where id::text = ${userId} limit 1`);
+  const row = (rows as unknown as { email?: string | null }[])[0];
+  return row?.email ?? null;
 }

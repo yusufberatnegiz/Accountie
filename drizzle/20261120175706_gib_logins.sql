@@ -19,7 +19,9 @@ ALTER TABLE "gib_logins" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "gib_scan_grants" (
 	"user_id" text PRIMARY KEY NOT NULL,
 	"until" timestamp with time zone NOT NULL,
-	"granted_at" timestamp with time zone DEFAULT now() NOT NULL
+	"granted_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"network" text NOT NULL,
+	"mac" text NOT NULL
 );
 --> statement-breakpoint
 ALTER TABLE "gib_scan_grants" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
@@ -29,4 +31,5 @@ CREATE INDEX "gib_login_reads_user_idx" ON "gib_login_reads" USING btree ("user_
 CREATE INDEX "gib_logins_user_idx" ON "gib_logins" USING btree ("user_id");--> statement-breakpoint
 CREATE POLICY "gib_login_reads_owner" ON "gib_login_reads" AS PERMISSIVE FOR ALL TO public USING (user_id = current_setting('app.user_id', true)) WITH CHECK (user_id = current_setting('app.user_id', true));--> statement-breakpoint
 CREATE POLICY "gib_logins_owner" ON "gib_logins" AS PERMISSIVE FOR ALL TO public USING (user_id = current_setting('app.user_id', true)) WITH CHECK (user_id = current_setting('app.user_id', true));--> statement-breakpoint
-CREATE POLICY "gib_scan_grants_owner" ON "gib_scan_grants" AS PERMISSIVE FOR ALL TO public USING (user_id = current_setting('app.user_id', true)) WITH CHECK (user_id = current_setting('app.user_id', true));
+CREATE POLICY "gib_scan_grants_owner" ON "gib_scan_grants" AS PERMISSIVE FOR ALL TO public USING (user_id = current_setting('app.user_id', true)) WITH CHECK (user_id = current_setting('app.user_id', true));--> statement-breakpoint
+REVOKE ALL ON TABLE "gib_logins", "gib_scan_grants", "gib_login_reads" FROM anon, authenticated;

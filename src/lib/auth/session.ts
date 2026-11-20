@@ -38,6 +38,8 @@ export const SIGN_IN_AGAIN = "Güvenlik için yeniden giriş yapın: Hesap menü
 export async function signedInWithin(maxMs: number, now = Date.now()): Promise<boolean> {
   const { data } = await (await getAuth()).getClaims();
   const amr = (data?.claims as { amr?: unknown } | undefined)?.amr;
-  return Array.isArray(amr) && amr.some((e) => e && typeof e === "object" && typeof (e as { timestamp?: unknown }).timestamp === "number"
-    && now - (e as { timestamp: number }).timestamp * 1000 < maxMs);
+  // Only a sign-in the user made (password, e-mailed link or code, a reset link): never a refresh or an anonymous session.
+  return Array.isArray(amr) && amr.some((e) => e && typeof e === "object" && SIGN_IN_METHODS.includes(String((e as { method?: unknown }).method))
+    && typeof (e as { timestamp?: unknown }).timestamp === "number" && now - (e as { timestamp: number }).timestamp * 1000 < maxMs);
 }
+const SIGN_IN_METHODS = ["password", "otp", "magiclink", "email", "recovery"];
