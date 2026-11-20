@@ -402,7 +402,13 @@ $("clear-filled").addEventListener("click", guard(clearFilled, "clear-filled"));
 $("notices").addEventListener("click", guard(sendNotices, "notices"));
 // Kendi sekmesinde: açılır pencere odağı kaybedince kapanır, içe aktarma dakikalar sürer.
 $("import").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("import.html") }));
-for (const id of ["notices-all", "notices-all-luca"]) $(id).addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("tebligat.html") }));
+// One scan page only: two would drive the same GİB tab against each other.
+const openScan = async () => {
+  const url = chrome.runtime.getURL("tebligat.html");
+  const [open] = await chrome.tabs.query({ url });
+  if (open) await chrome.tabs.update(open.id, { active: true }); else await chrome.tabs.create({ url });
+};
+for (const id of ["notices-all", "notices-all-luca"]) $(id).addEventListener("click", () => openScan().catch(() => {}));
 $("forget").addEventListener("click", guard(async () => { await forget(); status("Anahtar silindi."); }));
 $("forget-gib").addEventListener("click", guard(async () => { await forget(); status("Anahtar silindi."); }));
 

@@ -1,11 +1,12 @@
 // e-Tebligat taraması (tebligat.js) için: Luca'nın GİB Şirket ekranındaki giriş bilgilerini okur, Dijital Vergi Dairesi giriş
-// formuna kullanıcı kodu ve şifreyi yazar. Doğrulama kodunu (captcha) hiçbir zaman okumaz, yazmaz, çözmez: kutuya imleci koyar, kodu
-// kullanıcı yazar ve Giriş Yap'a kendisi basar. Şifreler yalnız tarama sayfasının belleğinde durur; hiçbir yere kaydedilmez ve
+// formuna kullanıcı kodu ve şifreyi yazar. Doğrulama kodunu (captcha) hiçbir zaman okumaz, yazmaz, çözmez ve Giriş Yap'a basmaz:
+// kutuya imleci koyar, kodu kullanıcı yazar. Şifreler yalnız tarama sayfasının belleğinde durur; hiçbir yere kaydedilmez ve
 // Accountie'ye gönderilmez. src/lib/luca/extension-gib-login.test.ts sınar.
 (function (root) {
   const LUCA_PAGE = "/Luca/editGibSirketGirisAction.do";
   const LOGIN_PATH = "/portal/login";
   const SKIP_KEY = "accountie-skip";
+  const STOP_KEY = "accountie-stop";
   const ID = /^\d{10,11}$/;
 
   /**
@@ -13,7 +14,7 @@
    * KULLANICI_ADI_<firma no>, SIFRE_<firma no>. Sayfa dünyasında çalışır; yalnız bu ekranda bir şey döner.
    */
   function lucaRows(doc = root.document, path = root.location?.pathname) {
-    if (path !== LUCA_PAGE) return null;
+    if (!path?.startsWith(LUCA_PAGE)) return null;
     return Array.from(doc.querySelectorAll("input[id^='SIFRE_']"), (pass) => {
       const lucaId = pass.id.slice("SIFRE_".length);
       const tr = pass.closest("tr");
@@ -22,38 +23,77 @@
   }
 
   /**
-   * Taranacak firmalar: Luca'da kullanıcı kodu ve şifresi dolu, Accountie'de VKN'si bilinen; bugün taranmışlar atlanır (yarıda kalan
-   * tarama baştan başlamaz). Şifresi eksik ya da Accountie'de olmayanlar sayılır, adlarıyla söylenir.
+   * Taranacak firmalar: Luca'da kullanıcı kodu ve şifresi dolu, Accountie'de VKN'si bilinen. Bugün taranmışlar ve bugün girişi
+   * olmamışlar atlanır (yarıda kalan tarama baştan başlamaz; eski bir şifre aynı gün yeniden yazılıp hesabı kilitlemez). Aynı
+   * firma ya da aynı VKN iki kez sorulmaz. Şifresi eksik ya da Accountie'de olmayanlar adlarıyla sayılır.
    */
-  function plan(rows, firms, doneToday = []) {
+  function plan(rows, firms, doneToday = [], failedToday = []) {
     const tax = new Map(firms.filter((f) => ID.test(String(f.taxNumber))).map((f) => [String(f.lucaId), String(f.taxNumber)]));
-    const out = { todo: [], noCredentials: [], notInAccountie: [], done: 0 };
+    const out = { todo: [], noCredentials: [], notInAccountie: [], done: 0, failed: 0 };
+    const seen = new Set(), seenTax = new Set();
     for (const r of rows) {
-      if (!/^\d{1,12}$/.test(r.lucaId)) continue;
+      if (!/^\d{1,12}$/.test(r.lucaId) || seen.has(r.lucaId)) continue;
+      seen.add(r.lucaId);
       if (!tax.has(r.lucaId)) { out.notInAccountie.push(r.name || r.lucaId); continue; }
       if (!r.user.trim() || !r.pass) { out.noCredentials.push(r.name || r.lucaId); continue; }
       if (doneToday.includes(r.lucaId)) { out.done++; continue; }
-      out.todo.push({ lucaId: r.lucaId, name: r.name || r.lucaId, user: r.user.trim(), pass: r.pass, taxNumber: tax.get(r.lucaId) });
+      if (failedToday.includes(r.lucaId)) { out.failed++; continue; }
+      const taxNumber = tax.get(r.lucaId);
+      if (seenTax.has(taxNumber)) continue;
+      seenTax.add(taxNumber);
+      out.todo.push({ lucaId: r.lucaId, name: r.name || r.lucaId, user: r.user.trim(), pass: r.pass, taxNumber });
     }
     return out;
   }
 
   /**
-   * GİB sayfasında: önceki firmanın oturum anahtarını siler (yeni giriş onunla karışmasın), giriş sayfasında değilse oraya gider.
-   * true: giriş formu açık ve boş oturumla hazır.
+   * GİB sekmesinde: önceki firmanın oturum anahtarını siler ve giriş sayfasını baştan yükler. Tam yükleme yolda kalan eski bir
+   * girişi de, formda kalan şifreyi ve notu da siler.
    */
-  function resetSession(doc = root.document, storage = root.sessionStorage, loc = root.location) {
-    storage.removeItem("token");
-    storage.removeItem(SKIP_KEY);
-    if (loc.pathname !== LOGIN_PATH) { loc.assign(LOGIN_PATH); return false; }
-    return !!doc.getElementById("userid") && !!doc.getElementById("sifre");
+  function goToLogin(storage = root.sessionStorage, loc = root.location) {
+    for (const k of ["token", SKIP_KEY, STOP_KEY]) storage.removeItem(k);
+    // Marks this page as the old one: until the new one loads, loginReady must not take it for the fresh form.
+    root.accountieLeaving = true;
+    loc.replace(LOGIN_PATH);
+  }
+
+  /** Giriş formu açık ve oturum boş mu (goToLogin'den sonra yeni sayfa geldi mi). */
+  function loginReady(doc = root.document, storage = root.sessionStorage, loc = root.location) {
+    return !root.accountieLeaving && loc.pathname === LOGIN_PATH && !storage.getItem("token") && !!doc.getElementById("userid") && !!doc.getElementById("sifre") && !!doc.getElementById("dk");
+  }
+
+  /** Sayfanın altındaki Accountie notu: tarama sırası, firma, ne yapılacağı; atla ve durdur düğmeleri. */
+  function showNote(text, doc = root.document, storage = root.sessionStorage) {
+    let note = doc.getElementById("accountie-note");
+    if (!note) {
+      note = doc.createElement("div");
+      note.id = "accountie-note";
+      note.setAttribute("role", "region");
+      note.setAttribute("aria-label", "Accountie e-Tebligat taraması");
+      note.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:2147483647;padding:10px 14px;background:#27374D;color:#fff;font:15px/1.4 system-ui,sans-serif;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:center";
+      const msg = doc.createElement("span");
+      msg.id = "accountie-note-text";
+      msg.setAttribute("role", "status");
+      const button = (label, key, said) => {
+        const b = doc.createElement("button");
+        b.type = "button";
+        b.textContent = label;
+        b.style.cssText = "font:inherit;padding:4px 10px;border-radius:6px;border:1px solid #fff;background:transparent;color:#fff;cursor:pointer;outline-offset:2px";
+        b.addEventListener("click", () => { storage.setItem(key, "1"); msg.textContent = said; });
+        return b;
+      };
+      note.append(msg, button("Bu firmayı atla", SKIP_KEY, "Accountie: atlanıyor."), button("Taramayı durdur", STOP_KEY, "Accountie: tarama durduruluyor."));
+      doc.body.append(note);
+    }
+    doc.getElementById("accountie-note-text").textContent = text;
+    return true;
   }
 
   /**
-   * GİB giriş formuna kullanıcı kodu ve şifreyi yazar (React'in duyacağı biçimde), doğrulama kodu kutusuna imleci koyar ve sayfanın
-   * üstünde kısa bir not gösterir. Doğrulama koduna ve Giriş Yap'a dokunmaz. false: form yok.
+   * GİB giriş formuna kullanıcı kodu ve şifreyi yazar (React'in duyacağı biçimde), doğrulama kodu kutusuna imleci koyar ve notu
+   * gösterir. Doğrulama koduna ve Giriş Yap'a dokunmaz. false: form yok.
    */
-  function fillLogin(user, pass, firmName, doc = root.document, storage = root.sessionStorage) {
+  function fillLogin(user, pass, text, doc = root.document, storage = root.sessionStorage) {
     const userBox = doc.getElementById("userid"), passBox = doc.getElementById("sifre"), code = doc.getElementById("dk");
     if (!userBox || !passBox || !code) return false;
     const set = (box, value) => {
@@ -64,33 +104,26 @@
     };
     set(userBox, user);
     set(passBox, pass);
-    doc.getElementById("accountie-note")?.remove();
-    const note = doc.createElement("div");
-    note.id = "accountie-note";
-    note.setAttribute("role", "status");
-    note.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:2147483647;padding:10px 14px;background:#27374D;color:#fff;font:15px/1.4 system-ui,sans-serif;display:flex;gap:12px;align-items:center;justify-content:center";
-    const text = doc.createElement("span");
-    text.textContent = `Accountie: ${firmName}. Doğrulama kodunu yazıp Giriş Yap'a basın.`;
-    const skip = doc.createElement("button");
-    skip.type = "button";
-    skip.textContent = "Bu firmayı atla";
-    skip.style.cssText = "font:inherit;padding:4px 10px;border-radius:6px;border:1px solid #fff;background:transparent;color:#fff;cursor:pointer";
-    skip.addEventListener("click", () => { storage.setItem(SKIP_KEY, "1"); text.textContent = "Accountie: atlanıyor."; });
-    note.append(text, skip);
-    doc.body.append(note);
+    showNote(text, doc, storage);
     code.focus();
     return true;
   }
 
-  /** GİB sekmesinin durumu: giriş yapıldı (oturum anahtarı var), kullanıcı atla dedi ya da hâlâ bekleniyor. */
-  function loginState(storage = root.sessionStorage, loc = root.location) {
+  /**
+   * GİB sekmesinin durumu: durdur ya da atla dendi, giriş yapıldı (oturum anahtarı var), form yeniden doldurulmalı (GİB hatalı
+   * kodda formu ya da sayfayı yeniledi: şifre ya da not gitti) ya da hâlâ bekleniyor.
+   */
+  function loginState(doc = root.document, storage = root.sessionStorage, loc = root.location) {
+    if (storage.getItem(STOP_KEY)) return "stop";
     if (storage.getItem(SKIP_KEY)) return "skip";
     if (storage.getItem("token")) return "in";
-    return loc.pathname === LOGIN_PATH ? "waiting" : "elsewhere";
+    if (loc.pathname !== LOGIN_PATH) return "elsewhere";
+    const pass = doc.getElementById("sifre");
+    return pass && (!pass.value || !doc.getElementById("accountie-note")) ? "refill" : "waiting";
   }
 
   /** Açılan oturum o firmanın mı: user-info'nun VKN/TCKN'si Luca'daki firmanın Accountie'deki numarasıyla aynı olmalı. */
   const sameFirm = (idNumbers, taxNumber) => Array.isArray(idNumbers) && idNumbers.includes(String(taxNumber));
 
-  root.AccountieGibLogin = { LUCA_PAGE, LOGIN_PATH, lucaRows, plan, resetSession, fillLogin, loginState, sameFirm };
+  root.AccountieGibLogin = { LUCA_PAGE, LOGIN_PATH, lucaRows, plan, goToLogin, loginReady, showNote, fillLogin, loginState, sameFirm };
 })(globalThis);

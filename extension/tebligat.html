@@ -7,13 +7,15 @@
   <script src="theme.js"></script>
 </head>
 <body class="wide">
-  <h1>Bütün firmaların e-Tebligatlarını tara</h1>
-  <p class="muted">Eklenti, Luca'daki her firmanın GİB kullanıcı kodu ve şifresiyle Dijital Vergi Dairesi giriş formunu doldurur. <strong>Doğrulama kodunu siz yazıp Giriş Yap'a basarsınız.</strong> Girişten sonra o firmanın tebligat listesi okunur ve Accountie'ye gönderilir, sonra sıradaki firmaya geçilir.</p>
+  <h1>e-Tebligat taraması</h1>
+  <p class="muted">Eklenti her firma için Dijital Vergi Dairesi giriş formunu Luca'daki kullanıcı kodu ve şifreyle doldurur. <strong>Doğrulama kodunu siz yazıp Giriş Yap'a basarsınız.</strong> Liste okunur, Accountie'ye gönderilir, sıradaki firma açılır.</p>
   <ul class="muted">
     <li>Önce Luca'da <strong>Ser.Mes.Defteri → Beyannameler → Toplu Beyanname → GİB Şirket</strong> ekranını açın; şifreler oradan okunur.</li>
-    <li>Şifreler bu sayfa açıkken yalnız bellekte durur: kaydedilmez, Accountie'ye gönderilmez.</li>
+    <li>Şifreler bu sayfa açıkken yalnız bellekte durur: kaydedilmez, Accountie'ye gönderilmez. Chrome şifreyi kaydetmeyi sorarsa <strong>Hiçbir zaman</strong> deyin.</li>
     <li>Zarflar açılmaz, belge indirilmez: GİB'de okundu kaydı düşmez, tebliğ tarihi değişmez.</li>
-    <li>Giriş olmazsa (şifre yanlış) o firma tekrar denenmez; GİB sekmesindeki <strong>Bu firmayı atla</strong> ile geçin. Bugün taranan firmalar yeniden başlatınca atlanır.</li>
+    <li>Şifre hatalıysa GİB sekmesindeki <strong>Bu firmayı atla</strong>'ya basın; o firma bugün yeniden sorulmaz, Luca'da şifreyi düzeltince yarın denenir. Bugün taranan firmalar da atlanır.</li>
+    <li>Taramayı GİB sekmesinin altındaki <strong>Taramayı durdur</strong> ile de durdurabilirsiniz. 5 dakika giriş yapılmazsa tarama kendiliğinden durur.</li>
+    <li>Açık bir Dijital Vergi Dairesi oturumunuz varsa tarama başlayınca kapanır.</li>
   </ul>
   <div>
     <button id="start" type="button" class="primary">Taramayı başlat</button>
@@ -21,11 +23,14 @@
   </div>
   <p id="status" role="status" aria-live="polite"></p>
   <section id="summary" hidden aria-labelledby="summary-title">
-    <h2 id="summary-title">Önceki taramada olmayan tebligatlar</h2>
+    <h2 id="summary-title">Yeni tebligatlar</h2>
     <ul id="fresh"></ul>
+    <h2 id="failed-title">Taranamayan firmalar</h2>
+    <ul id="failed"></ul>
   </section>
   <table id="log-table" hidden>
-    <thead><tr><th>Firma</th><th>Sonuç</th></tr></thead>
+    <caption>Firma firma sonuçlar (en yeni üstte)</caption>
+    <thead><tr><th scope="col">Firma</th><th scope="col">Sonuç</th></tr></thead>
     <tbody id="log"></tbody>
   </table>
   <script src="gib-login.js"></script>
