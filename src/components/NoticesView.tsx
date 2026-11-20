@@ -53,11 +53,12 @@ export function NoticesView({ notices, firmReads, newCount, truncated }: { notic
             </>}
           </p>
         </div>
-        {fresh.length ? (
-          <div className="title-actions">
+        <div className="title-actions">
+          <a className="btn btn-primary" href="https://dijital.gib.gov.tr/" target="_blank" rel="noopener noreferrer">Dijital Vergi Dairesi’ni aç</a>
+          {fresh.length ? (
             <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => !busy && confirm(`${fresh.length} yeni tebligat görüldü olarak işaretlensin mi?`) && seen(fresh.map((n) => n.id))}>Hepsini gördüm</button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
 
       <section className="panel firms-panel" aria-labelledby="tebligat-liste">
@@ -89,7 +90,7 @@ export function NoticesView({ notices, firmReads, newCount, truncated }: { notic
 
       <section className="panel firms-add" aria-labelledby="tebligat-nasil">
         <h2 id="tebligat-nasil">Nasıl okunur</h2>
-        <p>Dijital Vergi Dairesi&apos;ne firmanın hesabıyla girin (ya da mali müşavir olarak <strong>Geçiş Yap</strong> ile firmaya geçin), sonra Accountie eklentisinde <strong>e-Tebligatları Accountie&apos;ye gönder</strong> düğmesine basın. Accountie şifre saklamaz, zarf açmaz: GİB&apos;de okundu kaydı düşmez, belgeyi GİB&apos;de siz açarsınız.</p>
+        <p>Bilgisayarda Dijital Vergi Dairesi&apos;ne firmanın hesabıyla girin veya yetkiniz varsa <strong>Geçiş Yap</strong> ile firmaya geçin. GİB sekmesinde Accountie eklentisini açıp <strong>Tebligatları getir</strong> düğmesine basın. Eklenti listeyi tarar. Accountie şifre saklamaz, zarf açmaz: GİB&apos;de okundu kaydı düşmez, belgeyi GİB&apos;de siz açarsınız.</p>
         <p>Tebligat, e-Tebligat adresine ulaştığı günü izleyen 5. günün sonunda tebliğ edilmiş sayılır; süreler o günden başlar. Her firmayı en az 5 günde bir okuyun.</p>
         {firmReads.length ? (
           <>

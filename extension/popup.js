@@ -93,7 +93,7 @@ async function activeLucaTab() {
 
 async function activeGibTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab?.url && new URL(tab.url).hostname === AccountieGib.GIB_HOST ? tab : null;
+  return tab?.url && new URL(tab.url).origin === `https://${AccountieGib.GIB_HOST}` ? tab : null;
 }
 
 /**
@@ -120,7 +120,14 @@ async function sendNotices() {
   if (res.status === 401) { await forget(); throw new Error("Anahtar geçersiz veya süresi dolmuş. Accountie'den yeni anahtar alın."); }
   const body = await res.json().catch(() => null);
   if (!res.ok) throw new Error(body?.error || "Accountie'ye ulaşılamadı. Tekrar deneyin.");
-  status(`${body.firm}: ${body.total} tebligat okundu, ${body.fresh ? `${body.fresh} yeni` : "yeni yok"}. Accountie'de e-Tebligat sayfasından bakabilirsiniz.`);
+  status(`${body.firm} tarandı. ${body.fresh ? `${body.fresh} yeni tebligat bulundu.` : "Bu taramada yeni tebligat bulunmadı."}`);
+}
+
+async function showConnectedView() {
+  if (!(await activeGibTab())) return load();
+  $("token-form").hidden = true;
+  $("notices-view").hidden = false;
+  status("");
 }
 
 async function load() {
@@ -153,7 +160,6 @@ async function load() {
   $("clear-filled").hidden = !filled.length;
   // Never while an entry waits for Kaydet: the run would write into it.
   $("auto").disabled = receipts.length < 2 || filled.length > 0;
-  $("notices").hidden = $("notices-note").hidden = !(await activeGibTab());
   $("done").after($("status"));
   $("done").hidden = !filled.length;
   if (filled.length) $("done").textContent = filled.length > 1 ? `Luca'da kaydettim (${filled.length} fiş)` : "Luca'da kaydettim";
@@ -335,6 +341,7 @@ async function forget() {
   receipts = [];
   await chrome.storage.local.remove("token");
   $("list-view").hidden = true;
+  $("notices-view").hidden = true;
   $("token-form").hidden = false;
   $("token-form").after($("status"));
 }
@@ -379,7 +386,7 @@ $("token-form").addEventListener("submit", (e) => {
   token = $("token").value.trim();
   $("token").value = "";
   // Local storage: kept on this computer across restarts, never synced; "Anahtarı sil" removes it.
-  guard(async () => { await chrome.storage.local.set({ token }); await load(); })();
+  guard(async () => { await chrome.storage.local.set({ token }); await showConnectedView(); })();
 });
 $("cards").addEventListener("change", updateSelection);
 $("toggle-all").addEventListener("click", () => {
@@ -396,7 +403,16 @@ $("notices").addEventListener("click", guard(sendNotices, "notices"));
 // Kendi sekmesinde: açılır pencere odağı kaybedince kapanır, içe aktarma dakikalar sürer.
 $("import").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("import.html") }));
 $("forget").addEventListener("click", guard(async () => { await forget(); status("Anahtar silindi."); }));
+$("forget-gib").addEventListener("click", guard(async () => { await forget(); status("Anahtar silindi."); }));
 
-chrome.storage.local.get("token").then(({ token: saved }) => {
-  if (saved) { token = saved; guard(load)(); }
-});
+guard(async () => {
+  if (await activeGibTab()) {
+    $("heading").textContent = "e-Tebligat";
+    $("connect").textContent = "Eklentiyi bağla";
+  }
+  const { token: saved } = await chrome.storage.local.get("token");
+  if (saved) {
+    token = saved;
+    await showConnectedView();
+  }
+})();
