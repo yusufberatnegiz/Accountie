@@ -10,7 +10,7 @@ export type GibScanState = { enabled: boolean; stored: number; until: string | n
  * The e-Tebligat scan's GİB logins: how many are stored (sealed), the user's approval that lets the extension unseal them for a few
  * hours, and the last unsealings. Approving needs a fresh sign-in (the server checks); ending it or deleting the logins does not.
  */
-export function GibScanPanel({ state, account }: { state: GibScanState; account: string }) {
+export function GibScanPanel({ state, account, approvalOnly = false }: { state: GibScanState; account: string; approvalOnly?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,19 +44,22 @@ export function GibScanPanel({ state, account }: { state: GibScanState; account:
     throw new Error("Tarama sekmesi açılamadı. Güncel Accountie eklentisinin etkin ve bu hesaba bağlı olduğunu kontrol edin.");
   });
 
-  if (!state.enabled) return null;
+  if (!state.enabled && !approvalOnly) return null;
   return (
-    <section className="panel firms-add" aria-labelledby="gib-giris">
+    <section className={approvalOnly ? "panel account-body" : "panel firms-add"} aria-labelledby="gib-giris">
       <h2 id="gib-giris">GİB girişleri</h2>
-      {state.stored ? (
+      {!state.enabled ? <p>GİB girişlerini saklama Accountie&apos;de etkin değil.</p> : state.stored ? (
         <>
           <p>{state.stored} firmanın Dijital Vergi Dairesi girişi şifreli olarak saklanıyor. Taramayı başlattığınızda eklenti, bu bilgisayardan firma firma erişim alır. Erişim en çok 4 saat sürer ve tarama bitince kapanır.</p>
+          {approvalOnly ? <p>Erişimi onayladıktan sonra açık eklenti sekmesine dönüp <strong>Taramayı başlat</strong>&apos;a basın. GİB doğrulama kodu isterse elle girin.</p> : null}
           <p className="finding">{state.until ? `Tarama erişimi ${state.until} tarihine kadar açık. ` : ""}Son 24 saatte {state.day.reads} şifre açıldı{state.day.networks > 1 ? `, ${state.day.networks} farklı ağdan` : ""}.</p>
           <p>Burada sizin açmadığınız bir giriş görürseniz hemen Kayıtlı girişleri sil&apos;e basın, Accountie şifrenizi değiştirin ve eklentiyi yeniden bağlayın.</p>
           <div className="title-actions">
             {state.until
               ? <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => act("/api/gib-scan", "DELETE", "Tarama erişimi kapatıldı.")}>Tarama erişimini kapat</button>
-              : <button type="button" className="btn btn-primary" aria-disabled={busy || undefined} onClick={start}>Taramayı başlat</button>}
+              : approvalOnly
+                ? <button type="button" className="btn btn-primary" aria-disabled={busy || undefined} onClick={() => act("/api/gib-scan", "POST", "Tarama erişimi açıldı. Eklenti sekmesine dönün.")}>Tarama erişimini onayla</button>
+                : <button type="button" className="btn btn-primary" aria-disabled={busy || undefined} onClick={start}>Taramayı başlat</button>}
             <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => confirm(`${state.stored} firmanın kayıtlı GİB girişi silinsin mi? Yeniden taramak için firmaları Luca'dan yeniden çekmeniz gerekir.`) && act("/api/gib-logins", "DELETE", "Kayıtlı GİB girişleri silindi.")}>Kayıtlı girişleri sil</button>
           </div>
           {state.reads.length ? (
