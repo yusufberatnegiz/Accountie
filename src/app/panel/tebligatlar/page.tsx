@@ -16,10 +16,10 @@ export const dynamic = "force-dynamic";
 const STALE_DAYS = 5;
 const when = new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Istanbul" });
 
-export default async function NoticesPage() {
+export default async function NoticesPage({ searchParams }: { searchParams: Promise<{ tarama?: string | string[] }> }) {
   const user = await getSessionUser();
   if (!user) redirect("/giris");
-  const [{ firms, firm }, { notices, scans, newCount }, gib] = await Promise.all([activeFirm(user.id), listNotices(user.id), gibLoginStatus(user.id)]);
+  const [{ firms, firm }, { notices, scans, newCount }, gib, { tarama }] = await Promise.all([activeFirm(user.id), listNotices(user.id), gibLoginStatus(user.id), searchParams]);
   const now = new Date();
   const read = new Map(scans.map((s) => [s.firmId, s.scannedAt]));
   // Every firm, never read ones first, then the oldest reads: the risk is the firm nobody looked at.
@@ -30,8 +30,8 @@ export default async function NoticesPage() {
   }).sort((a, b) => (b.days ?? Infinity) - (a.days ?? Infinity) || a.firmName.localeCompare(b.firmName, "tr"));
   return (
     <AppShell current="tebligatlar" email={user.email} firmId={firm.id} setup={!firms.some((f) => f.fromLuca)}>
-      <NoticesView notices={notices.map((n) => ({ ...n, served: servedState(n.servedAt, now) }))} firmReads={firmReads} newCount={newCount} truncated={notices.length >= NOTICE_LIST_LIMIT}>
-        <GibScanPanel state={{
+      <NoticesView notices={notices.map((n) => ({ ...n, served: servedState(n.servedAt, now) }))} firmReads={firmReads} newCount={newCount} truncated={notices.length >= NOTICE_LIST_LIMIT} scanCompleted={tarama === "tamamlandi"}>
+        <GibScanPanel account={user.email} state={{
           enabled: !!secretKey(), stored: gib.stored,
           until: gib.until && gib.until > now ? when.format(gib.until) : null, day: gib.day,
           reads: gib.reads.map((r) => ({ firmName: r.firmName, readAt: when.format(r.readAt) })),

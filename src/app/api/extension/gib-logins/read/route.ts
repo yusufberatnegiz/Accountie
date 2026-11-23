@@ -27,15 +27,15 @@ export async function POST(request: Request) {
   const grant = await gibScanGrant(userId);
   const network = mac(key, "network", ipBucket(clientIp(request.headers)));
   const approved = !!grant && grant.until.getTime() > Date.now() && macOk(key, "grant", grantText({ userId, ...grant }), grant.mac);
-  if (!approved) return fail("Tarama onaylı değil. Accountie'de e-Tebligatlar sayfasında Taramayı onayla'ya basın.", 403);
+  if (!approved) return fail("Tarama erişimi açık değil. Accountie'nin e-Tebligat sayfasından taramayı başlatın.", 403);
   // Only the key the user had when approving: another key of this user (one added to the database) opens nothing.
-  if (bearerHash(request) !== grant.tokenHash) return fail("Bu onay başka bir eklenti bağlantısı için verildi. Accountie'de taramayı yeniden onaylayın.", 403);
-  if (grant.network !== network) return fail("Tarama başka bir ağdan onaylandı. Bu bilgisayardan Accountie'de Taramayı onayla'ya yeniden basın.", 403);
+  if (bearerHash(request) !== grant.tokenHash) return fail("Tarama erişimi başka bir eklenti bağlantısı için açıldı. Accountie'den taramayı yeniden başlatın.", 403);
+  if (grant.network !== network) return fail("Tarama erişimi başka bir ağdan açıldı. Bu bilgisayardan Accountie'ye girip taramayı yeniden başlatın.", 403);
   if (!(await allow("gibRead", userId)) || !(await allow("gibReadIp", clientIp(request.headers)))) return fail("Çok hızlı istendi; güvenlik için durduruldu. Birkaç dakika sonra sürdürün.", 429);
   const body = Body.safeParse(await readJson(request));
   if (!body.success) return fail("Firma okunamadı.", 400);
   const row = await takeGibLogin(userId, body.data.lucaId, network, grant.grantedAt, READS_PER_FIRM);
-  if (row === "spent") return fail("Bu firmanın girişi bu onayda yeterince açıldı. Accountie'de taramayı yeniden onaylayın.", 409);
+  if (row === "spent") return fail("Bu firmanın girişi bu taramada açma sınırına ulaştı. Accountie'den taramayı yeniden başlatın.", 409);
   if (!row) return fail("Bu firmanın kayıtlı GİB girişi yok. Firmaları Luca'dan yeniden çekin.", 404);
   try {
     const username = open(key, row.usernameSealed, secretContext(userId, row.firmId, "kullanici"));

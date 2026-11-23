@@ -152,7 +152,7 @@ describe("Accountie'den tarama onayı ve girişleri silme", () => {
     // A key still stored by its plain hash (or written into the database by hand) is never bound to an approval.
     vi.mocked(q.liveTokenHashes).mockResolvedValueOnce([legacyHash(TOKEN)]);
     expect((await grant.POST(web())).status).toBe(409);
-    expect((await grant.DELETE()).status).toBe(204);
+    expect((await grant.DELETE(new Request("http://test/api/gib-scan", { method: "DELETE" }))).status).toBe(204);
     expect(q.endGibScan).toHaveBeenCalledWith(USER);
     vi.mocked(q.deleteGibLogins).mockResolvedValue(3);
     expect(await (await wipe.DELETE()).json()).toEqual({ deleted: 3 });
@@ -166,6 +166,14 @@ describe("Accountie'den tarama onayı ve girişleri silme", () => {
     expect((await end.DELETE(req("DELETE"))).status).toBe(204);
     expect(q.endGibScan).toHaveBeenCalledWith(USER);
     expect(Object.keys(end)).not.toContain("POST");
+  });
+
+  it("sekme açılamazsa yalnız o isteğin oluşturduğu tarama erişimi kapatılır", async () => {
+    vi.mocked(session.getUserId).mockResolvedValue(USER);
+    const until = "2099-01-01T00:00:00.000Z";
+    const req = new Request(`http://test/api/gib-scan?until=${encodeURIComponent(until)}`, { method: "DELETE" });
+    expect((await grant.DELETE(req)).status).toBe(204);
+    expect(q.endGibScan).toHaveBeenCalledWith(USER, new Date(until));
   });
 });
 

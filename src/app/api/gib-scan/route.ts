@@ -27,9 +27,9 @@ export async function POST(request: Request) {
   // Pairing keeps one key per user (createExtensionToken): none means the extension is not connected, more means a key was
   // added outside Accountie, and nothing is approved for either.
   const tokens = await liveTokenHashes(userId);
-  if (tokens.length !== 1) return fail(tokens.length ? "Eklenti anahtarında beklenmeyen bir durum var. Kurulum sayfasından eklentiyi yeniden bağlayın, sonra taramayı onaylayın." : "Önce eklentiyi bağlayın (Kurulum sayfası), sonra taramayı onaylayın.", 409);
+  if (tokens.length !== 1) return fail(tokens.length ? "Eklenti anahtarında beklenmeyen bir durum var. Kurulum sayfasından eklentiyi yeniden bağlayın, sonra taramayı başlatın." : "Önce Kurulum sayfasından eklentiyi bağlayın, sonra taramayı başlatın.", 409);
   // Only a key paired since keyed hashes: an older one (or a plain hash written into the database) is re-paired first.
-  if (!keyedHash(tokens[0])) return fail("e-Tebligat için eklentiyi bir kez yeniden bağlayın: Kurulum sayfasında Eklentiye bağla'ya basın, sonra taramayı onaylayın.", 409);
+  if (!keyedHash(tokens[0])) return fail("Kurulum sayfasında Eklentiye bağla'ya basın, sonra e-Tebligat taramasını başlatın.", 409);
   const grantedAt = new Date();
   const until = new Date(grantedAt.getTime() + SCAN_GRANT_MS);
   const network = mac(key, "network", ipBucket(clientIp(request.headers)));
@@ -39,9 +39,15 @@ export async function POST(request: Request) {
 }
 
 /** Ends the approval now: the extension can no longer unseal a login. Needs no fresh sign-in (it only takes access away). */
-export async function DELETE() {
+export async function DELETE(request: Request) {
   const userId = await getUserId();
   if (!userId) return unauthorized();
-  await endGibScan(userId);
+  const expected = new URL(request.url).searchParams.get("until");
+  if (expected === null) await endGibScan(userId);
+  else {
+    const until = new Date(expected);
+    if (!Number.isFinite(until.getTime()) || until.toISOString() !== expected) return fail("Tarama erişim süresi geçersiz.", 400);
+    await endGibScan(userId, until);
+  }
   return new NextResponse(null, { status: 204 });
 }

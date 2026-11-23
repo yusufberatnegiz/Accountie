@@ -33,7 +33,7 @@ describe("panel pages without a session", () => {
     ["receipt", () => ReceiptPage({ params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000001" }) })],
     ["rules", () => RulesPage()],
     ["muavin", () => ReconcilePage({ searchParams: Promise.resolve({}) })],
-    ["e-tebligat", () => NoticesPage()],
+    ["e-tebligat", () => NoticesPage({ searchParams: Promise.resolve({ tarama: "tamamlandi" }) })],
   ])("%s redirects to /giris before touching the database", async (_, render) => {
     await expect(render()).rejects.toThrow("NEXT_REDIRECT /giris");
     expect(q.listReceipts).not.toHaveBeenCalled();

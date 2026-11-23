@@ -53,3 +53,15 @@ export async function importRunning(): Promise<boolean | null> {
   }
   return null;
 }
+
+export async function launchGibScan(account: string, until: string): Promise<"started" | "manual" | "unavailable"> {
+  const runtime = extensionRuntime();
+  if (!runtime?.sendMessage) return "unavailable";
+  let installed = false;
+  for (const id of EXTENSION_IDS) {
+    const { ok, answered } = await send(runtime, id, { type: "accountie-gib-scan", account, until });
+    if (ok) return "started";
+    installed ||= answered;
+  }
+  return installed ? "manual" : "unavailable";
+}

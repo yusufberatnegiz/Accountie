@@ -15,7 +15,7 @@ const readText = (r: FirmRead) => (r.scannedAt === null ? "Hiç okunmadı" : `${
  * e-Tebligat: what the extension read from each firm's Dijital Vergi Dairesi list, new ones (not yet marked seen here) first, and
  * when each firm was last read. Accountie never opens an envelope; the document is read in GİB.
  */
-export function NoticesView({ notices, firmReads, newCount, truncated, children }: { notices: NoticeRow[]; firmReads: FirmRead[]; newCount: number; truncated: boolean; children?: React.ReactNode }) {
+export function NoticesView({ notices, firmReads, newCount, truncated, scanCompleted, children }: { notices: NoticeRow[]; firmReads: FirmRead[]; newCount: number; truncated: boolean; scanCompleted?: boolean; children?: React.ReactNode }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +61,8 @@ export function NoticesView({ notices, firmReads, newCount, truncated, children 
         </div>
       </div>
 
+      {scanCompleted ? <p className="alert alert-ok" role="status">Tarama tamamlandı.</p> : null}
+
       <section className="panel firms-panel" aria-labelledby="tebligat-liste">
         <h2 id="tebligat-liste" className="visually-hidden">Tebligatlar</h2>
         <p className="visually-hidden" role="status">{said}</p>
@@ -92,7 +94,7 @@ export function NoticesView({ notices, firmReads, newCount, truncated, children 
 
       <section className="panel firms-add" aria-labelledby="tebligat-nasil">
         <h2 id="tebligat-nasil">Nasıl okunur</h2>
-        <p>Bütün firmalar için: eklentide <strong>e-Tebligat taraması</strong>&apos;nı açın. Eklenti her firmanın giriş formunu doldurur, doğrulama kodunu siz yazarsınız. Tek firma için: Dijital Vergi Dairesi&apos;ne firmanın hesabıyla girip eklentide <strong>Tebligatları getir</strong>&apos;e basın. Zarf açılmaz: GİB&apos;de okundu kaydı düşmez, belgeyi GİB&apos;de siz açarsınız.</p>
+        <p>Bütün firmalar için bu sayfada <strong>Taramayı başlat</strong>&apos;a basın. Gerekirse eklentide doğrulamayı tamamlayın. Tek firma için Dijital Vergi Dairesi&apos;ne firmanın hesabıyla girip eklentide <strong>Tebligatları getir</strong>&apos;e basın. Bu işlem yalnızca listeyi okur.</p>
         <p>Tebligat, e-Tebligat adresine ulaştığı günü izleyen 5. günün sonunda tebliğ edilmiş sayılır; süreler o günden başlar. Her firmayı en az 5 günde bir okuyun.</p>
         {firmReads.length ? (
           <>

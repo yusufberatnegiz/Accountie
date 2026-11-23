@@ -791,8 +791,9 @@ export async function setGibScanGrant(userId: string, grant: { until: Date; gran
 }
 
 /** Ends the approval now (the site, the extension at the end of a scan, a new extension key). */
-export async function endGibScan(userId: string): Promise<void> {
-  await getDb().delete(gibScanGrants).where(eq(gibScanGrants.userId, userId));
+export async function endGibScan(userId: string, until?: Date): Promise<void> {
+  const owned = eq(gibScanGrants.userId, userId);
+  await getDb().delete(gibScanGrants).where(until ? and(owned, eq(gibScanGrants.until, until)) : owned);
 }
 
 /** The panel's view: how many logins are stored, the approval, and the last unsealings (firm and time). */

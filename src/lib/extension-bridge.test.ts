@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { extensionInstalled, importRunning, offerToken } from "./extension-bridge";
+import { extensionInstalled, importRunning, launchGibScan, offerToken } from "./extension-bridge";
 import { DEV_EXTENSION_ID, STORE_EXTENSION_ID } from "./extension-id";
 
 type Reply = { ok?: boolean; importing?: boolean } | undefined;
@@ -49,5 +49,23 @@ describe("eklenti köprüsü", () => {
     expect(await importRunning()).toBe(false);
     fakeChrome({ [STORE_EXTENSION_ID]: () => ({ ok: false }) });
     expect(await importRunning()).toBeNull();
+  });
+
+  it("tarama isteğini yalnız güncel ve isteği kabul eden eklentiye iletir", async () => {
+    const until = "2099-01-01T00:00:00.000Z";
+    const rt = fakeChrome({ [STORE_EXTENSION_ID]: () => ({ ok: false }), [DEV_EXTENSION_ID]: () => ({ ok: true }) });
+    expect(await launchGibScan("test@example.com", until)).toBe("started");
+    expect(rt.sendMessage.mock.calls.map(([id, message]) => [id, message])).toEqual([
+      [STORE_EXTENSION_ID, { type: "accountie-gib-scan", account: "test@example.com", until }],
+      [DEV_EXTENSION_ID, { type: "accountie-gib-scan", account: "test@example.com", until }],
+    ]);
+  });
+
+  it("eski eklentiyle elle başlamaya izin verir; eklenti yoksa tarama sekmesi açılamaz", async () => {
+    const until = "2099-01-01T00:00:00.000Z";
+    fakeChrome({ [STORE_EXTENSION_ID]: () => ({ ok: false }) });
+    expect(await launchGibScan("test@example.com", until)).toBe("manual");
+    fakeChrome({});
+    expect(await launchGibScan("test@example.com", until)).toBe("unavailable");
   });
 });
