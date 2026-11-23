@@ -159,8 +159,69 @@
     return pass && (!pass.value || !doc.getElementById("accountie-note")) ? "refill" : "waiting";
   }
 
+  function captchaSetReactValue(el, value) {
+    if (!el) return false;
+    const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), "value")?.set;
+    if (setter) setter.call(el, value); else el.value = value;
+    el.dispatchEvent(new root.Event("input", { bubbles: true }));
+    el.dispatchEvent(new root.Event("change", { bubbles: true }));
+    return true;
+  }
+
+  async function captchaWaitNewSrc(img, oldSrc) {
+    if (!img) return false;
+    const until = Date.now() + 4000;
+    while (Date.now() < until) {
+      if (img.complete && img.naturalWidth && img.src !== oldSrc) return true;
+      await new Promise((resolve) => root.setTimeout(resolve, 100));
+    }
+    return false;
+  }
+
+  function captchaToPng(img) {
+    if (!img?.complete || !img.naturalWidth) return null;
+    const canvas = root.document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/png").split(",")[1] || null;
+  }
+
+  async function gibCaptchaSolveAndFill() {
+    if (root.location.origin !== GIB_ORIGIN || root.location.pathname !== LOGIN_PATH) {
+      return { ok: false, reason: "elsewhere" };
+    }
+    const img = root.document.querySelector('img[alt="captchaImg"]');
+    if (!img) return { ok: false, reason: "no-image" };
+    const png = captchaToPng(img);
+    if (!png) return { ok: false, reason: "no-image" };
+    const response = await root.chrome.runtime.sendMessage({ type: "ocrRequest", png });
+    if (!response?.ok || !response.text) return { ok: false, reason: response?.reason || "model-error" };
+    const code = root.document.getElementById("dk");
+    if (!captchaSetReactValue(code, response.text)) return { ok: false, reason: "no-code-field" };
+    return { ok: true, text: response.text, submitted: false };
+  }
+
+  function submitLogin(doc = root.document, loc = root.location) {
+    if (loc.origin !== GIB_ORIGIN || loc.pathname !== LOGIN_PATH) {
+      return { ok: false, reason: "elsewhere" };
+    }
+    const form = doc.querySelector("form");
+    const submit = doc.querySelector("button[type='submit'], input[type='submit']");
+    if (!submit && !form) return { ok: false, reason: "no-submit" };
+    if (submit) submit.click(); else form.requestSubmit();
+    return { ok: true, submitted: true };
+  }
+
+  async function gibCaptchaSolveAndSubmit() {
+    const solved = await gibCaptchaSolveAndFill();
+    if (!solved.ok) return solved;
+    return submitLogin();
+  }
+
   /** Açılan oturum o firmanın mı: user-info'nun VKN/TCKN'si Luca'daki firmanın Accountie'deki numarasıyla aynı olmalı. */
   const sameFirm = (idNumbers, taxNumber) => Array.isArray(idNumbers) && idNumbers.includes(String(taxNumber));
 
-  root.AccountieGibLogin = { LUCA_PAGE, LOGIN_PATH, lucaRows, fetchLucaRows, plan, goToLogin, loginReady, showNote, fillLogin, loginState, sameFirm };
+  root.AccountieGibLogin = { LUCA_PAGE, LOGIN_PATH, lucaRows, fetchLucaRows, plan, goToLogin, loginReady, showNote, fillLogin, loginState, captchaSetReactValue, captchaWaitNewSrc, captchaToPng, gibCaptchaSolveAndFill, submitLogin, gibCaptchaSolveAndSubmit, sameFirm };
 })(globalThis);

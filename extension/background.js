@@ -21,6 +21,50 @@
   }
   root.AccountieBackground = { acceptToken, importStatus };
 
+  let ocrCloseTimer = null;
+  let ocrEnsuring = null;
+
+  async function ensureOcrDocument() {
+    if (ocrEnsuring) return ocrEnsuring;
+    ocrEnsuring = (async () => {
+      if (await root.chrome.offscreen?.hasDocument()) return;
+      await root.chrome.offscreen.createDocument({
+        url: "ocr.html",
+        reasons: ["WORKERS", "BLOBS"],
+        justification: "Dijital Vergi Dairesi doğrulama kodunu cihazda yerel olarak okur.",
+      });
+    })();
+    try {
+      await ocrEnsuring;
+    } finally {
+      ocrEnsuring = null;
+    }
+  }
+
+  async function ocrOnce(png) {
+    clearTimeout(ocrCloseTimer);
+    await ensureOcrDocument();
+    const answer = await new Promise((resolve) => {
+      const timer = setTimeout(() => resolve({ ok: false, reason: "timeout" }), 8_000);
+      root.chrome.runtime.sendMessage({ type: "ocr", png }, (value) => {
+        clearTimeout(timer);
+        resolve(value || { ok: false, reason: "no-answer" });
+      });
+    });
+    ocrCloseTimer = setTimeout(() => root.chrome.offscreen.closeDocument().catch(() => {}), 60_000);
+    return answer;
+  }
+
+  if (root.chrome?.runtime?.onMessage) {
+    root.chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+      if (message?.type !== "ocrRequest") return;
+      ocrOnce(message.png)
+        .then((value) => sendResponse(value))
+        .catch((error) => sendResponse({ ok: false, reason: "model-error", detail: String(error?.message || error).slice(0, 200) }));
+      return true;
+    });
+  }
+
   if (root.chrome?.runtime?.onMessageExternal) {
     root.chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
       if (message?.type === "accountie-import-status") {

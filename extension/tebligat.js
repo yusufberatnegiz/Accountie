@@ -12,6 +12,7 @@ const WAIT_MS = 5 * 60_000;
 const POLL_MS = 1500;
 // GİB hatalı kodda formu sildiğinde şifre en çok bu kadar yeniden yazılır: her deneme GİB'de başarısız giriş sayılabilir.
 const MAX_REFILLS = 2;
+const MAX_CAPTCHA_SUBMITS = 2;
 // Envelopes opened per firm per run: a firm with years of notices does not hold the GİB session (and the queue) for an hour.
 const MAX_DOCS = 25;
 
@@ -22,6 +23,13 @@ let running = false;
 let stopped = false;
 let usedStored = false;
 let grantToken = "";
+let autoCaptcha = false;
+
+async function loadAutoCaptcha() {
+  const { gibAutoCaptcha } = await chrome.storage.local.get("gibAutoCaptcha");
+  autoCaptcha = gibAutoCaptcha === true;
+  if ($("autoCaptcha")) $("autoCaptcha").checked = autoCaptcha;
+}
 
 /** Ends the approval in Accountie once the stored logins are no longer needed (done, stopped, failed, or this page closing). */
 async function endGrant(token = grantToken, keepalive = false) {
@@ -149,7 +157,7 @@ async function storedLogin(token, lucaId) {
 }
 
 /** Waits for the user to log in ("in"), skip ("skip") or stop; GİB clearing the form is filled again, a few times at most. */
-async function waitForLogin(tabId, login, text, head) {
+async function waitForLogin(tabId, login, text, head, captchaSubmits = 0) {
   const until = Date.now() + WAIT_MS;
   let refills = 0;
   while (Date.now() < until) {
@@ -158,6 +166,16 @@ async function waitForLogin(tabId, login, text, head) {
     if (state === "stop") { stopped = true; return "stopped"; }
     if (state === "in" || state === "skip") return state;
     if (state === "refill") {
+      if (autoCaptcha && captchaSubmits < MAX_CAPTCHA_SUBMITS) {
+        await fill(tabId, login, `Accountie · ${head}: doğrulama kodu yeniden okunuyor.`);
+        const retried = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.gibCaptchaSolveAndSubmit(), { ok: false, reason: "model-error" });
+        if (retried?.submitted) captchaSubmits++;
+        if (captchaSubmits >= MAX_CAPTCHA_SUBMITS) {
+          return "captcha-refused";
+        }
+        await pause(POLL_MS);
+        continue;
+      }
       if (refills >= MAX_REFILLS) return "refused";
       refills++;
       await fill(tabId, login, `Accountie · ${head}: Kod ya da şifre hatalı, form yeniden dolduruldu (kalan deneme ${MAX_REFILLS - refills + 1}). Yeni kodu yazıp Giriş Yap'a basın.`);
@@ -191,12 +209,23 @@ async function scanFirm(tabId, f, token, head) {
   const login = f.stored ? await storedLogin(token, f.lucaId) : { user: f.user, pass: f.pass };
   if (login.problem) return { line: login.problem, failed: true };
   if (!(await fill(tabId, login, text))) return { line: "Giriş formu bulunamadı; GİB sayfası değişmiş olabilir." };
+  let captchaSubmits = 0;
+  if (autoCaptcha) {
+    const ocr = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.gibCaptchaSolveAndSubmit(), { ok: false, reason: "model-error" });
+    if (ocr?.ok) {
+      captchaSubmits = ocr.submitted ? 1 : 0;
+      status(`${head}: doğrulama kodu çözüldü ve Giriş Yap'a otomatik basıldı.`);
+    } else {
+      status(`${head}: kod otomatik okunamadı. Doğrulama kodunu elle yazıp Giriş Yap'a basın.`);
+    }
+  }
   await chrome.tabs.update(tabId, { active: true });
-  status(`${head}: GİB sekmesinde doğrulama kodunu yazıp Giriş Yap'a basın.`);
-  const state = await waitForLogin(tabId, login, text, head);
+  if (!autoCaptcha) status(`${head}: GİB sekmesinde doğrulama kodunu yazıp Giriş Yap'a basın.`);
+  const state = await waitForLogin(tabId, login, text, head, captchaSubmits);
   login.user = login.pass = f.pass = "";
   if (state === "stopped") return { line: "Durduruldu.", stopped: true };
   if (state === "skip") return { line: "Atlandı; bugün yeniden sorulmaz.", failed: true };
+  if (state === "captcha-refused") return { line: "2 otomatik CAPTCHA denemesinde giriş olmadı; firma atlandı.", failed: true };
   if (state === "refused") return { line: `${MAX_REFILLS + 1} denemede giriş olmadı; bugün yeniden sorulmaz. Kod doğruysa Luca'da şifreyi kontrol edin.`, failed: true };
   if (state === "timeout") { stopped = true; return { line: "5 dakika giriş yapılmadı; tarama durduruldu.", stopped: true }; }
   // Logged in: the left-behind clean-up of this page must not cut the read short.
@@ -395,6 +424,17 @@ $("retry").addEventListener("click", async () => {
   status("Bugün atlanan firmalar bir sonraki taramada yeniden sorulacak. Taramayı başlat'a basın.");
 });
 $("stop").addEventListener("click", () => { stopped = true; status("Durduruluyor."); });
+$("autoCaptcha").addEventListener("change", (event) => {
+  autoCaptcha = event.target.checked;
+  chrome.storage.local.set({ gibAutoCaptcha: autoCaptcha });
+});
+chrome.storage.onChanged?.addListener((changes, area) => {
+  if (area === "local" && changes.gibAutoCaptcha) {
+    autoCaptcha = changes.gibAutoCaptcha.newValue === true;
+    $("autoCaptcha").checked = autoCaptcha;
+  }
+});
 window.addEventListener("beforeunload", (e) => { if (running) e.preventDefault(); });
 // Closed or crashed mid-run: the approval does not stay open for the hours it had left.
 window.addEventListener("pagehide", () => { endGrant(grantToken, true); });
+loadAutoCaptcha();

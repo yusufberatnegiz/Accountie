@@ -8,13 +8,21 @@
 </head>
 <body class="wide scan">
   <h1>e-Tebligat taraması</h1>
-  <p class="lead">Luca'daki her firmanın tebligatlarına sırayla bakar. Doğrulama kodunu siz yazarsınız, gerisini eklenti yapar.</p>
+  <p class="lead">Luca'daki her firmanın tebligatlarına sırayla bakar. Otomatik kip seçilirse doğrulama kodu okunur ve giriş yapılır; manuel kipte kodu siz girersiniz.</p>
 
   <ol class="steps">
     <li><strong>Accountie'de taramayı onaylayın</strong><span>e-Tebligatlar sayfasında Taramayı onayla (bu bilgisayardan, 4 saat). GİB girişleri firmalar Luca'dan çekilirken bir kez okunup şifreli saklandı; kayıtlı giriş yoksa Luca'da GİB Şirket ekranını açın.</span></li>
     <li><strong>Taramayı başlatın</strong><span>Dijital Vergi Dairesi açılır, ilk firmanın kullanıcı kodu ve şifresi yazılır.</span></li>
-    <li><strong>Doğrulama kodunu yazıp Giriş Yap'a basın</strong><span>Liste okunur, yeni belgeler indirilir, sıradaki firma kendiliğinden gelir.</span></li>
+    <li><strong>Doğrulama kodunu kullanın</strong><span>Otomatik kipte çözülür ve gönderilir; manuel kipte siz yazıp Giriş Yap'a basarsınız.</span></li>
   </ol>
+
+  <label class="auto-captcha">
+    <input type="checkbox" id="autoCaptcha">
+    <span>
+      <strong>Doğrulama kodunu otomatik çöz ve gönder</strong>
+      <small>OCR cihazda çalışır. Firma başına en fazla 2 otomatik giriş denemesi yapılır.</small>
+    </span>
+  </label>
 
   <div class="actions">
     <button id="start" type="button" class="primary">Taramayı başlat</button>

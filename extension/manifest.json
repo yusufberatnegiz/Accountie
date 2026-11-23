@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Accountie Luca Doldurucu",
-  "version": "0.8.0",
+  "version": "0.9.0",
+  "minimum_chrome_version": "109",
   "description": "Onaylı fişleri Luca Fiş Detayına yazar, ekranla karşılaştırır; Dijital Vergi Dairesi e-Tebligat listesini Accountie'ye aktarır.",
   "icons": {
     "16": "icons/icon-16.png",
@@ -21,7 +22,8 @@
     "activeTab",
     "scripting",
     "storage",
-    "downloads"
+    "downloads",
+    "offscreen"
   ],
   "host_permissions": [
     "https://accountie.app/*",
@@ -39,6 +41,6 @@
   },
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqC89IEfCFckYekKVPSfrnn97rhB6vO5/poHR+EVAAOcY+TWr5DFQysiPfSc+xk0goFDJr/s4eeyoNIo50gKvzKDwb05aIxHsVanXLebyUvHsjo2GCPmP6uIYuGOTAiStYHMzjV14r6avqYuWOHP4wRfmBWQzyzfi0mvBDQIFAvGYJL5NTRQvSDeJg6Z9F+TbSTgCaf/852RoRLNpVSa7NP2Ub+6XCSc34e2rbVyaNzFWvLD4yj33vngqM7NbWwCFoH4qAdPJMhkn8DIbuEIck6KcNLoy6LBQ9AKEO+1bohG9MKc3Ux7rppNB4tqF1OMEun9dxXABnOgrpPxLCDJhtwIDAQAB",
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'none'"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   }
 }

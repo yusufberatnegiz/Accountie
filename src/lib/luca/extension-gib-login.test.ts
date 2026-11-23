@@ -11,6 +11,9 @@ const { AccountieGibLogin: g } = globalThis as unknown as { AccountieGibLogin: {
   goToLogin(storage: Storage, loc: { replace(p: string): void }): void;
   fillLogin(user: string, pass: string, text: string, doc: unknown, storage: Storage, loc?: { origin: string; pathname: string }): boolean;
   loginState(doc: unknown, storage: Storage, loc: { pathname: string }): string;
+  captchaSetReactValue(el: unknown, value: string): boolean;
+  submitLogin(doc?: unknown, loc?: { origin: string; pathname: string }): { ok: boolean; submitted?: boolean; reason?: string };
+  gibCaptchaSolveAndSubmit(): Promise<{ ok: boolean; submitted?: boolean; reason?: string }>;
   sameFirm(ids: string[], tax: string): boolean;
 } };
 
@@ -119,6 +122,34 @@ describe("eklenti: Luca GİB Şirket ekranı ve GİB girişi", () => {
     expect(g.loginState(doc("x"), storage({ token: "t" }), { pathname: "/portal/login", origin: "https://evil.example" } as { pathname: string })).toBe("elsewhere");
     expect(g.sameFirm(["1234567890"], "1234567890")).toBe(true);
     expect(g.sameFirm(["9999999999"], "1234567890")).toBe(false);
+  });
+
+  it("captcha tahminini React kontrollü alanına native setter ile yazar ve Giriş Yap'a basmaz", () => {
+    const prototype = {
+      value: "",
+    } as { value: string };
+    Object.defineProperty(prototype, "value", {
+      configurable: true,
+      get() { return (this as unknown as { _value: string })._value; },
+      set(value: string) { (this as unknown as { _value: string })._value = value; },
+    });
+    const box = Object.assign(Object.create(prototype), {
+      _value: "",
+      dispatchEvent: vi.fn(),
+    }) as { _value: string; value: string; dispatchEvent: ReturnType<typeof vi.fn> };
+    expect(g.captchaSetReactValue(box, "A2B3C")).toBe(true);
+    expect(box.value).toBe("A2B3C");
+    expect(box.dispatchEvent).toHaveBeenCalledTimes(2);
+  });
+
+  it("Giriş Yap düğmesine otomatik basar ve gönderim durumunu döndürür", () => {
+    const button = { click: vi.fn() };
+    const doc = {
+      querySelector: (selector: string) => selector.includes("submit") ? button : null,
+    };
+    const loc = { origin: "https://dijital.gib.gov.tr", pathname: "/portal/login" };
+    expect(g.submitLogin(doc, loc)).toEqual({ ok: true, submitted: true });
+    expect(button.click).toHaveBeenCalledTimes(1);
   });
 });
 
