@@ -134,10 +134,12 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
   const textOf = (n: Node): string => [n.textContent, ...n.children.map(textOf)].join(" ");
 
   /** The scan page in a sandbox with a fake Chrome: Luca gives one firm, GİB answers `login` while waiting for the user. */
-  function setup(login: string, ids = ["1234567890"], saved: null | { scanUntil: string | null; read?: number } = null, lucaList: string[][] | null = null) {
+  function setup(login: string, ids = ["1234567890"], saved: null | { scanUntil: string | null; read?: number } = null, lucaList: string[][] | null = null, envelopes: unknown[] = []) {
     const els = new Map<string, Node>();
     const get = (id: string) => { if (!els.has(id)) els.set(id, new Node()); return els.get(id)!; };
     const stored: { tebligatScan: unknown }[] = [];
+    const downloads: string[] = [];
+    let files: string[] = ["eski"];
     const fillArgs: unknown[][] = [];
     const fetch = vi.fn(async (url: string) => {
       if (url.endsWith("/api/extension/gib-logins")) return { ok: true, status: 200, json: async () => (saved ? { enabled: true, firms: [{ lucaId: "7", name: "ÖRNEK", taxNumber: "1234567890" }], scanUntil: saved.scanUntil } : { enabled: true, firms: [], scanUntil: null }) };
@@ -156,22 +158,27 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
       if (src.includes("fillLogin")) { fillArgs.push(o.args ?? []); return [{ result: true }]; }
       if (src.includes("loginReady")) return [{ result: true }];
       if (src.includes("loginState")) return [{ result: login }];
-      if (src.includes("readNotices")) return [{ result: { idNumbers: ids, name: "ÖRNEK LTD", notices: [] } }];
+      if (src.includes("readNotices")) return [{ result: { idNumbers: ids, name: "ÖRNEK LTD", notices: [], envelopes } }];
+      if (src.includes("downloadNotice")) return [{ result: { files: [{ name: "İhbarname.pdf", base64: Buffer.from("%PDF-1.7").toString("base64") }] } }];
       return [{}];
     });
     const chrome = {
       tabs: { query: async (q: { url: string }) => (q.url.includes("luca") ? [{ id: 1 }] : [{ id: 2 }]), get: async () => ({ id: 2, status: "complete" }), create: vi.fn(), update: vi.fn(async () => ({})), getCurrent: async () => ({ id: 9 }) },
       scripting: { executeScript },
       permissions: { request: async () => true },
-      storage: { local: { get: async (k: string) => (k === "token" ? { token: "acx_test" } : { tebligatScan: stored.at(-1)?.tebligatScan }), set: async (v: { tebligatScan: unknown }) => void stored.push(v) } },
+      storage: { local: {
+        get: async (k: string) => (k === "token" ? { token: "acx_test" } : k === "tebligatFiles" ? { tebligatFiles: files } : { tebligatScan: stored.filter((v) => v.tebligatScan).at(-1)?.tebligatScan }),
+        set: async (v: { tebligatScan?: unknown; tebligatFiles?: string[] }) => { if (v.tebligatFiles) files = v.tebligatFiles; else stored.push(v as { tebligatScan: unknown }); },
+      } },
+      downloads: { download: vi.fn(async (o: { filename: string }) => void downloads.push(o.filename)) },
     };
     const sources = ["gib-login.js", "gib-notices.js", "tebligat.js"].map((f) => readFileSync(`extension/${f}`, "utf8")).join("\n");
     runInNewContext(sources, {
-      URL, fetch, chrome, Event, setTimeout, console, Date,
+      URL, Blob, atob, Uint8Array, fetch, chrome, Event, setTimeout, console, Date,
       window: { addEventListener() {} },
       document: { getElementById: get, createElement: () => new Node(), title: "" },
     });
-    return { get, fetch, stored, fillArgs };
+    return { get, fetch, stored, fillArgs, downloads, files: () => files };
   }
 
   it("şifre formu doldurmaya gider; Accountie'ye, depoya ve ekrana hiç gitmez; yeni tebligatlar özetlenir", async () => {
@@ -242,5 +249,13 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
     await open.get("start").click?.();
     expect(open.fillArgs).toHaveLength(1);
   });
-});
 
+  it("liste kaydedildikten sonra daha önce indirilmemiş belgeler firma klasörüne iner, indirilmiş olanın zarfı yeniden açılmaz", async () => {
+    const env = (id: string) => ({ gibId: id, docNo: `B${id}`, tarafId: 1, tarafSecureId: "t", tebligId: 2, tebligSecureId: "b" });
+    const t = setup("in", ["1234567890"], null, null, [env("eski"), env("9")]);
+    await t.get("start").click?.();
+    expect(t.downloads).toEqual(["Accountie e-Tebligat/ÖRNEK LTD/B9 - İhbarname.pdf"]);
+    expect(t.files()).toEqual(["eski", "9"]);
+    expect(textOf(t.get("log"))).toContain("1 belge indirildi");
+  });
+});
