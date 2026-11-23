@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hashToken, legacyHash } from "@/lib/auth/extension-token";
+import { DEV_EXTENSION_ID, STORE_EXTENSION_ID } from "@/lib/extension-id";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn(), signedInWithin: vi.fn(), FRESH_SIGN_IN_MS: 1800000, SIGN_IN_AGAIN: "yeniden giriş" }));
@@ -161,11 +162,31 @@ describe("Accountie'den tarama onayı ve girişleri silme", () => {
     expect((await wipe.DELETE()).status).toBe(401);
   });
 
-  it("eklenti taramanın sonunda onayı kapatabilir; açamaz", async () => {
+  it("eklenti taramanın sonunda onayı kapatabilir", async () => {
     const end = await import("./extension/gib-scan/route");
     expect((await end.DELETE(req("DELETE"))).status).toBe(204);
     expect(q.endGibScan).toHaveBeenCalledWith(USER);
-    expect(Object.keys(end)).not.toContain("POST");
+  });
+
+  it.each([STORE_EXTENSION_ID, DEV_EXTENSION_ID])("%s ile başlatma için yeni web oturumu ve aynı hesabın anahtarı gerekir", async (extensionId) => {
+    const endpoint = await import("./extension/gib-scan/route");
+    const origin = `chrome-extension://${extensionId}`;
+    const start = (source: string, token = TOKEN) => endpoint.POST(new Request("https://accountie.app/api/extension/gib-scan", {
+      method: "POST", headers: { origin: source, authorization: `Bearer ${token}` },
+    }));
+    vi.mocked(session.getUserId).mockResolvedValue(null);
+    expect((await start(origin)).status).toBe(401);
+    vi.mocked(session.getUserId).mockResolvedValue(USER);
+    vi.mocked(session.signedInWithin).mockResolvedValue(false);
+    expect((await start(origin)).status).toBe(403);
+    vi.mocked(session.signedInWithin).mockResolvedValue(true);
+    expect((await start("https://other.example")).status).toBe(403);
+    expect((await start("chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).status).toBe(403);
+    expect((await start(origin, `acx_${"b".repeat(43)}`)).status).toBe(403);
+    expect(q.setGibScanGrant).not.toHaveBeenCalled();
+    expect((await start(origin)).status).toBe(200);
+    expect(q.setGibScanGrant).toHaveBeenCalledOnce();
+    expect(q.setGibScanGrant).toHaveBeenCalledWith(USER, expect.objectContaining({ tokenHash: hashToken(TOKEN) }));
   });
 
   it("sekme açılamazsa yalnız o isteğin oluşturduğu tarama erişimi kapatılır", async () => {
