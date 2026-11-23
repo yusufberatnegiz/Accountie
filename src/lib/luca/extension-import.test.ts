@@ -126,6 +126,22 @@ describe("Luca firma geçişi (sahte Luca)", () => {
     expect(err).not.toContain("Luca'nın yanıtı");
   }, 10_000);
 
+  it("Luca dönemi aynı yıl içinde başka günden başlatsa da firma ve dönem numarası tutuyorsa geçmiş sayılır", async () => {
+    const opened: Period = { ...f, start: "06/01/2026" };
+    fakeLuca({ sirket: "11", donem: "502", name: "ÖRNEK A LTD", start: "01/01/2026", end: "31/12/2026" });
+    expect(await luca.readFirm(opened, true)).toMatchObject({ lucaId: "11", verified: true });
+  });
+
+  it("başlangıç farklıyken numara tutmazsa, başka yıl ya da numara kontrolü kapalıysa yine geçmedi der", async () => {
+    const opened: Period = { ...f, start: "06/01/2026" };
+    fakeLuca({ sirket: "11", donem: "999", name: "ÖRNEK A LTD", start: "01/01/2026", end: "31/12/2026" });
+    expect(await luca.readFirm(opened, true).catch((e: Error) => e.message)).toContain("Luca bu firmaya geçmedi");
+    fakeLuca({ sirket: "11", donem: "502", name: "ÖRNEK A LTD", start: "01/01/2025", end: "31/12/2026" });
+    expect(await luca.readFirm(opened, true).catch((e: Error) => e.message)).toContain("Luca bu firmaya geçmedi");
+    fakeLuca({ sirket: "11", donem: "502", name: "ÖRNEK A LTD", start: "01/01/2026", end: "31/12/2026" });
+    expect(await luca.readFirm(opened, false).catch((e: Error) => e.message)).toContain("Luca bu firmaya geçmedi");
+  }, 20_000);
+
   it("numara kontrolü kapalıyken yalnız dönem tarihine bakar", async () => {
     fakeLuca({ sirket: "12", donem: "999", name: "ÖRNEK A LTD", start: "01/01/2026", end: "31/12/2026" });
     expect((await luca.readFirm(f, false)).verified).toBe(false);

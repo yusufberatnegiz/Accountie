@@ -112,7 +112,12 @@
       const sameFirm = !verifyIds || ((!ids.sirket || ids.sirket === String(f.lucaId)) && (!ids.donem || ids.donem === String(f.donemId)));
       // `avoid`: the firm read just before. Same dates and still that firm means Luca has not shown the switch yet: tried again.
       const stale = !!avoid && !!identity && `${identity.taxNumber}|${identity.name}` === avoid;
-      if (identity && identity.start === f.start && identity.end === f.end && sameFirm && !stale) return { ok: true, identity, verified: verifyIds && !!ids.sirket };
+      // Luca's "Şu an ... döneminde" line may start the period on another day of the same year than the firm list does (seen:
+      // list 06/01/2026, line 01/01/2026, same firm). Then the session's own firm and period numbers prove the switch.
+      const sameDates = !!identity && identity.start === f.start && identity.end === f.end;
+      const proven = verifyIds && !!identity && ids.sirket === String(f.lucaId) && (!ids.donem || ids.donem === String(f.donemId))
+        && identity.end === f.end && identity.start.slice(-4) === f.start.slice(-4);
+      if ((sameDates || proven) && sameFirm && !stale) return { ok: true, identity, verified: verifyIds && !!ids.sirket };
     }
     return { ok: false, identity, ids, reply };
   }
