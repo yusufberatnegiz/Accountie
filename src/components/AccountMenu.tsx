@@ -10,7 +10,7 @@ import { ThemeSwitch } from "@/components/ThemeSwitch";
  * Çıkış sits one step away, so a stray tap in the phone's bottom bar never ends the session.
  * A native <dialog>: Escape, focus trap and return of focus come from the platform.
  */
-/** `here`: a page reached only through this sheet on the phone (Kontör, e-Tebligat), so the bottom bar still shows where one is. */
+/** `here`: Kurulum is reached through this sheet on the phone. */
 export function AccountMenu({ email, here, setup }: { email?: string; here?: boolean; setup?: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null);
   return (
@@ -33,8 +33,6 @@ export function AccountMenu({ email, here, setup }: { email?: string; here?: boo
             <ThemeSwitch labelled />
           </div>
           {setup ? <Link className="btn btn-primary account-credits" href="/panel/kurulum">Kurulumu tamamlayın</Link> : null}
-          <Link className="btn account-credits" href="/panel/kontor">Kontör</Link>
-          <Link className="btn account-credits" href="/panel/tebligatlar">e-Tebligat</Link>
           <form action={logout}>
             <button className="btn account-logout" type="submit">Çıkış yap</button>
           </form>

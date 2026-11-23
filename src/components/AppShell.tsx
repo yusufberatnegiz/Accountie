@@ -50,7 +50,11 @@ export function AppShell({ current, base = "/panel", email, firmId, setup = fals
         {item(`${base}/firmalar`, "Firmalar", "building", current === "firmalar")}
         <span className="rail-desktop">{item(`${base}/tebligatlar`, "e-Tebligat", "envelope", current === "tebligatlar")}</span>
         <span className="rail-desktop">{item(`${base}/kontor`, "Kontör", "coin", current === "kontor")}</span>
-        <div className="rail-end"><FoldButton /><AccountMenu email={email} here={current === "kontor" || current === "kurulum" || current === "tebligatlar"} setup={showSetup && current !== "kurulum"} /></div>
+        <div className="rail-end"><FoldButton /><AccountMenu email={email} here={current === "kurulum"} setup={showSetup && current !== "kurulum"} /></div>
+      </nav>
+      <nav className="panel-quick-links" aria-label="Tebligat ve kontör">
+        <Link className="btn btn-sm" href={`${base}/tebligatlar`} aria-current={current === "tebligatlar" ? "page" : undefined}>e-Tebligat</Link>
+        <Link className="btn btn-sm" href={`${base}/kontor`} aria-current={current === "kontor" ? "page" : undefined}>Kontör</Link>
       </nav>
       {children}
     </div>

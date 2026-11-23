@@ -61,11 +61,10 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
         </div>
       </div>
 
-      {scanCompleted ? <p className="alert alert-ok" role="status">Tarama tamamlandı.</p> : null}
-
       <section className="panel firms-panel" aria-labelledby="tebligat-liste">
         <h2 id="tebligat-liste" className="visually-hidden">Tebligatlar</h2>
         <p className="visually-hidden" role="status">{said}</p>
+        {scanCompleted ? <p className="alert alert-ok" role="status">Tarama tamamlandı.</p> : null}
         {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
         {truncated ? <p className="alert">Son {notices.length} tebligat gösteriliyor; daha eskileri Dijital Vergi Dairesi&apos;nde.</p> : null}
         <ul className="firms-list">
@@ -90,39 +89,41 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
         </ul>
       </section>
 
-      {children}
+      <aside className="notice-sidebar" aria-label="e-Tebligat ayarları ve açıklamaları">
+        {children}
 
-      <section className="panel firms-add" aria-labelledby="tebligat-nasil">
-        <h2 id="tebligat-nasil">Nasıl okunur</h2>
-        <p>Bütün firmalar için bu sayfada <strong>Taramayı başlat</strong>&apos;a basın. Gerekirse eklentide doğrulamayı tamamlayın. Tek firma için Dijital Vergi Dairesi&apos;ne firmanın hesabıyla girip eklentide <strong>Tebligatları getir</strong>&apos;e basın. Bu işlem yalnızca listeyi okur.</p>
-        <p>Tebligat, e-Tebligat adresine ulaştığı günü izleyen 5. günün sonunda tebliğ edilmiş sayılır; süreler o günden başlar. Her firmayı en az 5 günde bir okuyun.</p>
-        {firmReads.length ? (
-          <>
-            {read ? (
-              <>
-                <h3 id="son-okuma">Firmaların son okuması</h3>
-                <ul className="firms-list notice-scans" aria-labelledby="son-okuma">
-                  {firmReads.filter((r) => r.scannedAt !== null).map((r) => (
-                    <li key={r.firmId} className="firms-row">
-                      <span className="firms-name">{r.firmName}</span>
-                      <span className="firms-month" data-state={r.stale ? "bekleyen" : undefined}>{readText(r)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
-            {/* Hundreds of never-read firms would bury the reads: one line, opened on demand. */}
-            {never ? (
-              <details className="notice-never">
-                <summary>Hiç okunmadı ({never} firma)</summary>
-                <ul className="firms-list notice-scans">
-                  {firmReads.filter((r) => r.scannedAt === null).map((r) => <li key={r.firmId} className="firms-row"><span className="firms-name">{r.firmName}</span></li>)}
-                </ul>
-              </details>
-            ) : null}
-          </>
-        ) : null}
-      </section>
+        <section className="panel firms-add" aria-labelledby="tebligat-nasil">
+          <h2 id="tebligat-nasil">Nasıl okunur</h2>
+          <p>Bütün firmalar için eklentide <strong>e-Tebligat taraması → Taramayı başlat</strong> seçeneğini kullanabilirsiniz. Tek firma için Dijital Vergi Dairesi&apos;ne firmanın hesabıyla girip eklentide <strong>Tebligatları getir</strong>&apos;e basın. Tek firma işlemi yalnızca listeyi okur.</p>
+          <p>Tebligat, e-Tebligat adresine ulaştığı günü izleyen 5. günün sonunda tebliğ edilmiş sayılır; süreler o günden başlar. Her firmayı en az 5 günde bir okuyun.</p>
+          {firmReads.length ? (
+            <>
+              {read ? (
+                <>
+                  <h3 id="son-okuma">Firmaların son okuması</h3>
+                  <ul className="firms-list notice-scans" aria-labelledby="son-okuma">
+                    {firmReads.filter((r) => r.scannedAt !== null).map((r) => (
+                      <li key={r.firmId} className="firms-row">
+                        <span className="firms-name">{r.firmName}</span>
+                        <span className="firms-month" data-state={r.stale ? "bekleyen" : undefined}>{readText(r)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+              {/* Hundreds of never-read firms would bury the reads: one line, opened on demand. */}
+              {never ? (
+                <details className="notice-never">
+                  <summary>Hiç okunmadı ({never} firma)</summary>
+                  <ul className="firms-list notice-scans">
+                    {firmReads.filter((r) => r.scannedAt === null).map((r) => <li key={r.firmId} className="firms-row"><span className="firms-name">{r.firmName}</span></li>)}
+                  </ul>
+                </details>
+              ) : null}
+            </>
+          ) : null}
+        </section>
+      </aside>
     </main>
   );
 }

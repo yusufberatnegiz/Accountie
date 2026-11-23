@@ -794,8 +794,10 @@ html:has(.app[data-screen="fis"]) { scroll-padding-bottom: 112px; }
 .firms-name { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; font-weight: var(--w-medium); }
 .firms-vkn { font-size: var(--fs-small); font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 .firms-add { display: grid; gap: var(--s4); padding: var(--s5); grid-column: 2; grid-row: 2; }
+.notice-sidebar { display: grid; gap: var(--s4); min-width: 0; grid-column: 2; grid-row: 2; }
+.notice-sidebar > .firms-add { grid-area: auto; min-width: 0; }
 .firms-panel { grid-column: 1; grid-row: 2; }
-@media (max-width: 900px) { .canvas-firms { grid-template-columns: minmax(0, 1fr); } .firms-add, .firms-panel { grid-column: 1; grid-row: auto; } .firms-list { max-height: 60vh; } }
+@media (max-width: 900px) { .canvas-firms { grid-template-columns: minmax(0, 1fr); } .firms-add, .firms-panel, .notice-sidebar { grid-column: 1; grid-row: auto; } .firms-list { max-height: 60vh; } }
 /* The firm the list is for: the screen's main context for a müşavir, in ink and weight, with the way to switch beside it. */
 .firm-crumb { font-size: var(--fs-section); }
 .firm-crumb a { color: var(--ink); font-weight: var(--w-strong); text-decoration: none; }
@@ -906,8 +908,13 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
    After Anthropic's billing page: the balance first and large, the packages as quiet cards, one order summary that names the
    amount on the button, records below. Green only for the saving pill and a successful payment. */
 .rail-desktop { display: contents; }
+.panel-quick-links { display: none; }
 @media (max-width: 720px) {
   .rail-desktop { display: none; }
+  .app:not([data-screen="fis"]) { grid-template-rows: auto 1fr; }
+  .panel-quick-links { display: flex; flex-wrap: wrap; gap: var(--s2); padding: var(--s3) var(--s4) 0; }
+  .panel-quick-links .btn[aria-current="page"] { background: var(--active); color: var(--ink); }
+  .app[data-screen="fis"] .panel-quick-links { display: none; }
   .rail-item[data-here] { background: color-mix(in srgb, var(--ink) 10%, var(--ground)); color: var(--ink); }
   .rail-item[data-here] .rail-label { font-weight: var(--w-strong); }
 }
