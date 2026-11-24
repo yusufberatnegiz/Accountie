@@ -233,6 +233,8 @@ export const taxNotices = pgTable("tax_notices", {
 }, (t) => [
   uniqueIndex("tax_notices_firm_gib_idx").on(t.firmId, t.gibId),
   index("tax_notices_user_idx").on(t.userId, t.firstSeenAt),
+  // The menu's count of new notices runs on every panel page.
+  index("tax_notices_new_idx").on(t.userId).where(sql`${t.seenAt} is null`),
   ownerPolicy("tax_notices_owner"),
 ]);
 

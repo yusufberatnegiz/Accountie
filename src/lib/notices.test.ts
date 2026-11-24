@@ -23,9 +23,9 @@ describe("e-Tebligat tarihleri", () => {
 describe("e-Tebligat firma çekmeceleri", () => {
   const row = (id: string, firmId: string, firmName: string, isNew: boolean) => ({ id, firmId, firmName, isNew });
 
-  it("firmaya göre toplar, yeni sayısını sayar; yenisi çok olan firma önde, sonra ada göre; satır sırası korunur", () => {
-    const groups = byFirm([row("1", "b", "BETA", false), row("2", "a", "ALFA", true), row("3", "c", "ÇAĞ", true), row("4", "c", "ÇAĞ", true), row("5", "a", "ALFA", false)]);
-    expect(groups.map((g) => [g.firmName, g.fresh, g.rows.map((r) => r.id)])).toEqual([["ÇAĞ", 2, ["3", "4"]], ["ALFA", 1, ["2", "5"]], ["BETA", 0, ["1"]]]);
+  it("firmaya göre toplar, yeni sayısını sayar; yenisi çok olan firma önde, eşitlikte gelen sıra (en yeni bulunan önde); satır sırası korunur", () => {
+    const groups = byFirm([row("1", "z", "ZEYTİN", false), row("2", "a", "ALFA", true), row("3", "c", "ÇAĞ", true), row("4", "c", "ÇAĞ", true), row("5", "a", "ALFA", false), row("6", "b", "BETA", false)]);
+    expect(groups.map((g) => [g.firmName, g.fresh, g.rows.map((r) => r.id)])).toEqual([["ÇAĞ", 2, ["3", "4"]], ["ALFA", 1, ["2", "5"]], ["ZEYTİN", 0, ["1"]], ["BETA", 0, ["6"]]]);
   });
 
   it("boş liste boş çekmece listesi", () => {

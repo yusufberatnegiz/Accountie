@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { cache, Suspense, type ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandMark } from "@/components/BrandMark";
 import { CaptureButton } from "@/components/CaptureButton";
 import { FirmShortcut } from "@/components/FirmShortcut";
 import { FoldButton } from "@/components/FoldButton";
+import { Odometer } from "@/components/home/Odometer";
 import { countNewNotices } from "@/db/queries";
 import { getSessionUser } from "@/lib/auth/session";
 import "./panel/panel.css";
@@ -26,13 +27,11 @@ const ICONS = {
 const Icon = ({ name }: { name: keyof typeof ICONS }) => <svg className="rail-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">{ICONS[name]}</svg>;
 
 /** Notices not yet marked seen, beside e-Tebligat. Nothing when there are none or the count cannot be read: never breaks a page. */
-// Once per render: the rail and the phone's quick link both show it.
-const newNotices = cache(() => getSessionUser().then((u) => (u ? countNewNotices(u.id) : 0)).catch(() => 0));
-
 async function NoticeBadge() {
-  const n = await newNotices();
+  // Both cached per render: the rail and the phone's quick link share one query.
+  const n = await getSessionUser().then((u) => (u ? countNewNotices(u.id) : 0)).catch(() => 0);
   if (!n) return null;
-  return <><span className="rail-badge" aria-hidden="true">{n > 99 ? "99+" : n}</span><span className="visually-hidden">, {n} yeni tebligat</span></>;
+  return <><span className="rail-badge" aria-hidden="true"><Odometer value={n > 99 ? "99+" : String(n)} /></span><span className="visually-hidden">, {n} yeni tebligat</span></>;
 }
 
 /**

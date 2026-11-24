@@ -1,4 +1,5 @@
 // The only module that talks to the database (Supabase Postgres through its pooler). Every function takes the session user's id and filters by it.
+import { cache } from "react";
 import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { CATEGORIES, DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import { mergeRules, planIndex, planMismatches, planMismatchWarning } from "@/lib/plan-suggest";
@@ -721,11 +722,11 @@ export async function listNotices(userId: string, now = new Date()) {
   return { notices, scans, newCount: newRows };
 }
 
-/** Notices not yet marked seen: the count beside e-Tebligat in the panel's menu. */
-export async function countNewNotices(userId: string): Promise<number> {
+/** Notices not yet marked seen: the count beside e-Tebligat in the panel's menu. Once per server render (the page asks too). */
+export const countNewNotices = cache(async (userId: string): Promise<number> => {
   const [row] = await getDb().select({ n: count() }).from(taxNotices).where(and(eq(taxNotices.userId, userId), isNull(taxNotices.seenAt)));
   return row?.n ?? 0;
-}
+});
 
 /** Marks the given new notices as seen by the user: only ids the screen showed, never ones that arrived since. */
 export async function markNoticesSeen(userId: string, ids: readonly string[]): Promise<number> {

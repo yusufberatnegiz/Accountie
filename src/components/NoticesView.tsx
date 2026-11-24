@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { addTransitionType, startTransition, useEffect, useRef, useState } from "react";
+import { Roll } from "@/components/home/Odometer";
+import { MoveTransition } from "@/components/MoveTransition";
 import { byFirm } from "@/lib/notices";
 
 export type NoticeRow = {
@@ -15,6 +17,16 @@ export type FirmRead = { firmId: string; firmName: string; scannedAt: string | n
 const readText = (r: FirmRead) => (r.scannedAt === null ? "Hiç okunmadı" : `${r.scannedAt} · ${r.days === 0 ? "bugün" : `${r.days} gün önce`}${r.stale ? ", yeniden okuyun" : ""}`);
 
 /**
+ * An opened drawer's notices drop in 8px (line-in's values). Started from the toggle, not CSS on [open]: a drawer moved by a
+ * refresh would replay a CSS animation, the toggle event does not fire for it.
+ */
+function dropIn(e: React.SyntheticEvent<HTMLDetailsElement>) {
+  const d = e.currentTarget;
+  if (!d.open || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  d.lastElementChild?.animate([{ opacity: 0, transform: "translateY(-8px)" }, {}], { duration: 180, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+}
+
+/**
  * e-Tebligat: what the extension read from each firm's Dijital Vergi Dairesi list, under Bugün (found today) and Daha önce, one
  * closed drawer per firm with its new count, and when each firm was last read. Seen notices leave after a week. Accountie never
  * opens an envelope; the document is read in GİB.
@@ -26,7 +38,9 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
   const [said, setSaid] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
   // The drawer whose "Gördüm" was pressed: after the refresh focus goes back to it, not to the top of hundreds of firms.
-  const back = useRef<string | null>(null);
+  const back = useRef<{ drawer: string; firmName: string } | null>(null);
+  // Said only after focus has moved there: a screen reader cuts a sentence that a focus change interrupts.
+  const pending = useRef("");
   const fresh = notices.filter((n) => n.isNew);
   const read = firmReads.filter((r) => r.scannedAt !== null).length;
   const never = firmReads.length - read;
@@ -38,19 +52,42 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
 
   useEffect(() => {
     if (!back.current) return;
-    const summary = document.querySelector<HTMLElement>(`[data-drawer="${back.current}"] > summary`);
+    const { drawer: key, firmName } = back.current;
+    const drawer = document.querySelector<HTMLElement>(`[data-drawer="${key}"]`);
     back.current = null;
-    if (summary) summary.focus(); else heading.current?.focus();
+    // A drawer with no new notice left moves down among the done ones: focus goes to the next new drawer (that day's first, else
+    // any) instead of scrolling after it, since the müşavir works from the top. The sentence says why focus is elsewhere.
+    const done = !!drawer && !drawer.hasAttribute("data-new");
+    const next = done ? (drawer.closest(".notice-day")?.querySelector<HTMLElement>("details[data-new] > summary") ?? document.querySelector<HTMLElement>("details[data-new] > summary")) : null;
+    (next ?? drawer?.querySelector<HTMLElement>(":scope > summary") ?? heading.current)?.focus();
+    setSaid(next ? `${pending.current} ${firmName} firmasında yeni tebligat kalmadı.` : pending.current);
+    pending.current = "";
   }, [notices]);
 
   // A scan finishes in the extension's tab: coming back to this tab shows what it found, without a reload.
   useEffect(() => {
-    const back = () => { if (document.visibilityState === "visible") router.refresh(); };
+    let last = 0;
+    let later: ReturnType<typeof setTimeout> | undefined;
+    // At most every 20 s: switching tabs back and forth during a scan does not re-render the page each time. A return inside the
+    // 20 s is refreshed when they end, not dropped.
+    const back = () => {
+      if (document.visibilityState !== "visible") return;
+      clearTimeout(later);
+      const wait = 20_000 - (Date.now() - last);
+      if (wait > 0) { later = setTimeout(back, wait); return; }
+      last = Date.now();
+      startTransition(() => { addTransitionType("tebligat"); router.refresh(); });
+    };
     document.addEventListener("visibilitychange", back);
-    return () => document.removeEventListener("visibilitychange", back);
+    return () => { clearTimeout(later); document.removeEventListener("visibilitychange", back); };
   }, [router]);
 
-  async function seen(ids: string[], drawer: string | null = null) {
+  // New drawers rise in, a drawer that changes place slides there (MoveTransition below); the page itself does not fade.
+  function refresh() {
+    startTransition(() => { addTransitionType("tebligat"); router.refresh(); });
+  }
+
+  async function seen(ids: string[], drawer: { drawer: string; firmName: string } | null = null) {
     if (busy) return;
     setBusy(true);
     setError(null);
@@ -58,11 +95,12 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
     const res = await fetch("/api/notices/seen", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ids }) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) return setError("Kaydedilemedi. Tekrar deneyin.");
-    setSaid(ids.length > 1 ? `${ids.length} tebligat görüldü olarak işaretlendi.` : "Tebligat görüldü olarak işaretlendi.");
+    const sentence = ids.length > 1 ? `${ids.length} tebligat görüldü olarak işaretlendi.` : "Tebligat görüldü olarak işaretlendi.";
     // The pressed button goes away with the refresh: focus goes to its drawer (found again after the refresh), else the heading.
     back.current = drawer;
-    if (!drawer) heading.current?.focus();
-    router.refresh();
+    if (drawer) pending.current = sentence;
+    else { heading.current?.focus(); setSaid(sentence); }
+    refresh();
   }
 
   return (
@@ -79,7 +117,9 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
           </p>
         </div>
         <div className="title-actions">
+          {/* The scan panel sits beside the list but after every drawer in tab order: one step to it. */}
           <a className="btn btn-primary" href="https://dijital.gib.gov.tr/" target="_blank" rel="noopener noreferrer">Dijital Vergi Dairesi’ni aç</a>
+          <a className="btn notice-jump" href="#tebligat-ayarlar">Tarama ve ayarlar</a>
           {fresh.length ? (
             <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => !busy && confirm(`${fresh.length} yeni tebligat görüldü olarak işaretlensin mi?`) && seen(fresh.map((n) => n.id))}>Hepsini gördüm</button>
           ) : null}
@@ -96,10 +136,11 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
           <section key={d.key} className="notice-day" aria-labelledby={`gun-${d.key}`}>
             <h3 id={`gun-${d.key}`} className="notice-day-title">{d.title}</h3>
             {d.firms.map((g) => (
-              <details key={g.firmId} className="notice-firm" data-drawer={`${d.key}-${g.firmId}`} data-new={g.fresh ? true : undefined}>
+              <MoveTransition key={g.firmId} enter={{ tebligat: "row-rise", default: "none" }} update={{ tebligat: "row-move", default: "none" }} exit="none" default="none">
+              <details className="notice-firm" data-drawer={`${d.key}-${g.firmId}`} data-new={g.fresh ? true : undefined} onToggle={dropIn}>
                 <summary>
                   <span className="notice-firm-name">{g.firmName}<span className="visually-hidden">, </span></span>
-                  <span className="notice-firm-count">{g.fresh ? `${g.fresh} yeni tebligat` : `${g.rows.length} tebligat`}</span>
+                  <span className="notice-firm-count"><Roll value={g.fresh ? `${g.fresh} yeni tebligat` : `${g.rows.length} tebligat`} /></span>
                 </summary>
                 <ul className="firms-list">
                   {g.rows.map((n) => (
@@ -114,19 +155,20 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
                 <span data-state={n.readOnGib ? undefined : "bekleyen"}>{n.readOnGib ? "GİB'de okunmuş" : "GİB'de okunmamış"}</span>
               </span>
               {n.isNew ? (
-                <button type="button" className="btn btn-sm" aria-label={`${n.firmName}, ${n.docType ?? "tebligat"}: gördüm`} aria-disabled={busy || undefined} onClick={() => seen([n.id], `${d.key}-${g.firmId}`)}>Gördüm</button>
+                <button type="button" className="btn btn-sm" aria-label={`${n.firmName}, ${n.docType ?? "tebligat"}: gördüm`} aria-disabled={busy || undefined} onClick={() => seen([n.id], { drawer: `${d.key}-${g.firmId}`, firmName: g.firmName })}>Gördüm</button>
               ) : null}
             </li>
                   ))}
                 </ul>
               </details>
+              </MoveTransition>
             ))}
           </section>
         ))}
         {notices.length === 0 ? <p className="notice-empty">{read ? "Yeni tebligat yok; görülen tebligatlar bir hafta sonra listeden kalkar." : "Henüz okuma yok. Nasıl okunur bölümündeki adımlarla ilk firmayı okuyun."}</p> : null}
       </section>
 
-      <aside className="notice-sidebar" aria-label="e-Tebligat ayarları ve açıklamaları">
+      <aside id="tebligat-ayarlar" tabIndex={-1} className="notice-sidebar" aria-label="e-Tebligat ayarları ve açıklamaları">
         {children}
 
         <section className="panel firms-add" aria-labelledby="tebligat-nasil">

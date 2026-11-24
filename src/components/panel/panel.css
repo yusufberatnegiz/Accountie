@@ -1016,7 +1016,7 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 .notice-row[data-new] { background: var(--notice-new); box-shadow: inset 3px 0 0 var(--warn-edge); border-radius: var(--radius-control); border-top-color: transparent; }
 .notice-row[data-new] + .notice-row { border-top-color: transparent; }
 .notice-type { font-weight: var(--w-strong); }
-.notice-new { display: inline-block; margin-right: var(--s2); padding: 0 6px; border-radius: 4px; background: var(--warn-ink); color: var(--warn-bg); font-size: var(--fs-small); }
+.notice-new { display: inline-block; margin-right: var(--s2); padding: 0 6px; border-radius: var(--radius-chip); background: var(--warn-ink); color: var(--warn-bg); font-size: var(--fs-small); }
 .notice-served { color: var(--ink); font-weight: var(--w-medium); }
 .notice-dates [data-state="bekleyen"] { color: var(--warn-ink); font-weight: var(--w-medium); }
 .notice-scans { max-height: 40vh; }
@@ -1024,7 +1024,7 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 @media (max-width: 640px) { .notice-dates { text-align: left; } }
 /* Bugün / Daha önce, then one closed drawer per firm: its name and how many are new, the notices inside. */
 .notice-day + .notice-day { margin-top: var(--s4); }
-.notice-day-title { margin: 0 0 var(--s2); font-size: var(--fs-small); font-weight: var(--w-strong); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.notice-day-title { margin: 0 0 var(--s2); font-size: var(--fs-body); font-weight: var(--w-strong); color: var(--ink); }
 .notice-firm { border-top: 1px solid var(--rule); }
 .notice-firm:first-of-type { border-top: 0; }
 .notice-firm > summary { display: flex; align-items: center; gap: var(--s3); min-height: var(--row); padding: var(--s2); border-radius: var(--radius-control); cursor: pointer; list-style: none; font-weight: var(--w-medium); }
@@ -1036,14 +1036,37 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 .notice-firm-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .notice-firm-count { flex: none; color: var(--muted); font-size: var(--fs-small); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .notice-firm[data-new] > summary { background: var(--notice-new); box-shadow: inset 3px 0 0 var(--warn-edge); }
+/* Two highlighted drawers in a row: a gap, not a seam. The drawer carries the stripe; its rows keep only the field and "Yeni". */
+.notice-firm[data-new] + .notice-firm { border-top-color: transparent; margin-top: 2px; }
+/* After Gördüm the field fades to the plain row (a colour step, kept under reduced motion); a tap on a drawer shows. */
+.notice-row, .notice-firm > summary { transition: background-color var(--t-hover) ease, box-shadow var(--t-hover) ease; }
+.notice-firm > summary:active { background: var(--active); }
+.notice-firm[data-new] > summary:active, .notice-firm[data-new] > summary:hover:active { background: color-mix(in srgb, var(--ink) 7%, var(--notice-new)); }
+/* "Tarama ve ayarlar": on wide screens the panel is already beside the list, so the jump shows only to the keyboard; last in the row. */
+.notice-jump { order: 1; }
+@media (min-width: 901px) { .notice-jump:not(:focus-visible) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } }
+@media (max-width: 640px) { .canvas-firms .title-actions > .btn { flex: 1 1 auto; } }
+/* A fast answer to Gördüm never draws every button disabled for one frame. */
+.notice-row .btn[aria-disabled="true"], .title-actions .btn[aria-disabled="true"] { transition-delay: 150ms; }
+@media (prefers-reduced-motion: no-preference) {
+  .firms-panel > .alert { animation: step-in 180ms var(--ease-out) both; }
+}
+/* e-Tebligat refresh (Gördüm, back from a scan): drawers move, the page does not fade. */
+/* The old snapshot is hidden: the counts (Roll) and fields (their transition) change live, so no ghost of the old text fades over them. */
+:root:active-view-transition-type(tebligat)::view-transition-old(*) { display: none; }
+/* A quick second Gördüm during the 240 ms move reaches the live page under it. */
+:root:active-view-transition-type(tebligat)::view-transition { pointer-events: none; }
+:root:active-view-transition-type(tebligat)::view-transition-new(root),
+:root:active-view-transition-type(tebligat)::view-transition-new(panel-rail),
+:root:active-view-transition-type(tebligat)::view-transition-new(.row-move) { animation: none; }
+.notice-firm .notice-row[data-new] { box-shadow: none; }
 .notice-firm[data-new] .notice-firm-count { color: var(--warn-ink); font-weight: var(--w-strong); }
 .notice-firm > .firms-list { max-height: none; overflow: visible; padding: var(--s1) 0 var(--s2) var(--s5); }
 .notice-empty { margin: 0; padding: var(--s2); color: var(--muted); }
-@media (max-width: 640px) { .notice-firm > .firms-list { padding-left: var(--s2); } }
 @media (prefers-reduced-motion: reduce) { .notice-firm > summary::before { transition: none; } }
 
 /* The menu's e-Tebligat count: notices not yet marked seen. */
-.rail-badge { position: absolute; top: 6px; left: calc(50% + 3px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent-strong); color: var(--ground); font-size: 11px; font-weight: var(--w-strong); line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+.rail-badge { position: absolute; top: 8px; left: calc(50% + 3px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--warn-ink); color: var(--warn-bg); font-size: 11px; font-weight: var(--w-strong); line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
 .panel-quick-links .rail-badge { position: static; display: inline-block; margin-inline-start: 6px; }
 @media (min-width: 1100px) {
   :root:not([data-rail="dar"]) .rail-item:has(.rail-badge) { grid-template-columns: 18px 1fr auto; }
