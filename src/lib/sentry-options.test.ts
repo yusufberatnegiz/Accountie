@@ -11,6 +11,10 @@ describe("Sentry: istekten hiçbir veri gitmez", () => {
     const sent = sentryOptions.beforeSend(structuredClone(event));
     expect(JSON.stringify(sent)).not.toMatch(/Gizli|acx_|sb/);
     expect(sent.request).toEqual({ url: "/api/x" });
-    expect(JSON.stringify(sentryOptions.beforeSendTransaction(structuredClone(event)))).not.toContain("Gizli");
+  });
+
+  it("varsayılan akış modunda yok sayılan işlem ayarlarını SDK'ya göndermez", () => {
+    expect(sentryOptions).not.toHaveProperty("beforeSendTransaction");
+    expect(sentryOptions).not.toHaveProperty("ignoreTransactions");
   });
 });
