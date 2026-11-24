@@ -12,7 +12,8 @@ const seenRoute = await import("./notices/seen/route");
 const USER = "user-a";
 const ID = "8b0f6c1e-1b7a-4c1e-9d55-0d6f1d7a2c11";
 const TOKEN = `acx_${"a".repeat(43)}`;
-const NOTICE = { gibId: "123456", institution: "Gelir İdaresi Başkanlığı", subUnit: "Kadıköy VD", docType: "Vergi/Ceza İhbarnamesi", docNo: "2026-1", sentAt: "15/11/2026", servedAt: "20/11/2026", readOnGib: false };
+const TODAY = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Istanbul" }).format(new Date());
+const NOTICE = { gibId: "123456", institution: "Gelir İdaresi Başkanlığı", subUnit: "Kadıköy VD", docType: "Vergi/Ceza İhbarnamesi", docNo: "2026-1", sentAt: TODAY, servedAt: TODAY, readOnGib: false };
 const BODY = { idNumbers: ["1234567890"], notices: [NOTICE] };
 const post = (body: unknown, token: string | null = TOKEN) => new Request("http://test", {
   method: "POST", headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), "content-type": "application/json" }, body: JSON.stringify(body),
@@ -89,4 +90,12 @@ describe("POST /api/notices/seen", () => {
     expect((await seenRoute.POST(seen({ ids: ["1"] }))).status).toBe(400);
     expect((await seenRoute.POST(seen({}))).status).toBe(400);
   });
+
+  it("bir haftadan eski tebligat kaydedilmez, yenisi kaydedilir", async () => {
+    vi.mocked(q.saveNotices).mockResolvedValueOnce({ firm: { id: "f1", name: "ÖRNEK LTD" }, fresh: 1, total: 1 });
+    const old = { ...NOTICE, gibId: "999", sentAt: "15/06/2026", servedAt: "20/06/2026" };
+    expect((await noticesRoute.POST(post({ ...BODY, notices: [old, NOTICE] }))).status).toBe(200);
+    expect(vi.mocked(q.saveNotices).mock.calls[0][2].map((x) => x.gibId)).toEqual(["123456"]);
+  });
 });
+

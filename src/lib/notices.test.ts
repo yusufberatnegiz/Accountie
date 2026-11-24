@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { byFirm, daysSince, gibDay, servedState } from "./notices";
+import { byFirm, daysSince, gibDay, recentNotice, servedState } from "./notices";
 
 describe("e-Tebligat tarihleri", () => {
   it("GİB tarihi gün olarak okunur, saat yok sayılır, bozuk tarih null", () => {
@@ -30,5 +30,24 @@ describe("e-Tebligat firma çekmeceleri", () => {
 
   it("boş liste boş çekmece listesi", () => {
     expect(byFirm([])).toEqual([]);
+  });
+});
+
+describe("e-Tebligat: yalnız son bir hafta", () => {
+  const now = new Date("2026-11-24T09:00:00Z");
+  const n = (sentAt: string | null, servedAt: string | null = null) => recentNotice({ sentAt, servedAt }, now);
+
+  it("gönderimi 7 gün içindeyse alınır, daha eskiyse alınmaz", () => {
+    expect(n("24/11/2026")).toBe(true);
+    expect(n("17/11/2026 14:05:00")).toBe(true);
+    expect(n("16/11/2026")).toBe(false);
+    expect(n("15/06/2026")).toBe(false);
+  });
+
+  it("gönderim tarihi yoksa tebliğ tarihine bakılır; hiç tarih okunamazsa kaybolmasın diye alınır", () => {
+    expect(n(null, "20/11/2026")).toBe(true);
+    expect(n(null, "01/06/2026")).toBe(false);
+    expect(n(null, null)).toBe(true);
+    expect(n("tarih yok")).toBe(true);
   });
 });

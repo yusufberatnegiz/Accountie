@@ -32,3 +32,12 @@ export function byFirm<T extends { firmId: string; firmName: string; isNew: bool
   }
   return [...groups.values()].sort((a, b) => b.fresh - a.fresh);
 }
+
+/** A scan keeps only notices sent this many days back at most: an old notice (months ago) is never brought in as new. */
+export const NOTICE_MAX_AGE_DAYS = 7;
+
+/** Sent (without a sent date: served) at most NOTICE_MAX_AGE_DAYS before today in Turkey. One with no readable date is kept. */
+export function recentNotice(n: { sentAt: string | null; servedAt: string | null }, now: Date): boolean {
+  const day = gibDay(n.sentAt) ?? gibDay(n.servedAt);
+  return !day || day >= turkeyDay(new Date(now.getTime() - NOTICE_MAX_AGE_DAYS * 86_400_000));
+}
