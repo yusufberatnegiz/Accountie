@@ -317,7 +317,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
   it("OCR denenir, başarısız olursa elle beklemeye düşer", async () => {
     const t = setup(vi.fn().mockReturnValueOnce("waiting").mockReturnValue("in"));
     await t.get("start").click?.();
-    expect(t.executeScript.mock.calls.some(([script]) => String(script.func).includes("gibCaptchaSolveAndSubmit"))).toBe(true);
+    expect(t.executeScript.mock.calls.some(([script]) => String(script.func).includes("gibCaptchaSolveAndFill"))).toBe(true);
     expect(textOf(t.get("status"))).toContain("Tarama tamamlandı");
   });
 
@@ -325,11 +325,11 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
     const t = setup("in");
     const orig = t.executeScript.getMockImplementation()!;
     t.executeScript.mockImplementation(async (o: { func?: () => unknown; args?: unknown[] }) => {
-      if (o.func && String(o.func).includes("gibCaptchaSolveAndSubmit")) return [{ result: { ok: true, text: "ABCDE" } }];
+      if (o.func && String(o.func).includes("gibCaptchaSolveAndFill")) return [{ result: { ok: true, text: "ABCDE" } }];
       return orig(o);
     });
     await t.get("start").click?.();
-    expect(t.executeScript.mock.calls.some(([script]) => String(script.func).includes("gibCaptchaSolveAndSubmit"))).toBe(true);
+    expect(t.executeScript.mock.calls.some(([script]) => String(script.func).includes("gibCaptchaSolveAndFill"))).toBe(true);
     expect(t.get("open-gib").hidden).toBe(true);
     expect(textOf(t.get("status"))).toContain("Tarama tamamlandı");
   });

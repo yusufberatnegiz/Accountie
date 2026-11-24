@@ -3,10 +3,21 @@ import { runInNewContext } from "node:vm";
 import { describe, expect, it, vi } from "vitest";
 
 type DecodeOutput = (
-  output: number[],
+  tensorData: Float32Array | number[],
+  dims: number[],
   charset: string[],
   allowed: Set<string>,
 ) => { ok: boolean; text?: string; reason?: string; confidence?: number | null };
+
+/** Build flat logit array where argmax at each timestep equals the given index. */
+function logitsFor(indices: number[], C: number): Float32Array {
+  const data = new Float32Array(indices.length * C);
+  for (let t = 0; t < indices.length; t++) {
+    for (let k = 0; k < C; k++) data[t * C + k] = -10;
+    data[t * C + indices[t]] = 10;
+  }
+  return data;
+}
 
 const listeners: ((message: unknown) => unknown)[] = [];
 const chrome = {
@@ -30,7 +41,10 @@ const { AccountieOcr } = context as unknown as { AccountieOcr: { decodeOutput: D
 describe("eklenti: cihaz içi GİB CAPTCHA CTC çıkarımı", () => {
   it("CTC tekrarlarını ve blank indeksini kaldırıp 5 karakter döndürür", () => {
     const charset = ["", "A", "B", "C", "2", "3"];
-    expect(AccountieOcr.decodeOutput([1, 1, 0, 2, 3, 4, 5], charset, new Set(["A", "B", "C", "2", "3"]))).toEqual({
+    const C = charset.length;
+    // indices: 1,1,0,2,3,4,5 → argmax per timestep
+    const data = logitsFor([1, 1, 0, 2, 3, 4, 5], C);
+    expect(AccountieOcr.decodeOutput(data, [7, 1, C], charset, new Set(["A", "B", "C", "2", "3"]))).toEqual({
       ok: true,
       text: "ABC23",
       confidence: null,
@@ -40,7 +54,9 @@ describe("eklenti: cihaz içi GİB CAPTCHA CTC çıkarımı", () => {
 
   it("izne uygun olmayan karakteri atlar ve geçersiz sonucu reddeder", () => {
     const charset = ["", "A", "X", "2", "3", "4"];
-    expect(AccountieOcr.decodeOutput([1, 2, 3, 4, 5], charset, new Set(["A", "2", "3", "4"]))).toEqual({
+    const C = charset.length;
+    const data = logitsFor([1, 2, 3, 4, 5], C);
+    expect(AccountieOcr.decodeOutput(data, [5, 1, C], charset, new Set(["A", "2", "3", "4"]))).toEqual({
       ok: false,
       reason: "invalid-output",
       text: "A234",
@@ -49,7 +65,9 @@ describe("eklenti: cihaz içi GİB CAPTCHA CTC çıkarımı", () => {
 
   it("çıktı 5 karakteri aşsa ilk 5 geçerli karakteri döndürür", () => {
     const charset = ["", "A", "B", "C", "2", "3"];
-    expect(AccountieOcr.decodeOutput([1, 2, 3, 4, 5, 1, 2], charset, new Set(["A", "B", "C", "2", "3"])).text).toBe("ABC23");
+    const C = charset.length;
+    const data = logitsFor([1, 2, 3, 4, 5, 1, 2], C);
+    expect(AccountieOcr.decodeOutput(data, [7, 1, C], charset, new Set(["A", "B", "C", "2", "3"])).text).toBe("ABC23");
   });
 
   it("offscreen mesajı yalnız ocr türü için yanıt verir", () => {

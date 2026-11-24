@@ -15,9 +15,8 @@
       ort.env.wasm.numThreads = 1;
       ort.env.wasm.wasmPaths = root.chrome.runtime.getURL("ocr/");
       session = await ort.InferenceSession.create(modelUrl, { executionProviders: ["wasm"] });
-      const { gibCharset } = await root.chrome.storage.local.get("gibCharset");
       const charset = root.AccountieOcrCharset;
-      allowed = new Set((gibCharset || charset?.DEFAULT_ALLOWED || "ABCDEFGHJKLMNPQRSTUVWXYZ23456789").split(""));
+      allowed = new Set((charset?.DEFAULT_ALLOWED || "ABCDEFGHJKLMNPQRSTUVWXYZ23456789").split(""));
     })();
     await initPromise;
   }
@@ -33,37 +32,34 @@
     const data = ctx.getImageData(0, 0, width, height).data;
     const floats = new Float32Array(width * height);
     for (let i = 0, p = 0; i < data.length; i += 4, p++) {
-      floats[p] = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) / 255;
+      floats[p] = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) / 127.5 - 1;
     }
     return new root.ort.Tensor("float32", floats, [1, 1, height, width]);
   }
 
-  function decodeOutput(output, charset, allowedChars) {
-    if (!charset || !Array.isArray(output)) return { ok: false, reason: "invalid-output" };
+  function decodeOutput(tensorData, dims, charset, allowedChars) {
+    if (!charset || !dims || dims.length !== 3) return { ok: false, reason: "invalid-output" };
+    const T = dims[0], C = dims[2];
+    if (C !== charset.length || tensorData.length !== T * C) return { ok: false, reason: "invalid-output" };
 
-    const indices = [];
-    if (output.length === 1 && output[0].length) {
-      for (const index of output[0]) indices.push(Number(index));
-    } else if (output.length) {
-      for (const index of output) indices.push(Number(Array.isArray(index) ? index[0] : index));
-    }
-
+    let last = 0;
     const ctc = [];
-    let previous = null;
-    for (const rawIndex of indices) {
-      const index = Math.round(rawIndex);
-      if (index === previous) continue;
-      previous = index;
-      if (index === 0) continue;
-      if (index >= 0 && index < charset.length) {
-        const char = charset[index];
-        if (allowedChars.has(char)) ctc.push(char);
+    for (let t = 0; t < T; t++) {
+      const start = t * C;
+      let best = 0, max = -Infinity;
+      for (let k = 0; k < C; k++) {
+        if (tensorData[start + k] > max) { max = tensorData[start + k]; best = k; }
       }
-      if (ctc.length >= 5) break;
+      if (best !== 0 && best !== last) {
+        const char = charset[best];
+        if (allowedChars.has(char.toUpperCase())) ctc.push(char);
+        if (ctc.length >= 5) break;
+      }
+      last = best;
     }
 
     const text = ctc.join("");
-    if (!/^[A-Z0-9]{5}$/.test(text)) return { ok: false, reason: "invalid-output", text };
+    if (!/^[a-zA-Z0-9]{5}$/.test(text)) return { ok: false, reason: "invalid-output", text };
     return { ok: true, text, confidence: null, length: text.length };
   }
 
@@ -77,7 +73,7 @@
       feeds[session.inputNames[0]] = input;
       const result = await session.run(feeds);
       const tensorResult = result[session.outputNames[0]];
-      return decodeOutput(Array.from(tensorResult.data), root.AccountieOcrCharset?.CHARSET, allowed);
+      return decodeOutput(tensorResult.data, tensorResult.dims, root.AccountieOcrCharset?.CHARSET, allowed);
     } finally {
       bitmap.close();
     }

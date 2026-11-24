@@ -211,9 +211,17 @@ async function scanFirm(tabId, f, token, head) {
   status(`${head}: doğrulama kodu okunuyor…`);
 
   let ocrDone = false;
+  const ocrTimeout = (ms) => new Promise((r) => setTimeout(() => r({ ok: false, reason: "timeout" }), ms));
   for (let ocrAttempt = 0; ocrAttempt < MAX_OCR_ATTEMPTS && !stopped; ocrAttempt++) {
-    const solved = await inGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.gibCaptchaSolveAndSubmit());
-    if (!solved?.ok) break;
+    const solved = await Promise.race([
+      tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.gibCaptchaSolveAndFill(), { ok: false, reason: "error" }),
+      ocrTimeout(15_000),
+    ]);
+    if (!solved?.ok) {
+      if (solved?.reason) status(`${head}: OCR başarısız (${solved.reason}).`);
+      break;
+    }
+    await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.submitLogin(), null);
     await pause(2500);
     await loaded(tabId, 10_000);
     const s = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.loginState(), "waiting");
@@ -222,10 +230,10 @@ async function scanFirm(tabId, f, token, head) {
     if (s === "skip") { ocrDone = true; break; }
     if (s !== "refill") break;
     if (ocrAttempt < MAX_OCR_ATTEMPTS - 1) {
-      await inGib(tabId, "gib-login.js", () => {
+      await tryGib(tabId, "gib-login.js", () => {
         const img = document.querySelector('img[alt="captchaImg"]');
         return globalThis.AccountieGibLogin.captchaWaitNewSrc(img, img?.src);
-      });
+      }, false);
       await fill(tabId, login, `Accountie · ${head}: Doğrulama kodu yeniden okunuyor (${ocrAttempt + 2}/${MAX_OCR_ATTEMPTS})…`);
     }
   }
@@ -235,6 +243,7 @@ async function scanFirm(tabId, f, token, head) {
     state = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.loginState(), "waiting");
   } else if (!stopped) {
     status(`${head}: GİB sekmesini açın, doğrulama kodunu girip Giriş Yap'a basın.`);
+    await tryGib(tabId, "gib-login.js", (t) => globalThis.AccountieGibLogin.showNote(t), null, [`Accountie · ${head}: Doğrulama kodunu girip Giriş Yap'a basın.`]);
     document.title = "GİB doğrulaması bekleniyor";
     loginTabId = tabId;
     $("open-gib").hidden = false;
