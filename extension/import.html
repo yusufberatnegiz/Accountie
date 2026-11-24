@@ -13,13 +13,15 @@
     <li><strong>Yeni firmaları çek:</strong> yalnız Luca'da olup Accountie'de olmayan firmalar okunur. Luca'ya firma eklediğinizde bunu kullanın.</li>
     <li><strong>Yalnız açık firmayı çek:</strong> Luca'da şu an açık firmanın planı yeniden okunur (planı Luca'da değiştiyse).</li>
     <li><strong>Tümünü yeniden çek:</strong> bütün firmaların planları yeniden okunur; uzun sürer.</li>
+    <li><strong>Yalnız GİB girişlerini çek</strong> seçeneği Accountie'de kayıtlı, bu yıl aktif firmaların GİB girişlerini günceller.</li>
   </ul>
   <p class="muted">Bitince Luca'nın GİB Şirket ekranındaki firmaların Dijital Vergi Dairesi girişleri de bir kez okunur ve Accountie'de şifreli saklanır; e-Tebligat taraması bunları, siz Accountie'de taramayı onayladıktan sonra kullanır.</p>
-  <p><strong>Sürerken Luca'da çalışmayın.</strong> Okuma sırasında Luca oturumundaki açık firma değişir; bitince ya da durdurunca ilk firmanıza geri döner. Bu sekmeyi kapatırsanız Luca'da firmayı kendiniz yeniden seçin.</p>
-  <div>
+  <p><strong>Hesap planı çekilirken Luca'da çalışmayın.</strong> Okuma sırasında Luca oturumundaki açık firma değişir. İşlem sona erdiğinde ilk firmanıza geri döner. İşlem sırasında bu sekmeyi kapatırsanız Luca'da firmanızı yeniden seçin.</p>
+  <div class="actions">
     <button id="start-new" type="button" class="primary">Yeni firmaları çek</button>
     <button id="start-one" type="button">Yalnız açık firmayı çek</button>
     <button id="start-all" type="button">Tümünü yeniden çek</button>
+    <button id="start-gib" type="button">Yalnız GİB girişlerini çek</button>
     <button id="stop" type="button" hidden>Durdur</button>
   </div>
   <p id="status" role="status"></p>

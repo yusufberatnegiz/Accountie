@@ -1,18 +1,21 @@
-/* global chrome, AccountieGibLogin, AccountieGib, sirketDonem */
-// Bütün firmaların e-Tebligat taraması: her firmanın GİB girişi Accountie'den (firma çekilirken saklanan, kullanıcının onayıyla
-// firma firma açılan) ya da kayıtlı giriş yoksa Luca'nın açık GİB Şirket ekranından alınır (gib-login.js), Dijital Vergi Dairesi
-// giriş formu doldurulur, doğrulama kodunu kullanıcı yazar, giriş olunca liste okunur (gib-notices.js) ve Accountie'ye gönderilir;
+/* global chrome, AccountieGibLogin, AccountieGib */
+// Luca'dan firma çekilirken kaydedilen GİB girişleri, kullanıcının onayıyla Accountie'den firma firma açılır.
+// Dijital Vergi Dairesi'nde girişten sonra liste okunur ve Accountie'ye gönderilir;
 // daha önce indirilmemiş tebligatların zarfı açılıp belgeleri yalnız bu bilgisayara indirilir.
 // Bir giriş yalnız o firmanın formu için bellekte durur: chrome.storage'a, durum metnine ve tebligat isteğine hiç girmez.
 const APP_ORIGIN = "https://accountie.app"; // popup.js ile aynı
+const NOTICES_URL = `${APP_ORIGIN}/panel/tebligatlar`;
+const COMPLETED_SCAN_URL = `${NOTICES_URL}?tarama=tamamlandi`;
 const GIB_ORIGIN = `https://${AccountieGib.GIB_HOST}`;
+const GIB_PERMISSION = { origins: [`${GIB_ORIGIN}/*`] };
 const LOGIN_URL = `${GIB_ORIGIN}${AccountieGibLogin.LOGIN_PATH}`;
+
 // Kullanıcının doğrulama kodunu yazması için firma başına süre; dolarsa kimse başında yok demektir, tarama durur.
 const WAIT_MS = 5 * 60_000;
 const POLL_MS = 1500;
 // GİB hatalı kodda formu sildiğinde şifre en çok bu kadar yeniden yazılır: her deneme GİB'de başarısız giriş sayılabilir.
 const MAX_REFILLS = 2;
-const MAX_CAPTCHA_SUBMITS = 2;
+const MAX_OCR_ATTEMPTS = 3;
 // Envelopes opened per firm per run: a firm with years of notices does not hold the GİB session (and the queue) for an hour.
 const MAX_DOCS = 25;
 
@@ -21,21 +24,16 @@ const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const today = () => new Date().toLocaleDateString("sv-SE");
 let running = false;
 let stopped = false;
-let usedStored = false;
-let grantToken = "";
-let autoCaptcha = false;
-
-async function loadAutoCaptcha() {
-  const { gibAutoCaptcha } = await chrome.storage.local.get("gibAutoCaptcha");
-  autoCaptcha = gibAutoCaptcha === true;
-  if ($("autoCaptcha")) $("autoCaptcha").checked = autoCaptcha;
-}
+let activeGrant = null;
+let loginTabId = null;
+let launchUntil = null;
 
 /** Ends the approval in Accountie once the stored logins are no longer needed (done, stopped, failed, or this page closing). */
-async function endGrant(token = grantToken, keepalive = false) {
-  if (!usedStored || !token) return;
-  usedStored = false;
-  await fetch(`${APP_ORIGIN}/api/extension/gib-scan`, { method: "DELETE", credentials: "omit", keepalive, headers: { authorization: `Bearer ${token}` } }).catch(() => {});
+async function endGrant(keepalive = false) {
+  if (!activeGrant) return;
+  const { token, until } = activeGrant;
+  activeGrant = null;
+  await fetch(`${APP_ORIGIN}/api/extension/gib-scan?until=${encodeURIComponent(until)}`, { method: "DELETE", credentials: "omit", keepalive, headers: { authorization: `Bearer ${token}` } }).catch(() => {});
 }
 
 function status(text, isError = false) {
@@ -66,26 +64,6 @@ function scanProblem(r) {
   return AccountieGib.problem(r);
 }
 
-/** Luca'nın GİB Şirket ekranındaki satırlar; ekran hiçbir Luca sekmesinde açık değilse null. */
-async function lucaRows() {
-  for (const tab of await chrome.tabs.query({ url: "https://*.luca.com.tr/*" })) {
-    const target = { tabId: tab.id, allFrames: true };
-    const frames = await chrome.scripting.executeScript({ target, files: ["gib-login.js"] })
-      .then(() => chrome.scripting.executeScript({ target, func: () => globalThis.AccountieGibLogin.lucaRows() }))
-      .catch(() => []);
-    const hit = frames.find((f) => Array.isArray(f.result));
-    if (!hit) continue;
-    // Luca's firm list (sirketDonem, a page variable) says which firms have a period this year; without it nothing is left out.
-    const lists = await chrome.scripting.executeScript({ target, world: "MAIN", func: () => (typeof sirketDonem === "undefined" ? null : Array.from(sirketDonem, (row) => Array.from(row, String))) }).catch(() => []);
-    const list = lists.find((f) => Array.isArray(f.result))?.result;
-    if (!list) return hit.result;
-    const year = String(new Date().getFullYear());
-    const active = new Set(list.flatMap((row) => { const out = []; for (let i = 5; i + 2 < row.length; i += 4) if (String(row[i + 1]).endsWith(`/${year}`)) out.push(String(row[0])); return out; }));
-    return hit.result.filter((r) => active.has(r.lucaId));
-  }
-  return null;
-}
-
 async function accountie(path, token, init = {}) {
   const res = await fetch(APP_ORIGIN + path, { ...init, credentials: "omit", headers: { authorization: `Bearer ${token}`, ...(init.body ? { "content-type": "application/json" } : {}) } });
   if (res.status === 401) throw Object.assign(new Error("Anahtar geçersiz veya süresi dolmuş. Accountie'den yeni anahtar alıp eklenti penceresine girin."), { fatal: true, said: true });
@@ -94,11 +72,42 @@ async function accountie(path, token, init = {}) {
   return body;
 }
 
+async function requestScanGrant(token) {
+  const res = await fetch(`${APP_ORIGIN}/api/extension/gib-scan`, {
+    method: "POST", credentials: "include", cache: "no-store", headers: { authorization: `Bearer ${token}` },
+  });
+  const body = await res.json().catch(() => null);
+  if (res.ok && typeof body?.until === "string" && Date.parse(body.until) > Date.now()) return body.until;
+  const webApprovalAvailable = [401, 403, 405].includes(res.status);
+  $("scan-approval").hidden = !webApprovalAvailable;
+  const message = (res.status === 401
+    ? "Accountie'ye giriş yapıp tarama erişimini onaylayın."
+    : body?.error || `Tarama erişimi açılamadı (HTTP ${res.status}).`) +
+    (webApprovalAvailable ? " Erişim onayından sonra bu sekmeye dönüp Taramayı başlat'a basın." : "");
+  throw Object.assign(new Error(message), { said: true });
+}
+
 const tabClosed = () => Object.assign(new Error("Dijital Vergi Dairesi sekmesi kapandı; tarama durduruldu. Taramayı sürdür'e basın."), { fatal: true, said: true });
 
 /** The GİB tab, or a fatal error when it was closed (no firm waits on a tab that is gone). */
 async function gibTab(tabId) {
   return chrome.tabs.get(tabId).catch(() => { throw tabClosed(); });
+}
+
+async function keepTabOpen(tab, restoreTabs) {
+  if (!tab?.autoDiscardable || tab.id == null) return;
+  const updated = await chrome.tabs.update(tab.id, { autoDiscardable: false }).catch(() => null);
+  if (updated) restoreTabs.push(() => chrome.tabs.update(tab.id, { autoDiscardable: true }));
+}
+
+async function showCompletedScan() {
+  const tabs = await chrome.tabs.query({ currentWindow: true, url: `${NOTICES_URL}*` });
+  const existing = tabs.find((tab) => tab.url && new URL(tab.url).pathname === "/panel/tebligatlar");
+  if (existing?.id != null) {
+    const updated = await chrome.tabs.update(existing.id, { url: COMPLETED_SCAN_URL, active: true }).catch(() => null);
+    if (updated) return;
+  }
+  await chrome.tabs.create({ url: COMPLETED_SCAN_URL, active: true });
 }
 
 /** Runs one of gib-login.js's or gib-notices.js's functions in the GİB tab, the file injected first (a page load drops it). */
@@ -156,8 +165,10 @@ async function storedLogin(token, lucaId) {
   throw Object.assign(new Error(said), { fatal: true, said: true });
 }
 
-/** Waits for the user to log in ("in"), skip ("skip") or stop; GİB clearing the form is filled again, a few times at most. */
-async function waitForLogin(tabId, login, text, head, captchaSubmits = 0) {
+/**
+ * Waits for the user to log in, skip or stop. Refills a cleared form at most twice for manual verification.
+ */
+async function waitForLogin(tabId, login, head) {
   const until = Date.now() + WAIT_MS;
   let refills = 0;
   while (Date.now() < until) {
@@ -165,21 +176,11 @@ async function waitForLogin(tabId, login, text, head, captchaSubmits = 0) {
     const state = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.loginState(), "waiting");
     if (state === "stop") { stopped = true; return "stopped"; }
     if (state === "in" || state === "skip") return state;
-    if (state === "refill") {
-      if (autoCaptcha && captchaSubmits < MAX_CAPTCHA_SUBMITS) {
-        await fill(tabId, login, `Accountie · ${head}: doğrulama kodu yeniden okunuyor.`);
-        const retried = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.gibCaptchaSolveAndSubmit(), { ok: false, reason: "model-error" });
-        if (retried?.submitted) captchaSubmits++;
-        if (captchaSubmits >= MAX_CAPTCHA_SUBMITS) {
-          return "captcha-refused";
-        }
-        await pause(POLL_MS);
-        continue;
-      }
-      if (refills >= MAX_REFILLS) return "refused";
-      refills++;
-      await fill(tabId, login, `Accountie · ${head}: Kod ya da şifre hatalı, form yeniden dolduruldu (kalan deneme ${MAX_REFILLS - refills + 1}). Yeni kodu yazıp Giriş Yap'a basın.`);
-    }
+    if (state !== "refill") { await pause(POLL_MS); continue; }
+
+    if (refills >= MAX_REFILLS) return "refused";
+    refills++;
+    await fill(tabId, login, `Accountie · ${head}: Kod ya da şifre hatalı, form yeniden dolduruldu (kalan deneme ${MAX_REFILLS - refills + 1}). Yeni kodu yazıp Giriş Yap'a basın.`);
     await pause(POLL_MS);
   }
   return "timeout";
@@ -204,28 +205,52 @@ async function remember(change) {
 async function scanFirm(tabId, f, token, head) {
   if (stopped) return { line: "Durduruldu.", stopped: true };
   if (!(await loginForm(tabId))) return stopped ? { line: "Durduruldu.", stopped: true } : { line: "Dijital Vergi Dairesi giriş sayfası açılmadı; yeniden başlatınca tekrar denenir." };
-  const text = `Accountie · ${head}: Doğrulama kodunu yazıp Giriş Yap'a basın. GİB şifre hatalı derse "Bu firmayı atla"ya basın. Chrome şifreyi kaydetmeyi sorarsa "Hiçbir zaman" deyin.`;
-  // Stored logins come from Accountie one firm at a time, just before the form; Luca's own screen gives them otherwise.
-  const login = f.stored ? await storedLogin(token, f.lucaId) : { user: f.user, pass: f.pass };
+  const login = await storedLogin(token, f.lucaId);
   if (login.problem) return { line: login.problem, failed: true };
-  if (!(await fill(tabId, login, text))) return { line: "Giriş formu bulunamadı; GİB sayfası değişmiş olabilir." };
-  let captchaSubmits = 0;
-  if (autoCaptcha) {
-    const ocr = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.gibCaptchaSolveAndSubmit(), { ok: false, reason: "model-error" });
-    if (ocr?.ok) {
-      captchaSubmits = ocr.submitted ? 1 : 0;
-      status(`${head}: doğrulama kodu çözüldü ve Giriş Yap'a otomatik basıldı.`);
-    } else {
-      status(`${head}: kod otomatik okunamadı. Doğrulama kodunu elle yazıp Giriş Yap'a basın.`);
+  if (!(await fill(tabId, login, `Accountie · ${head}: Doğrulama kodu okunuyor…`))) return { line: "Giriş formu bulunamadı; GİB sayfası değişmiş olabilir." };
+  status(`${head}: doğrulama kodu okunuyor…`);
+
+  let ocrDone = false;
+  for (let ocrAttempt = 0; ocrAttempt < MAX_OCR_ATTEMPTS && !stopped; ocrAttempt++) {
+    const solved = await inGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.gibCaptchaSolveAndSubmit());
+    if (!solved?.ok) break;
+    await pause(2500);
+    await loaded(tabId, 10_000);
+    const s = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.loginState(), "waiting");
+    if (s === "in") { ocrDone = true; break; }
+    if (s === "stop") { stopped = true; break; }
+    if (s === "skip") { ocrDone = true; break; }
+    if (s !== "refill") break;
+    if (ocrAttempt < MAX_OCR_ATTEMPTS - 1) {
+      await inGib(tabId, "gib-login.js", () => {
+        const img = document.querySelector('img[alt="captchaImg"]');
+        return globalThis.AccountieGibLogin.captchaWaitNewSrc(img, img?.src);
+      });
+      await fill(tabId, login, `Accountie · ${head}: Doğrulama kodu yeniden okunuyor (${ocrAttempt + 2}/${MAX_OCR_ATTEMPTS})…`);
     }
   }
-  await chrome.tabs.update(tabId, { active: true });
-  if (!autoCaptcha) status(`${head}: GİB sekmesinde doğrulama kodunu yazıp Giriş Yap'a basın.`);
-  const state = await waitForLogin(tabId, login, text, head, captchaSubmits);
-  login.user = login.pass = f.pass = "";
+
+  let state;
+  if (ocrDone) {
+    state = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.loginState(), "waiting");
+  } else if (!stopped) {
+    status(`${head}: GİB sekmesini açın, doğrulama kodunu girip Giriş Yap'a basın.`);
+    document.title = "GİB doğrulaması bekleniyor";
+    loginTabId = tabId;
+    $("open-gib").hidden = false;
+    try {
+      state = await waitForLogin(tabId, login, head);
+    } finally {
+      loginTabId = null;
+      $("open-gib").hidden = true;
+      document.title = `${$("progress-count").textContent} · e-Tebligat taraması`;
+    }
+  }
+
+  login.user = login.pass = "";
+  if (stopped && !state) return { line: "Durduruldu.", stopped: true };
   if (state === "stopped") return { line: "Durduruldu.", stopped: true };
   if (state === "skip") return { line: "Atlandı; bugün yeniden sorulmaz.", failed: true };
-  if (state === "captcha-refused") return { line: "2 otomatik CAPTCHA denemesinde giriş olmadı; firma atlandı.", failed: true };
   if (state === "refused") return { line: `${MAX_REFILLS + 1} denemede giriş olmadı; bugün yeniden sorulmaz. Kod doğruysa Luca'da şifreyi kontrol edin.`, failed: true };
   if (state === "timeout") { stopped = true; return { line: "5 dakika giriş yapılmadı; tarama durduruldu.", stopped: true }; }
   // Logged in: the left-behind clean-up of this page must not cut the read short.
@@ -312,35 +337,26 @@ function progress(i, n, name) {
   document.title = `${i}/${n} · e-Tebligat taraması`;
 }
 
-async function run() {
+async function run(restoreTabs, expectedUntil) {
   const { token } = await chrome.storage.local.get("token");
   if (!token) return status("Önce eklenti penceresini açıp Accountie anahtarını girin.", true);
   const before = await scanned();
-  // Logins stored on a firm import (sealed in Accountie) first; without them, Luca's GİB Şirket screen, read now.
   const stored = await accountie("/api/extension/gib-logins", token);
-  let p;
-  usedStored = false;
-  if (stored.enabled && stored.firms?.length) {
-    usedStored = true;
-    grantToken = token;
-    if (!stored.scanUntil) return status("Tarama onaylı değil. Accountie'de e-Tebligatlar sayfasında Taramayı onayla'ya basın (bu bilgisayardan, 4 saat geçerli), sonra yeniden başlatın.", true);
-    p = AccountieGibLogin.plan(stored.firms.map((f) => ({ lucaId: f.lucaId, name: f.name, stored: true })), stored.firms, before.ids, before.failed.map((x) => x.id));
-  } else {
-    status("Luca'daki GİB giriş bilgileri okunuyor.");
-    const rows = await lucaRows();
-    if (!rows) return status("Kayıtlı GİB girişi yok ve Luca'da GİB Şirket ekranı açık değil. Firmaları Luca'dan çekin ya da GİB Şirket'i açıp yeniden başlatın.", true);
-    const { firms } = await accountie("/api/extension/firms", token);
-    p = AccountieGibLogin.plan(rows, firms ?? [], before.ids, before.failed.map((x) => x.id));
-  }
+  if (!stored.enabled) return status("GİB girişlerini saklama Accountie'de etkin değil.", true);
+  if (!stored.firms?.length) return status("Kayıtlı GİB girişi yok. Firmaları Luca'dan çekin, sonra yeniden deneyin.", true);
+  const live = Date.parse(stored.scanUntil) > Date.now() ? stored.scanUntil : null;
+  if (expectedUntil && expectedUntil !== live) return status("Tarama erişimi değişti veya süresi doldu. Yeniden başlatmak için Taramayı başlat'a basın.", true);
+  activeGrant = { token, until: live ?? await requestScanGrant(token) };
+  const p = AccountieGibLogin.plan(stored.firms, before.ids, before.failed.map((x) => x.id));
   const names = (list) => `${list.slice(0, 10).join(", ")}${list.length > 10 ? "…" : ""}`;
-  if (p.noCredentials.length) log(`${p.noCredentials.length} firma`, `Luca'da GİB kullanıcı kodu ya da şifresi boş: ${names(p.noCredentials)}`);
-  if (p.notInAccountie.length) log(`${p.notInAccountie.length} firma`, "Accountie'de yok ya da vergi numarası bilinmiyor; önce Luca'dan firmaları çekin.");
+  if (p.noTax.length) log(`${p.noTax.length} firma`, `Vergi numarası eksik olan firmaları Luca'dan yeniden çekin: ${names(p.noTax)}.`);
   if (p.sameTax.length) log(`${p.sameTax.length} firma`, `Vergi numarası başka bir firmayla aynı; bir kez taranır: ${names(p.sameTax)}`);
   const earlier = [p.done && `${p.done} firma tarandı`, p.failed && `${p.failed} firmada giriş olmadı`].filter(Boolean).join(", ");
-  if (!p.todo.length) { await endGrant(token); summary(before, before.ids.length); return status(earlier ? `Bugün taranacak firma kalmadı: ${earlier}.` : "Taranacak firma yok.", !earlier); }
+  if (!p.todo.length) { await endGrant(); summary(before, before.ids.length); return status(earlier ? `Bugün taranacak firma kalmadı: ${earlier}.` : "Taranacak firma yok.", !earlier); }
   if (earlier) log("Bugün", `Daha önce ${earlier}; bunlar atlandı. ${p.todo.length} firma kaldı.`);
 
-  const tab = (await chrome.tabs.query({ url: `${GIB_ORIGIN}/*` }))[0] ?? (await chrome.tabs.create({ url: LOGIN_URL, active: false }));
+  const tab = (await chrome.tabs.query({ currentWindow: true, url: `${GIB_ORIGIN}/*` }))[0] ?? (await chrome.tabs.create({ url: LOGIN_URL, active: false }));
+  await keepTabOpen(tab, restoreTabs);
   let ok = 0, notRead = 0;
   for (const [i, f] of p.todo.entries()) {
     if (stopped) break;
@@ -348,10 +364,17 @@ async function run() {
     progress(i + 1, p.todo.length, f.name);
     status("");
     let result;
-    try { result = await scanFirm(tab.id, f, token, head); } catch (e) {
-      if (e.fatal) { status(e.message, true); break; }
-      result = { line: e.said ? e.message : turkish(String(e?.message ?? "")) };
+    let fatal = null;
+    try {
+      result = await scanFirm(tab.id, f, token, head);
+    } catch (e) {
+      if (e?.fatal) fatal = e;
+      else {
+        log(`${f.name} · hata`, String(e?.message ?? e));
+        result = { line: e.said ? e.message : turkish(String(e?.message ?? "")) };
+      }
     }
+    if (fatal) { status(fatal.message, true); break; }
     log(f.name, result.line);
     if (result.ok) { ok++; continue; }
     if (result.stopped) continue;
@@ -361,17 +384,22 @@ async function run() {
   }
   $("progress-bar").value = ok + notRead;
   // The last firm's session key, password and note leave the tab: the login page is loaded again, empty.
-  await tryGib(tab.id, "gib-login.js", () => globalThis.AccountieGibLogin.goToLogin(), null).catch(() => {});
+  const left = await tryGib(tab.id, "gib-login.js", () => globalThis.AccountieGibLogin.goToLogin(), null).catch(() => null);
+  if (left?.stop) stopped = true;
   // The approval ends with the scan: no stored login can be opened in the hours it had left.
-  await endGrant(token);
+  await endGrant();
   document.title = "e-Tebligat taraması";
-  const me = await chrome.tabs.getCurrent();
-  if (me?.id) await chrome.tabs.update(me.id, { active: true }).catch(() => {});
   const day = await scanned();
   const { freshTotal } = summary(day, day.ids.length);
-  const tally = `bu turda ${ok} firma tarandı${notRead ? `, ${notRead} firma taranamadı` : ""}; bugün toplam ${freshTotal} yeni tebligat.`;
-  if ($("status").className === "error") status(`${$("status").textContent} Durum: ${tally}`, true);
-  else status(stopped ? `Tarama durduruldu: ${tally} Kaldığı yerden devam etmek için ${usedStored ? "Accountie'de taramayı yeniden onaylayıp " : ""}Taramayı sürdür'e basın.` : `Tarama bitti: ${tally} Ayrıntılar Accountie'de e-Tebligat sayfasında.`);
+  const tally = `Bu turda ${ok} firma tarandı${notRead ? `, ${notRead} firma taranamadı` : ""}. Bugün toplam ${freshTotal} yeni tebligat bulundu.`;
+  if ($("status").className === "error") return status(`${$("status").textContent} ${tally}`, true);
+  if (stopped) return status(`Tarama durduruldu. ${tally} Kaldığı yerden devam etmek için Taramayı sürdür'e basın.`);
+  if (!ok) return status("Bu turda hiçbir firma taranamadı. Ayrıntıları firma sonuçlarında görebilirsiniz.", true);
+  document.title = "Tarama tamamlandı";
+  status(`Tarama tamamlandı. ${tally}`);
+  $("notices-link").href = COMPLETED_SCAN_URL;
+  $("notices-link").hidden = false;
+  await showCompletedScan().catch(() => status(`Tarama tamamlandı. ${tally} Accountie sayfasını bağlantıdan açabilirsiniz.`));
 }
 
 // One run at a time: a second scan page would drive the same GİB tab against this one.
@@ -391,12 +419,10 @@ const busyElsewhere = async () => {
   return elsewhere;
 };
 
-$("start").addEventListener("click", async () => {
+async function startScan() {
   if (running) return;
-  // Asked at the click (Chrome needs the user's gesture): the extension may only touch Dijital Vergi Dairesi once allowed here.
-  const allowed = await chrome.permissions.request({ origins: [`${GIB_ORIGIN}/*`] }).catch(() => false);
-  if (!allowed) return status("Dijital Vergi Dairesi izni verilmedi; tarama başlatılmadı.", true);
   if (await busyElsewhere()) return status("Tarama başka bir sekmede sürüyor; o sekmeyi kullanın.", true);
+  if (running) return;
   running = true;
   stopped = false;
   $("start").disabled = true;
@@ -405,14 +431,34 @@ $("start").addEventListener("click", async () => {
   $("log").replaceChildren();
   $("log-table").hidden = true;
   $("summary").hidden = true;
-  await run().catch((e) => status(e?.said ? e.message : turkish(String(e?.message ?? "")), true));
-  await endGrant();
-  running = false;
+  $("notices-link").hidden = true;
+  $("scan-approval").hidden = true;
+  const restoreTabs = [];
+  const expectedUntil = launchUntil;
+  launchUntil = null;
+  try {
+    await keepTabOpen(await chrome.tabs.getCurrent(), restoreTabs);
+    await run(restoreTabs, expectedUntil);
+  } catch (e) {
+    status(e?.said ? e.message : turkish(String(e?.message ?? "")), true);
+  } finally {
+    await endGrant();
+    await Promise.allSettled(restoreTabs.map((restore) => restore()));
+    running = false;
+  }
   $("progress").hidden = true;
   $("start").disabled = false;
   $("start").textContent = stopped ? "Taramayı sürdür" : "Taramayı başlat";
   $("stop").hidden = true;
   $("start").focus?.();
+}
+
+$("start").addEventListener("click", async () => {
+  if (running) return;
+  // Chrome only allows an optional site permission request from a user gesture.
+  const allowed = await chrome.permissions.request(GIB_PERMISSION).catch(() => false);
+  if (!allowed) return status("Dijital Vergi Dairesi izni verilmedi. Tarama başlatılmadı.", true);
+  await startScan();
 });
 $("retry").addEventListener("click", async () => {
   const s = await scanned();
@@ -424,17 +470,26 @@ $("retry").addEventListener("click", async () => {
   status("Bugün atlanan firmalar bir sonraki taramada yeniden sorulacak. Taramayı başlat'a basın.");
 });
 $("stop").addEventListener("click", () => { stopped = true; status("Durduruluyor."); });
-$("autoCaptcha").addEventListener("change", (event) => {
-  autoCaptcha = event.target.checked;
-  chrome.storage.local.set({ gibAutoCaptcha: autoCaptcha });
-});
-chrome.storage.onChanged?.addListener((changes, area) => {
-  if (area === "local" && changes.gibAutoCaptcha) {
-    autoCaptcha = changes.gibAutoCaptcha.newValue === true;
-    $("autoCaptcha").checked = autoCaptcha;
-  }
+$("open-gib").addEventListener("click", async () => {
+  if (loginTabId == null) return;
+  await chrome.tabs.update(loginTabId, { active: true }).catch(() => {});
 });
 window.addEventListener("beforeunload", (e) => { if (running) e.preventDefault(); });
 // Closed or crashed mid-run: the approval does not stay open for the hours it had left.
-window.addEventListener("pagehide", () => { endGrant(grantToken, true); });
-loadAutoCaptcha();
+window.addEventListener("pagehide", () => { endGrant(true); });
+async function initialize() {
+  const hash = window.location?.hash.slice(1);
+  if (!hash) return;
+  const until = decodeURIComponent(hash);
+  if (until.length !== 24 || !Number.isFinite(Date.parse(until))) return;
+  window.history.replaceState(null, "", window.location.pathname);
+  launchUntil = until;
+  if (await chrome.permissions.contains(GIB_PERMISSION).catch(() => false)) {
+    await startScan();
+  } else {
+    $("start").textContent = "GİB erişimine izin ver ve başlat";
+    status("İlk tarama için Chrome’da Dijital Vergi Dairesi erişimine izin verin.");
+  }
+}
+
+initialize().catch(() => status("Tarama ekranı hazırlanamadı. Sayfayı yenileyip yeniden deneyin.", true));

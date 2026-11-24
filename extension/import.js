@@ -75,43 +75,51 @@ async function imported(token) {
 /**
  * Every firm's Dijital Vergi Dairesi login from Luca's GİB Şirket screen, read once here so the e-Tebligat scan does not need
  * Luca open: sent to Accountie, which seals each before storing it. Kept in no variable past this function; never logged.
- * The result line for the log, or null when Accountie does not store logins.
+ * The result is safe to show in the import log or status line.
  */
 async function sendGibLogins(token, target, only) {
+  if (!only.size) return { error: "Accountie'de kayıtlı aktif firma bulunamadı. Önce Luca'dan firmaları çekin." };
   // Which Accountie account the key belongs to, said before any login leaves: a key that is not the user's own shows here.
   const info = await fetch(`${APP_ORIGIN}/api/extension/gib-logins`, { credentials: "omit", headers: { authorization: `Bearer ${token}` } });
-  if (!info.ok) return info.status === 503 ? null : "Accountie'ye ulaşılamadı; GİB girişleri kaydedilmedi.";
+  const disabled = "GİB girişlerini saklama Accountie'de etkin değil.";
+  if (!info.ok) return { error: info.status === 503 ? disabled : "Accountie'ye ulaşılamadı. GİB girişleri kaydedilmedi." };
   const { account, enabled } = await info.json();
-  if (!enabled) return null;
-  if (!account) return "Accountie hesabı okunamadı; GİB girişleri gönderilmedi.";
+  if (!enabled) return { error: disabled };
+  if (!account) return { error: "Accountie hesabı okunamadı. GİB girişleri gönderilmedi." };
   // Asked when the account is new or changed, so the question is read, not clicked through out of habit.
   const { gibAccount } = await chrome.storage.local.get("gibAccount");
   if (gibAccount !== account) {
     const ask = gibAccount
       ? `DİKKAT: Bu, daha önce onayladığınız Accountie hesabı DEĞİL.\n\nÖnceki: ${gibAccount}\nŞimdiki: ${account}\n\nLuca'daki GİB girişleri şimdiki hesaba şifreli kaydedilecek. Bu hesap sizin mi?`
       : `Luca'daki GİB girişleri şu Accountie hesabına şifreli kaydedilecek:\n\n${account}\n\nBu sizin hesabınız mı?`;
-    if (!confirm(ask)) return "GİB girişleri gönderilmedi (hesap onaylanmadı).";
+    if (!confirm(ask)) return { error: "Hesap onaylanmadığı için GİB girişleri gönderilmedi." };
     await chrome.storage.local.set({ gibAccount: account });
   }
   const [r] = await chrome.scripting.executeScript({ target, files: ["gib-login.js"] })
     .then(() => chrome.scripting.executeScript({ target, func: () => globalThis.AccountieGibLogin.fetchLucaRows().catch(() => null) }))
     .catch(() => [null]);
-  if (!r?.result) return "Luca'nın GİB Şirket bilgileri okunamadı (Luca oturumu kapanmış olabilir); GİB girişleri kaydedilmedi.";
+  if (!r?.result) return { error: "Luca'nın GİB Şirket bilgileri okunamadı. Luca oturumunu kontrol edip yeniden deneyin." };
   // Only the firms this import is about and Accountie has: no login leaves for a firm it would only drop.
   const rows = r.result.filter((x) => only.has(String(x.lucaId)) && x.user?.trim() && x.pass).map((x) => ({ lucaId: x.lucaId, username: x.user.trim(), password: x.pass }));
   r.result = null;
+  if (!rows.length) return { error: "Luca'nın GİB Şirket ekranında kayıtlı aktif firmalar için giriş bilgisi bulunamadı." };
   let saved = 0;
-  for (let i = 0; i < rows.length; i += 200) {
-    const res = await fetch(`${APP_ORIGIN}/api/extension/gib-logins`, {
-      method: "PUT", credentials: "omit", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-      body: JSON.stringify({ logins: rows.slice(i, i + 200) }),
-    });
-    if (res.status === 503) { rows.length = 0; return null; }
-    if (!res.ok) { rows.length = 0; return `GİB girişleri kaydedilemedi: ${(await res.json().catch(() => null))?.error ?? "Accountie yanıt vermedi."}`; }
-    saved += (await res.json()).saved;
+  try {
+    for (let i = 0; i < rows.length; i += 200) {
+      const res = await fetch(`${APP_ORIGIN}/api/extension/gib-logins`, {
+        method: "PUT", credentials: "omit", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: JSON.stringify({ logins: rows.slice(i, i + 200) }),
+      });
+      if (res.status === 503) return { error: disabled };
+      if (!res.ok) return { error: (await res.json().catch(() => null))?.error ?? "GİB girişleri kaydedilemedi." };
+      saved += (await res.json()).saved;
+    }
+    if (!saved) return { error: "Accountie hiçbir GİB girişini kaydedemedi. Luca'daki kullanıcı kodlarını ve şifreleri kontrol edin." };
+    const skipped = rows.length - saved;
+    return { message: `${saved} firmanın GİB girişi şifreli kaydedildi.${skipped ? ` ${skipped} giriş kaydedilemedi.` : ""}` };
+  } finally {
+    rows.length = 0;
   }
-  rows.length = 0;
-  return `${saved} firmanın GİB girişi şifreli kaydedildi (e-Tebligat taraması için).`;
 }
 
 /** Removes the stored GİB logins of firms with no period this year: the scan never asks for them again. */
@@ -124,14 +132,25 @@ async function retireGibLogins(token, lucaIds) {
   }
 }
 
-/** `mode`: "new" reads only the firms Luca has and Accountie lacks, "one" only the firm open in Luca, "all" every firm again. */
+/** `mode`: "new", "one" and "all" import chart data. "gib" refreshes saved logins for already imported firms. */
 async function run(mode) {
   const { token } = await chrome.storage.local.get("token");
   if (!token) return status("Önce eklenti penceresini açıp Accountie anahtarını girin.", true);
-  const { filledIds = [] } = await chrome.storage.local.get("filledIds");
-  if (filledIds.length) return status("Luca'da yazılmış ama kaydedilmemiş fiş var. Önce Luca'da Kaydet'e basıp eklenti penceresinde Luca'da kaydettim'e basın, sonra firmaları çekin.", true);
+  if (mode !== "gib") {
+    const { filledIds = [] } = await chrome.storage.local.get("filledIds");
+    if (filledIds.length) return status("Luca'da yazılmış ama kaydedilmemiş fiş var. Önce Luca'da Kaydet'e basıp eklenti penceresinde Luca'da kaydettim'e basın, sonra firmaları çekin.", true);
+  }
   const luca = await lucaFrame();
   if (!luca) return status("Açık Luca sekmesi bulunamadı. Luca'ya girip ana ekranı açın, sonra yeniden basın.", true);
+  if (mode === "gib") {
+    const { importingAt } = await chrome.storage.local.get("importingAt");
+    if (typeof importingAt === "number" && Date.now() - importingAt < IMPORT_STALE_MS) return status("Firma çekme sürüyor. Bitince GİB girişlerini yeniden çekebilirsiniz.", true);
+    status("GİB girişleri okunuyor.");
+    const have = await imported(token);
+    const only = new Set([...AccountieLuca.activeIds(luca.list, YEAR)].filter((id) => have.has(id)));
+    const result = await sendGibLogins(token, luca.target, only);
+    return status(result.error ?? result.message, !!result.error);
+  }
   const original = AccountieLuca.selected(luca.list, luca.sirket, luca.donem);
   if (!original) return status("Luca'da şu an açık olan firma okunamadı. Hiçbir şey değiştirilmedi.", true);
   const open = AccountieLuca.firmsToImport(luca.list, YEAR);
@@ -220,9 +239,9 @@ async function run(mode) {
       const active = AccountieLuca.activeIds(luca.list, YEAR);
       const wanted = mode === "one" ? new Set([String(original.lucaId)]) : await imported(token).catch(() => new Set());
       const only = new Set([...wanted].filter((id) => active.has(id)));
-      const said = await sendGibLogins(token, luca.target, only).catch(() => "GİB girişleri kaydedilemedi.");
+      const result = await sendGibLogins(token, luca.target, only).catch(() => ({ error: "GİB girişleri kaydedilemedi." }));
       if (mode !== "one") await retireGibLogins(token, luca.list.map((row) => String(row[0])).filter((id) => !active.has(id))).catch(() => {});
-      if (said) log("GİB girişleri", said);
+      log("GİB girişleri", result.error ?? result.message);
     }
   } finally {
     // Luca'nın kendi seçicisinin yaptığı gibi: çerçeveyi ilk firmaya götür ki oturum ve ekran aynı firmayı göstersin.
@@ -237,14 +256,14 @@ async function run(mode) {
   }
 }
 
-const STARTS = { "start-new": "new", "start-one": "one", "start-all": "all" };
+const STARTS = { "start-new": "new", "start-one": "one", "start-all": "all", "start-gib": "gib" };
 for (const [id, mode] of Object.entries(STARTS)) {
   $(id).addEventListener("click", async () => {
     if (running) return;
     running = true;
     stopped = false;
     for (const b of Object.keys(STARTS)) $(b).disabled = true;
-    $("stop").hidden = false;
+    $("stop").hidden = mode === "gib";
     await run(mode).catch((e) => status(turkish(e.message), true));
     running = false;
     for (const b of Object.keys(STARTS)) $(b).disabled = false;

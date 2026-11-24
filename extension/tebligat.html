@@ -8,24 +8,17 @@
 </head>
 <body class="wide scan">
   <h1>e-Tebligat taraması</h1>
-  <p class="lead">Luca'daki her firmanın tebligatlarına sırayla bakar. Otomatik kip seçilirse doğrulama kodu okunur ve giriş yapılır; manuel kipte kodu siz girersiniz.</p>
+  <p class="lead">Accountie'de GİB girişi kayıtlı firmaların tebligatlarına sırayla bakar.</p>
 
   <ol class="steps">
-    <li><strong>Accountie'de taramayı onaylayın</strong><span>e-Tebligatlar sayfasında Taramayı onayla (bu bilgisayardan, 4 saat). GİB girişleri firmalar Luca'dan çekilirken bir kez okunup şifreli saklandı; kayıtlı giriş yoksa Luca'da GİB Şirket ekranını açın.</span></li>
-    <li><strong>Taramayı başlatın</strong><span>Dijital Vergi Dairesi açılır, ilk firmanın kullanıcı kodu ve şifresi yazılır.</span></li>
-    <li><strong>Doğrulama kodunu kullanın</strong><span>Otomatik kipte çözülür ve gönderilir; manuel kipte siz yazıp Giriş Yap'a basarsınız.</span></li>
+    <li><strong>Taramayı başlatın</strong><span>Accountie oturumunuz açıkken bu ekrandan başlayın. Chrome ilk kullanımda Dijital Vergi Dairesi izni ister.</span></li>
+    <li><strong>Tarama sekmesini açık bırakın</strong><span>Tarama sürerken başka sekmede çalışabilirsiniz.</span></li>
+    <li><strong>Gerekirse doğrulamayı tamamlayın</strong><span>Elle kod girmeniz gerekirse GİB sekmesini açıp giriş yapın. Tarama tamamlanınca Accountie'nin e-Tebligat sayfası açılır.</span></li>
   </ol>
-
-  <label class="auto-captcha">
-    <input type="checkbox" id="autoCaptcha">
-    <span>
-      <strong>Doğrulama kodunu otomatik çöz ve gönder</strong>
-      <small>OCR cihazda çalışır. Firma başına en fazla 2 otomatik giriş denemesi yapılır.</small>
-    </span>
-  </label>
 
   <div class="actions">
     <button id="start" type="button" class="primary">Taramayı başlat</button>
+    <button id="open-gib" type="button" hidden>GİB sekmesini aç</button>
     <button id="stop" type="button" hidden>Taramayı durdur</button>
     <button id="retry" type="button" class="link" hidden>Bugün atlananları yeniden sor</button>
   </div>
@@ -35,6 +28,8 @@
     <progress id="progress-bar" max="1" value="0" aria-labelledby="progress-count"></progress>
   </section>
   <p id="status" role="status" aria-live="polite"></p>
+  <a id="scan-approval" href="https://accountie.app/panel/tebligatlar/erisim" target="_blank" rel="noopener noreferrer" hidden>Tarama erişimini Accountie’de onayla</a>
+  <a id="notices-link" target="_blank" rel="noopener noreferrer" hidden>Accountie e-Tebligat sayfasını aç</a>
 
   <section id="summary" hidden aria-labelledby="summary-title">
     <h2 id="summary-title" class="visually-hidden">Bugünkü sonuç</h2>
@@ -68,7 +63,7 @@
     <ul>
       <li>GİB şifre hatalı derse GİB sekmesinin altındaki <strong>Bu firmayı atla</strong>'ya basın. O firma bugün yeniden sorulmaz. Luca'da şifreyi düzeltip firmaları yeniden çekin, sonra <strong>Bugün atlananları yeniden sor</strong>'a basın.</li>
       <li>Taramayı GİB sekmesinin altındaki <strong>Taramayı durdur</strong> ile de durdurabilirsiniz. 5 dakika giriş yapılmazsa tarama kendiliğinden durur; <strong>Taramayı sürdür</strong> kaldığı yerden devam eder.</li>
-      <li>Açık bir Dijital Vergi Dairesi oturumunuz varsa tarama başlayınca kapanır. Tarama bitince ya da durunca Accountie'deki onay da kapanır; sürdürmek için yeniden onaylayın.</li>
+      <li>Açık bir Dijital Vergi Dairesi oturumunuz varsa tarama başlayınca kapanır. Tarama bitince ya da durunca Accountie'deki erişim sona erer.</li>
     </ul>
   </details>
   <script src="gib-login.js"></script>

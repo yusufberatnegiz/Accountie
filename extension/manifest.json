@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Accountie Luca Doldurucu",
-  "version": "0.9.0",
+  "version": "0.9.7",
   "minimum_chrome_version": "109",
   "description": "Onaylı fişleri Luca Fiş Detayına yazar, ekranla karşılaştırır; Dijital Vergi Dairesi e-Tebligat listesini Accountie'ye aktarır.",
   "icons": {

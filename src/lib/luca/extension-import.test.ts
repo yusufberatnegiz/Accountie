@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import "../../../extension/luca-import.js";
 
@@ -19,6 +21,71 @@ const LIST = [
   ["11", "ÖRNEK A", "", "", "", "501", "01/01/2025", "31/12/2025", "0", "502", "01/01/2026", "31/12/2026", "1"],
   ["12", "ÖRNEK B", "", "", "", "601", "01/01/2024", "31/12/2024", "0"],
 ];
+
+describe("Yalnız GİB girişlerini çek", () => {
+  function setup(lucaIds: string[], approved = true) {
+    type Element = { textContent: string; click?: () => Promise<void> };
+    const elements = new Map<string, Element>();
+    const get = (id: string) => {
+      if (!elements.has(id)) elements.set(id, { textContent: "" });
+      return elements.get(id)!;
+    };
+    const year = new Date().getFullYear();
+    const list = [["11", year], ["12", year - 1], ["13", year]].map(([id, y]) => [id, "Örnek firma", "", "", "", "501", `01/01/${y}`, `31/12/${y}`, "1"]);
+    const executeScript = vi.fn(async (request: { world?: string; files?: string[]; func?: () => unknown }) => {
+      if (request.world === "MAIN") return [{ frameId: 3, result: { list } }];
+      if (request.files?.includes("gib-login.js")) return [];
+      if (String(request.func).includes("fetchLucaRows")) {
+        return [{ result: ["11", "12", "13"].map((id) => ({ lucaId: id, user: "test", pass: "example" })) }];
+      }
+      throw new Error("Bu işlem Luca'da firma değiştirmemeli.");
+    });
+    const fetch = vi.fn(async (url: string, init: RequestInit) => {
+      const data = url.endsWith("/firms") ? { lucaIds } : init.method === "PUT" ? { saved: 1 } : { enabled: true, account: "test@example.com" };
+      return { ok: true, json: async () => data };
+    });
+    const confirm = vi.fn(() => approved);
+    runInNewContext(readFileSync("extension/import.js", "utf8"), {
+      AccountieLuca: luca, fetch, confirm, window: { addEventListener() {} },
+      document: { getElementById: (id: string) => Object.assign(get(id), { addEventListener: (_event: string, click: () => Promise<void>) => { get(id).click = click; } }) },
+      chrome: { tabs: { query: async () => [{ id: 1 }] }, scripting: { executeScript }, storage: { local: {
+        get: async (key: string) => key === "token" ? { token: "test-token" } : {}, set: async () => {},
+      } } },
+    });
+    return { get, fetch, confirm, executeScript };
+  }
+
+  it("aktif ve Accountie'de kayıtlı firmaları tek okumayla alır, hesap planı göndermez", async () => {
+    const t = setup(["11", "12"]);
+    expect(t.get("start-gib").click).toBeTypeOf("function");
+    await t.get("start-gib").click?.();
+    expect(t.confirm).toHaveBeenCalledOnce();
+    expect(t.executeScript).toHaveBeenCalledTimes(3);
+    const writes = t.fetch.mock.calls.filter(([, init]) => init.method);
+    expect(writes).toHaveLength(1);
+    expect(writes[0][0]).toBe("https://accountie.app/api/extension/gib-logins");
+    expect(writes[0][1].method).toBe("PUT");
+    expect(JSON.parse(String(writes[0][1].body))).toEqual({ logins: [{ lucaId: "11", username: "test", password: "example" }] });
+    expect(t.get("status").textContent).toContain("1 firmanın GİB girişi şifreli kaydedildi");
+  });
+
+  it("Accountie'de aktif eşleşme yoksa GİB Şirket bilgilerine erişmez", async () => {
+    const t = setup(["12"]);
+    await t.get("start-gib").click?.();
+    expect(t.confirm).not.toHaveBeenCalled();
+    expect(t.executeScript).toHaveBeenCalledOnce();
+    expect(t.get("status").textContent).toContain("Accountie'de kayıtlı aktif firma bulunamadı");
+  });
+
+  it("Accountie hesabı onaylanmazsa GİB Şirket bilgilerini okumaz", async () => {
+    const t = setup(["11"], false);
+    await t.get("start-gib").click?.();
+    expect(t.confirm).toHaveBeenCalledOnce();
+    expect(t.executeScript).toHaveBeenCalledOnce();
+    expect(t.fetch.mock.calls.some(([, init]) => init.method === "PUT")).toBe(false);
+    expect(t.get("status").textContent).toContain("Hesap onaylanmadığı için GİB girişleri gönderilmedi");
+  });
+});
 
 describe("Luca firma listesi", () => {
   it("her firmayı verir: o yılın dönemiyle, o yıl dönemi açılmamışsa en son dönemiyle", () => {

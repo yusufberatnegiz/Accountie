@@ -8,7 +8,7 @@ export type GibScanState = { enabled: boolean; stored: number; until: string | n
 
 /**
  * The e-Tebligat scan's GİB logins: how many are stored (sealed), the user's approval that lets the extension unseal them for a few
- * hours, and the last unsealings. Approving needs a fresh sign-in (the server checks); ending it or deleting the logins does not.
+ * hours, and the last unsealings. The server verifies the current Accountie session when approving access.
  */
 export function GibScanPanel({ state, account, approvalOnly = false }: { state: GibScanState; account: string; approvalOnly?: boolean }) {
   const router = useRouter();

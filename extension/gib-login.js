@@ -44,27 +44,23 @@
   }
 
   /**
-   * Taranacak firmalar: Luca'da kullanıcı kodu ve şifresi dolu, Accountie'de VKN'si bilinen. Bugün taranmışlar ve bugün girişi
-   * olmamışlar atlanır (yarıda kalan tarama baştan başlamaz; eski bir şifre aynı gün yeniden yazılıp hesabı kilitlemez). Aynı
-   * firma ya da aynı VKN iki kez sorulmaz. Şifresi eksik ya da Accountie'de olmayanlar adlarıyla sayılır.
+   * Taranacak firmalar kayıtlı girişlerin listesinden seçilir. Bugün taranan ya da girişi başarısız olan firmalar atlanır.
+   * Aynı firma ya da vergi numarası bir kez taranır.
    */
-  function plan(rows, firms, doneToday = [], failedToday = []) {
-    const tax = new Map(firms.filter((f) => ID.test(String(f.taxNumber))).map((f) => [String(f.lucaId), String(f.taxNumber)]));
-    const out = { todo: [], noCredentials: [], notInAccountie: [], sameTax: [], done: 0, failed: 0 };
+  function plan(firms, doneToday = [], failedToday = []) {
+    const out = { todo: [], noTax: [], sameTax: [], done: 0, failed: 0 };
     const seen = new Set(), seenTax = new Set();
-    for (const r of rows) {
+    for (const r of firms) {
       if (!/^\d{1,12}$/.test(r.lucaId) || seen.has(r.lucaId)) continue;
       seen.add(r.lucaId);
-      if (!tax.has(r.lucaId)) { out.notInAccountie.push(r.name || r.lucaId); continue; }
-      const taxNumber = tax.get(r.lucaId);
+      const taxNumber = String(r.taxNumber);
+      if (!ID.test(taxNumber)) { out.noTax.push(r.name || r.lucaId); continue; }
       // One login per VKN: Accountie keeps one firm per number, a second login would only read the same list again.
       if (seenTax.has(taxNumber)) { out.sameTax.push(r.name || r.lucaId); continue; }
       seenTax.add(taxNumber);
-      if (!r.stored && (!r.user.trim() || !r.pass)) { out.noCredentials.push(r.name || r.lucaId); continue; }
       if (doneToday.includes(r.lucaId)) { out.done++; continue; }
       if (failedToday.includes(r.lucaId)) { out.failed++; continue; }
-      // A stored login (sealed in Accountie) is asked for just before its form; a row read from Luca carries its own.
-      out.todo.push(r.stored ? { lucaId: r.lucaId, name: r.name || r.lucaId, stored: true, taxNumber } : { lucaId: r.lucaId, name: r.name || r.lucaId, user: r.user.trim(), pass: r.pass, taxNumber });
+      out.todo.push({ lucaId: r.lucaId, name: r.name || r.lucaId, taxNumber });
     }
     return out;
   }

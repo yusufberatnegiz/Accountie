@@ -2,18 +2,17 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { endGibScan, liveTokenHashes, setGibScanGrant } from "@/db/queries";
 import { bearerHash, keyedHash } from "@/lib/auth/extension-token";
-import { FRESH_SIGN_IN_MS, getUserId, SIGN_IN_AGAIN, signedInWithin } from "@/lib/auth/session";
+import { getUserId } from "@/lib/auth/session";
 import { fail, NO_STORE, unauthorized } from "@/lib/http";
 import { allow, clientIp, ipBucket } from "@/lib/rate-limit";
 import { grantText, mac, secretKey } from "./secret";
 
 const SCAN_GRANT_MS = 4 * 60 * 60_000;
 
-/** Open access only after a recent web sign-in, for this network and this account's sole paired key. */
+/** Open access for the signed-in account's sole paired key on this network. */
 export async function grantGibScan(request: Request, source: "web" | "extension") {
   const userId = await getUserId();
   if (!userId) return unauthorized();
-  if (!(await signedInWithin(FRESH_SIGN_IN_MS))) return fail(SIGN_IN_AGAIN, 403);
   const key = secretKey();
   if (!key) return fail("GİB girişlerini saklama bu sunucuda açık değil.", 503);
   if (!(await allow("gibGrant", userId))) return fail("Çok fazla işlem yapıldı. Bir süre bekleyin.", 429);

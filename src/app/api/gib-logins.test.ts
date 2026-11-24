@@ -4,7 +4,7 @@ import { hashToken, legacyHash } from "@/lib/auth/extension-token";
 import { DEV_EXTENSION_ID, STORE_EXTENSION_ID } from "@/lib/extension-id";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn(), signedInWithin: vi.fn(), FRESH_SIGN_IN_MS: 1800000, SIGN_IN_AGAIN: "yeniden giriş" }));
+vi.mock("@/lib/auth/session", () => ({ getUserId: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({ allow: vi.fn(async () => true), clientIp: () => "203.0.113.7", ipBucket: (ip: string) => ip }));
 vi.mock("@/db/queries", () => ({
   userIdForTokenHash: vi.fn(), firmsByLucaId: vi.fn(), saveGibLogins: vi.fn(), listGibLoginFirms: vi.fn(), gibScanUntil: vi.fn(),
@@ -131,12 +131,8 @@ describe("POST /api/extension/gib-logins/read (taramada tek firmanın girişi)",
 
 describe("Accountie'den tarama onayı ve girişleri silme", () => {
   const web = () => new Request("http://test", { method: "POST", headers: { "x-real-ip": "203.0.113.7" } });
-  it("onay yeni girişle (30 dk), en çok 4 saat, bu ağa bağlı ve sunucu anahtarıyla mühürlü; bitirme ve silme yeni giriş istemez", async () => {
+  it("mevcut oturumla taramayı en çok 4 saat için bu ağa ve eşli anahtara bağlar", async () => {
     vi.mocked(session.getUserId).mockResolvedValue(USER);
-    vi.mocked(session.signedInWithin).mockResolvedValue(false);
-    expect((await grant.POST(web())).status).toBe(403);
-    expect(q.setGibScanGrant).not.toHaveBeenCalled();
-    vi.mocked(session.signedInWithin).mockResolvedValue(true);
     const before = Date.now();
     expect((await grant.POST(web())).status).toBe(200);
     const [[userId, g]] = vi.mocked(q.setGibScanGrant).mock.calls;
@@ -168,7 +164,7 @@ describe("Accountie'den tarama onayı ve girişleri silme", () => {
     expect(q.endGibScan).toHaveBeenCalledWith(USER);
   });
 
-  it.each([STORE_EXTENSION_ID, DEV_EXTENSION_ID])("%s ile başlatma için yeni web oturumu ve aynı hesabın anahtarı gerekir", async (extensionId) => {
+  it.each([STORE_EXTENSION_ID, DEV_EXTENSION_ID])("%s ile başlatma için geçerli web oturumu ve aynı hesabın anahtarı gerekir", async (extensionId) => {
     const endpoint = await import("./extension/gib-scan/route");
     const origin = `chrome-extension://${extensionId}`;
     const start = (source: string, token = TOKEN) => endpoint.POST(new Request("https://accountie.app/api/extension/gib-scan", {
@@ -177,9 +173,6 @@ describe("Accountie'den tarama onayı ve girişleri silme", () => {
     vi.mocked(session.getUserId).mockResolvedValue(null);
     expect((await start(origin)).status).toBe(401);
     vi.mocked(session.getUserId).mockResolvedValue(USER);
-    vi.mocked(session.signedInWithin).mockResolvedValue(false);
-    expect((await start(origin)).status).toBe(403);
-    vi.mocked(session.signedInWithin).mockResolvedValue(true);
     expect((await start("https://other.example")).status).toBe(403);
     expect((await start("chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).status).toBe(403);
     expect((await start(origin, `acx_${"b".repeat(43)}`)).status).toBe(403);

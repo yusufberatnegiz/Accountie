@@ -21,6 +21,20 @@
   }
   root.AccountieBackground = { acceptToken, importStatus };
 
+  async function launchGibScan(message, sender) {
+    if (!APP_ORIGINS.includes(sender?.origin) || sender.url?.split(/[?#]/, 1)[0] !== `${sender.origin}/panel/tebligatlar`) return false;
+    const { account, until } = message;
+    if (typeof account !== "string" || !account || typeof until !== "string" || until.length !== 24 || !(Date.parse(until) > Date.now())) return false;
+    const { token } = await root.chrome.storage.local.get("token");
+    if (typeof token !== "string" || !TOKEN.test(token)) return false;
+    const res = await root.fetch(`${APP_ORIGINS[0]}/api/extension/gib-logins`, { credentials: "omit", cache: "no-store", headers: { authorization: `Bearer ${token}` } });
+    if (!res.ok) return false;
+    const stored = await res.json();
+    if (!stored.enabled || !stored.firms?.length || stored.account !== account || stored.scanUntil !== until) return false;
+    await root.chrome.tabs.create({ url: `${root.chrome.runtime.getURL("tebligat.html")}#${encodeURIComponent(until)}`, active: true });
+    return true;
+  }
+
   let ocrCloseTimer = null;
   let ocrEnsuring = null;
 
@@ -67,6 +81,10 @@
 
   if (root.chrome?.runtime?.onMessageExternal) {
     root.chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+      if (message?.type === "accountie-gib-scan") {
+        launchGibScan(message, sender).then((ok) => sendResponse({ ok }), () => sendResponse({ ok: false }));
+        return true;
+      }
       if (message?.type === "accountie-import-status") {
         root.chrome.storage.local.get("importingAt").then(
           ({ importingAt }) => sendResponse(importStatus(message, sender, importingAt, Date.now()) ?? { ok: false }),

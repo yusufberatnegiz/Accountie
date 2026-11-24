@@ -1,8 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import manifest from "../../../extension/manifest.json";
 import "../../../extension/background.js";
 import { DEV_EXTENSION_ID, EXTENSION_IDS, STORE_EXTENSION_ID } from "../extension-id";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 
 const { acceptToken, importStatus } = (globalThis as unknown as { AccountieBackground: {
   acceptToken(m: unknown, s: unknown): string | null;
@@ -42,4 +44,27 @@ describe("eklentiye bağla (anahtarsız kurulum)", () => {
     expect(STORE_EXTENSION_ID).toMatch(/^[a-p]{32}$/);
     expect(manifest.externally_connectable.matches).toEqual(["https://accountie.app/*", "https://www.accountie.app/*"]);
   });
+});
+
+it("yalnız e-Tebligat ekranından gelen, bağlı hesap ve güncel onayla eşleşen tarama isteğini açar", async () => {
+  type Sender = { origin: string; url: string };
+  type Handler = (message: unknown, sender: Sender, reply: (result: { ok: boolean }) => void) => void;
+  let handle!: Handler;
+  const until = "2099-01-01T00:00:00.000Z";
+  const account = "test@example.com";
+  const create = vi.fn(async () => ({}));
+  const fetch = vi.fn(async () => ({ ok: true, json: async () => ({ enabled: true, account, scanUntil: until, firms: [{ lucaId: "7" }] }) }));
+  runInNewContext(readFileSync("extension/background.js", "utf8"), {
+    URL, fetch, chrome: {
+      runtime: { getURL: (path: string) => `chrome-extension://test/${path}`, onMessageExternal: { addListener: (listener: Handler) => { handle = listener; } } },
+      storage: { local: { get: async () => ({ token: TOKEN }) } }, tabs: { create },
+    },
+  });
+  const sender = { ...SITE, url: "https://accountie.app/panel/tebligatlar" };
+  const send = (changes: object, from = sender) => new Promise((resolve) => handle({ type: "accountie-gib-scan", account, until, ...changes }, from, resolve));
+  expect(await send({}, { ...sender, url: "https://accountie.app/panel" })).toEqual({ ok: false });
+  expect(await send({ account: "other@example.com" })).toEqual({ ok: false });
+  expect(await send({ until: "2099-02-01T00:00:00.000Z" })).toEqual({ ok: false });
+  expect(await send({})).toEqual({ ok: true });
+  expect(create).toHaveBeenCalledExactlyOnceWith({ url: `chrome-extension://test/tebligat.html#${encodeURIComponent(until)}`, active: true });
 });
