@@ -9,11 +9,6 @@ const GIB_ORIGIN = `https://${AccountieGib.GIB_HOST}`;
 const GIB_PERMISSION = { origins: [`${GIB_ORIGIN}/*`] };
 const LOGIN_URL = `${GIB_ORIGIN}${AccountieGibLogin.LOGIN_PATH}`;
 
-// Kullanıcının doğrulama kodunu yazması için firma başına süre; dolarsa kimse başında yok demektir, tarama durur.
-const WAIT_MS = 5 * 60_000;
-const POLL_MS = 1500;
-// GİB hatalı kodda formu sildiğinde şifre en çok bu kadar yeniden yazılır: her deneme GİB'de başarısız giriş sayılabilir.
-const MAX_REFILLS = 2;
 const MAX_OCR_ATTEMPTS = 3;
 
 const $ = (id) => document.getElementById(id);
@@ -22,7 +17,6 @@ const today = () => new Date().toLocaleDateString("sv-SE");
 let running = false;
 let stopped = false;
 let activeGrant = null;
-let loginTabId = null;
 let launchUntil = null;
 
 /** Ends the approval in Accountie once the stored logins are no longer needed (done, stopped, failed, or this page closing). */
@@ -163,27 +157,6 @@ async function storedLogin(token, lucaId) {
 }
 
 /**
- * Waits for the user to log in, skip or stop. Refills a cleared form at most twice for manual verification.
- */
-async function waitForLogin(tabId, login, head) {
-  const until = Date.now() + WAIT_MS;
-  let refills = 0;
-  while (Date.now() < until) {
-    if (stopped) return "stopped";
-    const state = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.loginState(), "waiting");
-    if (state === "stop") { stopped = true; return "stopped"; }
-    if (state === "in" || state === "skip") return state;
-    if (state !== "refill") { await pause(POLL_MS); continue; }
-
-    if (refills >= MAX_REFILLS) return "refused";
-    refills++;
-    await fill(tabId, login, `Accountie · ${head}: Kod ya da şifre hatalı, form yeniden dolduruldu (kalan deneme ${MAX_REFILLS - refills + 1}). Yeni kodu yazıp Giriş Yap'a basın.`);
-    await pause(POLL_MS);
-  }
-  return "timeout";
-}
-
-/**
  * Today's scan as kept on this computer: firms read, firms skipped or not logged in (with the reason, said in the summary), and
  * the new notices found. Firm names and counts only; never a password.
  */
@@ -239,26 +212,14 @@ async function scanFirm(tabId, f, token, head) {
   if (ocrDone) {
     state = await tryGib(tabId, "gib-login.js", () => globalThis.AccountieGibLogin.loginState(), "waiting");
   } else if (!stopped) {
-    status(`${head}: GİB sekmesini açın, doğrulama kodunu girip Giriş Yap'a basın.`);
-    await tryGib(tabId, "gib-login.js", (t) => globalThis.AccountieGibLogin.showNote(t), null, [`Accountie · ${head}: Doğrulama kodunu girip Giriş Yap'a basın.`]);
-    document.title = "GİB doğrulaması bekleniyor";
-    loginTabId = tabId;
-    $("open-gib").hidden = false;
-    try {
-      state = await waitForLogin(tabId, login, head);
-    } finally {
-      loginTabId = null;
-      $("open-gib").hidden = true;
-      document.title = `${$("progress-count").textContent} · e-Tebligat taraması`;
-    }
+    login.user = login.pass = "";
+    return { line: "Doğrulama kodu çözülemedi.", failed: true };
   }
 
   login.user = login.pass = "";
   if (stopped && !state) return { line: "Durduruldu.", stopped: true };
   if (state === "stopped") return { line: "Durduruldu.", stopped: true };
   if (state === "skip") return { line: "Atlandı; bugün yeniden sorulmaz.", failed: true };
-  if (state === "refused") return { line: `${MAX_REFILLS + 1} denemede giriş olmadı; bugün yeniden sorulmaz. Kod doğruysa Luca'da şifreyi kontrol edin.`, failed: true };
-  if (state === "timeout") { stopped = true; return { line: "5 dakika giriş yapılmadı; tarama durduruldu.", stopped: true }; }
   // Logged in: the left-behind clean-up of this page must not cut the read short.
   await tryGib(tabId, "gib-login.js", (t) => { clearTimeout(globalThis.accountieClear); return globalThis.AccountieGibLogin.showNote(t); }, null, [`Accountie · ${head}: okunuyor, birazdan sıradaki firma gelecek.`]);
   status(`${head}: tebligat listesi okunuyor.`);
@@ -437,10 +398,6 @@ $("retry").addEventListener("click", async () => {
   status("Bugün atlanan firmalar bir sonraki taramada yeniden sorulacak. Taramayı başlat'a basın.");
 });
 $("stop").addEventListener("click", () => { stopped = true; status("Durduruluyor."); });
-$("open-gib").addEventListener("click", async () => {
-  if (loginTabId == null) return;
-  await chrome.tabs.update(loginTabId, { active: true }).catch(() => {});
-});
 window.addEventListener("beforeunload", (e) => { if (running) e.preventDefault(); });
 // Closed or crashed mid-run: the approval does not stay open for the hours it had left.
 window.addEventListener("pagehide", () => { endGrant(true); });

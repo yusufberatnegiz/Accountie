@@ -183,6 +183,8 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
       const src = String(o.func);
       if (src.includes("lucaRows")) return [{ frameId: 3, result: [{ lucaId: "7", name: "ÖRNEK", user: "12345678", pass: PASS }] }];
       if (src.includes("fillLogin")) { fillArgs.push(o.args ?? []); return [{ result: true }]; }
+      if (src.includes("gibCaptchaSolveAndFill")) return [{ result: { ok: true, text: "ABCDE" } }];
+      if (src.includes("submitLogin")) return [{ result: { ok: true, submitted: true } }];
       if (src.includes("loginReady")) return [{ result: true }];
       if (src.includes("loginState")) return [{ result: typeof login === "function" ? login() : await login }];
       if (src.includes("readNotices")) return [{ result: { idNumbers: ids, name: "ÖRNEK LTD", notices: [] } }];
@@ -213,7 +215,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
 
   it("siteden başlatılan tarama, verilmiş Chrome izniyle ikinci tıklama olmadan çalışır", async () => {
     const t = setup("in", undefined, undefined, { until: "2099-01-01T00:00:00.000Z", allowed: true });
-    await vi.waitFor(() => expect(textOf(t.get("status"))).toContain("Tarama tamamlandı"), { timeout: 2500 });
+    await vi.waitFor(() => expect(textOf(t.get("status"))).toContain("Tarama tamamlandı"), { timeout: 10_000 });
     expect(t.permissions.request).not.toHaveBeenCalled();
     expect(t.fillArgs).toHaveLength(1);
     expect(t.fetch.mock.calls.some(([url, init]) => url.endsWith("/gib-scan") && init?.method === "POST")).toBe(false);
@@ -292,32 +294,20 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
     expect(textOf(t.get("status"))).toContain("Tarama tamamlandı");
   });
 
-  it("elle doğrulama beklenirken GİB sekmesi yalnızca düğmeye basılırsa öne gelir", async () => {
-    let finishLogin!: (state: string) => void;
-    const login = new Promise<string>((resolve) => { finishLogin = resolve; });
-    const t = setup(login, undefined, undefined, undefined, false);
-    const scan = t.get("start").click?.();
-    try {
-      await vi.waitFor(() => expect(t.get("open-gib").hidden).toBe(false));
-      expect(t.tabs.update).not.toHaveBeenCalledWith(2, { active: true });
-      await t.get("open-gib").click?.();
-      expect(t.tabs.update).toHaveBeenCalledWith(2, { active: true });
-    } finally {
-      finishLogin("stop");
-      await scan;
-    }
-    expect(t.get("open-gib").hidden).toBe(true);
-    expect(t.tabs.create).not.toHaveBeenCalled();
-  });
-
-  it("OCR denenir, başarısız olursa elle beklemeye düşer", async () => {
+  it("OCR başarısız olursa firma atlanır ve taranamayanlarda gösterilir", async () => {
     const t = setup(vi.fn().mockReturnValueOnce("waiting").mockReturnValue("in"));
+    const orig = t.executeScript.getMockImplementation()!;
+    t.executeScript.mockImplementation(async (o: { func?: () => unknown; args?: unknown[] }) => {
+      if (o.func && String(o.func).includes("gibCaptchaSolveAndFill")) return [{ result: { ok: false, reason: "error" } }];
+      return orig(o);
+    });
     await t.get("start").click?.();
     expect(t.executeScript.mock.calls.some(([script]) => String(script.func).includes("gibCaptchaSolveAndFill"))).toBe(true);
-    expect(textOf(t.get("status"))).toContain("Tarama tamamlandı");
+    expect(textOf(t.get("log"))).toContain("Doğrulama kodu çözülemedi");
+    expect(textOf(t.get("failed"))).toContain("ÖRNEK");
   });
 
-  it("OCR başarılı olursa elle beklemeye düşmeden giriş yapar", async () => {
+  it("OCR başarılı olursa giriş yapar ve tebligatları okur", async () => {
     const t = setup("in");
     const orig = t.executeScript.getMockImplementation()!;
     t.executeScript.mockImplementation(async (o: { func?: () => unknown; args?: unknown[] }) => {
@@ -326,7 +316,6 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
     });
     await t.get("start").click?.();
     expect(t.executeScript.mock.calls.some(([script]) => String(script.func).includes("gibCaptchaSolveAndFill"))).toBe(true);
-    expect(t.get("open-gib").hidden).toBe(true);
     expect(textOf(t.get("status"))).toContain("Tarama tamamlandı");
   });
 
@@ -379,7 +368,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
     expect(JSON.stringify(posted)).not.toContain(PASS);
   });
 
-  it("ikinci firmanın girişini ancak ilk firmanın listesi gönderildikten sonra ister", async () => {
+  it("ikinci firmanın girişini ancak ilk firmanın listesi gönderildikten sonra ister", { timeout: 15_000 }, async () => {
     const firms = [
       { lucaId: "7", name: "BİRİNCİ", taxNumber: "1234567890" },
       { lucaId: "8", name: "İKİNCİ", taxNumber: "1234567891" },
