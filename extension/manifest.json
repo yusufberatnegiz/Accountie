@@ -22,7 +22,6 @@
     "activeTab",
     "scripting",
     "storage",
-    "downloads",
     "offscreen"
   ],
   "host_permissions": [

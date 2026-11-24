@@ -1,19 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { byFirm } from "@/lib/notices";
 
 export type NoticeRow = {
-  id: string; firmName: string; institution: string; subUnit: string | null; docType: string | null; docNo: string | null;
+  id: string; firmId: string; firmName: string; institution: string; subUnit: string | null; docType: string | null; docNo: string | null;
   sentAt: string | null; servedAt: string | null; served: "past" | "today" | "future" | null; readOnGib: boolean; isNew: boolean;
+  /** First found today (Turkey): listed under Bugün. */
+  today: boolean;
 };
 export type FirmRead = { firmId: string; firmName: string; scannedAt: string | null; days: number | null; stale: boolean };
 
 const readText = (r: FirmRead) => (r.scannedAt === null ? "Hiç okunmadı" : `${r.scannedAt} · ${r.days === 0 ? "bugün" : `${r.days} gün önce`}${r.stale ? ", yeniden okuyun" : ""}`);
 
 /**
- * e-Tebligat: what the extension read from each firm's Dijital Vergi Dairesi list, new ones (not yet marked seen here) first, and
- * when each firm was last read. Accountie never opens an envelope; the document is read in GİB.
+ * e-Tebligat: what the extension read from each firm's Dijital Vergi Dairesi list, under Bugün (found today) and Daha önce, one
+ * closed drawer per firm with its new count, and when each firm was last read. Seen notices leave after a week. Accountie never
+ * opens an envelope; the document is read in GİB.
  */
 export function NoticesView({ notices, firmReads, newCount, truncated, scanCompleted, children }: { notices: NoticeRow[]; firmReads: FirmRead[]; newCount: number; truncated: boolean; scanCompleted?: boolean; children?: React.ReactNode }) {
   const router = useRouter();
@@ -21,12 +25,32 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
   const [error, setError] = useState<string | null>(null);
   const [said, setSaid] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
+  // The drawer whose "Gördüm" was pressed: after the refresh focus goes back to it, not to the top of hundreds of firms.
+  const back = useRef<string | null>(null);
   const fresh = notices.filter((n) => n.isNew);
   const read = firmReads.filter((r) => r.scannedAt !== null).length;
   const never = firmReads.length - read;
   const old = firmReads.filter((r) => r.scannedAt !== null && r.stale).length;
+  const days = [
+    { key: "bugun", title: "Bugün bulunanlar", firms: byFirm(notices.filter((n) => n.today)) },
+    { key: "once", title: "Daha önce bulunanlar", firms: byFirm(notices.filter((n) => !n.today)) },
+  ].filter((d) => d.firms.length);
 
-  async function seen(ids: string[]) {
+  useEffect(() => {
+    if (!back.current) return;
+    const summary = document.querySelector<HTMLElement>(`[data-drawer="${back.current}"] > summary`);
+    back.current = null;
+    if (summary) summary.focus(); else heading.current?.focus();
+  }, [notices]);
+
+  // A scan finishes in the extension's tab: coming back to this tab shows what it found, without a reload.
+  useEffect(() => {
+    const back = () => { if (document.visibilityState === "visible") router.refresh(); };
+    document.addEventListener("visibilitychange", back);
+    return () => document.removeEventListener("visibilitychange", back);
+  }, [router]);
+
+  async function seen(ids: string[], drawer: string | null = null) {
     if (busy) return;
     setBusy(true);
     setError(null);
@@ -35,8 +59,9 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
     setBusy(false);
     if (!res?.ok) return setError("Kaydedilemedi. Tekrar deneyin.");
     setSaid(ids.length > 1 ? `${ids.length} tebligat görüldü olarak işaretlendi.` : "Tebligat görüldü olarak işaretlendi.");
-    // The pressed button goes away with the refresh: focus goes to the heading, not to the top of the page.
-    heading.current?.focus();
+    // The pressed button goes away with the refresh: focus goes to its drawer (found again after the refresh), else the heading.
+    back.current = drawer;
+    if (!drawer) heading.current?.focus();
     router.refresh();
   }
 
@@ -66,13 +91,21 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
         <p className="visually-hidden" role="status">{said}</p>
         {scanCompleted ? <p className="alert alert-ok" role="status">Tarama tamamlandı.</p> : null}
         {error ? <p className="alert alert-error" role="alert">{error}</p> : null}
-        {truncated ? <p className="alert">Son {notices.length} tebligat gösteriliyor; daha eskileri Dijital Vergi Dairesi&apos;nde.</p> : null}
-        <ul className="firms-list">
-          {notices.map((n) => (
+        {truncated ? <p className="alert">{newCount > fresh.length ? `Liste ${notices.length} tebligatla sınırlı; ${newCount - fresh.length} yeni tebligat burada görünmüyor. Gösterilenleri Gördüm diye işaretledikçe sıradakiler gelir.` : `Liste ${notices.length} tebligatla sınırlı; daha eskileri Dijital Vergi Dairesi'nde.`}</p> : null}
+        {days.map((d) => (
+          <section key={d.key} className="notice-day" aria-labelledby={`gun-${d.key}`}>
+            <h3 id={`gun-${d.key}`} className="notice-day-title">{d.title}</h3>
+            {d.firms.map((g) => (
+              <details key={g.firmId} className="notice-firm" data-drawer={`${d.key}-${g.firmId}`} data-new={g.fresh ? true : undefined}>
+                <summary>
+                  <span className="notice-firm-name">{g.firmName}<span className="visually-hidden">, </span></span>
+                  <span className="notice-firm-count">{g.fresh ? `${g.fresh} yeni tebligat` : `${g.rows.length} tebligat`}</span>
+                </summary>
+                <ul className="firms-list">
+                  {g.rows.map((n) => (
             <li key={n.id} className="firms-row notice-row" data-new={n.isNew || undefined}>
               <span className="firms-name">
                 <span className="notice-type">{n.isNew ? <span className="notice-new">Yeni</span> : null}{n.docType ?? "Belge türü yok"}{n.docNo ? ` · No ${n.docNo}` : ""}</span>
-                {n.firmName}
                 <span className="firms-vkn">{[n.institution, n.subUnit].filter(Boolean).join(" · ")}</span>
               </span>
               <span className="firms-month notice-dates">
@@ -81,12 +114,16 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
                 <span data-state={n.readOnGib ? undefined : "bekleyen"}>{n.readOnGib ? "GİB'de okunmuş" : "GİB'de okunmamış"}</span>
               </span>
               {n.isNew ? (
-                <button type="button" className="btn btn-sm" aria-label={`${n.firmName}, ${n.docType ?? "tebligat"}: gördüm`} aria-disabled={busy || undefined} onClick={() => seen([n.id])}>Gördüm</button>
+                <button type="button" className="btn btn-sm" aria-label={`${n.firmName}, ${n.docType ?? "tebligat"}: gördüm`} aria-disabled={busy || undefined} onClick={() => seen([n.id], `${d.key}-${g.firmId}`)}>Gördüm</button>
               ) : null}
             </li>
-          ))}
-          {notices.length === 0 ? <li className="firms-row"><span className="firms-name">{read ? "Okunan firmalarda tebligat yok." : "Henüz okuma yok. Nasıl okunur bölümündeki adımlarla ilk firmayı okuyun."}</span></li> : null}
-        </ul>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </section>
+        ))}
+        {notices.length === 0 ? <p className="notice-empty">{read ? "Yeni tebligat yok; görülen tebligatlar bir hafta sonra listeden kalkar." : "Henüz okuma yok. Nasıl okunur bölümündeki adımlarla ilk firmayı okuyun."}</p> : null}
       </section>
 
       <aside className="notice-sidebar" aria-label="e-Tebligat ayarları ve açıklamaları">
@@ -96,6 +133,7 @@ export function NoticesView({ notices, firmReads, newCount, truncated, scanCompl
           <h2 id="tebligat-nasil">Nasıl okunur</h2>
           <p>Bütün firmalar için eklentide <strong>e-Tebligat taraması → Taramayı başlat</strong> seçeneğini kullanabilirsiniz. Tek firma için Dijital Vergi Dairesi&apos;ne firmanın hesabıyla girip eklentide <strong>Tebligatları getir</strong>&apos;e basın. Tek firma işlemi yalnızca listeyi okur.</p>
           <p>Tebligat, e-Tebligat adresine ulaştığı günü izleyen 5. günün sonunda tebliğ edilmiş sayılır; süreler o günden başlar. Her firmayı en az 5 günde bir okuyun.</p>
+          <p>Bugün bulunanlar en üstte. Gördüm dediğiniz tebligatlar bir hafta sonra bu listeden kalkar; hepsi Dijital Vergi Dairesi&apos;nde durur.</p>
           {firmReads.length ? (
             <>
               {read ? (

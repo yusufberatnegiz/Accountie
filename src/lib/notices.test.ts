@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysSince, gibDay, servedState } from "./notices";
+import { byFirm, daysSince, gibDay, servedState } from "./notices";
 
 describe("e-Tebligat tarihleri", () => {
   it("GİB tarihi gün olarak okunur, saat yok sayılır, bozuk tarih null", () => {
@@ -17,5 +17,18 @@ describe("e-Tebligat tarihleri", () => {
   });
   it("gün farkı", () => {
     expect(daysSince(new Date("2026-11-12T09:00:00Z"), new Date("2026-11-20T08:00:00Z"))).toBe(7);
+  });
+});
+
+describe("e-Tebligat firma çekmeceleri", () => {
+  const row = (id: string, firmId: string, firmName: string, isNew: boolean) => ({ id, firmId, firmName, isNew });
+
+  it("firmaya göre toplar, yeni sayısını sayar; yenisi çok olan firma önde, sonra ada göre; satır sırası korunur", () => {
+    const groups = byFirm([row("1", "b", "BETA", false), row("2", "a", "ALFA", true), row("3", "c", "ÇAĞ", true), row("4", "c", "ÇAĞ", true), row("5", "a", "ALFA", false)]);
+    expect(groups.map((g) => [g.firmName, g.fresh, g.rows.map((r) => r.id)])).toEqual([["ÇAĞ", 2, ["3", "4"]], ["ALFA", 1, ["2", "5"]], ["BETA", 0, ["1"]]]);
+  });
+
+  it("boş liste boş çekmece listesi", () => {
+    expect(byFirm([])).toEqual([]);
   });
 });

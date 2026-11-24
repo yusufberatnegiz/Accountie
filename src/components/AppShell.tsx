@@ -1,10 +1,12 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { cache, Suspense, type ReactNode } from "react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandMark } from "@/components/BrandMark";
 import { CaptureButton } from "@/components/CaptureButton";
 import { FirmShortcut } from "@/components/FirmShortcut";
 import { FoldButton } from "@/components/FoldButton";
+import { countNewNotices } from "@/db/queries";
+import { getSessionUser } from "@/lib/auth/session";
 import "./panel/panel.css";
 
 type Current = "fisler" | "fis" | "kurallar" | "firmalar" | "tebligatlar" | "kontor" | "kurulum" | "hesap";
@@ -23,17 +25,29 @@ const ICONS = {
 };
 const Icon = ({ name }: { name: keyof typeof ICONS }) => <svg className="rail-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">{ICONS[name]}</svg>;
 
+/** Notices not yet marked seen, beside e-Tebligat. Nothing when there are none or the count cannot be read: never breaks a page. */
+// Once per render: the rail and the phone's quick link both show it.
+const newNotices = cache(() => getSessionUser().then((u) => (u ? countNewNotices(u.id) : 0)).catch(() => 0));
+
+async function NoticeBadge() {
+  const n = await newNotices();
+  if (!n) return null;
+  return <><span className="rail-badge" aria-hidden="true">{n > 99 ? "99+" : n}</span><span className="visually-hidden">, {n} yeni tebligat</span></>;
+}
+
 /**
  * Panel shell: a 64px rail with its labels always under the icons on desktop, a bottom bar on the phone
  * (Fişler, Fiş çek, Kurallar, Firmalar, Hesap). Theme and Çıkış live in the Hesap sheet.
  * `base` lets the dev preview (/onizleme/panel) keep its links inside the preview.
  */
-/** `setup`: the first-run setup is not done yet (no firm from Luca), so its item shows until it is. */
-export function AppShell({ current, base = "/panel", email, firmId, setup = false, children }: { current: Current; base?: string; email?: string; firmId?: string | null; setup?: boolean; children: ReactNode }) {
+/** `setup`: the first-run setup is not done yet (no firm from Luca), so its item shows until it is. `count`: false on loading screens. */
+export function AppShell({ current, base = "/panel", email, firmId, setup = false, count = true, children }: { current: Current; base?: string; email?: string; firmId?: string | null; setup?: boolean; count?: boolean; children: ReactNode }) {
   const showSetup = setup || current === "kurulum";
-  const item = (href: string, label: string, icon: keyof typeof ICONS, active: boolean) => (
+  // The dev preview (another base) has no database: no count there.
+  const badge = count && base === "/panel" ? <Suspense fallback={null}><NoticeBadge /></Suspense> : null;
+  const item = (href: string, label: string, icon: keyof typeof ICONS, active: boolean, extra?: ReactNode) => (
     <Link className="rail-item" href={href} aria-current={active ? "page" : undefined}>
-      <Icon name={icon} /><span className="rail-label">{label}</span>
+      <Icon name={icon} /><span className="rail-label">{label}</span>{extra}
     </Link>
   );
   return (
@@ -48,12 +62,12 @@ export function AppShell({ current, base = "/panel", email, firmId, setup = fals
         <CaptureButton pickers={["camera"]} variant="rail" base={base} />
         {item(`${base}/kurallar`, "Kurallar", "table", current === "kurallar")}
         {item(`${base}/firmalar`, "Firmalar", "building", current === "firmalar")}
-        <span className="rail-desktop">{item(`${base}/tebligatlar`, "e-Tebligat", "envelope", current === "tebligatlar")}</span>
+        <span className="rail-desktop">{item(`${base}/tebligatlar`, "e-Tebligat", "envelope", current === "tebligatlar", badge)}</span>
         <span className="rail-desktop">{item(`${base}/kontor`, "Kontör", "coin", current === "kontor")}</span>
         <div className="rail-end"><FoldButton /><AccountMenu email={email} here={current === "kurulum"} setup={showSetup && current !== "kurulum"} /></div>
       </nav>
       <nav className="panel-quick-links" aria-label="Tebligat ve kontör">
-        <Link className="btn btn-sm" href={`${base}/tebligatlar`} aria-current={current === "tebligatlar" ? "page" : undefined}>e-Tebligat</Link>
+        <Link className="btn btn-sm" href={`${base}/tebligatlar`} aria-current={current === "tebligatlar" ? "page" : undefined}>e-Tebligat{badge}</Link>
         <Link className="btn btn-sm" href={`${base}/kontor`} aria-current={current === "kontor" ? "page" : undefined}>Kontör</Link>
       </nav>
       {children}

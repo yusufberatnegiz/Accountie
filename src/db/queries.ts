@@ -1,5 +1,5 @@
 // The only module that talks to the database (Supabase Postgres through its pooler). Every function takes the session user's id and filters by it.
-import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { CATEGORIES, DEFAULT_RULES, rulesFromRows, rulesToRows, type RuleRow, type Rules } from "@/lib/default-rules";
 import { mergeRules, planIndex, planMismatches, planMismatchWarning } from "@/lib/plan-suggest";
 import { isKkegLine } from "@/lib/vehicle";
@@ -681,7 +681,9 @@ export async function saveNotices(userId: string, idNumbers: readonly string[], 
     let fresh = 0;
     for (let i = 0; i < unique.length; i += 500) {
       const rows = await tx.insert(taxNotices)
-        .values(unique.slice(i, i + 500).map((n) => ({ ...n, userId, firmId: firm.id, seenAt: !scanned && n.readOnGib ? now : null })))
+        // A firm's first read: what GİB already shows as read is its history, seen before Accountie ever looked (the epoch keeps
+        // it out of the week a seen notice stays listed). Only seenAt being null is ever read as "new".
+        .values(unique.slice(i, i + 500).map((n) => ({ ...n, userId, firmId: firm.id, seenAt: !scanned && n.readOnGib ? new Date(0) : null })))
         .onConflictDoUpdate({ target: [taxNotices.firmId, taxNotices.gibId], set: { readOnGib: sql`excluded.read_on_gib` }, setWhere: eq(taxNotices.userId, userId) })
         // xmax = 0 only on a row this statement inserted.
         .returning({ inserted: sql<boolean>`(xmax = 0)`, seenAt: taxNotices.seenAt });
@@ -695,22 +697,34 @@ export async function saveNotices(userId: string, idNumbers: readonly string[], 
 
 export const NOTICE_LIST_LIMIT = 500;
 
-/** The user's notices, new ones first, and when each firm was last read (firms never read are left out). */
-export async function listNotices(userId: string) {
+// A notice the user has marked seen leaves the list this long after "Gördüm". The row stays: every scan reads GİB's
+// whole list, so a deleted row would come back as new.
+export const NOTICE_KEEP_DAYS = 7;
+
+/** The user's notices (every new one, seen ones for NOTICE_KEEP_DAYS after Gördüm), new first, and when each firm was last read. */
+export async function listNotices(userId: string, now = new Date()) {
   const db = getDb();
+  const kept = new Date(now.getTime() - NOTICE_KEEP_DAYS * 86_400_000);
   const [notices, scans, newRows] = await Promise.all([
     db.select({
       id: taxNotices.id, firmId: taxNotices.firmId, firmName: firms.name, institution: taxNotices.institution, subUnit: taxNotices.subUnit,
       docType: taxNotices.docType, docNo: taxNotices.docNo, sentAt: taxNotices.sentAt, servedAt: taxNotices.servedAt,
       readOnGib: taxNotices.readOnGib, firstSeenAt: taxNotices.firstSeenAt, isNew: sql<boolean>`(${taxNotices.seenAt} is null)`,
-    }).from(taxNotices).innerJoin(firms, eq(firms.id, taxNotices.firmId)).where(eq(taxNotices.userId, userId))
+    }).from(taxNotices).innerJoin(firms, eq(firms.id, taxNotices.firmId))
+      .where(and(eq(taxNotices.userId, userId), or(isNull(taxNotices.seenAt), gt(taxNotices.seenAt, kept))))
       .orderBy(sql`${taxNotices.seenAt} is null desc`, desc(taxNotices.firstSeenAt), asc(firms.name), desc(taxNotices.gibId)).limit(NOTICE_LIST_LIMIT),
     db.select({ firmId: noticeScans.firmId, firmName: firms.name, scannedAt: noticeScans.scannedAt }).from(noticeScans)
       .innerJoin(firms, eq(firms.id, noticeScans.firmId)).where(eq(noticeScans.userId, userId)).orderBy(asc(noticeScans.scannedAt)),
     // New ones beyond the list's limit are still counted.
-    db.select({ n: count() }).from(taxNotices).where(and(eq(taxNotices.userId, userId), isNull(taxNotices.seenAt))),
+    countNewNotices(userId),
   ]);
-  return { notices, scans, newCount: newRows[0]?.n ?? 0 };
+  return { notices, scans, newCount: newRows };
+}
+
+/** Notices not yet marked seen: the count beside e-Tebligat in the panel's menu. */
+export async function countNewNotices(userId: string): Promise<number> {
+  const [row] = await getDb().select({ n: count() }).from(taxNotices).where(and(eq(taxNotices.userId, userId), isNull(taxNotices.seenAt)));
+  return row?.n ?? 0;
 }
 
 /** Marks the given new notices as seen by the user: only ids the screen showed, never ones that arrived since. */

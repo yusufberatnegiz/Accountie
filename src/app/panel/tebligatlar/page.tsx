@@ -7,7 +7,7 @@ import { gibLoginStatus, listNotices, NOTICE_LIST_LIMIT } from "@/db/queries";
 import { secretKey } from "@/lib/gib/secret";
 import { getSessionUser } from "@/lib/auth/session";
 import { activeFirm } from "@/lib/firm";
-import { daysSince, servedState } from "@/lib/notices";
+import { daysSince, servedState, turkeyDay } from "@/lib/notices";
 
 export const metadata: Metadata = { title: "e-Tebligat" };
 export const dynamic = "force-dynamic";
@@ -39,6 +39,7 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
     </AppShell>
   );
   const { notices, scans, newCount } = listing;
+  const today = turkeyDay(now);
   const read = new Map(scans.map((s) => [s.firmId, s.scannedAt]));
   // Every firm, never read ones first, then the oldest reads: the risk is the firm nobody looked at.
   const firmReads = firms.map((f) => {
@@ -48,7 +49,7 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
   }).sort((a, b) => (b.days ?? Infinity) - (a.days ?? Infinity) || a.firmName.localeCompare(b.firmName, "tr"));
   return (
     <AppShell current="tebligatlar" email={user.email} firmId={firm.id} setup={setup}>
-      <NoticesView notices={notices.map((n) => ({ ...n, served: servedState(n.servedAt, now) }))} firmReads={firmReads} newCount={newCount} truncated={notices.length >= NOTICE_LIST_LIMIT} scanCompleted={tarama === "tamamlandi"}>
+      <NoticesView notices={notices.map(({ firstSeenAt, ...n }) => ({ ...n, served: servedState(n.servedAt, now), today: turkeyDay(firstSeenAt) === today }))} firmReads={firmReads} newCount={newCount} truncated={notices.length >= NOTICE_LIST_LIMIT} scanCompleted={tarama === "tamamlandi"}>
         <GibScanPanel account={user.email} state={gibState} />
       </NoticesView>
     </AppShell>

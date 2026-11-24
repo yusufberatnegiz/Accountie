@@ -1,7 +1,6 @@
 /* global chrome, AccountieGibLogin, AccountieGib */
 // Luca'dan firma çekilirken kaydedilen GİB girişleri, kullanıcının onayıyla Accountie'den firma firma açılır.
-// Dijital Vergi Dairesi'nde girişten sonra liste okunur ve Accountie'ye gönderilir;
-// daha önce indirilmemiş tebligatların zarfı açılıp belgeleri yalnız bu bilgisayara indirilir.
+// Dijital Vergi Dairesi'nde girişten sonra liste okunur ve Accountie'ye gönderilir. Zarf açılmaz, belge indirilmez.
 // Bir giriş yalnız o firmanın formu için bellekte durur: chrome.storage'a, durum metnine ve tebligat isteğine hiç girmez.
 const APP_ORIGIN = "https://accountie.app"; // popup.js ile aynı
 const NOTICES_URL = `${APP_ORIGIN}/panel/tebligatlar`;
@@ -16,8 +15,6 @@ const POLL_MS = 1500;
 // GİB hatalı kodda formu sildiğinde şifre en çok bu kadar yeniden yazılır: her deneme GİB'de başarısız giriş sayılabilir.
 const MAX_REFILLS = 2;
 const MAX_OCR_ATTEMPTS = 3;
-// Envelopes opened per firm per run: a firm with years of notices does not hold the GİB session (and the queue) for an hour.
-const MAX_DOCS = 25;
 
 const $ = (id) => document.getElementById(id);
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -279,46 +276,7 @@ async function scanFirm(tabId, f, token, head) {
   const saved = await accountie("/api/extension/notices", token, { method: "POST", body: JSON.stringify({ idNumbers: r.idNumbers, notices: r.notices }) });
   const fresh = saved.fresh ? `${saved.firm ?? f.name}: ${saved.fresh} yeni tebligat` : null;
   await remember({ id: f.lucaId, fresh });
-  const pdf = await downloadAll(tabId, saved.firm ?? f.name, r.envelopes ?? [], head);
-  return { line: `${saved.fresh ? `${saved.fresh} yeni tebligat` : "Yeni tebligat yok"}${pdf}`, ok: true, fresh: saved.fresh ?? 0 };
-}
-
-/** gibIds whose documents are already on this computer (a download is never repeated, the envelope never opened twice). */
-async function downloadedIds() {
-  const { tebligatFiles } = await chrome.storage.local.get("tebligatFiles");
-  return new Set(Array.isArray(tebligatFiles) ? tebligatFiles : []);
-}
-
-// A disk-safe folder name for a firm.
-const folder = (name) => String(name ?? "Firma").replace(/[\\/:*?"<>|\u0000-\u001f]+/g, " ").replace(/[. ]+$/, "").trim().slice(0, 80) || "Firma";
-
-/**
- * Opens each envelope not downloaded before and saves its documents to İndirilenler/Accountie e-Tebligat/<firma>/ on this
- * computer only (never to Accountie). At most MAX_DOCS a firm a run: the rest come on the next scan. The log line's tail.
- */
-async function downloadAll(tabId, firm, envelopes, head) {
-  const have = await downloadedIds();
-  const todo = envelopes.filter((e) => e.gibId && !have.has(e.gibId));
-  if (!todo.length) return "";
-  let saved = 0, failed = 0;
-  for (const [i, env] of todo.slice(0, MAX_DOCS).entries()) {
-    if (stopped) break;
-    status(`${head}: belge indiriliyor (${i + 1}/${Math.min(todo.length, MAX_DOCS)}).`);
-    const got = await tryGib(tabId, "gib-notices.js", (e) => globalThis.AccountieGib.downloadNotice(e).catch(() => ({ error: "shape", step: "betik" })), { error: "shape", step: "betik" }, [env]);
-    if (!got?.files?.length) { failed++; continue; }
-    for (const file of got.files) {
-      const bytes = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0));
-      const url = URL.createObjectURL(new Blob([bytes], { type: file.name.endsWith(".pdf") ? "application/pdf" : "application/octet-stream" }));
-      try {
-        await chrome.downloads.download({ url, filename: `Accountie e-Tebligat/${folder(firm)}/${folder(env.docNo ?? env.gibId)} - ${file.name}`, conflictAction: "uniquify", saveAs: false });
-      } finally { setTimeout(() => URL.revokeObjectURL(url), 60_000); }
-    }
-    have.add(env.gibId);
-    await chrome.storage.local.set({ tebligatFiles: [...have] });
-    saved++;
-  }
-  const left = todo.length - saved - failed;
-  return [`; ${saved} belge indirildi`, failed && `, ${failed} belge indirilemedi`, left > 0 && `, ${left} belge sonraki taramada`].filter(Boolean).join("") + ".";
+  return { line: saved.fresh ? `${saved.fresh} yeni tebligat` : "Yeni tebligat yok", ok: true, fresh: saved.fresh ?? 0 };
 }
 
 /** The day's result: three counts, the new notices and the firms not read, with why. All of today, not only this run. */

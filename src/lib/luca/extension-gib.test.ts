@@ -1,12 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import "../../../extension/gib-notices.js";
 
-type Result = { error?: string; step?: string; status?: number; keys?: string[]; idNumbers?: string[]; name?: string | null; notices?: { gibId: string; readOnGib: boolean; institution: string }[]; envelopes?: { gibId: string; tarafSecureId: string }[] };
+type Result = { error?: string; step?: string; status?: number; keys?: string[]; idNumbers?: string[]; name?: string | null; notices?: { gibId: string; readOnGib: boolean; institution: string }[] };
 const { AccountieGib: gib } = globalThis as unknown as { AccountieGib: {
   idNumbers(u: unknown): string[];
   readNotices(storage: { getItem(k: string): string | null }, fetcher: typeof fetch): Promise<Result>;
-  downloadNotice(env: unknown, storage: { getItem(k: string): string | null }, fetcher: typeof fetch): Promise<{ error?: string; step?: string; files?: { name: string; base64: string }[] }>;
-  unwrapSigned(b: Uint8Array): Uint8Array | null;
   problem(r: Result): string;
 } };
 
@@ -86,13 +84,6 @@ describe("eklenti: Dijital Vergi Dairesi e-Tebligat okuma", () => {
     expect(r.error).toBe("shape");
   });
 
-  it("zarf bilgileri okunur ama Accountie'ye giden tebligatta yer almaz", async () => {
-    const { fetcher } = fakeGib({ "0": [[row(1)]], "1": [] });
-    const r = await gib.readNotices(store("gib-token"), fetcher);
-    expect(r.envelopes).toEqual([{ gibId: "1", docNo: "B1", tarafId: 1, tarafSecureId: "ts1", tebligId: 101, tebligSecureId: "bs1" }]);
-    expect(JSON.stringify(r.notices)).not.toMatch(/ts1|bs1/);
-  });
-
   it("boş liste (dizi yok, sayı 0) hata değildir", async () => {
     const fetcher = vi.fn(async (url: string) => (url.endsWith("user-info") ? json({ vkn: "1234567890" }) : json({ data: { count: 0 }, pageDetail: { total: 0 } }))) as unknown as typeof fetch;
     expect((await gib.readNotices(store("gib-token"), fetcher)).notices).toEqual([]);
@@ -157,68 +148,5 @@ describe("eklenti: Dijital Vergi Dairesi e-Tebligat okuma", () => {
     expect(gib.idNumbers({ tckn: "12345678901", gecisYapildiMi: true })).toEqual([]);
     expect(gib.idNumbers({ vkn: "1234567890", tckn: "12345678901", gecisYapildiMi: "false" })).toEqual(["1234567890", "12345678901"]);
     expect(gib.idNumbers({ vkn: "12'; x", tckn: null })).toEqual([]);
-  });
-
-  describe("zarf açıp belge indirme", () => {
-    const pdf = new TextEncoder().encode("%PDF-1.7 test");
-    const env = { gibId: "1", docNo: "B1", tarafId: 1, tarafSecureId: "ts1", tebligId: 101, tebligSecureId: "bs1" };
-    /** DER: tag, length, content. */
-    const tlv = (tag: number, ...parts: Uint8Array[]) => {
-      const body = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
-      let o = 0;
-      for (const p of parts) { body.set(p, o); o += p.length; }
-      const len = body.length < 128 ? [body.length] : [0x82, body.length >> 8, body.length & 255];
-      return new Uint8Array([tag, ...len, ...body]);
-    };
-    const oid = (hex: string) => tlv(0x06, Uint8Array.from(hex.match(/../g)!.map((h) => parseInt(h, 16))));
-    const signed = (inner: Uint8Array) => tlv(0x30, oid("2a864886f70d010702"), tlv(0xa0, tlv(0x30, tlv(0x02, new Uint8Array([1])), tlv(0x31), tlv(0x30, oid("2a864886f70d010701"), tlv(0xa0, tlv(0x04, inner))))));
-
-    function fakeEnvelope(file: Uint8Array, link = "https://dijital.gib.gov.tr/apigateway/etebligat/report/download?id=x") {
-      const calls: { url: string; body: unknown }[] = [];
-      const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
-        calls.push({ url, body: init?.body ? JSON.parse(String(init.body)) : null });
-        if (url.endsWith("/zarf-detay-sorgula")) return json({ data: { tarafId: 1 } });
-        if (url.endsWith("/belge-ek-listele")) return json({ tebligBelge: { id: 7, secureId: "s7", belgeTip: "T", uzanti: "imz", adi: "İhbarname.imz" }, ekler: [] });
-        if (url.endsWith("/belge-getir")) return json({ reportLink: link });
-        return new Response(new Blob([file as Uint8Array<ArrayBuffer>]));
-      });
-      return { fetcher: fetcher as unknown as typeof fetch, calls };
-    }
-
-    it("portalın sırasıyla zarfı açar, belgeyi ister ve GİB'in verdiği bağlantıdan indirir", async () => {
-      const { fetcher, calls } = fakeEnvelope(pdf);
-      const r = await gib.downloadNotice(env, store("gib-token"), fetcher);
-      expect(calls.map((c) => c.url.replace("https://dijital.gib.gov.tr/apigateway", ""))).toEqual([
-        "/etebligat/etebligat/zarf-detay-sorgula", "/etebligat/etebligat/belge-ek-listele", "/etebligat/etebligat/belge-getir", "/etebligat/report/download?id=x",
-      ]);
-      expect(calls[0].body).toEqual({ tarafId: 1, tarafSecureId: "ts1" });
-      expect(calls[1].body).toEqual({ tebligId: 101, tebligSecureId: "bs1" });
-      expect(calls[2].body).toEqual({ data: { id: 7, secureId: "s7", belgeTip: "T", tarafId: 1, tarafSecureId: "ts1", uzanti: "imz", belgeAdi: "İhbarname.imz" } });
-      expect(r.files).toEqual([{ name: "İhbarname.pdf", base64: Buffer.from(pdf).toString("base64") }]);
-    });
-
-    it("imzalı paket (CMS) açılıp içindeki PDF kaydedilir", async () => {
-      expect(gib.unwrapSigned(signed(pdf))).toEqual(pdf);
-      const { fetcher } = fakeEnvelope(signed(pdf));
-      const r = await gib.downloadNotice(env, store("gib-token"), fetcher);
-      expect(Buffer.from(r.files![0].base64, "base64").toString()).toBe("%PDF-1.7 test");
-    });
-
-    it("açılamayan paket kendi uzantısıyla olduğu gibi kaydedilir", async () => {
-      const { fetcher } = fakeEnvelope(new Uint8Array([1, 2, 3]));
-      expect((await gib.downloadNotice(env, store("gib-token"), fetcher)).files?.[0].name).toBe("İhbarname.imz");
-    });
-
-    it("GİB dışına giden indirme bağlantısı izlenmez; oturum anahtarı dışarı çıkmaz", async () => {
-      const { fetcher, calls } = fakeEnvelope(pdf, "https://evil.example/x");
-      expect(await gib.downloadNotice(env, store("gib-token"), fetcher)).toEqual({ error: "shape", step: "belge-adresi" });
-      expect(calls.some((c) => c.url.includes("evil"))).toBe(false);
-    });
-
-    it("zarf kimliği eksikse GİB'e hiç gidilmez", async () => {
-      const { fetcher, calls } = fakeEnvelope(pdf);
-      expect(await gib.downloadNotice({ gibId: "1" }, store("gib-token"), fetcher)).toEqual({ error: "shape", step: "zarf-kimlik" });
-      expect(calls).toEqual([]);
-    });
   });
 });

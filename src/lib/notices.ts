@@ -17,3 +17,18 @@ export function servedState(servedAt: string | null, now: Date): "past" | "today
 
 /** Whole days between a read and now. */
 export const daysSince = (at: Date, now: Date) => Math.max(0, Math.floor((now.getTime() - at.getTime()) / 86_400_000));
+
+/** One firm's drawer on the e-Tebligat page: its notices in the order given and how many of them are new. */
+export type FirmNotices<T> = { firmId: string; firmName: string; rows: T[]; fresh: number };
+
+/** Notices by firm: firms with new notices first (most new first), then by name. */
+export function byFirm<T extends { firmId: string; firmName: string; isNew: boolean }>(rows: readonly T[]): FirmNotices<T>[] {
+  const groups = new Map<string, FirmNotices<T>>();
+  for (const r of rows) {
+    const g = groups.get(r.firmId) ?? { firmId: r.firmId, firmName: r.firmName, rows: [], fresh: 0 };
+    g.rows.push(r);
+    if (r.isNew) g.fresh++;
+    groups.set(r.firmId, g);
+  }
+  return [...groups.values()].sort((a, b) => b.fresh - a.fresh || a.firmName.localeCompare(b.firmName, "tr"));
+}

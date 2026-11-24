@@ -158,12 +158,10 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
   /** The scan page in a sandbox with a fake Chrome and one saved firm. */
   function setup(login: string | Promise<string> | (() => string), ids = ["1234567890"], saved: null | {
     scanUntil: string | null; grantUntil?: string; grantError?: { status: number; error: string }; read?: number; firms?: { lucaId: string; name: string; taxNumber: string }[];
-  } = { scanUntil: "2099-01-01T00:00:00.000Z" }, envelopes: unknown[] = [], launch?: { until: string; allowed: boolean }, autoCaptcha = true) {
+  } = { scanUntil: "2099-01-01T00:00:00.000Z" }, launch?: { until: string; allowed: boolean }, autoCaptcha = true) {
     const els = new Map<string, Node>();
     const get = (id: string) => { if (!els.has(id)) els.set(id, new Node()); return els.get(id)!; };
     const stored: { tebligatScan: unknown }[] = [];
-    const downloads: string[] = [];
-    let files: string[] = ["eski"];
     const fillArgs: unknown[][] = [];
     const fetch = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.endsWith("/api/extension/gib-logins")) return { ok: true, status: 200, json: async () => (saved ? { enabled: true, firms: saved.firms ?? [{ lucaId: "7", name: "ÖRNEK", taxNumber: "1234567890" }], scanUntil: saved.scanUntil } : { enabled: true, firms: [], scanUntil: null }) };
@@ -187,8 +185,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
       if (src.includes("fillLogin")) { fillArgs.push(o.args ?? []); return [{ result: true }]; }
       if (src.includes("loginReady")) return [{ result: true }];
       if (src.includes("loginState")) return [{ result: typeof login === "function" ? login() : await login }];
-      if (src.includes("readNotices")) return [{ result: { idNumbers: ids, name: "ÖRNEK LTD", notices: [], envelopes } }];
-      if (src.includes("downloadNotice")) return [{ result: { files: [{ name: "İhbarname.pdf", base64: Buffer.from("%PDF-1.7").toString("base64") }] } }];
+      if (src.includes("readNotices")) return [{ result: { idNumbers: ids, name: "ÖRNEK LTD", notices: [] } }];
       return [{}];
     });
     const chrome = {
@@ -201,22 +198,21 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
       scripting: { executeScript },
       permissions: { request: vi.fn(async () => true), contains: async () => launch?.allowed ?? false },
       storage: { local: {
-        get: async (k: string) => (k === "token" ? { token: "acx_test" } : k === "gibAutoCaptcha" ? { gibAutoCaptcha: autoCaptcha } : k === "tebligatFiles" ? { tebligatFiles: files } : { tebligatScan: stored.filter((v) => v.tebligatScan).at(-1)?.tebligatScan }),
-        set: async (v: { tebligatScan?: unknown; tebligatFiles?: string[] }) => { if (v.tebligatFiles) files = v.tebligatFiles; else stored.push(v as { tebligatScan: unknown }); },
+        get: async (k: string) => (k === "token" ? { token: "acx_test" } : k === "gibAutoCaptcha" ? { gibAutoCaptcha: autoCaptcha } : { tebligatScan: stored.filter((v) => v.tebligatScan).at(-1)?.tebligatScan }),
+        set: async (v: { tebligatScan: unknown }) => void stored.push(v),
       } },
-      downloads: { download: vi.fn(async (o: { filename: string }) => void downloads.push(o.filename)) },
     };
     const sources = ["gib-login.js", "gib-notices.js", "tebligat.js"].map((f) => readFileSync(`extension/${f}`, "utf8")).join("\n");
     runInNewContext(sources, {
-      URL, Blob, atob, Uint8Array, fetch, chrome, Event, setTimeout, console, Date,
+      URL, fetch, chrome, Event, setTimeout, console, Date,
       window: { addEventListener() {}, location: launch ? { hash: `#${encodeURIComponent(launch.until)}`, pathname: "/tebligat.html" } : undefined, history: { replaceState() {} } },
       document: { getElementById: get, createElement: () => new Node(), title: "" },
     });
-    return { get, fetch, stored, fillArgs, downloads, executeScript, permissions: chrome.permissions, tabs: chrome.tabs, files: () => files };
+    return { get, fetch, stored, fillArgs, executeScript, permissions: chrome.permissions, tabs: chrome.tabs };
   }
 
   it("siteden başlatılan tarama, verilmiş Chrome izniyle ikinci tıklama olmadan çalışır", async () => {
-    const t = setup("in", undefined, undefined, [], { until: "2099-01-01T00:00:00.000Z", allowed: true });
+    const t = setup("in", undefined, undefined, { until: "2099-01-01T00:00:00.000Z", allowed: true });
     await vi.waitFor(() => expect(textOf(t.get("status"))).toContain("Tarama tamamlandı"), { timeout: 2500 });
     expect(t.permissions.request).not.toHaveBeenCalled();
     expect(t.fillArgs).toHaveLength(1);
@@ -235,7 +231,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
   });
 
   it("ilk taramada Chrome izni için tıklamayı bekler", async () => {
-    const t = setup("in", undefined, undefined, [], { until: "2099-01-01T00:00:00.000Z", allowed: false });
+    const t = setup("in", undefined, undefined, { until: "2099-01-01T00:00:00.000Z", allowed: false });
     await vi.waitFor(() => expect(t.get("start").textContent).toBe("GİB erişimine izin ver ve başlat"));
     expect(t.fetch).not.toHaveBeenCalled();
     expect(t.permissions.request).not.toHaveBeenCalled();
@@ -264,7 +260,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
   });
 
   it("siteden gelen tarama isteği güncel erişimle eşleşmezse giriş bilgilerine ulaşmaz", async () => {
-    const t = setup("in", undefined, undefined, [], { until: "2099-02-01T00:00:00.000Z", allowed: true });
+    const t = setup("in", undefined, undefined, { until: "2099-02-01T00:00:00.000Z", allowed: true });
     await vi.waitFor(() => expect(textOf(t.get("status"))).toContain("Tarama erişimi değişti"));
     expect(t.fetch.mock.calls.map(([url]) => url)).toEqual(["https://accountie.app/api/extension/gib-logins"]);
     expect(t.fillArgs).toHaveLength(0);
@@ -272,7 +268,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
 
   it("site onayı değiştiğinde kullanıcı güncel onayla taramayı yeniden başlatabilir", async () => {
     const current = "2099-01-01T00:00:00.000Z";
-    const t = setup("in", undefined, { scanUntil: current }, [], { until: "2099-02-01T00:00:00.000Z", allowed: false }, false);
+    const t = setup("in", undefined, { scanUntil: current }, { until: "2099-02-01T00:00:00.000Z", allowed: false }, false);
     await vi.waitFor(() => expect(t.get("start").textContent).toBe("GİB erişimine izin ver ve başlat"));
     await t.get("start").click?.();
     expect(textOf(t.get("status"))).toContain("Tarama erişimi değişti");
@@ -299,7 +295,7 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
   it("elle doğrulama beklenirken GİB sekmesi yalnızca düğmeye basılırsa öne gelir", async () => {
     let finishLogin!: (state: string) => void;
     const login = new Promise<string>((resolve) => { finishLogin = resolve; });
-    const t = setup(login, undefined, undefined, [], undefined, false);
+    const t = setup(login, undefined, undefined, undefined, false);
     const scan = t.get("start").click?.();
     try {
       await vi.waitFor(() => expect(t.get("open-gib").hidden).toBe(false));
@@ -418,12 +414,11 @@ describe("eklenti: e-Tebligat tarama sayfası", () => {
     expect(textOf(t.get("status"))).toContain("Firmaları Luca'dan çekin");
   });
 
-  it("liste kaydedildikten sonra daha önce indirilmemiş belgeler firma klasörüne iner, indirilmiş olanın zarfı yeniden açılmaz", async () => {
-    const env = (id: string) => ({ gibId: id, docNo: `B${id}`, tarafId: 1, tarafSecureId: "t", tebligId: 2, tebligSecureId: "b" });
-    const t = setup("in", ["1234567890"], undefined, [env("eski"), env("9")]);
+  it("liste kaydedilir; zarf açılmaz, belge indirilmez", async () => {
+    const t = setup("in");
     await t.get("start").click?.();
-    expect(t.downloads).toEqual(["Accountie e-Tebligat/ÖRNEK LTD/B9 - İhbarname.pdf"]);
-    expect(t.files()).toEqual(["eski", "9"]);
-    expect(textOf(t.get("log"))).toContain("1 belge indirildi");
+    expect(t.executeScript.mock.calls.some(([o]) => /downloadNotice|zarf/.test(String((o as { func?: unknown }).func)))).toBe(false);
+    expect(textOf(t.get("log"))).toContain("2 yeni tebligat");
+    expect(textOf(t.get("log"))).not.toContain("belge");
   });
 });
