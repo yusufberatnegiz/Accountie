@@ -1,7 +1,7 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { accountEmail, deleteGibLoginsFor, firmsByLucaId, gibScanUntil, listGibLoginFirms, saveGibLogins } from "@/db/queries";
+import { accountEmail, deleteGibLoginsFor, firmsByLucaId, gibScanGrant, listGibLoginFirms, saveGibLogins } from "@/db/queries";
 import { extensionUserId } from "@/lib/auth/extension-token";
 import { seal, secretContext, secretKey } from "@/lib/gib/secret";
 import { fail, NO_STORE, readJson } from "@/lib/http";
@@ -17,16 +17,21 @@ const GibLoginRow = z.object({
 });
 const Batch = z.object({ logins: z.array(z.unknown()).min(1).max(250) });
 
-/** Firms with a stored login (never the login), until when the user allowed the scan, and the account's e-mail. */
+/**
+ * Firms with a stored login (never the login), until when the user allowed the scan, and the account's e-mail. While an approval
+ * for chosen firms runs, only those: the scan visits what the user picked on the site.
+ */
 export async function GET(request: Request) {
   const userId = await extensionUserId(request);
   if (!userId) return fail("Eklenti anahtarı geçersiz veya süresi dolmuş.", 401);
-  const [firms, until, email] = await Promise.all([listGibLoginFirms(userId), gibScanUntil(userId), accountEmail(userId)]);
+  const [firms, grant, email] = await Promise.all([listGibLoginFirms(userId), gibScanGrant(userId), accountEmail(userId)]);
+  const live = grant && grant.until.getTime() > Date.now() ? grant : null;
+  const chosen = live?.firms ? new Set(live.firms) : null;
   return NextResponse.json({
     // Whose account this key is: the import shows it before any login is sent.
     account: email,
-    firms: firms.map(({ lucaId, name, taxNumber }) => ({ lucaId, name, taxNumber })),
-    scanUntil: until && until.getTime() > Date.now() ? until.toISOString() : null,
+    firms: firms.filter((f) => !chosen || chosen.has(f.lucaId)).map(({ lucaId, name, taxNumber }) => ({ lucaId, name, taxNumber })),
+    scanUntil: live ? live.until.toISOString() : null,
     enabled: !!secretKey(),
   }, { headers: NO_STORE });
 }

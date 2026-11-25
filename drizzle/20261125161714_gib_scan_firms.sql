@@ -1,0 +1,1 @@
+ALTER TABLE "gib_scan_grants" ADD COLUMN "firms" text[];

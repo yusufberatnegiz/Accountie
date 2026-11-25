@@ -1,15 +1,18 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { endGibScan, liveTokenHashes, setGibScanGrant } from "@/db/queries";
 import { bearerHash, keyedHash } from "@/lib/auth/extension-token";
 import { getUserId } from "@/lib/auth/session";
-import { fail, NO_STORE, unauthorized } from "@/lib/http";
+import { fail, NO_STORE, readJson, unauthorized } from "@/lib/http";
 import { allow, clientIp, ipBucket } from "@/lib/rate-limit";
 import { grantText, mac, secretKey } from "./secret";
 
 const SCAN_GRANT_MS = 4 * 60 * 60_000;
+// The site's "Seçilenleri tara": the firms to scan. No body (or no list): every firm.
+const Chosen = z.object({ lucaIds: z.array(z.string().regex(/^\d{1,12}$/)).min(1).max(2000) });
 
-/** Open access for the signed-in account's sole paired key on this network. */
+/** Open access for the signed-in account's sole paired key on this network; from the site, optionally for chosen firms only. */
 export async function grantGibScan(request: Request, source: "web" | "extension") {
   const userId = await getUserId();
   if (!userId) return unauthorized();
@@ -24,11 +27,15 @@ export async function grantGibScan(request: Request, source: "web" | "extension"
     return fail("Eklenti bu Accountie hesabına bağlı değil. Kurulum sayfasından yeniden bağlayın.", 403);
   }
 
+  const body = source === "web" && request.headers.get("content-type")?.includes("application/json") ? Chosen.safeParse(await readJson(request)) : null;
+  if (body && !body.success) return fail("Seçilen firmalar okunamadı.", 400);
+  const firms = body ? [...new Set(body.data.lucaIds)] : null;
+
   const grantedAt = new Date();
   const until = new Date(grantedAt.getTime() + SCAN_GRANT_MS);
   const network = mac(key, "network", ipBucket(clientIp(request.headers)));
   const grant = { until, grantedAt, network, tokenHash };
-  await setGibScanGrant(userId, { ...grant, mac: mac(key, "grant", grantText({ userId, ...grant })) });
+  await setGibScanGrant(userId, { ...grant, mac: mac(key, "grant", grantText({ userId, ...grant })), firms });
   return NextResponse.json({ until: until.toISOString() }, { headers: NO_STORE });
 }
 

@@ -120,6 +120,13 @@
       "when": 1795541354149,
       "tag": "20261124172914_notices_new_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795623434299,
+      "tag": "20261125161714_gib_scan_firms",
+      "breakpoints": true
     }
   ]
 }

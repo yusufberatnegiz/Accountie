@@ -274,6 +274,9 @@ export const gibScanGrants = pgTable("gib_scan_grants", {
   // The one extension key the user had when approving: a key added to the database later opens nothing with this approval.
   tokenHash: text("token_hash").notNull(),
   mac: text("mac").notNull(),
+  // The firms (Luca ids) the user chose to scan; null: every firm with a stored login. Outside the MAC on purpose: it can only
+  // narrow the approval, and a null written into the database opens no more than the approval already does.
+  firms: text("firms").array(),
 }, () => [ownerPolicy("gib_scan_grants_owner")]);
 
 // Every unsealing of a GİB login: which firm, when, from which network (hashed). Shown to the user; never holds the login.

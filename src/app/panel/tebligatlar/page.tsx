@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { GibScanPanel, type GibScanState } from "@/components/GibScanPanel";
 import { NoticesView } from "@/components/NoticesView";
-import { gibLoginStatus, listNotices, NOTICE_LIST_LIMIT } from "@/db/queries";
+import { gibLoginStatus, listGibLoginFirms, listNotices, NOTICE_LIST_LIMIT } from "@/db/queries";
 import { secretKey } from "@/lib/gib/secret";
 import { getSessionUser } from "@/lib/auth/session";
 import { activeFirm } from "@/lib/firm";
@@ -20,14 +20,15 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
   const user = await getSessionUser();
   if (!user) redirect("/giris");
   const { tarama } = await searchParams;
-  const [{ firms, firm }, gib, listing] = await Promise.all([
-    activeFirm(user.id), gibLoginStatus(user.id), tarama === "erisim" ? null : listNotices(user.id),
+  const [{ firms, firm }, gib, gibFirms, listing] = await Promise.all([
+    activeFirm(user.id), gibLoginStatus(user.id), listGibLoginFirms(user.id), tarama === "erisim" ? null : listNotices(user.id),
   ]);
   const now = new Date();
   const gibState: GibScanState = {
     enabled: !!secretKey(), stored: gib.stored,
     until: gib.until && gib.until > now ? when.format(gib.until) : null, day: gib.day,
     reads: gib.reads.map((r) => ({ firmName: r.firmName, readAt: when.format(r.readAt) })),
+    firms: gibFirms.map(({ lucaId, name, taxNumber }) => ({ lucaId, name, taxNumber })),
   };
   const setup = !firms.some((f) => f.fromLuca);
   if (!listing) return (

@@ -1021,6 +1021,11 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 .notice-dates [data-state="bekleyen"] { color: var(--warn-ink); font-weight: var(--w-medium); }
 .notice-scans { max-height: 40vh; }
 .notice-never > summary { cursor: pointer; padding: var(--s2) 0; color: var(--warn-ink); font-weight: var(--w-medium); }
+/* "Firma seçerek tara": search, select, the list of firms with a stored login, the scan button. */
+.scan-pick[open] { display: grid; gap: var(--s3); }
+.scan-pick-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.scan-pick-row { display: flex; align-items: center; gap: var(--s3); width: 100%; min-height: var(--touch); cursor: pointer; }
+.scan-pick-row > .firms-name { flex: 1 1 auto; }
 @media (max-width: 640px) { .notice-dates { text-align: left; } }
 /* Bugün / Daha önce, then one closed drawer per firm: its name and how many are new, the notices inside. */
 .notice-day + .notice-day { margin-top: var(--s4); }

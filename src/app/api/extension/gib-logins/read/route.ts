@@ -34,6 +34,8 @@ export async function POST(request: Request) {
   if (!(await allow("gibRead", userId)) || !(await allow("gibReadIp", clientIp(request.headers)))) return fail("Çok hızlı istendi; güvenlik için durduruldu. Birkaç dakika sonra sürdürün.", 429);
   const body = Body.safeParse(await readJson(request));
   if (!body.success) return fail("Firma okunamadı.", 400);
+  // An approval for chosen firms opens only those.
+  if (grant.firms && !grant.firms.includes(body.data.lucaId)) return fail("Bu firma bu taramada seçilmedi.", 403);
   const row = await takeGibLogin(userId, body.data.lucaId, network, grant.grantedAt, READS_PER_FIRM);
   if (row === "spent") return fail("Bu firmanın girişi bu taramada açma sınırına ulaştı. Accountie'den taramayı yeniden başlatın.", 409);
   if (!row) return fail("Bu firmanın kayıtlı GİB girişi yok. Firmaları Luca'dan yeniden çekin.", 404);

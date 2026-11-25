@@ -782,15 +782,10 @@ export async function takeGibLogin(userId: string, lucaId: string, network: stri
 }
 
 /** The user's scan approval as stored (its MAC and network are checked by the caller with the server's key), or null. */
-export async function gibScanGrant(userId: string): Promise<{ until: Date; grantedAt: Date; network: string; tokenHash: string; mac: string } | null> {
-  const [row] = await getDb().select({ until: gibScanGrants.until, grantedAt: gibScanGrants.grantedAt, network: gibScanGrants.network, tokenHash: gibScanGrants.tokenHash, mac: gibScanGrants.mac })
+export async function gibScanGrant(userId: string): Promise<{ until: Date; grantedAt: Date; network: string; tokenHash: string; mac: string; firms: string[] | null } | null> {
+  const [row] = await getDb().select({ until: gibScanGrants.until, grantedAt: gibScanGrants.grantedAt, network: gibScanGrants.network, tokenHash: gibScanGrants.tokenHash, mac: gibScanGrants.mac, firms: gibScanGrants.firms })
     .from(gibScanGrants).where(eq(gibScanGrants.userId, userId));
   return row ?? null;
-}
-
-/** Until when the user allowed the scan, or null; for showing only (the read route checks the whole grant). */
-export async function gibScanUntil(userId: string): Promise<Date | null> {
-  return (await gibScanGrant(userId))?.until ?? null;
 }
 
 /** The user's live extension keys (hashes): the approval binds to the one there should be. */
@@ -800,7 +795,7 @@ export async function liveTokenHashes(userId: string): Promise<string[]> {
   return rows.map((r) => r.tokenHash);
 }
 
-export async function setGibScanGrant(userId: string, grant: { until: Date; grantedAt: Date; network: string; tokenHash: string; mac: string }): Promise<void> {
+export async function setGibScanGrant(userId: string, grant: { until: Date; grantedAt: Date; network: string; tokenHash: string; mac: string; firms: string[] | null }): Promise<void> {
   await getDb().insert(gibScanGrants).values({ userId, ...grant })
     .onConflictDoUpdate({ target: gibScanGrants.userId, set: grant, setWhere: eq(gibScanGrants.userId, userId) });
 }

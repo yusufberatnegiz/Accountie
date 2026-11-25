@@ -1,10 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { launchGibScan } from "@/lib/extension-bridge";
 
-export type GibScanState = { enabled: boolean; stored: number; until: string | null; day: { reads: number; networks: number }; reads: { firmName: string; readAt: string }[] };
+export type GibScanState = {
+  enabled: boolean; stored: number; until: string | null; day: { reads: number; networks: number }; reads: { firmName: string; readAt: string }[];
+  /** Firms with a stored login, for "Firma seçerek tara". */
+  firms: { lucaId: string; name: string; taxNumber: string }[];
+};
+
+const tr = (s: string) => s.toLocaleLowerCase("tr");
 
 /**
  * The e-Tebligat scan's GİB logins: how many are stored (sealed), the user's approval that lets the extension unseal them for a few
@@ -15,14 +21,21 @@ export function GibScanPanel({ state, account, approvalOnly = false }: { state: 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [said, setSaid] = useState("");
+  const [query, setQuery] = useState("");
+  const [chosen, setChosen] = useState<Set<string>>(() => new Set());
+  const shown = useMemo(() => {
+    const q = tr(query.trim());
+    return q ? state.firms.filter((f) => tr(f.name).includes(q) || f.taxNumber.includes(q)) : state.firms;
+  }, [query, state.firms]);
+  const toggle = (id: string) => setChosen((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
-  async function act(url: string, method: "POST" | "DELETE", done: string | ((res: Response) => Promise<string>)) {
+  async function act(url: string, method: "POST" | "DELETE", done: string | ((res: Response) => Promise<string>), body?: unknown) {
     if (busy) return;
     setBusy(true);
     setError(null);
     setSaid("");
     try {
-      const res = await fetch(url, { method }).catch(() => null);
+      const res = await fetch(url, body === undefined ? { method } : { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
       if (!res?.ok) return setError(((await res?.json().catch(() => null)) as { error?: string } | null)?.error ?? "Yapılamadı. Tekrar deneyin.");
       setSaid(typeof done === "string" ? done : await done(res));
     } catch (e) {
@@ -33,16 +46,18 @@ export function GibScanPanel({ state, account, approvalOnly = false }: { state: 
     }
   }
 
-  const start = () => act("/api/gib-scan", "POST", async (res) => {
+  // lucaIds: only these firms (the approval opens only their logins and the extension is given only them); none: every firm.
+  const start = (lucaIds?: string[]) => act("/api/gib-scan", "POST", async (res) => {
     const body = await res.json().catch(() => null) as { until?: string } | null;
     if (typeof body?.until === "string") {
       const result = await launchGibScan(account, body.until);
-      if (result === "started") return "e-Tebligat tarama sekmesi açıldı.";
-      if (result === "manual") return "Tarama erişimi açıldı. Eklentiden e-Tebligat taramasını başlatabilirsiniz.";
+      const which = lucaIds ? `${lucaIds.length} firma için ` : "";
+      if (result === "started") return `${which}e-Tebligat tarama sekmesi açıldı.`;
+      if (result === "manual") return `${which}Tarama erişimi açıldı. Eklentiden e-Tebligat taramasını başlatabilirsiniz.`;
       await fetch(`/api/gib-scan?until=${encodeURIComponent(body.until)}`, { method: "DELETE" }).catch(() => null);
     }
     throw new Error("Tarama sekmesi açılamadı. Güncel Accountie eklentisinin etkin ve bu hesaba bağlı olduğunu kontrol edin.");
-  });
+  }, lucaIds ? { lucaIds } : undefined);
 
   if (!state.enabled && !approvalOnly) return null;
   return (
@@ -59,9 +74,40 @@ export function GibScanPanel({ state, account, approvalOnly = false }: { state: 
               ? <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => act("/api/gib-scan", "DELETE", "Tarama erişimi kapatıldı.")}>Tarama erişimini kapat</button>
               : approvalOnly
                 ? <button type="button" className="btn btn-primary" aria-disabled={busy || undefined} onClick={() => act("/api/gib-scan", "POST", "Tarama erişimi açıldı. Eklenti sekmesine dönün.")}>Tarama erişimini onayla</button>
-                : <button type="button" className="btn btn-primary" aria-disabled={busy || undefined} onClick={start}>Taramayı başlat</button>}
+                : <button type="button" className="btn btn-primary" aria-disabled={busy || undefined} onClick={() => start()}>Tüm firmaları tara</button>}
             <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => confirm(`${state.stored} firmanın kayıtlı GİB girişi silinsin mi? Yeniden taramak için firmaları Luca'dan yeniden çekmeniz gerekir.`) && act("/api/gib-logins", "DELETE", "Kayıtlı GİB girişleri silindi.")}>Kayıtlı girişleri sil</button>
           </div>
+          {!approvalOnly && !state.until && state.firms.length > 1 ? (
+            <details className="notice-never scan-pick">
+              <summary>Firma seçerek tara{chosen.size ? ` (${chosen.size} seçili)` : ""}</summary>
+              <label className="firms-search">
+                <span className="visually-hidden">Taranacak firmayı ara</span>
+                <input className="field" type="search" placeholder="Firma adı ya da VKN ile ara" value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
+              </label>
+              <div className="scan-pick-actions">
+                <button type="button" className="btn btn-sm" disabled={!shown.length} onClick={() => setChosen((c) => new Set([...c, ...shown.map((f) => f.lucaId)]))}>
+                  {query.trim() ? `Bulunanları seç (${shown.length})` : "Hepsini seç"}
+                </button>
+                <button type="button" className="btn btn-sm" disabled={!chosen.size} onClick={() => setChosen(new Set())}>Seçimi temizle</button>
+              </div>
+              <p className="visually-hidden" role="status">{query.trim() ? `${shown.length} firma bulundu.` : ""}</p>
+              <ul className="firms-list notice-scans" aria-label="Taranacak firmalar">
+                {shown.map((f) => (
+                  <li key={f.lucaId} className="firms-row">
+                    <label className="scan-pick-row">
+                      <input type="checkbox" className="row-check" checked={chosen.has(f.lucaId)} onChange={() => toggle(f.lucaId)} />
+                      <span className="firms-name">{f.name}<span className="firms-vkn">VKN {f.taxNumber}</span></span>
+                    </label>
+                  </li>
+                ))}
+                {shown.length ? null : <li className="firms-row"><span className="firms-name">Bu aramayla firma yok.</span></li>}
+              </ul>
+              <button type="button" className="btn btn-primary" aria-disabled={busy || !chosen.size || undefined}
+                onClick={() => !busy && chosen.size && start(state.firms.filter((f) => chosen.has(f.lucaId)).map((f) => f.lucaId))}>
+                {chosen.size ? `Seçilen ${chosen.size} firmayı tara` : "Taramak için firma seçin"}
+              </button>
+            </details>
+          ) : null}
           {state.reads.length ? (
             <details className="notice-never">
               <summary>Son açılan girişler ({state.reads.length})</summary>
