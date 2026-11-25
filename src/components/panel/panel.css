@@ -1022,10 +1022,32 @@ p.side-links.list-links { padding: var(--s3) var(--s4) var(--s4); }
 .notice-scans { max-height: 40vh; }
 .notice-never > summary { cursor: pointer; padding: var(--s2) 0; color: var(--warn-ink); font-weight: var(--w-medium); }
 /* "Firma seçerek tara": search, select, the list of firms with a stored login, the scan button. */
-.scan-pick[open] { display: grid; gap: var(--s3); }
-.scan-pick-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
-.scan-pick-row { display: flex; align-items: center; gap: var(--s3); width: 100%; min-height: var(--touch); cursor: pointer; }
+/* "Firma seçerek tara": a dialog over the whole page (not the browser's full screen). Head and tools on top, the firms in as many
+   columns as fit, scrolling on their own; the count and the scan button stay at the foot. */
+.scan-picker[open] {
+  position: fixed; inset: var(--s4); width: auto; height: auto; max-width: none; max-height: none; margin: 0; padding: 0;
+  display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
+  border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-float); overscroll-behavior: contain;
+}
+.scan-picker::backdrop { background: rgb(0 0 0 / 0.32); }
+.scan-picker-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s4) var(--s5); border-bottom: 1px solid var(--rule); }
+.scan-picker-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); padding: var(--s3) var(--s5); border-bottom: 1px solid var(--rule); }
+.scan-picker-tools > .firms-search { flex: 1 1 18rem; margin: 0; }
+.scan-picker-list { list-style: none; margin: 0; padding: var(--s3) var(--s5); overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: var(--s1) var(--s4); align-content: start; }
+.scan-pick-row { display: flex; align-items: center; gap: var(--s3); width: 100%; min-height: var(--touch); padding: var(--s1) var(--s2); border-radius: var(--radius-control); cursor: pointer; }
 .scan-pick-row > .firms-name { flex: 1 1 auto; }
+.scan-pick-row[data-on] { background: var(--accent-soft); }
+@media (hover: hover) and (pointer: fine) { .scan-pick-row:not([data-on]):hover { background: var(--active); } }
+.scan-picker-empty { padding: var(--s2); color: var(--muted); }
+.scan-picker-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s3) var(--s5); border-top: 1px solid var(--rule); }
+@media (max-width: 640px) {
+  .scan-picker[open] { inset: 0; border-radius: 0; border: 0; }
+  .scan-picker-head, .scan-picker-tools, .scan-picker-list, .scan-picker-foot { padding-inline: var(--s4); }
+  .scan-picker-foot > .btn { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .scan-picker[open] { animation: sheet-in 200ms var(--ease-out); }
+}
 @media (max-width: 640px) { .notice-dates { text-align: left; } }
 /* Bugün / Daha önce, then one closed drawer per firm: its name and how many are new, the notices inside. */
 .notice-day + .notice-day { margin-top: var(--s4); }

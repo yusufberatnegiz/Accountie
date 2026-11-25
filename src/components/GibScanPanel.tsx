@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { launchGibScan } from "@/lib/extension-bridge";
 
 export type GibScanState = {
@@ -27,6 +27,7 @@ export function GibScanPanel({ state, account, approvalOnly = false }: { state: 
     const q = tr(query.trim());
     return q ? state.firms.filter((f) => tr(f.name).includes(q) || f.taxNumber.includes(q)) : state.firms;
   }, [query, state.firms]);
+  const picker = useRef<HTMLDialogElement>(null);
   const toggle = (id: string) => setChosen((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   async function act(url: string, method: "POST" | "DELETE", done: string | ((res: Response) => Promise<string>), body?: unknown) {
@@ -78,35 +79,47 @@ export function GibScanPanel({ state, account, approvalOnly = false }: { state: 
             <button type="button" className="btn" aria-disabled={busy || undefined} onClick={() => confirm(`${state.stored} firmanın kayıtlı GİB girişi silinsin mi? Yeniden taramak için firmaları Luca'dan yeniden çekmeniz gerekir.`) && act("/api/gib-logins", "DELETE", "Kayıtlı GİB girişleri silindi.")}>Kayıtlı girişleri sil</button>
           </div>
           {!approvalOnly && !state.until && state.firms.length > 1 ? (
-            <details className="notice-never scan-pick">
-              <summary>Firma seçerek tara{chosen.size ? ` (${chosen.size} seçili)` : ""}</summary>
-              <label className="firms-search">
-                <span className="visually-hidden">Taranacak firmayı ara</span>
-                <input className="field" type="search" placeholder="Firma adı ya da VKN ile ara" value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
-              </label>
-              <div className="scan-pick-actions">
-                <button type="button" className="btn btn-sm" disabled={!shown.length} onClick={() => setChosen((c) => new Set([...c, ...shown.map((f) => f.lucaId)]))}>
-                  {query.trim() ? `Bulunanları seç (${shown.length})` : "Hepsini seç"}
-                </button>
-                <button type="button" className="btn btn-sm" disabled={!chosen.size} onClick={() => setChosen(new Set())}>Seçimi temizle</button>
-              </div>
-              <p className="visually-hidden" role="status">{query.trim() ? `${shown.length} firma bulundu.` : ""}</p>
-              <ul className="firms-list notice-scans" aria-label="Taranacak firmalar">
-                {shown.map((f) => (
-                  <li key={f.lucaId} className="firms-row">
-                    <label className="scan-pick-row">
-                      <input type="checkbox" className="row-check" checked={chosen.has(f.lucaId)} onChange={() => toggle(f.lucaId)} />
-                      <span className="firms-name">{f.name}<span className="firms-vkn">VKN {f.taxNumber}</span></span>
-                    </label>
-                  </li>
-                ))}
-                {shown.length ? null : <li className="firms-row"><span className="firms-name">Bu aramayla firma yok.</span></li>}
-              </ul>
-              <button type="button" className="btn btn-primary" aria-disabled={busy || !chosen.size || undefined}
-                onClick={() => !busy && chosen.size && start(state.firms.filter((f) => chosen.has(f.lucaId)).map((f) => f.lucaId))}>
-                {chosen.size ? `Seçilen ${chosen.size} firmayı tara` : "Taramak için firma seçin"}
+            <>
+              <button type="button" className="btn" aria-haspopup="dialog" onClick={() => picker.current?.showModal()}>
+                Firma seçerek tara{chosen.size ? ` (${chosen.size} seçili)` : ""}
               </button>
-            </details>
+              {/* Covers the page: hundreds of firms need the whole window. A native <dialog>: Escape, focus trap, focus back. */}
+              <dialog ref={picker} className="scan-picker" aria-labelledby="secerek-tara">
+                <div className="scan-picker-head">
+                  <p id="secerek-tara" className="account-title">Taranacak firmaları seçin</p>
+                  <button className="btn btn-quiet btn-sm" type="button" onClick={() => picker.current?.close()}>Kapat</button>
+                </div>
+                <div className="scan-picker-tools">
+                  <label className="firms-search">
+                    <span className="visually-hidden">Taranacak firmayı ara</span>
+                    <input className="field" type="search" placeholder="Firma adı ya da VKN ile ara" value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
+                  </label>
+                  <button type="button" className="btn btn-sm" disabled={!shown.length} onClick={() => setChosen((c) => new Set([...c, ...shown.map((f) => f.lucaId)]))}>
+                    {query.trim() ? `Bulunanları seç (${shown.length})` : `Hepsini seç (${state.firms.length})`}
+                  </button>
+                  <button type="button" className="btn btn-sm" disabled={!chosen.size} onClick={() => setChosen(new Set())}>Seçimi temizle</button>
+                </div>
+                <p className="visually-hidden" role="status">{query.trim() ? `${shown.length} firma bulundu.` : ""}</p>
+                <ul className="scan-picker-list" aria-label="Taranacak firmalar">
+                  {shown.map((f) => (
+                    <li key={f.lucaId}>
+                      <label className="scan-pick-row" data-on={chosen.has(f.lucaId) || undefined}>
+                        <input type="checkbox" className="row-check" checked={chosen.has(f.lucaId)} onChange={() => toggle(f.lucaId)} />
+                        <span className="firms-name">{f.name}<span className="firms-vkn">VKN {f.taxNumber}</span></span>
+                      </label>
+                    </li>
+                  ))}
+                  {shown.length ? null : <li className="scan-picker-empty">Bu aramayla firma yok.</li>}
+                </ul>
+                <div className="scan-picker-foot">
+                  <span className="finding">{chosen.size} / {state.firms.length} firma seçili</span>
+                  <button type="button" className="btn btn-primary" aria-disabled={busy || !chosen.size || undefined}
+                    onClick={() => { if (busy || !chosen.size) return; picker.current?.close(); start(state.firms.filter((f) => chosen.has(f.lucaId)).map((f) => f.lucaId)); }}>
+                    {chosen.size ? `Seçilen ${chosen.size} firmayı tara` : "Taramak için firma seçin"}
+                  </button>
+                </div>
+              </dialog>
+            </>
           ) : null}
           {state.reads.length ? (
             <details className="notice-never">

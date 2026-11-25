@@ -12,6 +12,8 @@ const GIB: GibScanState = {
     { lucaId: "1", name: "DENEME İNŞAAT A.Ş.", taxNumber: "1111111111" },
     { lucaId: "2", name: ORNEK, taxNumber: "2222222222" },
     { lucaId: "3", name: "YENİ MÜKELLEF TİCARET LTD. ŞTİ.", taxNumber: "3333333333" },
+    // A müşavir has hundreds: enough rows to see the picker's columns and scrolling.
+    ...Array.from({ length: 57 }, (_, i) => ({ lucaId: String(100 + i), name: `ÖRNEK FİRMA ${i + 1} TİCARET LTD. ŞTİ.`, taxNumber: String(4_000_000_000 + i) })),
   ],
 };
 const NOTICES: NoticeRow[] = [
