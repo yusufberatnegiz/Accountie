@@ -5,7 +5,7 @@ import { gibScanGrant, takeGibLogin } from "@/db/queries";
 import { bearerHash, extensionUserId } from "@/lib/auth/extension-token";
 import { grantText, mac, macOk, open, secretContext, secretKey, SecretError } from "@/lib/gib/secret";
 import { fail, readJson } from "@/lib/http";
-import { allow, clientIp, ipBucket } from "@/lib/rate-limit";
+import { clientIp, ipBucket } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -31,7 +31,6 @@ export async function POST(request: Request) {
   // Only the key the user had when approving: another key of this user (one added to the database) opens nothing.
   if (bearerHash(request) !== grant.tokenHash) return fail("Tarama erişimi başka bir eklenti bağlantısı için açıldı. Accountie'den taramayı yeniden başlatın.", 403);
   if (grant.network !== network) return fail("Tarama erişimi başka bir ağdan açıldı. Bu bilgisayardan Accountie'ye girip taramayı yeniden başlatın.", 403);
-  if (!(await allow("gibRead", userId)) || !(await allow("gibReadIp", clientIp(request.headers)))) return fail("Çok hızlı istendi; güvenlik için durduruldu. Birkaç dakika sonra sürdürün.", 429);
   const body = Body.safeParse(await readJson(request));
   if (!body.success) return fail("Firma okunamadı.", 400);
   // An approval for chosen firms opens only those.

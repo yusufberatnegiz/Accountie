@@ -133,11 +133,8 @@ describe("POST /api/extension/gib-logins/read (taramada tek firmanın girişi)",
     expect((await read.POST(req("POST", { lucaId: "8" }))).status).toBe(200);
   });
 
-  it("hız sınırı, başka kullanıcının mührü ve olmayan firma", async () => {
+  it("başka kullanıcının mührü ve olmayan firma", async () => {
     vi.mocked(q.gibScanGrant).mockResolvedValue(grantFor());
-    vi.mocked(limits.allow).mockResolvedValueOnce(false);
-    expect((await read.POST(req("POST", { lucaId: "7" }))).status).toBe(429);
-    expect(q.takeGibLogin).not.toHaveBeenCalled();
     // A row sealed for another user does not open here.
     const other = { firmId: "firm-7", usernameSealed: seal(KEY, "1", secretContext("user-b", "firm-7", "kullanici")), passwordSealed: seal(KEY, PASS, secretContext("user-b", "firm-7", "sifre")) };
     vi.mocked(q.takeGibLogin).mockResolvedValueOnce(other);
